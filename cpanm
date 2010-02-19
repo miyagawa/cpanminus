@@ -7,11 +7,25 @@ sub mirror($$);
 sub untar;
 sub parse_deps;
 
+my $wget = `/usr/bin/which wget`;
+chomp $wget;
+
 if (eval { require LWP::Simple }) {
     *get = \&LWP::Simple::get;
     *mirror = \&LWP::Simple::mirror;
+} elsif ($wget && -x $wget) {
+    *get = sub ($) {
+        my $uri = shift;
+        open my $fh, "$wget $uri -O - |" or die "wget $uri: $!";
+        local $/;
+            <$fh>;
+    };
+    *mirror = sub ($$) {
+        my($uri, $path) = @_;
+        `$wget $uri -O $path`;
+    };
 }
-# TODO curl, wget
+# TODO curl
 
 if (eval { require Archive::Tar }) {
     *untar = sub {
