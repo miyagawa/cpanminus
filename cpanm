@@ -68,6 +68,10 @@ sub run($) {
     !system $cmd;
 }
 
+sub _chdir {
+    chdir(File::Spec->canonpath($_[0]));
+}
+
 sub install_module {
     my $module = shift;
 
@@ -91,7 +95,7 @@ sub install_module {
         return;
     }
 
-    chdir File::Spec->canonpath($Base);
+    _chdir $Base;
     diag "Fetching $uri ...\n";
 
     my $name = basename $uri;
@@ -110,7 +114,7 @@ sub install_module {
     }
 
     diag "Entering $dir ...\n";
-    chdir File::Spec->canonpath($dir);
+    _chdir $dir;
 
     build_stuff($module, $dir)
 }
@@ -140,8 +144,8 @@ sub build_stuff {
             install_module($mod);
         }
 
-        chdir File::Spec->canonpath($Base);
-        chdir File::Spec->canonpath($dir);
+        _chdir $Base;
+        _chdir $dir;
     }
 
     diag "Building $module ...\n";
