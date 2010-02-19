@@ -123,9 +123,9 @@ sub install_module {
 
     if (-e 'Build.PL') {
         run "$^X Build.PL" &&
-        run './Build'           &&
-        $test->('./Build test') &&
-        run './Build install';
+        run "$^X ./Build"           &&
+        $test->("$^X ./Build test") &&
+        run "$^X ./Build install";
     } elsif (-e 'Makefile.PL') {
         run "$^X Makefile.PL" &&
         run 'make'            &&
