@@ -4,18 +4,18 @@ use Config;
 use File::Basename qw(basename);
 use Fatal qw(chdir);
 use Parse::CPAN::Meta;
+use File::Spec;
 
 sub get($);
 sub mirror($$);
 sub untar;
+sub which;
 
-my $wget = `/usr/bin/which wget`;
-chomp $wget;
 
 if (eval { require LWP::Simple }) {
     *get = \&LWP::Simple::get;
     *mirror = \&LWP::Simple::mirror;
-} elsif ($wget && -x $wget) {
+} elsif (my $wget = which 'wget') {
     *get = sub ($) {
         my $uri = shift;
         open my $fh, "$wget $uri -O - |" or die "wget $uri: $!";
@@ -29,10 +29,8 @@ if (eval { require LWP::Simple }) {
 }
 # TODO curl
 
-my $tar = `which tar`;
-chomp $tar;
 
-if(-x $tar){
+if(my $tar = which 'tar'){
     *untar = sub {
         my($tarfile) = @_;
 
@@ -166,4 +164,18 @@ sub find_module {
         and return "http://search.cpan.org$1";
 
     return;
+}
+
+sub which {
+    my($name) = @_;
+    my $exe_ext = $Config{_exe};
+    print "which $name...\n";
+    foreach my $dir(File::Spec->path){
+        my $fullpath = File::Spec->catfile($dir, $name);
+        if(-x $fullpath || -x ($fullpath .= $exe_ext)){
+            print "    using: $fullpath\n";
+            return $fullpath;
+        }
+    }
+    return undef;
 }
