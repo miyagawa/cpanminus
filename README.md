@@ -2,10 +2,16 @@ cpanminus - get, unpack, build and install modules from CPAN
 
 ## What is this? 
 
-cpanminus is a tiny script to get, unpack, build and install modules
-from CPAN.  It's a single perl script with no dependencies.
+cpanminus is a script to unpack, build and install modules from CPAN.
 
-## Should I use this?
+Its catch? Deps-free, zero-conf, standalone ~200 LOC script
+(i.e. hackable) and requires only 10MB RAM. See below for its cons.
+
+## Installation
+
+Grab the file, chmod +x, put it into your PATH. (Adjust shebang if needed)
+
+## Should I really use this?
 
 No. Use CPAN or CPANPLUS.
 
@@ -26,10 +32,15 @@ to recurively resolve those dependencies by hand before doing so.
 
 This script just automates that.
 
-## How does this module get the CPAN index?
+## Zero-conf? How does this module get/parse/update the CPAN index?
 
-It scrapes http://search.cpan.org/. Yes, it's horrible and
-fragile. Fetched files are unpacked in `~/.cpanm`
+It scrapes the site http://search.cpan.org/. Yes, it's horrible and
+fragile.
+
+## Configuration
+
+Fetched files are unpacked in `~/.cpanm` but you can configure with
+`CPANMINUS_HOME` environment variable.
 
 ## What do you need to run this?
 
@@ -48,15 +59,12 @@ Yes.
 ## Does this really work?
 
 I tested installing Moose, Catalyst, Jifty and Plack using cpanminus
-and the installation with dependencies was all successful.
+and the installation including dependencies was all successful.
 
-There are some distributions that will fail, because of those nasty
-edge cases (funky archive formats, naughty tar that extracts to the
-current dir, META.yml that is actually JSON, circular dependencies
-etc.) while CPAN and CPANPLUS can install those corner cases
-correctly.
-
-cpanminus works for CPAN-as-we-with-it-were, not CPAN-that-is-today.
+There are some distributions that will miserably fail, because of the
+nasty edge cases (funky archive formats, naughty tarball that extracts
+to the current directory, META.yml that is actually JSON, circular
+dependencies etc.) while CPAN and CPANPLUS can handle them.
 
 ## Quick Install?
 
@@ -68,13 +76,15 @@ Don't do that. It's too useful.
 
 No, that's not my intention. As a developer with 190 modules on CPAN,
 I appreciate and respect the CPAN toolchain developers for their great
-effort. However I've learned that in some rare cases, especially for
-less experienced users (or really experienced users who knows how to
-shoot their feet), setting up a CPAN toolchain "in the right way"
-feels like just another yak to shave, and this tool is a super tiny
-shaver to eliminate the big yak really quickly and does nothing else.
+effort.
 
-## Should I use this?
+However I've learned that in some rare cases, especially for less
+experienced users (or really experienced users who knows how to shoot
+their feet), setting up a CPAN toolchain "in the right way" feels like
+just another yak to shave, and this tool is a super tiny shaver to
+eliminate the big yak really quickly and does nothing else.
+
+## Should I really use this?
 
 No. Use CPAN or CPANPLUS.
 
