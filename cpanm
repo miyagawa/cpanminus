@@ -18,44 +18,7 @@ sub mirror($$);
 sub untar;
 sub which;
 
-if (eval { require LWP::Simple }) {
-    *get = \&LWP::Simple::get;
-    *mirror = \&LWP::Simple::mirror;
-} elsif (my $wget = which 'wget') {
-    *get = sub ($) {
-        my $uri = shift;
-        open my $fh, "$wget $uri -O - |" or die "wget $uri: $!";
-        local $/;
-            <$fh>;
-    };
-    *mirror = sub ($$) {
-        my($uri, $path) = @_;
-        `$wget $uri -O $path`;
-    };
-}
-# TODO curl
-
-if (my $tar = which 'tar'){
-    *untar = sub {
-        my($tarfile) = @_;
-        my $suf = $tarfile =~ /bz2$/ ? 'j' : 'z';
-        system "$tar xvf$suf $tarfile";
-        my @files = `$tar tf$suf $tarfile`;
-        if (@files) {
-            chomp $files[0];
-            return $files[0];
-        } else {
-            return undef;
-        }
-    }
-} elsif (eval { require Archive::Tar }) { # uses too much memory!
-    *untar = sub {
-        my $t = Archive::Tar->new($_[0]);
-        my $root = ($t->list_files)[0];
-        $t->extract;
-        return -d $root ? $root : undef;
-    };
-}
+init_tools();
 
 sub diag {
     print STDERR @_;
@@ -193,6 +156,47 @@ sub which {
         }
     }
     return;
+}
+
+sub init_tools {
+    if (eval { require LWP::Simple }) {
+        *get = \&LWP::Simple::get;
+        *mirror = \&LWP::Simple::mirror;
+    } elsif (my $wget = which 'wget') {
+        *get = sub ($) {
+            my $uri = shift;
+            open my $fh, "$wget $uri -O - |" or die "wget $uri: $!";
+            local $/;
+            <$fh>;
+        };
+        *mirror = sub ($$) {
+            my($uri, $path) = @_;
+            `$wget $uri -O $path`;
+        };
+    }
+    # TODO curl
+
+    if (my $tar = which 'tar'){
+        *untar = sub {
+            my($tarfile) = @_;
+            my $suf = $tarfile =~ /bz2$/ ? 'j' : 'z';
+            system "$tar xvf$suf $tarfile";
+            my @files = `$tar tf$suf $tarfile`;
+            if (@files) {
+                chomp $files[0];
+                return $files[0];
+            } else {
+                return undef;
+            }
+        }
+    } elsif (eval { require Archive::Tar }) { # uses too much memory!
+        *untar = sub {
+            my $t = Archive::Tar->new($_[0]);
+            my $root = ($t->list_files)[0];
+            $t->extract;
+            return -d $root ? $root : undef;
+        };
+    }
 }
 
 ### Inline Parse::CPAN::Meta
