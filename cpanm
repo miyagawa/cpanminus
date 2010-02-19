@@ -234,11 +234,6 @@ sub init_tools {
 # Copyright: Adam Kennedy
 package Parse::CPAN::Meta;
 use Carp 'croak';
-# Prototypes
-sub LoadFile ($);
-sub _scalar  ($$$);
-sub _array   ($$$);
-sub _hash    ($$$);
 # Printable characters for escapes
 my %UNESCAPES = (
 	z => "\x00", a => "\x07", t    => "\x09",
