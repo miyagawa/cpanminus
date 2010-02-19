@@ -11,19 +11,22 @@ No. Use CPAN or CPANPLUS.
 
 ## WTF? Why did you make this?
 
-CPAN shell sometimes takes ~150MB of memory and it's a pain to run
-on a VPS with smaller RAM. This script only requires 10MB or so. (Yes,
-I know CPAN::SQLite can fix this)
+CPAN shell sometimes takes ~150MB of memory and it's a pain to run on
+a VPS with smaller RAM. This script only requires 10MB or so. (Yes, I
+know CPAN::SQLite can fix this)
 
-Often you just want to download the tarball and run perl Makefile.PL
-and make install. This script just automates that, but also does
-some recursive dependency check as well, which works for 90% of the
-use cases if you want to install modules from CPAN.
+Imagine you don't have CPAN or CPANPLUS. What you're going to do is to
+search the module on the CPAN search site, download a tarball, unpack
+it and then run `perl Makefile.PL` (or `perl Build.PL`) and then `make
+install`. If the module has dependencies you probably have to
+recurively resolve those dependencies by hand before doing so.
+
+This script just automates that.
 
 ## How does this module get the CPAN index?
 
-It scrapes http://search.cpan.org/. Yes, it's horrible. Fetched files
-are unpacked files in ~/.cpanm
+It scrapes http://search.cpan.org/. Yes, it's horrible and
+fragile. Fetched files are unpacked in `~/.cpanm`
 
 ## What do you need to run this?
 
@@ -42,18 +45,19 @@ Yes.
 ## Does this really work?
 
 I tested installing Moose, Catalyst, Jifty and Plack using cpanminus
-successfully.
+and the installation was all successful.
 
-## So you're damaging the CPAN toolchain ecosystem with this?
+## So you're ignoring the CPAN toolchain ecosystem with this?
 
 No, that's not my intention. As a developer with 190 modules on CPAN,
 I appreciate and respect the CPAN toolchain developers for their great
-effort. And believe me, I've been contributing a lot to improve the
-ecosystem as well with patches for Module::Install and local::lib etc.
+effort. As a fact I've been contributing to improve the ecosystem as
+well with patches for CPAN, Module::Install and local::lib etc.
 
-However I've learned that in some rare cases (for poor users), setting
-up a CPAN toolchain feels like just another yak to shave. This tool is
-a super tiny shaver to eliminate the yak in that particular case.
+However I've learned that in some rare cases, especially for less
+experienced users, setting up a CPAN toolchain "in the right way"
+feels like just another yak to shave, and this tool is a super tiny
+shaver to eliminate the yak in that particular case.
 
 ## Should I use this?
 
