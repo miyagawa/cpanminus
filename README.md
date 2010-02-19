@@ -52,7 +52,8 @@ haven't tested).
 * LWP or 'wget' to get files over HTTP.
 * 'tar' executable or Archive::Tar to unpack files.
 * C compiler, if you want to build XS modules.
-* make, if you want to more reliably install MakeMaker based modules (cpanm tries to build with a stub Module::Build if you don't have a make)
+* make, if you want to more reliably install MakeMaker based modules
+* Module::Build (core in 5.10) if you want to install MakeMaker based modules without 'make'
 
 ## Where does this install modules to?
 
