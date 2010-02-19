@@ -66,7 +66,7 @@ to run `cpanm` as root, or run with `--sudo` option to auto sudo in
 ## Does this really work?
 
 I tested installing MojoMojo, KiokuDB, Catalyst, Jifty and Plack using
-cpanminus and the installation including dependencies was all
+cpanminus and the installations including dependencies were mostly
 successful. So multiplies of "half of CPAN" behave really nicely and
 appear to work.
 
