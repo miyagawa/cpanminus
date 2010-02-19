@@ -49,22 +49,29 @@ haven't tested).
 
 * LWP or 'wget' to get files over HTTP.
 * 'tar' executable or Archive::Tar to unpack files.
-* make (Ugh!)
 * C compiler, if you want to build XS modules.
+* make, if you want to more reliably install MakeMaker based modules (cpanm tries to build with a stub Module::Build if you don't have a make)
 
-## Does this work with local::lib?
+## Where does this install modules to?
 
-Yes.
+It installs to wherever ExtUtils::MakeMaker and Module::Build are
+configured to. So if you use local::lib then it installs to your local
+perl5 directory. Otherwise it installs to sitelib, so you might need
+to run `cpanm` as root, or run with `--sudo` option to auto sudo in
+`make install` (or `Build install`).
 
 ## Does this really work?
 
-I tested installing Moose, Catalyst, Jifty and Plack using cpanminus
-and the installation including dependencies was all successful.
+I tested installing MojoMojo, KiokuDB, Catalyst, Jifty and Plack using
+cpanminus and the installation including dependencies was all
+successful. So multiplies of "half of CPAN" behave really nicely and
+appear to work.
 
-There are some distributions that will miserably fail, because of the
-nasty edge cases (funky archive formats, naughty tarball that extracts
-to the current directory, META.yml that is actually JSON, circular
-dependencies etc.) while CPAN and CPANPLUS can handle them.
+However, there are some distributions that will miserably fail,
+because of the nasty edge cases (funky archive formats, naughty
+tarball that extracts to the current directory, META.yml that is
+actually JSON, circular dependencies etc.) while CPAN and CPANPLUS can
+handle them.
 
 ## Quick Install?
 
@@ -80,7 +87,7 @@ effort.
 
 However I've learned that in some rare cases, especially for less
 experienced users (or really experienced users who knows how to shoot
-their feet), setting up a CPAN toolchain "in the right way" feels like
+in their feet), setting up a CPAN toolchain "in the right way" feels like
 just another yak to shave, and this tool is a super tiny shaver to
 eliminate the big yak really quickly and does nothing else.
 
