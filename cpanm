@@ -169,13 +169,11 @@ sub find_module {
 sub which {
     my($name) = @_;
     my $exe_ext = $Config{_exe};
-    print "which $name...\n";
     foreach my $dir(File::Spec->path){
         my $fullpath = File::Spec->catfile($dir, $name);
-        if(-x $fullpath || -x ($fullpath .= $exe_ext)){
-            print "    using: $fullpath\n";
+        if (-x $fullpath || -x ($fullpath .= $exe_ext)){
             return $fullpath;
         }
     }
-    return undef;
+    return;
 }
