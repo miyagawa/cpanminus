@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 use strict;
+use Config;
 use File::Basename qw(basename);
 
 sub get($);
@@ -120,12 +121,12 @@ sub install_module {
     }
 
     if (-e 'Build.PL') {
-        run "$^X Build.PL" &&
+        run "$Config{perlpath} Build.PL" &&
         run './Build'      &&
         run './Build test' &&
         run './Build install';
     } elsif (-e 'Makefile.PL') {
-        run "$^X Makefile.PL" &&
+        run "$Config{perlpath} Makefile.PL" &&
         run 'make'            &&
         run 'make test'       &&
         run 'make install';
