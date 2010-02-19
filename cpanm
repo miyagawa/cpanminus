@@ -30,6 +30,11 @@ my $install = sub {
     run($cmd);
 };
 
+# sanity check
+unless ($ENV{PERL_MM_OPT} or $ENV{MODULEBUILDRC} or -w $Config{installsitelib} or $sudo) {
+    die "Can't write to $Config{installsitelib}: Run me as root or with --sudo option.\n";
+}
+
 sub get($);
 sub mirror($$);
 sub untar;
