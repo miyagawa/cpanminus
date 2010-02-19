@@ -3,11 +3,11 @@ use strict;
 use Config;
 use File::Basename qw(basename);
 use Fatal qw(chdir);
+use Parse::CPAN::Meta;
 
 sub get($);
 sub mirror($$);
 sub untar;
-sub parse_deps;
 
 my $wget = `/usr/bin/which wget`;
 chomp $wget;
@@ -57,13 +57,6 @@ if(-x $tar){
     };
 }
 # TODO fallback to tar
-
-if (eval { require YAML }) {
-    *parse_deps = sub {
-        YAML::LoadFile($_[0])->{requires} || {};
-    };
-}
-# fallback to regexp parser
 
 sub diag {
     print STDERR @_;
@@ -121,7 +114,9 @@ sub install_module {
 
     if (-e 'META.yml') {
         diag "Checking dependencies ...\n";
-        my $deps = parse_deps('META.yml');
+        my @y = Parse::CPAN::Meta::LoadFile('META.yml');
+        my $deps = $y[0]->{requires};
+
         my @install;
         while (my($mod, $ver) = each %$deps) {
             next if $mod eq 'perl';
