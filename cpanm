@@ -90,9 +90,13 @@ sub install_module {
     }
 
     my $uri = $module =~ /^(ftp|https?|file):/ ? $module : find_module($module);
-
     unless ($uri) {
         diag "Can't find module $module\n";
+        return;
+    }
+
+    if($uri =~ m{/perl-5}){
+        diag "skip $uri\n";
         return;
     }
 
