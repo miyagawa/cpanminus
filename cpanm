@@ -11,7 +11,6 @@ sub mirror($$);
 sub untar;
 sub which;
 
-
 if (eval { require LWP::Simple }) {
     *get = \&LWP::Simple::get;
     *mirror = \&LWP::Simple::mirror;
@@ -54,7 +53,6 @@ if(my $tar = which 'tar'){
         return -d $root ? $root : undef;
     };
 }
-# TODO fallback to tar
 
 sub diag {
     print STDERR @_;
@@ -113,18 +111,18 @@ sub install_module {
     if (-e 'META.yml') {
         diag "Checking dependencies ...\n";
         my @y = Parse::CPAN::Meta::LoadFile('META.yml');
-        my $deps = $y[0]->{requires};
+        my %deps = (%{$y[0]->{requires} || {}}, %{$y[0]->{build_requires} || {}});
 
         my @install;
-        while (my($mod, $ver) = each %$deps) {
+        while (my($mod, $ver) = each %deps) {
             next if $mod eq 'perl';
             diag "Checking if you have $mod $ver ... ";
-            eval "use $mod $ver ()";
-            if ($@ || $mod->VERSION < $ver) {
+            my $test = `$Config{perlpath} -e 'use $mod $ver (); print "OK:", $mod->VERSION'`;
+            if ($test =~ s/^OK://) {
+                diag "Yes ($test)\n";
+            } else {
                 diag "No\n";
                 push @install, $mod;
-            } else {
-                diag "Yes (" . $mod->VERSION . ")\n";
             }
         }
 
