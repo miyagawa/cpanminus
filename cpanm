@@ -35,6 +35,8 @@ sub mirror($$);
 sub untar;
 sub which;
 
+my $make = which $Config{make};
+
 init_tools();
 
 sub diag {
@@ -147,19 +149,24 @@ sub build_stuff {
     # fake AutoInstall
     $ENV{PERL5_CPAN_IS_RUNNING} = 1;
 
+    unless ($make or -e "Build.PL") {
+        diag "Oops, you don't have make. Trying to build a stub Build.PL for you. Hope this works!\n";
+        open my $fh, ">", "Build.PL" or die $!;
+        print $fh qq{require Module::Build; Module::Build->new(module_name => "$module")->create_build_script};
+    }
+
     if (-e 'Build.PL') {
         run "$^X Build.PL" &&
         run "$^X ./Build"           &&
         $test->("$^X ./Build test") &&
         $install->("$^X ./Build install");
-    } elsif (-e 'Makefile.PL') {
-        my $make = which $Config{make} or die "You don't have any 'make'";
+    } elsif ($make && -e 'Makefile.PL') {
         run "$^X Makefile.PL" &&
         run "$make"           &&
         $test->("$make test") &&
         $install->("$make install");
     } else {
-        diag "Don't know how to build $dir\n";
+        diag "Sorry, I don't know how to build $dir\n";
         return;
     }
 }
