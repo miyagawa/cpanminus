@@ -102,7 +102,9 @@ No. Use CPAN or CPANPLUS.
 
 Copyright 2010- Tatsuhiko Miyagawa
 
+Parse::CPAN::Meta, included in this script, is Copyright 2006-2009 Adam Kennedy
+
 ## AUTHORS
 
-Tatsuhiko Miyagawa, Goro Fuji, Kazuhiro Osawa, Tokuhiro Matsuno
+Tatsuhiko Miyagawa, Goro Fuji, Kazuhiro Osawa, Tokuhiro Matsuno, Ken-ichi Ishigaki, Ian Wells
 
