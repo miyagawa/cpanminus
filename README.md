@@ -14,8 +14,9 @@ No. Use CPAN or CPANPLUS.
 CPAN shell gets OOM on Slicehost/linode's most affordable plan with
 only 256MB RAM.
 
-Yes, I know CPAN::SQLite can fix it but it just feels like yak shaving
-to install them by hand and then configure CPAN.
+Yes, I know CPAN::SQLite can fix it but installing it and its 14
+non-core dependencies without CPAN shell (because CPAN shell doesn't
+work) feels like yak shaving.
 
 So, imagine you don't have CPAN or CPANPLUS. What you're going to do
 is to search the module on the CPAN search site, download a tarball,
