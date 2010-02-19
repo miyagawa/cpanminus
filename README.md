@@ -50,6 +50,16 @@ Yes.
 I tested installing Moose, Catalyst, Jifty and Plack using cpanminus
 and the installation was all successful.
 
+There are some distributions that fail, because of edge cases
+(META.yml formats, circular dependencies etc.) while CPAN and CPANPLUS
+can install them correctly.
+
+## Quick Install?
+
+Oh, you mean `env PERL_MM_USE_DEFAULT=1 cpanm --notest Module`
+
+Don't do that. It's too useful.
+
 ## So you're ignoring the CPAN toolchain ecosystem with this?
 
 No, that's not my intention. As a developer with 190 modules on CPAN,
