@@ -7,12 +7,25 @@ use Fatal qw(chdir);
 use File::Spec;
 use Getopt::Long;
 
-my($notest, $force);
+my($notest, $force, $sudo);
 
 GetOptions(
     'f|force'  => \$force,
     'n|notest' => \$notest,
+    'sudo'     => \$sudo,
 );
+
+my $test = sub {
+    my $cmd = shift;
+    return 1 if $notest;
+    return run($cmd) || $force;
+};
+
+my $install = sub {
+    my $cmd = shift;
+    $cmd = "sudo $cmd" if $sudo;
+    run($cmd);
+};
 
 sub get($);
 sub mirror($$);
@@ -30,7 +43,7 @@ mkdir $Base, 0777 unless -e $Base;
 
 unless (@ARGV) {
     die <<USAGE;
-Usage: cpanm [--force] [--notest] Module
+Usage: cpanm [--force] [--notest] [--sudo] Module
 USAGE
 }
 
@@ -127,23 +140,17 @@ sub build_stuff {
     # fake AutoInstall
     $ENV{PERL5_CPAN_IS_RUNNING} = 1;
 
-    my $test = sub {
-        my $cmd = shift;
-        return 1 if $notest;
-        return run($cmd) || $force;
-    };
-
     if (-e 'Build.PL') {
         run "$^X Build.PL" &&
         run "$^X ./Build"           &&
         $test->("$^X ./Build test") &&
-        run "$^X ./Build install";
+        $install->("$^X ./Build install");
     } elsif (-e 'Makefile.PL') {
         my $make = which $Config{make} or die "You don't have any 'make'";
         run "$^X Makefile.PL" &&
         run "$make"           &&
         $test->("$make test") &&
-        run "$make install";
+        $install->("$make install");
     } else {
         diag "Don't know how to build $dir\n";
         return;
