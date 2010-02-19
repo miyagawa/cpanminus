@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 use strict;
 use Config;
+use Cwd;
 use File::Basename qw(basename);
 use Fatal qw(chdir);
 use File::Spec;
@@ -48,6 +49,10 @@ sub run($) {
 sub install_module {
     my $module = shift;
 
+    if ($module eq '.') {
+        return build_stuff($module, Cwd::cwd());
+    }
+
     if ($seen{$module}++) {
         diag "Already tried $module. Skipping\n";
         return;
@@ -84,6 +89,12 @@ sub install_module {
 
     diag "Entering $dir ...\n";
     chdir File::Spec->canonpath($dir);
+
+    build_stuff($module, $dir)
+}
+
+sub build_stuff {
+    my($module, $dir) = @_;
 
     if (-e 'META.yml') {
         diag "Checking dependencies ...\n";
