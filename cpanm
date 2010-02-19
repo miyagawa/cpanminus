@@ -30,8 +30,14 @@ if (eval { require YAML }) {
 }
 # fallback to regexp parser
 
+sub diag {
+    print STDERR @_;
+}
+
 my $Base = "$ENV{HOME}/.cpanm";
 mkdir $Base, 0777 unless -e $Base;
+
+my %seen;
 
 for my $module (@ARGV) {
     install_module($module);
@@ -44,44 +50,53 @@ sub run($) {
 
 sub install_module {
     my $module = shift;
+
+    if ($seen{$module}++) {
+        diag "Already tried $module. Skipping\n";
+        return;
+    }
+
     my $uri = $module =~ /^(ftp|https?|file):/ ? $module : find_module($module);
 
     unless ($uri) {
-        warn "Can't find module $module\n";
+        diag "Can't find module $module\n";
         return;
     }
 
     chdir $Base;
-    warn "Fetching $uri ...\n";
+    diag "Fetching $uri ...\n";
 
     my $name = basename $uri;
     mirror($uri, $name);
 
     unless (-e $name) {
-        warn "Failed to download $uri\n";
+        diag "Failed to download $uri\n";
         return;
     }
 
-    warn "Unpacking $name ...\n";
+    diag "Unpacking $name ...\n";
     my $dir = untar $name;
     unless ($dir) {
-        warn "Failed to unpack $name: no directory\n";
+        diag "Failed to unpack $name: no directory\n";
         return;
     }
 
-    warn "Buidling $dir ...\n";
+    diag "Buidling $dir ...\n";
     chdir $dir;
 
     if (-e 'META.yml') {
-        warn "Checking dependencies ...\n";
+        diag "Checking dependencies ...\n";
         my $deps = parse_deps('META.yml');
         my @install;
         while (my($mod, $ver) = each %$deps) {
             next if $mod eq 'perl';
-            warn "Checking if you have $mod $ver ...\n";
+            diag "Checking if you have $mod $ver ... ";
             eval "use $mod $ver ()";
-            if ($@ || $mod->VERSION <= $ver) {
+            if ($@ || $mod->VERSION < $ver) {
+                diag "No\n";
                 push @install, $mod;
+            } else {
+                diag "Yes (" . $mod->VERSION . ")\n";
             }
         }
 
@@ -101,7 +116,7 @@ sub install_module {
         run 'make test'       &&
         run 'make install';
     } else {
-        warn "Don't know how to build $dir\n";
+        diag "Don't know how to build $dir\n";
         return;
     }
 }
