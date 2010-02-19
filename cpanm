@@ -230,51 +230,21 @@ sub init_tools {
     }
 }
 
-### Inline Parse::CPAN::Meta
+### Inline stripped Parse::CPAN::Meta
 # Copyright: Adam Kennedy
 package Parse::CPAN::Meta;
-
-use strict;
 use Carp 'croak';
-
-# UTF Support?
-sub HAVE_UTF8 () { $] >= 5.007003 }
-BEGIN {
-	if ( HAVE_UTF8 ) {
-		# The string eval helps hide this from Test::MinimumVersion
-		eval "require utf8;";
-		die "Failed to load UTF-8 support" if $@;
-	}
-
-	# Class structure
-	require 5.004;
-	require Exporter;
-	$Parse::CPAN::Meta::VERSION   = '1.40';
-	@Parse::CPAN::Meta::ISA       = qw{ Exporter      };
-	@Parse::CPAN::Meta::EXPORT_OK = qw{ Load LoadFile };
-}
-
 # Prototypes
 sub LoadFile ($);
-sub Load     ($);
 sub _scalar  ($$$);
 sub _array   ($$$);
 sub _hash    ($$$);
-
 # Printable characters for escapes
 my %UNESCAPES = (
 	z => "\x00", a => "\x07", t    => "\x09",
 	n => "\x0a", v => "\x0b", f    => "\x0c",
 	r => "\x0d", e => "\x1b", '\\' => '\\',
 );
-
-
-
-
-
-#####################################################################
-# Implementation
-
 # Create an object from a file
 sub LoadFile ($) {
 	# Check the file
@@ -314,9 +284,6 @@ sub Load ($) {
 		# Strip UTF-8 bom if found, we'll just ignore it
 		$string =~ s/^\357\273\277//;
 	}
-
-	# Try to decode as utf8
-	utf8::decode($string) if HAVE_UTF8;
 
 	# Check for some special cases
 	return () unless length $string;
