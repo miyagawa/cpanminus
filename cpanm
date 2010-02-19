@@ -154,7 +154,7 @@ sub which {
         my $fullpath = File::Spec->catfile($dir, $name);
         if (-x $fullpath || -x ($fullpath .= $exe_ext)){
             my $quote = $^O eq 'MSWin32' ? q/"/ : q/'/;
-            if ($fullpath =~ /\s/ && $fullpath =~ /^$quote/) {
+            if ($fullpath =~ /\s/ && $fullpath !~ /^$quote/) {
                 $fullpath = "$quote$fullpath$quote"
             }
             return $fullpath;
