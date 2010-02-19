@@ -1,0 +1,116 @@
+#!/usr/bin/perl
+use strict;
+use File::Basename qw(basename);
+
+sub get($);
+sub mirror($$);
+sub untar;
+sub parse_deps;
+
+if (eval { require LWP::Simple }) {
+    *get = \&LWP::Simple::get;
+    *mirror = \&LWP::Simple::mirror;
+}
+# TODO curl, wget
+
+if (eval { require Archive::Tar }) {
+    *untar = sub {
+        my $t = Archive::Tar->new($_[0]);
+        my $root = ($t->list_files)[0];
+        $t->extract;
+        return -d $root ? $root : undef;
+    };
+}
+# TODO fallback to tar
+
+if (eval { require YAML }) {
+    *parse_deps = sub {
+        YAML::LoadFile($_[0])->{requires} || {};
+    };
+}
+# fallback to regexp parser
+
+my $Base = "$ENV{HOME}/.cpanm";
+mkdir $Base, 0777 unless -e $Base;
+
+for my $module (@ARGV) {
+    install_module($module);
+}
+
+sub run($) {
+    my $cmd = shift;
+    !system $cmd;
+}
+
+sub install_module {
+    my $module = shift;
+    my $uri = $module =~ /^(ftp|https?|file):/ ? $module : find_module($module);
+
+    unless ($uri) {
+        warn "Can't find module $module\n";
+        return;
+    }
+
+    chdir $Base;
+    warn "Fetching $uri ...\n";
+
+    my $name = basename $uri;
+    mirror($uri, $name);
+
+    unless (-e $name) {
+        warn "Failed to download $uri\n";
+        return;
+    }
+
+    warn "Unpacking $name ...\n";
+    my $dir = untar $name;
+    unless ($dir) {
+        warn "Failed to unpack $name: no directory\n";
+        return;
+    }
+
+    warn "Buidling $dir ...\n";
+    chdir $dir;
+
+    if (-e 'META.yml') {
+        warn "Checking dependencies ...\n";
+        my $deps = parse_deps('META.yml');
+        my @install;
+        while (my($mod, $ver) = each %$deps) {
+            next if $mod eq 'perl';
+            warn "Checking if you have $mod $ver ...\n";
+            eval "use $mod $ver ()";
+            if ($@ || $mod->VERSION <= $ver) {
+                push @install, $mod;
+            }
+        }
+
+        for my $mod (@install) {
+            install_module($mod);
+        }
+    }
+
+    if (-e 'Build.PL') {
+        run "$^X Build.PL" &&
+        run './Build'      &&
+        run './Build test' &&
+        run './Build install';
+    } elsif (-e 'Makefile.PL') {
+        run "$^X Makefile.PL" &&
+        run 'make'            &&
+        run 'make test'       &&
+        run 'make install';
+    } else {
+        warn "Don't know how to build $dir\n";
+        return;
+    }
+}
+
+sub find_module {
+    my $module = shift;
+    my $html = get("http://search.cpan.org/perldoc?$module");
+    $html =~ m!Download:<br/> <a href="(/CPAN/.*?)">.*?</a></p>!
+        and return "http://search.cpan.org$1";
+
+    return;
+}
