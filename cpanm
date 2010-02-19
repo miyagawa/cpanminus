@@ -7,13 +7,16 @@ use Fatal qw(chdir);
 use File::Spec;
 use Getopt::Long;
 
-my($notest, $force, $sudo);
+my($notest, $force, $sudo, $help);
 
 GetOptions(
     'f|force'  => \$force,
     'n|notest' => \$notest,
     'sudo'     => \$sudo,
+    'h|help'   => \$help,
 );
+
+help() if $help;
 
 my $test = sub {
     my $cmd = shift;
@@ -38,13 +41,17 @@ sub diag {
     print STDERR @_;
 }
 
+sub help {
+    die <<USAGE;
+Usage: cpanm [--force] [--notest] [--sudo] Module
+USAGE
+}
+
 my $Base = $ENV{CPANMINUS_HOME} || "$ENV{HOME}/.cpanm";
 mkdir $Base, 0777 unless -e $Base;
 
 unless (@ARGV) {
-    die <<USAGE;
-Usage: cpanm [--force] [--notest] [--sudo] Module
-USAGE
+    help();
 }
 
 my %seen;
