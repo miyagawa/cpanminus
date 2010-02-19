@@ -37,10 +37,12 @@ This script just automates that.
 It scrapes the site http://search.cpan.org/. Yes, it's horrible and
 fragile.
 
-## Configuration
-
 Fetched files are unpacked in `~/.cpanm` but you can configure with
 `CPANMINUS_HOME` environment variable.
+
+## Are you on drugs?
+
+Yes, I think my brain has been damaged since I looked at PyPI, gemcutter, pip and rip.
 
 ## What do you need to run this?
 
