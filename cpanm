@@ -35,26 +35,20 @@ chomp $tar;
 if(-x $tar){
     *untar = sub {
         my($tarfile) = @_;
-        my $opt = 'xvf'; # extract, verbose, file
-        if($tarfile =~ /bz2$/){
-            $opt .= 'j';
-        }
-        else{
-            $opt .= 'z';
-        }
 
-        my @files = `$tar $opt $tarfile`;
-        if(@files){
-            warn @files, "\n";
+        my $suf = $tarfile =~ /bz2$/ ? 'j' : 'z';
+
+        system "$tar xvf$suf $tarfile";
+
+        my @files = `$tar tf$suf $tarfile`;
+        if (@files) {
             chomp $files[0];
             return $files[0];
-        }
-        else {
+        } else {
             return undef;
         }
     }
-}
-elsif (eval { require Archive::Tar }) { # uses too much memory!
+} elsif (eval { require Archive::Tar }) { # uses too much memory!
     *untar = sub {
         my $t = Archive::Tar->new($_[0]);
         my $root = ($t->list_files)[0];
