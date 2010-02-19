@@ -64,6 +64,12 @@ sub diag {
 my $Base = "$ENV{HOME}/.cpanm";
 mkdir $Base, 0777 unless -e $Base;
 
+unless (@ARGV) {
+    die <<USAGE;
+Usage: cpanm [--force] [--notest] Module
+USAGE
+}
+
 my %seen;
 
 for my $module (@ARGV) {
