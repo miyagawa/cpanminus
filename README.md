@@ -11,8 +11,8 @@ No. Use CPAN or CPANPLUS.
 
 ## WTF? Why did you make this?
 
-CPAN shell gets OOM on Slicehost/linode's most affordable plan with
-only 256MB RAM.
+CPAN shell gets OOM (or swaps heavily and gets really slow) on
+Slicehost/linode's most affordable plan with only 256MB RAM.
 
 Yes, I know CPAN::SQLite can fix it but installing it and its 14
 non-core dependencies without CPAN shell (because CPAN shell doesn't
@@ -48,11 +48,15 @@ Yes.
 ## Does this really work?
 
 I tested installing Moose, Catalyst, Jifty and Plack using cpanminus
-and the installation was all successful.
+and the installation with dependencies was all successful.
 
-There are some distributions that fail, because of edge cases
-(META.yml formats, circular dependencies etc.) while CPAN and CPANPLUS
-can install them correctly.
+There are some distributions that will fail, because of those nasty
+edge cases (funky archive formats, naughty tar that extracts to the
+current dir, META.yml that is actually JSON, circular dependencies
+etc.) while CPAN and CPANPLUS can install those corner cases
+correctly.
+
+cpanminus works for CPAN-as-we-with-it-were, not CPAN-that-is-today.
 
 ## Quick Install?
 
@@ -68,7 +72,7 @@ effort. However I've learned that in some rare cases, especially for
 less experienced users (or really experienced users who knows how to
 shoot their feet), setting up a CPAN toolchain "in the right way"
 feels like just another yak to shave, and this tool is a super tiny
-shaver to eliminate the yak in that particular case.
+shaver to eliminate the big yak really quickly and does nothing else.
 
 ## Should I use this?
 
