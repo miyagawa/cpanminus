@@ -127,10 +127,11 @@ sub install_module {
         $test->("$^X ./Build test") &&
         run "$^X ./Build install";
     } elsif (-e 'Makefile.PL') {
+        my $make = which $Config{make} or die "You don't have any 'make'";
         run "$^X Makefile.PL" &&
-        run 'make'            &&
-        $test->('make test')  &&
-        run 'make install';
+        run "$make"           &&
+        $test->("$make test") &&
+        run "$make install";
     } else {
         diag "Don't know how to build $dir\n";
         return;
@@ -152,6 +153,10 @@ sub which {
     foreach my $dir(File::Spec->path){
         my $fullpath = File::Spec->catfile($dir, $name);
         if (-x $fullpath || -x ($fullpath .= $exe_ext)){
+            my $quote = $^O eq 'MSWin32' ? q/"/ : q/'/;
+            if ($fullpath =~ /\s/ && $fullpath =~ /^$quote/) {
+                $fullpath = "$quote$fullpath$quote"
+            }
             return $fullpath;
         }
     }
