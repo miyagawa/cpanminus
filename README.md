@@ -11,15 +11,18 @@ No. Use CPAN or CPANPLUS.
 
 ## WTF? Why did you make this?
 
-CPAN shell sometimes takes ~150MB of memory and it's a pain to run on
-a VPS with smaller RAM. This script only requires 10MB or so. (Yes, I
-know CPAN::SQLite can fix this)
+CPAN shell gets OOM on Slicehost/linode's most affordable plan with
+only 256MB RAM.
 
-Imagine you don't have CPAN or CPANPLUS. What you're going to do is to
-search the module on the CPAN search site, download a tarball, unpack
-it and then run `perl Makefile.PL` (or `perl Build.PL`) and then `make
-install`. If the module has dependencies you probably have to
-recurively resolve those dependencies by hand before doing so.
+Yes, I know CPAN::SQLite can fix it but installing it and its 14
+non-core dependencies without CPAN shell (because CPAN shell doesn't
+work) feels like yak shaving.
+
+So, imagine you don't have CPAN or CPANPLUS. What you're going to do
+is to search the module on the CPAN search site, download a tarball,
+unpack it and then run `perl Makefile.PL` (or `perl Build.PL`) and
+then `make install`. If the module has dependencies you probably have
+to recurively resolve those dependencies by hand before doing so.
 
 This script just automates that.
 
@@ -51,11 +54,9 @@ and the installation was all successful.
 
 No, that's not my intention. As a developer with 190 modules on CPAN,
 I appreciate and respect the CPAN toolchain developers for their great
-effort. As a fact I've been contributing to improve the ecosystem as
-well with patches for CPAN, Module::Install and local::lib etc.
-
-However I've learned that in some rare cases, especially for less
-experienced users, setting up a CPAN toolchain "in the right way"
+effort. However I've learned that in some rare cases, especially for
+less experienced users (or really experienced users who knows how to
+shoot their feet), setting up a CPAN toolchain "in the right way"
 feels like just another yak to shave, and this tool is a super tiny
 shaver to eliminate the yak in that particular case.
 
