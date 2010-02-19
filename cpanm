@@ -130,7 +130,7 @@ sub install_module {
         while (my($mod, $ver) = each %deps) {
             next if $mod eq 'perl' or $mod eq 'Config';
             diag "Checking if you have $mod $ver ... ";
-            my $test = `$Config{perlpath} -e 'eval q{use $mod $ver (); print "OK:", $mod->VERSION'}`;
+            my $test = `$^X -e 'eval q{use $mod $ver (); print "OK:", $mod->VERSION'}`;
             if ($test =~ s/^OK://) {
                 diag "Yes ($test)\n";
             } else {
@@ -159,12 +159,12 @@ sub install_module {
     };
 
     if (-e 'Build.PL') {
-        run "$Config{perlpath} Build.PL" &&
+        run "$^X Build.PL" &&
         run './Build'           &&
         $test->('./Build test') &&
         run './Build install';
     } elsif (-e 'Makefile.PL') {
-        run "$Config{perlpath} Makefile.PL" &&
+        run "$^X Makefile.PL" &&
         run 'make'            &&
         $test->('make test')  &&
         run 'make install';
