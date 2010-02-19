@@ -111,7 +111,7 @@ sub build_stuff {
 
     if (-e 'META.yml') {
         diag "Checking dependencies ...\n";
-        my $meta = (Parse::CPAN::Meta::LoadFile('META.yml'))[0];
+        my $meta = eval { (Parse::CPAN::Meta::LoadFile('META.yml'))[0] };
         my %deps = (%{$meta->{requires} || {}}, %{$meta->{build_requires} || {}});
 
         my @install;
