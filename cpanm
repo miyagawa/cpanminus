@@ -64,7 +64,7 @@ sub install_module {
         return;
     }
 
-    chdir $Base;
+    chdir File::Spec->canonpath($Base);
     diag "Fetching $uri ...\n";
 
     my $name = basename $uri;
@@ -83,7 +83,7 @@ sub install_module {
     }
 
     diag "Entering $dir ...\n";
-    chdir $dir;
+    chdir File::Spec->canonpath($dir);
 
     if (-e 'META.yml') {
         diag "Checking dependencies ...\n";
@@ -107,8 +107,8 @@ sub install_module {
             install_module($mod);
         }
 
-        chdir $Base;
-        chdir $dir;
+        chdir File::Spec->canonpath($Base);
+        chdir File::Spec->canonpath($dir);
     }
 
     diag "Building $module ...\n";
@@ -188,6 +188,7 @@ sub init_tools {
             system "$tar xvf$suf $tarfile";
             my @files = `$tar tf$suf $tarfile`;
             if (@files) {
+                $files[0] =~ s{^(.+)/[^/]+$}{$1};
                 chomp $files[0];
                 return $files[0];
             } else {
