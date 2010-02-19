@@ -38,7 +38,7 @@ sub diag {
     print STDERR @_;
 }
 
-my $Base = "$ENV{HOME}/.cpanm";
+my $Base = $ENV{CPANMINUS_HOME} || "$ENV{HOME}/.cpanm";
 mkdir $Base, 0777 unless -e $Base;
 
 unless (@ARGV) {
