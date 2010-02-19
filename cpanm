@@ -34,6 +34,7 @@ USAGE
 }
 
 my %seen;
+my $quote = $^O eq 'MSWin32' ? q/"/ : q/'/;
 
 for my $module (@ARGV) {
     install_module($module);
@@ -93,7 +94,7 @@ sub install_module {
         while (my($mod, $ver) = each %deps) {
             next if $mod eq 'perl' or $mod eq 'Config';
             diag "Checking if you have $mod $ver ... ";
-            my $test = `$^X -e 'eval q{use $mod $ver (); print "OK:", $mod->VERSION'}`;
+            my $test = `$^X -e ${quote}eval q{use $mod $ver (); print q{OK:}, $mod->VERSION$quote}`;
             if ($test =~ s/^OK://) {
                 diag "Yes ($test)\n";
             } else {
@@ -153,7 +154,6 @@ sub which {
     foreach my $dir(File::Spec->path){
         my $fullpath = File::Spec->catfile($dir, $name);
         if (-x $fullpath || -x ($fullpath .= $exe_ext)){
-            my $quote = $^O eq 'MSWin32' ? q/"/ : q/'/;
             if ($fullpath =~ /\s/ && $fullpath !~ /^$quote/) {
                 $fullpath = "$quote$fullpath$quote"
             }
