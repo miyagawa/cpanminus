@@ -136,6 +136,7 @@ sub build_stuff {
         while (my($mod, $ver) = each %deps) {
             next if $mod eq 'perl' or $mod eq 'Config';
             diag "Checking if you have $mod $ver ... ";
+            $ver = '' if $ver == 0;
             my $test = `$^X -e ${quote}eval q{use $mod $ver (); print q{OK:}, q/$mod/->VERSION$quote}`;
             if ($test =~ s/^OK://) {
                 diag "Yes ($test)\n";
