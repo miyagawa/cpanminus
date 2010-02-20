@@ -59,7 +59,8 @@ No. Use CPAN or CPANPLUS.
 
 OK, the first motivation was this: CPAN shell gets OOM (or swaps
 heavily and gets really slow) on Slicehost/linode's most affordable
-plan with only 256MB RAM.
+plan with only 256MB RAM. Should I pay more to install perl modules
+from CPAN? I don't think so.
 
 Yes, I know there are tools like CPAN::SQLite that can fix that
 problem (and yes I use it on my Macbook Pro!) but installing it and
@@ -90,10 +91,11 @@ Yes, I think my brain has been damaged since I looked at PyPI, gemcutter, pip an
 ## Where does this install modules to?
 
 It installs to wherever ExtUtils::MakeMaker and Module::Build are
-configured to. So if you use local::lib then it installs to your local
-perl5 directory. Otherwise it installs to siteperl directory, so you
-might need to run `cpanm` command as root, or run with `--sudo`
-option to auto sudo when running the install command.
+configured to (i.e. via `PERL_MM_OPT` and `MODULEBUILDRC`). So if
+you use local::lib then it installs to your local perl5
+directory. Otherwise it installs to siteperl directory, so you might
+need to run `cpanm` command as root, or run with `--sudo` option to
+auto sudo when running the install command.
 
 ## Does this really work?
 
@@ -110,26 +112,27 @@ while CPAN and CPANPLUS can handle them.
 
 ## Quick Install?
 
-`env PERL_MM_USE_DEFAULT=1 cpanm --notest Module`
+    env PERL_MM_USE_DEFAULT=1 cpanm --notest Module
 
 Oh, don't do that. It's too useful.
 
 ## So you're ignoring the CPAN toolchain ecosystem with this?
 
-No, that's not my intention. This tiny script respects and play nice
-with all the toolchain ecosystem that has been developed for years:
-Module::Build, Module::Install, ExtUtils::MakeMaker and local::lib. It
-just provides an alternative to (but __NOT__ a replacement for) [CPAN](http://search.cpan.org/search?mode=module&query=CPAN)
-or [CPANPLUS](http://search.cpan.org/search?mode=module&query=CPANPLUS), so that it doesn't require any configuration, any
-dependencies and has no bootstrap problems.
+No, that's not my intention. This tiny script actually respects and
+plays nice with all the toolchain ecosystem that has been developed
+for years, such as: [Module::Build](http://search.cpan.org/search?mode=module&query=Module::Build), [Module::Install](http://search.cpan.org/search?mode=module&query=Module::Install),
+[ExtUtils::MakeMaker](http://search.cpan.org/search?mode=module&query=ExtUtils::MakeMaker) and [local::lib](http://search.cpan.org/search?mode=module&query=local::lib). It just provides an
+alternative to (but __NOT__ a replacement for) [CPAN](http://search.cpan.org/search?mode=module&query=CPAN) or [CPANPLUS](http://search.cpan.org/search?mode=module&query=CPANPLUS),
+so that it doesn't require any configuration, any dependencies and has
+no bootstrap problems.
 
-I've learned that often for less experienced users, or even really
-experienced users who knows how to shoot in their feet, setting up a
-CPAN toolchain _in the right way_ feels like just another yak to
-shave when all they want to do is just to quickstart writing perl code
-by installing CPAN modules. cpanminus is a super tiny shaver to
-eliminate the big yak really quickly in that case, and does nothing
-else.
+The thing is, I've learned that often for less experienced users, or
+even really experienced users who knows how to shoot in their feet,
+setting up a CPAN toolchain _in the right way_ feels like just
+another yak to shave when all they want to do is just to quickstart
+writing perl code by installing CPAN modules. cpanminus is a super
+tiny shaver to eliminate the big yak really quickly in that case, and
+does nothing else.
 
 ## Should I really use this?
 
