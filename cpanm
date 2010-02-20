@@ -703,9 +703,11 @@ Its catch? Deps-free, zero-conf, standalone ~200 LOC script
 
 =head1 INSTALLATION
 
-Grab the file from L<http://bit.ly/cpanm>, chmod +x, put it into your
-PATH. Adjust shebang if needed.
-
+  cd ~/bin
+  wget http://bit.ly/cpanm
+  chmod +x cpanm
+  # edit shebang if your perl is not /usr/bin/perl
+    
 =head1 DEPENDENCIES
 
 perl 5.8 or later (Actually I believe it works with pre 5.8 too but
