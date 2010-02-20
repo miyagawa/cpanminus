@@ -39,6 +39,8 @@ sub setup_home {
     mkdir $Base, 0777;
 
     $log = File::Spec->catfile($Base, "cpanm.log");
+    open my $out, ">$log" or die "$log: $!";
+    print $out "Beginning a new cpanminus installation: ", scalar(localtime), "\n";
 }
 
 sub parse_options {
@@ -106,17 +108,24 @@ sub untar;
 
 sub diag {
     print STDERR @_;
+    _log(@_);
 }
 
 sub chat {
     print STDERR @_ unless $quiet;
+    _log(@_);
+}
+
+sub _log {
+    open my $out, ">>$log";
+    print $out @_;
 }
 
 sub run($) {
     my $cmd = shift;
 
     if ($quiet) {
-        $cmd .= WIN32 ? "> $log" : "> $log 2>&1";
+        $cmd .= WIN32 ? ">> $log" : ">> $log 2>&1";
     }
 
     !system $cmd;
