@@ -98,7 +98,6 @@ sub sanity_check {
 sub get($);
 sub mirror($$);
 sub untar;
-sub which;
 
 sub diag {
     print STDERR @_;
