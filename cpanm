@@ -106,13 +106,13 @@ sub run($) {
     !system $cmd;
 }
 
-sub test {
+sub test($) {
     my $cmd = shift;
     return 1 if $notest;
     return run($cmd) || $force;
 }
 
-sub install {
+sub install($) {
     my $cmd = shift;
     $cmd = "sudo $cmd" if $sudo;
     run($cmd);
