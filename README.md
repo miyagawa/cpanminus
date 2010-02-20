@@ -13,15 +13,18 @@ Run `cpanm -h` for more options.
 cpanminus is a script to get, unpack, build and install modules from CPAN.
 
 Its catch? Deps-free, zero-conf, standalone ~200 LOC script
-(i.e. hackable) and requires only 10MB RAM. See below for its cons.
+(i.e. hackable) and requires less than 10MB RAM. See below for its cons.
 
 # INSTALLATION
+
+  cpan> install App::cpanminus
+
+Or,
 
   cd ~/bin
   wget http://bit.ly/cpanm
   chmod +x cpanm
-  # edit shebang if your perl is not /usr/bin/perl
-    
+  # edit shebang if you don't have /usr/bin/env
 
 # DEPENDENCIES
 
@@ -54,9 +57,9 @@ Module::Build (core in 5.10) if you want to install MakeMaker based modules with
 
 ## Should I really use this?
 
-No. Use CPAN or CPANPLUS.
+Probably not. You should use CPAN or CPANPLUS.
 
-## WTF? What's the point?
+## What's the point?
 
 OK, the first motivation was this: CPAN shell gets OOM (or swaps
 heavily and gets really slow) on Slicehost/linode's most affordable
@@ -80,14 +83,16 @@ This script just automates that.
 ## Zero-conf? How does this module get/parse/update the CPAN index?
 
 It scrapes the site <http://search.cpan.org/>. Yes, it's horrible and
-fragile.
+fragile. I hope (and have talked to) QA/toolchain people building a
+queriable CPAN DB website so I can stop scraping.
 
 Fetched files are unpacked in `~/.cpanm` but you can configure with
 `CPANMINUS_HOME` environment variable.
 
-## Are you on drugs?
+## Yet Another CPAN installer? Are you on drugs?
 
-Yes, I think my brain has been damaged since I looked at PyPI, gemcutter, pip and rip.
+Yes, I think my brain has been damaged since I looked at PyPI,
+gemcutter, pip and rip. They're quite nice.
 
 ## Where does this install modules to?
 
@@ -111,21 +116,14 @@ tarball that extracts to the current directory, META.yml that is
 outdated and cannot be resurrected, Bundle:: modules, circular
 dependencies etc.)  while CPAN and CPANPLUS can handle them.
 
-## Quick Install?
-
-    env PERL_MM_USE_DEFAULT=1 cpanm --notest Module
-
-Oh, don't do that. It's too useful.
-
 ## So you're ignoring the CPAN toolchain ecosystem with this?
 
-No, that's not my intention. This tiny script actually respects and
-plays nice with all the toolchain ecosystem that has been developed
-for years, such as: [Module::Build](http://search.cpan.org/search?mode=module&query=Module::Build), [Module::Install](http://search.cpan.org/search?mode=module&query=Module::Install),
-[ExtUtils::MakeMaker](http://search.cpan.org/search?mode=module&query=ExtUtils::MakeMaker) and [local::lib](http://search.cpan.org/search?mode=module&query=local::lib). It just provides an
-alternative to (but __NOT__ a replacement for) [CPAN](http://search.cpan.org/search?mode=module&query=CPAN) or [CPANPLUS](http://search.cpan.org/search?mode=module&query=CPANPLUS),
-so that it doesn't require any configuration, any dependencies and has
-no bootstrap problems.
+Not really. This tiny script actually respects and plays nice with all
+the toolchain ecosystem that has been developed for years, such as:
+[Module::Build](http://search.cpan.org/search?mode=module&query=Module::Build), [Module::Install](http://search.cpan.org/search?mode=module&query=Module::Install), [ExtUtils::MakeMaker](http://search.cpan.org/search?mode=module&query=ExtUtils::MakeMaker) and
+[local::lib](http://search.cpan.org/search?mode=module&query=local::lib). It just provides an alternative to (but __NOT__ a
+replacement for) [CPAN](http://search.cpan.org/search?mode=module&query=CPAN) or [CPANPLUS](http://search.cpan.org/search?mode=module&query=CPANPLUS), so that it doesn't require
+any configuration, any dependencies and has no bootstrap problems.
 
 The thing is, I've learned that often for less experienced users, or
 even really experienced users who knows how to shoot in their feet,
@@ -135,9 +133,11 @@ writing perl code by installing CPAN modules. cpanminus is a super
 tiny shaver to eliminate the big yak really quickly in that case, and
 does nothing else.
 
-## Should I really use this?
+## That sounds fantastic. Should I switch to this from CPAN(PLUS)?
 
-No. Use CPAN or CPANPLUS.
+While I think you should really use CPAN or CPANPLUS in the longer
+term, I'm happy if you like this software. And apparently, many people
+love (at least the idea of) this software :)
 
 # COPYRIGHT
 
@@ -149,9 +149,13 @@ Copyright 2010- Tatsuhiko Miyagawa
 
 Same as Perl.
 
-# AUTHORS
+# CREDITS
 
-Tatsuhiko Miyagawa, Goro Fuji, Kazuhiro Osawa, Tokuhiro Matsuno, Ken-ichi Ishigaki, Ian Wells
+Patches contributed by: Goro Fuji, Kazuhiro Osawa, Tokuhiro Matsuno,
+Kenichi Ishigaki, Ian Wells, Pedro Melo.
+
+Feedbacks sent by: Jesse Vincent, David Golden, Chris Williams, Matt S
+Trout, Adam Kennedy.
 
 # NO WARRANTY
 
