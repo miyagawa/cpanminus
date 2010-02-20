@@ -113,6 +113,7 @@ sub install_module {
     }
 
     my $uri = $module =~ /^(ftp|https?|file):/ ? $module
+            : $module =~ m{^[A-Z]/[A-Z]{2}/}   ? "http://search.cpan.org/CPAN/authors/id/$module"
             : $module =~ m{^[A-Z]{3,}/}        ? ("http://search.cpan.org/CPAN/authors/id/".substr($module, 0, 1).'/'.substr($module, 0, 2).'/'.$module)
                                                : find_module($module);
     unless ($uri) {
