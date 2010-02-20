@@ -1,12 +1,12 @@
 # NAME
 
-cpanminus - get, unpack, build and install modules from CPAN
+App::cpanminus - get, unpack, build and install modules from CPAN
 
 # SYNOPSIS
 
     cpanm Module
 
-Run `cpan -h` for more options.
+Run `cpanm -h` for more options.
 
 # DESCRIPTION
 
@@ -17,8 +17,11 @@ Its catch? Deps-free, zero-conf, standalone ~200 LOC script
 
 # INSTALLATION
 
-Grab the file from <http://bit.ly/cpanm>, chmod +x, put it into your
-PATH. Adjust shebang if needed.
+  cd ~/bin
+  wget http://bit.ly/cpanm
+  chmod +x cpanm
+  # edit shebang if your perl is not /usr/bin/perl
+    
 
 # DEPENDENCIES
 
@@ -105,8 +108,8 @@ appear to work.
 However, there are some distributions that will miserably fail,
 because of the nasty edge cases (funky archive formats, naughty
 tarball that extracts to the current directory, META.yml that is
-outdatd, META.yml that is not really YAML, circular dependencies etc.)
-while CPAN and CPANPLUS can handle them.
+outdatd and cannot be resurrected, Bundle:: modules, circular
+dependencies etc.)  while CPAN and CPANPLUS can handle them.
 
 ## Quick Install?
 

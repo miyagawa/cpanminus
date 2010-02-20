@@ -802,8 +802,8 @@ appear to work.
 However, there are some distributions that will miserably fail,
 because of the nasty edge cases (funky archive formats, naughty
 tarball that extracts to the current directory, META.yml that is
-outdatd, META.yml that is not really YAML, circular dependencies etc.)
-while CPAN and CPANPLUS can handle them.
+outdatd and cannot be resurrected, Bundle:: modules, circular
+dependencies etc.)  while CPAN and CPANPLUS can handle them.
 
 =head2 Quick Install?
 
