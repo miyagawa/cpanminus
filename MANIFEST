@@ -1,6 +1,5 @@
 bin/cpanm
 Changes
-cpanm
 Makefile.PL
 MANIFEST			This list of files
 README.md
