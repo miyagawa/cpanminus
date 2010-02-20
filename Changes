@@ -1,8 +1,10 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
-0.06
-      - Fixed command detection in win32
+0.06  Fri Feb 19 21:48:09 PST 2010
+      - Fixed the command detection in win32
       - Make C-c work when downloading tar balls
+      - perl 5.6 compat (i think)
+      - Fixed packaging again
 
 0.05  Fri Feb 19 21:15:20 PST 2010
       - Fixed no warranty copy
