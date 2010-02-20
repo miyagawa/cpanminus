@@ -86,6 +86,9 @@ USAGE
 my $Base = $ENV{CPANMINUS_HOME} || "$ENV{HOME}/.cpanm";
 mkdir $Base, 0777 unless -e $Base;
 
+$Base .= "/build-" . time . ".$$";
+mkdir $Base, 0777;
+
 unless (@ARGV) {
     help();
 }
@@ -200,54 +203,94 @@ sub search_module {
     return;
 }
 
+sub install_deps {
+    my($dir, %deps) = @_;
+
+    my @install;
+    while (my($mod, $ver) = each %deps) {
+        next if $mod eq 'perl' or $mod eq 'Config';
+        diag "Checking if you have $mod $ver ... ";
+        $ver = '' if $ver == 0;
+        my $test = `$^X -e ${quote}eval q{use $mod $ver (); print q{OK:}, q/$mod/->VERSION$quote}`;
+        if ($test =~ s/^OK://) {
+            diag "Yes ($test)\n";
+        } else {
+            diag "No\n";
+            push @install, $mod;
+        }
+    }
+
+    if (@install) {
+        diag "Found dependencies: ", join(", ", @install), "\n";
+    }
+
+    for my $mod (@install) {
+        install_module($mod);
+    }
+
+    _chdir $Base;
+    _chdir $dir;
+}
+
 sub build_stuff {
     my($module, $dir) = @_;
 
     if (-e 'META.yml') {
-        diag "Checking dependencies ...\n";
-        my $meta = eval { (Parse::CPAN::Meta::LoadFile('META.yml'))[0] };
-        my %deps = (%{$meta->{requires} || {}}, %{$meta->{build_requires} || {}});
+        diag "Checking configure dependencies from META.yml ...\n";
+        my $meta = parse_meta('META.yml');
+        my %deps = %{$meta->{configure_requires} || {}};
 
-        my @install;
-        while (my($mod, $ver) = each %deps) {
-            next if $mod eq 'perl' or $mod eq 'Config';
-            diag "Checking if you have $mod $ver ... ";
-            $ver = '' if $ver == 0;
-            my $test = `$^X -e ${quote}eval q{use $mod $ver (); print q{OK:}, q/$mod/->VERSION$quote}`;
-            if ($test =~ s/^OK://) {
-                diag "Yes ($test)\n";
-            } else {
-                diag "No\n";
-                push @install, $mod;
-            }
-        }
-
-        for my $mod (@install) {
-            install_module($mod);
-        }
-
-        _chdir $Base;
-        _chdir $dir;
+        install_deps($dir, %deps);
     }
 
     diag "Building $module ...\n";
 
-    # fake AutoInstall
+    # trick AutoInstall
     $ENV{PERL5_CPAN_IS_RUNNING} = 1;
 
-    unless ($make or -e "Build.PL") {
-        diag "Oops, you don't have make. Trying to build a stub Build.PL for you. Hope this works!\n";
-        open my $fh, ">", "Build.PL" or die $!;
-        print $fh qq{require Module::Build; Module::Build->new(module_name => "$module")->create_build_script};
+    if (-e 'Build.PL') {
+        run "$^X Build.PL";
+    } elsif (-e 'Makefile.PL') {
+        $ENV{X_MYMETA} = 'YAML';
+        run "$^X Makefile.PL";
     }
 
-    if (-e 'Build.PL') {
-        run "$^X Build.PL" &&
+    my %deps;
+    my($metayml) = grep -e $_, qw( MYMETA.yml META.yml );
+    if ($metayml) {
+        diag "Checking dependencies from $metayml ...\n";
+        my $meta = parse_meta($metayml);
+        %deps = (%{$meta->{build_requires} || {}}, %{$meta->{test_requires} || {}}, %{$meta->{requires} || {}});
+    }
+
+    if (-e 'Makefile') {
+        diag "Finding PREREQ from Makefile ...\n";
+        open my $mf, "<", 'Makefile';
+        while (<$mf>) {
+            if (/^\#\s+PREREQ_PM => ({.*?})/) {
+                no strict; # WTF bareword keys
+                my $prereq = eval "+$1";
+                %deps = (%deps, %$prereq) if $prereq;
+                last;
+            }
+        }
+    }
+
+    install_deps($dir, %deps);
+
+    unless ($make or -e "Build") {
+        diag "Oops, you don't have make. Trying to build a stub Build file for you. Hope this works!\n";
+        eval {
+            require Module::Build;
+            Module::Build->new(module_name => "$module")->create_build_script;
+        };
+    }
+
+    if (-e 'Build') {
         run "$^X ./Build"           &&
         $test->("$^X ./Build test") &&
         $install->("$^X ./Build install");
-    } elsif ($make && -e 'Makefile.PL') {
-        run "$^X Makefile.PL" &&
+    } elsif ($make && -e 'Makefile') {
         run "$make"           &&
         $test->("$make test") &&
         $install->("$make install");
@@ -319,6 +362,11 @@ sub init_tools {
             return -d $root ? $root : undef;
         };
     }
+}
+
+sub parse_meta {
+    my $file = shift;
+    return eval { (Parse::CPAN::Meta::LoadFile($file))[0] } || {};
 }
 
 ### Inline stripped Parse::CPAN::Meta
