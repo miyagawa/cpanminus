@@ -692,7 +692,7 @@ App::cpanminus - get, unpack, build and install modules from CPAN
 
     cpanm Module
 
-Run C<cpan -h> for more options.
+Run C<cpanm -h> for more options.
 
 =head1 DESCRIPTION
 
