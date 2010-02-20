@@ -7,10 +7,11 @@ use File::Basename qw(basename);
 use Fatal qw(chdir);
 use File::Spec;
 use Getopt::Long;
+use constant WIN32 => $^O eq 'MSWin32';
 
 our $VERSION = "0.07";
 
-my($Base, %seen, $notest, $installdeps, $force, $sudo, $quote, $make);
+my($Base, %seen, $notest, $installdeps, $force, $sudo, $quote, $make, $quiet);
 
 main();
 
@@ -19,7 +20,7 @@ sub main {
     setup_home();
     sanity_check();
 
-    $quote = $^O eq 'MSWin32' ? q/"/ : q/'/;
+    $quote = WIN32 ? q/"/ : q/'/;
     $make  = which($Config{make});
 
     init_tools();
@@ -50,6 +51,7 @@ sub parse_options {
         'i|install' => sub {},
         'installdeps' => \$installdeps,
         'v|version' => \$version,
+        'q|quiet'   => \$quiet,
     );
 
     help(0)   if $help;
@@ -103,8 +105,17 @@ sub diag {
     print STDERR @_;
 }
 
+sub chat {
+    print STDERR @_ unless $quiet;
+}
+
 sub run($) {
     my $cmd = shift;
+
+    if ($quiet) {
+        $cmd .= WIN32 ? '> NUL' : '> /dev/null 2>&1';
+    }
+
     !system $cmd;
 }
 
@@ -139,7 +150,7 @@ sub install_module {
         return;
     }
 
-    diag "Entering $dir ...\n";
+    chat "Entering $dir ...\n";
     _chdir $Base;
     _chdir $dir;
 
@@ -234,16 +245,16 @@ sub install_deps {
     my @install;
     while (my($mod, $ver) = each %deps) {
         next if $mod eq 'perl' or $mod eq 'Config';
-        diag "Checking if you have $mod $ver ... ";
+        chat "Checking if you have $mod $ver ... ";
         $ver = '' if $ver == 0;
         my $test = `$^X -e ${quote}eval q{use $mod $ver (); print q{OK:}, q/$mod/->VERSION};print \$\@ if \$\@${quote}`;
         if ($test =~ s/^\s*OK://) {
-            diag "Yes ($test)\n";
+            chat "Yes ($test)\n";
         } elsif ($test =~ /^Can't locate|required--this is only version (\S+)/) {
-            diag "No ", ($1 ? "($1 < $ver)\n" : "\n");
+            chat "No ", ($1 ? "($1 < $ver)\n" : "\n");
             push @install, $mod;
         } else {
-            diag "Unknown ($test)\n";
+            chat "Unknown ($test)\n";
         }
     }
 
@@ -263,14 +274,12 @@ sub build_stuff {
     my($module, $dir, $is_dep) = @_;
 
     if (-e 'META.yml') {
-        diag "Checking configure dependencies from META.yml ...\n";
+        chat "Checking configure dependencies from META.yml ...\n";
         my $meta = parse_meta('META.yml');
         my %deps = %{$meta->{configure_requires} || {}};
 
         install_deps($dir, %deps);
     }
-
-    diag "Building $module ...\n";
 
     # trick AutoInstall
     $ENV{PERL5_CPAN_IS_RUNNING} = 1;
@@ -285,7 +294,7 @@ sub build_stuff {
     my %deps;
     my($metayml) = grep -e $_, qw( MYMETA.yml META.yml );
     if ($metayml) {
-        diag "Checking dependencies from $metayml ...\n";
+        chat "Checking dependencies from $metayml ...\n";
         my $meta = parse_meta($metayml);
         %deps = (%{$meta->{requires} || {}});
         unless ($notest) {
@@ -294,7 +303,7 @@ sub build_stuff {
     }
 
     if (-e 'Makefile') {
-        diag "Finding PREREQ from Makefile ...\n";
+        chat "Finding PREREQ from Makefile ...\n";
         open my $mf, "Makefile";
         while (<$mf>) {
             if (/^\#\s+PREREQ_PM => ({.*?})/) {
@@ -317,9 +326,11 @@ sub build_stuff {
         diag "Oops, you don't have make. Trying to build a stub Build file for you. Hope this works!\n";
         eval {
             require Module::Build;
-            Module::Build->new(module_name => "$module")->create_build_script;
+            Module::Build->new(module_name => $module)->create_build_script;
         };
     }
+
+    diag "Building ", ($notest ? "" : "and testing "), "$module ...\n";
 
     if (-e 'Build') {
         run "$^X ./Build" &&
@@ -333,6 +344,8 @@ sub build_stuff {
         diag "Sorry, I don't know how to build $dir\n";
         return;
     }
+
+    diag "$module installed successfully.\n";
 }
 
 sub which {
@@ -378,9 +391,12 @@ sub init_tools {
     if (my $tar = which 'tar'){
         *untar = sub {
             my($tarfile) = @_;
-            my $suf = $tarfile =~ /bz2$/ ? 'j' : 'z';
-            system "$tar xvf$suf $tarfile";
-            my @files = `$tar tf$suf $tarfile`;
+
+            my $xf = "xf" . ($quiet ? '' : 'v');
+            my $ar = $tarfile =~ /bz2$/ ? 'j' : 'z';
+            system "$tar $xf$ar $tarfile";
+
+            my @files = `$tar tf$ar $tarfile`;
             if (@files) {
                 $files[0] =~ s{^(.+)/[^/]+$}{$1};
                 chomp $files[0];
