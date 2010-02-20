@@ -275,7 +275,7 @@ sub build_stuff {
 
     if (-e 'Makefile') {
         diag "Finding PREREQ from Makefile ...\n";
-        open my $mf, "<", 'Makefile';
+        open my $mf, "Makefile";
         while (<$mf>) {
             if (/^\#\s+PREREQ_PM => ({.*?})/) {
                 no strict; # WTF bareword keys
