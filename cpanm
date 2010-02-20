@@ -563,11 +563,11 @@ cpanminus - get, unpack, build and install modules from CPAN
 
 =head1 SYNOPSIS
 
-  cpanm Module
-  cpanm -f Module
-  cpanm --notest Module
-  cpanm --sudo Module
-  cpanm .
+    cpanm Module
+    cpanm -f Module
+    cpanm --notest Module
+    cpanm --sudo Module
+    cpanm .
 
 =head1 DESCRIPTION
 

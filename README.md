@@ -4,11 +4,11 @@ cpanminus - get, unpack, build and install modules from CPAN
 
 # SYNOPSIS
 
-  cpanm Module
-  cpanm -f Module
-  cpanm --notest Module
-  cpanm --sudo Module
-  cpanm .
+    cpanm Module
+    cpanm -f Module
+    cpanm --notest Module
+    cpanm --sudo Module
+    cpanm .
 
 # DESCRIPTION
 
