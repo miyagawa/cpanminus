@@ -237,8 +237,8 @@ sub install_deps {
         my $test = `$^X -e ${quote}eval q{use $mod $ver (); print q{OK:}, q/$mod/->VERSION};print \$\@ if \$\@${quote}`;
         if ($test =~ s/^\s*OK://) {
             diag "Yes ($test)\n";
-        } elsif ($test =~ /^Can't locate|required--this/) {
-            diag "No\n";
+        } elsif ($test =~ /^Can't locate|required--this is only version (\S+)/) {
+            diag "No ", ($1 ? "($1 < $ver)\n" : "\n");
             push @install, $mod;
         } else {
             diag "Unknown ($test)\n";
