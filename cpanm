@@ -170,7 +170,7 @@ sub locate_archive {
     return "file://" . Cwd::abs_path($module) if -f $module;
 
     # PAUSEID/foo
-    $module =~ s!^([A-Z]{3})/!substr($1, 0, 1)."/".substr($1, 0, 2) ."/"!e;
+    $module =~ s!^([A-Z]{3,})/!substr($1, 0, 1)."/".substr($1, 0, 2) ."/" . $1 . "/"!e;
 
     # CPAN tarball
     return cpan_uri($module) if $module =~ m!/!;
