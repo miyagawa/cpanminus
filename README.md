@@ -108,7 +108,7 @@ appear to work.
 However, there are some distributions that will miserably fail,
 because of the nasty edge cases (funky archive formats, naughty
 tarball that extracts to the current directory, META.yml that is
-outdatd and cannot be resurrected, Bundle:: modules, circular
+outdated and cannot be resurrected, Bundle:: modules, circular
 dependencies etc.)  while CPAN and CPANPLUS can handle them.
 
 ## Quick Install?
