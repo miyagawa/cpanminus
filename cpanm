@@ -112,9 +112,9 @@ sub install_module {
         return;
     }
 
-    my $uri =   $module =~ /^(ftp|https?|file):/ ? $module
-              : $module =~ m{^[A-Z]+/}           ? ("http://search.cpan.org/CPAN/authors/id/".substr($module, 0, 1).'/'.substr($module, 0, 2).'/'.$module)
-                                                 : find_module($module);
+    my $uri = $module =~ /^(ftp|https?|file):/ ? $module
+            : $module =~ m{^[A-Z]{3,}/}        ? ("http://search.cpan.org/CPAN/authors/id/".substr($module, 0, 1).'/'.substr($module, 0, 2).'/'.$module)
+                                               : find_module($module);
     unless ($uri) {
         diag "Can't find module $module\n";
         return;
