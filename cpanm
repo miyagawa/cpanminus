@@ -53,7 +53,7 @@ sub parse_options {
         'i|install' => sub {},
         'installdeps' => \$installdeps,
         'v|version' => \$version,
-        'q|quiet'   => \$quiet,
+        'q|quiet'   => sub { $quiet = 1; $ENV{PERL_MM_USE_DEFAULT} = 1 },
     );
 
     help(0)   if $help;
