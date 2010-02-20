@@ -45,7 +45,7 @@ sub parse_options {
     GetOptions(
         'f|force'  => \$force,
         'n|notest' => \$notest,
-        'S|sudo'     => \$sudo,
+        'S|sudo'   => \$sudo,
         'h|help'   => \$help,
         'i|install' => sub {},
         'installdeps' => \$installdeps,
