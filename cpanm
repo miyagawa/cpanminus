@@ -10,7 +10,7 @@ use Getopt::Long;
 
 our $VERSION = "0.07";
 
-my($Base, %seen, $notest, $notestdeps, $force, $sudo, $quote, $make);
+my($Base, %seen, $notest, $installdeps, $force, $sudo, $quote, $make);
 
 main();
 
@@ -45,10 +45,10 @@ sub parse_options {
     GetOptions(
         'f|force'  => \$force,
         'n|notest' => \$notest,
-        'notestdeps' => \$notestdeps,
         'S|sudo'     => \$sudo,
         'h|help'   => \$help,
         'i|install' => sub {},
+        'installdeps' => \$installdeps,
         'v|version' => \$version,
     );
 
@@ -68,7 +68,7 @@ Usage: cpanm [--force] [--notest] [--sudo] Module
   -f,--force     force install
   -n,--notest    Do not run unit tests
   -S,--sudo      sudo to run install commands
-  --notestdeps   Do not run tests for dependencies (but test @ARGV)
+  --installdeps  Only install dependencies
 
 Examples:
 
@@ -109,9 +109,9 @@ sub run($) {
     !system $cmd;
 }
 
-sub test($$) {
-    my($is_dep, $cmd) = @_;
-    return 1 if $notest or $is_dep && $notestdeps;
+sub test($) {
+    my $cmd = shift;
+    return 1 if $notest;
     return run($cmd) || $force;
 }
 
@@ -306,6 +306,11 @@ sub build_stuff {
 
     install_deps($dir, %deps);
 
+    if ($installdeps && !$is_dep) {
+        diag "Install dependencies for $module. Finishing.\n";
+        return 1;
+    }
+
     unless ($make or -e "Build") {
         diag "Oops, you don't have make. Trying to build a stub Build file for you. Hope this works!\n";
         eval {
@@ -316,11 +321,11 @@ sub build_stuff {
 
     if (-e 'Build') {
         run "$^X ./Build" &&
-        test($is_dep, "$^X ./Build test") &&
+        test "$^X ./Build test" &&
         install "$^X ./Build install";
     } elsif ($make && -e 'Makefile') {
         run "$make" &&
-        test($is_dep, "$make test") &&
+        test "$make test" &&
         install "$make install";
     } else {
         diag "Sorry, I don't know how to build $dir\n";
