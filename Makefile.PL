@@ -19,5 +19,4 @@ WriteMakefile(
         'Module::Build' => 0,
     },
     EXE_FILES => [ 'bin/cpanm' ],
-    clean => { FILES => 'bin/cpanm' },
 );
