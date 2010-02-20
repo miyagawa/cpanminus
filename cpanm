@@ -8,7 +8,7 @@ use Fatal qw(chdir);
 use File::Spec;
 use Getopt::Long;
 
-our $VERSION = "0.06";
+our $VERSION = "0.07";
 
 my($Base, %seen, $notest, $force, $sudo, $quote, $make);
 

@@ -1,5 +1,11 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+0.07  Sat Feb 20 12:17:56 PST 2010
+      - Fixed packaging -- standalone cpanm file now has '/usr/bin/env perl'
+        in shebang but CPAN dist has #!perl (so EUMM can fix it)
+      - Added -i for cpan compatibility
+      - Fixed the way to get VERSION from modules
+
 0.06  Fri Feb 19 21:48:09 PST 2010
       - Fixed the command detection in win32
       - Make C-c work when downloading tar balls

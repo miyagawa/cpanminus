@@ -1,4 +1,4 @@
 package App::cpanminus;
-our $VERSION = "0.06";
+our $VERSION = "0.07";
 
 1;
