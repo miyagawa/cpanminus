@@ -31,7 +31,7 @@ sub main {
 }
 
 sub setup_home {
-    my $Base = $ENV{CPANMINUS_HOME} || "$ENV{HOME}/.cpanm";
+    $Base = $ENV{CPANMINUS_HOME} || "$ENV{HOME}/.cpanm";
     mkdir $Base, 0777 unless -e $Base;
 
     $Base .= "/build-" . time . ".$$";
