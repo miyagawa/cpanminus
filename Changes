@@ -1,4 +1,7 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+0.02  Fri Feb 19 19:13:03 PST 2010
+      - arguments to cpanm can now be a directory, file, URI or CPAN tarball name
+
 0.01  Fri Feb 19 18:24:04 PST 2010
       - Initial version to CPAN
