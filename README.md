@@ -2,7 +2,7 @@ cpanminus - get, unpack, build and install modules from CPAN
 
 ## What is this? 
 
-cpanminus is a script to unpack, build and install modules from CPAN.
+cpanminus is a script to get, unpack, build and install modules from CPAN.
 
 Its catch? Deps-free, zero-conf, standalone ~200 LOC script
 (i.e. hackable) and requires only 10MB RAM. See below for its cons.
@@ -52,6 +52,9 @@ haven't tested).
 * LWP or 'wget' to get files over HTTP.
 * 'tar' executable or Archive::Tar to unpack files.
 * C compiler, if you want to build XS modules.
+
+And optionally:
+
 * make, if you want to more reliably install MakeMaker based modules
 * Module::Build (core in 5.10) if you want to install MakeMaker based modules without 'make'
 
