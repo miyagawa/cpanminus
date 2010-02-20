@@ -221,12 +221,14 @@ sub install_deps {
         next if $mod eq 'perl' or $mod eq 'Config';
         diag "Checking if you have $mod $ver ... ";
         $ver = '' if $ver == 0;
-        my $test = `$^X -e ${quote}eval q{use $mod $ver (); print q{OK:}, q/$mod/->VERSION$quote}`;
+        my $test = `$^X -e ${quote}eval q{use $mod $ver (); print q{OK:}, q/$mod/->VERSION};print \$\@ if \$\@${quote}`;
         if ($test =~ s/^\s*OK://) {
             diag "Yes ($test)\n";
-        } else {
+        } elsif ($test =~ /^Can't locate|required--this/) {
             diag "No\n";
             push @install, $mod;
+        } else {
+            diag "Unknown ($test)\n";
         }
     }
 
