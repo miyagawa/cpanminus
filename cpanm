@@ -11,7 +11,7 @@ use constant WIN32 => $^O eq 'MSWin32';
 
 our $VERSION = "0.07";
 
-my($Base, %seen, $notest, $installdeps, $force, $sudo, $quote, $make, $quiet);
+my($Base, %seen, $notest, $installdeps, $force, $sudo, $quote, $make, $quiet, $log);
 
 main();
 
@@ -35,8 +35,10 @@ sub setup_home {
     $Base = $ENV{CPANMINUS_HOME} || "$ENV{HOME}/.cpanm";
     mkdir $Base, 0777 unless -e $Base;
 
-    $Base .= "/build-" . time . ".$$";
+    $Base = File::Spec->catfile($Base, "build-" . time . ".$$");
     mkdir $Base, 0777;
+
+    $log = File::Spec->catfile($Base, "cpanm.log");
 }
 
 sub parse_options {
@@ -113,7 +115,7 @@ sub run($) {
     my $cmd = shift;
 
     if ($quiet) {
-        $cmd .= WIN32 ? '> NUL' : '> /dev/null 2>&1';
+        $cmd .= WIN32 ? "> $log" : "> $log 2>&1";
     }
 
     !system $cmd;
@@ -332,20 +334,29 @@ sub build_stuff {
 
     diag "Building ", ($notest ? "" : "and testing "), "$module ...\n";
 
+    my $installed;
     if (-e 'Build') {
         run "$^X ./Build" &&
         test "$^X ./Build test" &&
-        install "$^X ./Build install";
+        install "$^X ./Build install" &&
+        $installed++;
     } elsif ($make && -e 'Makefile') {
         run "$make" &&
         test "$make test" &&
-        install "$make install";
+        install "$make install" &&
+        $installed++;
     } else {
         diag "Sorry, I don't know how to build $dir\n";
         return;
     }
 
-    diag "$module installed successfully.\n";
+    if ($installed) {
+        diag "$module installed successfully.\n";
+        return 1;
+    } else {
+        diag "Installing $module failed. See $log for details.\n";
+        return;
+    }
 }
 
 sub which {
