@@ -41,6 +41,7 @@ sub setup_home {
 sub parse_options {
     my($help, $version);
 
+    Getopt::Long::Configure("bundling");
     GetOptions(
         'f|force'  => \$force,
         'n|notest' => \$notest,
