@@ -10,57 +10,57 @@ use Getopt::Long;
 
 our $VERSION = "0.06";
 
-my($notest, $force, $sudo, $help, $version);
+my($Base, %seen, $notest, $force, $sudo, $quote, $make);
 
-GetOptions(
-    'f|force'  => \$force,
-    'n|notest' => \$notest,
-    'sudo'     => \$sudo,
-    'h|help'   => \$help,
-    'i|install' => sub {},
-    'v|version' => \$version,
-);
+main();
 
-help() if $help;
+sub main {
+    parse_options();
+    setup_home();
+    sanity_check();
 
-if ($version) {
+    $quote = $^O eq 'MSWin32' ? q/"/ : q/'/;
+    $make  = which($Config{make});
+
+    init_tools();
+
+    help(1) unless @ARGV;
+    for my $module (@ARGV) {
+        install_module($module);
+    }
+}
+
+sub setup_home {
+    my $Base = $ENV{CPANMINUS_HOME} || "$ENV{HOME}/.cpanm";
+    mkdir $Base, 0777 unless -e $Base;
+
+    $Base .= "/build-" . time . ".$$";
+    mkdir $Base, 0777;
+}
+
+sub parse_options {
+    my($help, $version);
+
+    GetOptions(
+        'f|force'  => \$force,
+        'n|notest' => \$notest,
+        'sudo'     => \$sudo,
+        'h|help'   => \$help,
+        'i|install' => sub {},
+        'v|version' => \$version,
+    );
+
+    help(0)   if $help;
+    version() if $version;
+}
+
+sub version {
     print "cpanm (App::cpanminus) version $VERSION\n";
     exit 0;
 }
 
-my $test = sub {
-    my $cmd = shift;
-    return 1 if $notest;
-    return run($cmd) || $force;
-};
-
-my $install = sub {
-    my $cmd = shift;
-    $cmd = "sudo $cmd" if $sudo;
-    run($cmd);
-};
-
-# sanity check
-unless ($ENV{PERL_MM_OPT} or $ENV{MODULEBUILDRC} or -w $Config{installsitelib} or $sudo) {
-    die "Can't write to $Config{installsitelib}: Run me as root or with --sudo option.\n";
-}
-
-sub get($);
-sub mirror($$);
-sub untar;
-sub which;
-
-my $quote = $^O eq 'MSWin32' ? q/"/ : q/'/;
-my $make = which $Config{make};
-
-init_tools();
-
-sub diag {
-    print STDERR @_;
-}
-
 sub help {
-    die <<USAGE;
+    print <<USAGE;
 Usage: cpanm [--force] [--notest] [--sudo] Module
 
   -f,--force     force install
@@ -82,27 +82,40 @@ Examples:
   cpanm .
 
 USAGE
+
+    exit $_[0];
 }
 
-my $Base = $ENV{CPANMINUS_HOME} || "$ENV{HOME}/.cpanm";
-mkdir $Base, 0777 unless -e $Base;
-
-$Base .= "/build-" . time . ".$$";
-mkdir $Base, 0777;
-
-unless (@ARGV) {
-    help();
+sub sanity_check {
+    unless ($ENV{PERL_MM_OPT} or $ENV{MODULEBUILDRC} or -w $Config{installsitelib} or $sudo) {
+        die "Can't write to $Config{installsitelib}: Run me as root or with --sudo option.\n";
+    }
 }
 
-my %seen;
+sub get($);
+sub mirror($$);
+sub untar;
+sub which;
 
-for my $module (@ARGV) {
-    install_module($module);
+sub diag {
+    print STDERR @_;
 }
 
 sub run($) {
     my $cmd = shift;
     !system $cmd;
+}
+
+sub test {
+    my $cmd = shift;
+    return 1 if $notest;
+    return run($cmd) || $force;
+}
+
+sub install {
+    my $cmd = shift;
+    $cmd = "sudo $cmd" if $sudo;
+    run($cmd);
 }
 
 sub _chdir {
@@ -299,13 +312,13 @@ sub build_stuff {
     }
 
     if (-e 'Build') {
-        run "$^X ./Build"           &&
-        $test->("$^X ./Build test") &&
-        $install->("$^X ./Build install");
+        run "$^X ./Build"       &&
+        test "$^X ./Build test" &&
+        install "$^X ./Build install";
     } elsif ($make && -e 'Makefile') {
-        run "$make"           &&
-        $test->("$make test") &&
-        $install->("$make install");
+        run "$make"       &&
+        test "$make test" &&
+        install "$make install";
     } else {
         diag "Sorry, I don't know how to build $dir\n";
         return;
