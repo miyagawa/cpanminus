@@ -288,7 +288,10 @@ sub build_stuff {
     if ($metayml) {
         diag "Checking dependencies from $metayml ...\n";
         my $meta = parse_meta($metayml);
-        %deps = (%{$meta->{build_requires} || {}}, %{$meta->{test_requires} || {}}, %{$meta->{requires} || {}});
+        %deps = (%{$meta->{requires} || {}});
+        unless ($notest) {
+            %deps = (%deps, %{$meta->{build_requires} || {}}, %{$meta->{test_requires} || {}});
+        }
     }
 
     if (-e 'Makefile') {
