@@ -1,4 +1,4 @@
-{
+if (-e ".git" or !-e "bin/cpanm") {
     print STDERR "Generating bin/cpanm\n";
     open my $out, ">bin/cpanm" or die $!;
     open my $in,  "<cpanm"     or die $!;
