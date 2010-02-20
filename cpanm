@@ -55,6 +55,25 @@ sub diag {
 sub help {
     die <<USAGE;
 Usage: cpanm [--force] [--notest] [--sudo] Module
+
+  -f,--force     force install
+  -n,--notest    Do not run unit tests
+  -s,--sudo      sudo to run install commands
+
+Examples:
+
+  # install CGI
+  cpanm CGI
+
+  # force install MojoMojo and its deps
+  cpanm -f MojoMojo
+
+  # specify the version
+  cpanm MIYAGAWA/Plack-0.99_05.tar.gz
+
+  # install from the current directory, just like `cpan .`
+  cpanm .
+
 USAGE
 }
 
@@ -93,7 +112,9 @@ sub install_module {
         return;
     }
 
-    my $uri = $module =~ /^(ftp|https?|file):/ ? $module : find_module($module);
+    my $uri =   $module =~ /^(ftp|https?|file):/ ? $module
+              : $module =~ m{^[A-Z]+/}           ? ("http://search.cpan.org/CPAN/authors/id/".substr($module, 0, 1).'/'.substr($module, 0, 2).'/'.$module)
+                                                 : find_module($module);
     unless ($uri) {
         diag "Can't find module $module\n";
         return;
@@ -564,10 +585,8 @@ cpanminus - get, unpack, build and install modules from CPAN
 =head1 SYNOPSIS
 
     cpanm Module
-    cpanm -f Module
-    cpanm --notest Module
-    cpanm --sudo Module
-    cpanm .
+
+Run C<cpan -h> for more options.
 
 =head1 DESCRIPTION
 
