@@ -50,6 +50,7 @@ sub mirror($$);
 sub untar;
 sub which;
 
+my $quote = $^O eq 'MSWin32' ? q/"/ : q/'/;
 my $make = which $Config{make};
 
 init_tools();
@@ -94,7 +95,6 @@ unless (@ARGV) {
 }
 
 my %seen;
-my $quote = $^O eq 'MSWin32' ? q/"/ : q/'/;
 
 for my $module (@ARGV) {
     install_module($module);
