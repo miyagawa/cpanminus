@@ -67,8 +67,9 @@ sub version {
 
 sub help {
     print <<USAGE;
-Usage: cpanm [--force] [--notest] [--sudo] Module
+Usage: cpanm [--quiet] [--force] [--notest] [--sudo] Module
 
+  -q,--quiet     Turns off (but logs) verbose build log
   -f,--force     force install
   -n,--notest    Do not run unit tests
   -S,--sudo      sudo to run install commands
