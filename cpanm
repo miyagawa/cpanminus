@@ -285,7 +285,7 @@ sub init_tools {
         };
         *mirror = sub ($$) {
             my($uri, $path) = @_;
-            return file_mirror($uri, $path) if $uri =~ s!^file:!!;
+            return file_mirror($uri, $path) if $uri =~ s!^file:/+!/!;
             system "$wget $uri -O $path";
         };
     }
