@@ -10,7 +10,7 @@ use Getopt::Long;
 
 our $VERSION = "0.07";
 
-my($Base, %seen, $notest, $force, $sudo, $quote, $make);
+my($Base, %seen, $notest, $notestdeps, $force, $sudo, $quote, $make);
 
 main();
 
@@ -45,7 +45,8 @@ sub parse_options {
     GetOptions(
         'f|force'  => \$force,
         'n|notest' => \$notest,
-        'sudo'     => \$sudo,
+        'notestdeps' => \$notestdeps,
+        'S|sudo'     => \$sudo,
         'h|help'   => \$help,
         'i|install' => sub {},
         'v|version' => \$version,
@@ -66,7 +67,8 @@ Usage: cpanm [--force] [--notest] [--sudo] Module
 
   -f,--force     force install
   -n,--notest    Do not run unit tests
-  -s,--sudo      sudo to run install commands
+  -S,--sudo      sudo to run install commands
+  --notestdeps   Do not run tests for dependencies (but test @ARGV)
 
 Examples:
 
@@ -107,9 +109,9 @@ sub run($) {
     !system $cmd;
 }
 
-sub test($) {
-    my $cmd = shift;
-    return 1 if $notest;
+sub test($$) {
+    my($is_dep, $cmd) = @_;
+    return 1 if $notest or $is_dep && $notestdeps;
     return run($cmd) || $force;
 }
 
@@ -124,7 +126,7 @@ sub _chdir {
 }
 
 sub install_module {
-    my $module = shift;
+    my($module, $is_dep) = @_;
 
     if ($seen{$module}++) {
         diag "Already tried $module. Skipping\n";
@@ -142,7 +144,7 @@ sub install_module {
     _chdir $Base;
     _chdir $dir;
 
-    build_stuff($module, $dir)
+    build_stuff($module, $dir, $is_dep)
 }
 
 sub fetch_module {
@@ -251,7 +253,7 @@ sub install_deps {
     }
 
     for my $mod (@install) {
-        install_module($mod);
+        install_module($mod, 1);
     }
 
     _chdir $Base;
@@ -259,7 +261,7 @@ sub install_deps {
 }
 
 sub build_stuff {
-    my($module, $dir) = @_;
+    my($module, $dir, $is_dep) = @_;
 
     if (-e 'META.yml') {
         diag "Checking configure dependencies from META.yml ...\n";
@@ -313,12 +315,12 @@ sub build_stuff {
     }
 
     if (-e 'Build') {
-        run "$^X ./Build"       &&
-        test "$^X ./Build test" &&
+        run "$^X ./Build" &&
+        test($is_dep, "$^X ./Build test") &&
         install "$^X ./Build install";
     } elsif ($make && -e 'Makefile') {
-        run "$make"       &&
-        test "$make test" &&
+        run "$make" &&
+        test($is_dep, "$make test") &&
         install "$make install";
     } else {
         diag "Sorry, I don't know how to build $dir\n";
