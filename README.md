@@ -17,46 +17,12 @@ cpanminus is a script to get, unpack, build and install modules from CPAN.
 Its catch? Deps-free, zero-conf, standalone ~200 LOC script
 (i.e. hackable) and requires only 10MB RAM. See below for its cons.
 
-# Installation
+# INSTALLATION
 
 Grab the file from <http://bit.ly/cpanm>, chmod +x, put it into your
-PATH. (Adjust shebang if needed)
+PATH. Adjust shebang if needed.
 
-# Should I really use this?
-
-No. Use CPAN or CPANPLUS.
-
-# WTF? What's the point?
-
-CPAN shell gets OOM (or swaps heavily and gets really slow) on
-Slicehost/linode's most affordable plan with only 256MB RAM.
-
-Yes, I know there are tools like CPAN::SQLite that can fix that
-problem but installing it and its 14 non-core dependencies without
-CPAN shell (because CPAN shell doesn't work) feels like yak shaving.
-
-So, imagine you don't have CPAN or CPANPLUS. What you're going to do
-is to search the module on the CPAN search site, download a tarball,
-unpack it and then run `perl Makefile.PL` (or `perl Build.PL`) and
-then `make install` (or `./Build install`). If the module has
-dependencies you probably have to recurively resolve those
-dependencies by hand before doing so.
-
-This script just automates that.
-
-# Zero-conf? How does this module get/parse/update the CPAN index?
-
-It scrapes the site <http://search.cpan.org/>. Yes, it's horrible and
-fragile.
-
-Fetched files are unpacked in `~/.cpanm` but you can configure with
-`CPANMINUS_HOME` environment variable.
-
-# Are you on drugs?
-
-Yes, I think my brain has been damaged since I looked at PyPI, gemcutter, pip and rip.
-
-# What do you need to run this?
+# DEPENDENCIES
 
 perl 5.8 or later (Actually I believe it works with pre 5.8 too but
 haven't tested).
@@ -83,15 +49,53 @@ make, if you want to more reliably install MakeMaker based modules
 
 Module::Build (core in 5.10) if you want to install MakeMaker based modules without 'make'
 
-# Where does this install modules to?
+# QUESTIONS
+
+## Should I really use this?
+
+No. Use CPAN or CPANPLUS.
+
+## WTF? What's the point?
+
+OK, the first motivation was this: CPAN shell gets OOM (or swaps
+heavily and gets really slow) on Slicehost/linode's most affordable
+plan with only 256MB RAM.
+
+Yes, I know there are tools like CPAN::SQLite that can fix that
+problem (and yes I use it on my Macbook Pro!) but installing it and
+its 14 non-core dependencies without CPAN shell (because CPAN shell
+doesn't work) feels like yak shaving.
+
+So, imagine you don't have CPAN or CPANPLUS. What you're going to do
+is to search the module on the CPAN search site, download a tarball,
+unpack it and then run `perl Makefile.PL` (or `perl Build.PL`) and
+then `make install` (or `./Build install`). If the module has
+dependencies you probably have to recurively resolve those
+dependencies by hand before doing so.
+
+This script just automates that.
+
+## Zero-conf? How does this module get/parse/update the CPAN index?
+
+It scrapes the site <http://search.cpan.org/>. Yes, it's horrible and
+fragile.
+
+Fetched files are unpacked in `~/.cpanm` but you can configure with
+`CPANMINUS_HOME` environment variable.
+
+## Are you on drugs?
+
+Yes, I think my brain has been damaged since I looked at PyPI, gemcutter, pip and rip.
+
+## Where does this install modules to?
 
 It installs to wherever ExtUtils::MakeMaker and Module::Build are
 configured to. So if you use local::lib then it installs to your local
-perl5 directory. Otherwise it installs to sitelib, so you might need
-to run `cpanm` command as root, or run with `--sudo` option to auto
-sudo when running the install command.
+perl5 directory. Otherwise it installs to siteperl directory, so you
+might need to run `cpanm` command as root, or run with `--sudo`
+option to auto sudo when running the install command.
 
-# Does this really work?
+## Does this really work?
 
 I tested installing MojoMojo, KiokuDB, Catalyst, Jifty and Plack using
 cpanminus and the installations including dependencies were mostly
@@ -104,25 +108,30 @@ tarball that extracts to the current directory, META.yml that is
 outdatd, META.yml that is not really YAML, circular dependencies etc.)
 while CPAN and CPANPLUS can handle them.
 
-# Quick Install?
+## Quick Install?
 
 `env PERL_MM_USE_DEFAULT=1 cpanm --notest Module`
 
 Oh, don't do that. It's too useful.
 
-# So you're ignoring the CPAN toolchain ecosystem with this?
+## So you're ignoring the CPAN toolchain ecosystem with this?
 
-No, that's not my intention. As a developer with 190 modules on CPAN,
-I appreciate and respect the CPAN toolchain developers for their great
-effort.
+No, that's not my intention. This tiny script respects and play nice
+with all the toolchain ecosystem that has been developed for years:
+Module::Build, Module::Install, ExtUtils::MakeMaker and local::lib. It
+just provides an alternative to (but __NOT__ a replacement for) [CPAN](http://search.cpan.org/search?mode=module&query=CPAN)
+or [CPANPLUS](http://search.cpan.org/search?mode=module&query=CPANPLUS), so that it doesn't require any configuration, any
+dependencies and has no bootstrap problems.
 
-However I've learned that in some rare cases, especially for less
-experienced users (or really experienced users who knows how to shoot
-in their feet), setting up a CPAN toolchain "in the right way" feels like
-just another yak to shave, and this tool is a super tiny shaver to
-eliminate the big yak really quickly and does nothing else.
+I've learned that often for less experienced users, or even really
+experienced users who knows how to shoot in their feet, setting up a
+CPAN toolchain _in the right way_ feels like just another yak to
+shave when all they want to do is just to quickstart writing perl code
+by installing CPAN modules. cpanminus is a super tiny shaver to
+eliminate the big yak really quickly in that case, and does nothing
+else.
 
-# Should I really use this?
+## Should I really use this?
 
 No. Use CPAN or CPANPLUS.
 
@@ -130,7 +139,7 @@ No. Use CPAN or CPANPLUS.
 
 Copyright 2010- Tatsuhiko Miyagawa
 
-Parse::CPAN::Meta, included in this script, is Copyright 2006-2009 Adam Kennedy
+[Parse::CPAN::Meta](http://search.cpan.org/search?mode=module&query=Parse::CPAN::Meta), included in this script, is Copyright 2006-2009 Adam Kennedy
 
 # LICENSE
 
