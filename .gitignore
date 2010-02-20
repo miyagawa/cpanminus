@@ -7,3 +7,4 @@ blib
 .*
 !.gitignore
 !.shipit
+bin/cpanm

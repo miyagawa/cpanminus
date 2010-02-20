@@ -722,7 +722,7 @@ Its catch? Deps-free, zero-conf, standalone ~200 LOC script
   cd ~/bin
   wget http://bit.ly/cpanm
   chmod +x cpanm
-  # edit shebang if your perl is not /usr/bin/perl
+  # edit shebang if you don't have /usr/bin/env
     
 =head1 DEPENDENCIES
 
