@@ -129,6 +129,8 @@ sub fetch_module {
 
     return $dir if $dir;
 
+    return unless $uri;
+
     if ($uri =~ m{/perl-5}){
         diag "skip $uri\n";
         return;
