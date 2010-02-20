@@ -11,16 +11,22 @@ use Getopt::Long;
 use vars qw($VERSION);
 $VERSION = "0.03";
 
-my($notest, $force, $sudo, $help);
+my($notest, $force, $sudo, $help, $version);
 
 GetOptions(
     'f|force'  => \$force,
     'n|notest' => \$notest,
     'sudo'     => \$sudo,
     'h|help'   => \$help,
+    'v|version' => \$version,
 );
 
 help() if $help;
+
+if ($version) {
+    print "cpanm (App::cpanminus) version $VERSION\n";
+    exit 0;
+}
 
 my $test = sub {
     my $cmd = shift;
