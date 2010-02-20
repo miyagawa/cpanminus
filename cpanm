@@ -17,6 +17,7 @@ GetOptions(
     'n|notest' => \$notest,
     'sudo'     => \$sudo,
     'h|help'   => \$help,
+    'i|install' => sub {},
     'v|version' => \$version,
 );
 
