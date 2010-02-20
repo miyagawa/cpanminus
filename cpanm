@@ -103,25 +103,33 @@ sub _chdir {
 sub install_module {
     my $module = shift;
 
-    if ($module eq '.') {
-        return build_stuff($module, Cwd::cwd());
-    }
-
     if ($seen{$module}++) {
         diag "Already tried $module. Skipping\n";
         return;
     }
 
-    my $uri = $module =~ /^(ftp|https?|file):/ ? $module
-            : $module =~ m{^[A-Z]/[A-Z]{2}/}   ? "http://search.cpan.org/CPAN/authors/id/$module"
-            : $module =~ m{^[A-Z]{3,}/}        ? ("http://search.cpan.org/CPAN/authors/id/".substr($module, 0, 1).'/'.substr($module, 0, 2).'/'.$module)
-                                               : find_module($module);
-    unless ($uri) {
-        diag "Can't find module $module\n";
+    my $dir = fetch_module($module);
+
+    unless ($dir) {
+        diag "Can't locate module $module\n";
         return;
     }
 
-    if($uri =~ m{/perl-5}){
+    diag "Entering $dir ...\n";
+    _chdir $Base;
+    _chdir $dir;
+
+    build_stuff($module, $dir)
+}
+
+sub fetch_module {
+    my $module = shift;
+
+    my($uri, $dir) = locate_archive($module);
+
+    return $dir if $dir;
+
+    if ($uri =~ m{/perl-5}){
         diag "skip $uri\n";
         return;
     }
@@ -144,10 +152,44 @@ sub install_module {
         return;
     }
 
-    diag "Entering $dir ...\n";
-    _chdir $dir;
+    return $dir;
+}
 
-    build_stuff($module, $dir)
+sub locate_archive {
+    my $module = shift;
+
+    # URL
+    return $module if $module =~ /^(ftp|https?|file):/;
+
+    # Directory
+    return undef, Cwd::abs_path($module) if -e $module && -d _;
+
+    # File
+    return "file://" . Cwd::abs_path($module) if -f $module;
+
+    # PAUSEID/foo
+    $module =~ s!^([A-Z]{3})/!substr($1, 0, 1)."/".substr($1, 0, 2) ."/"!e;
+
+    # CPAN tarball
+    return cpan_uri($module) if $module =~ m!/!;
+
+    # Module name -- search.cpan.org
+    return search_module($module);
+}
+
+sub cpan_uri {
+    my $module = shift;
+    return "http://search.cpan.org/CPAN/authors/id/$module";
+}
+
+sub search_module {
+    my $module = shift;
+
+    my $html = get("http://search.cpan.org/perldoc?$module");
+    $html =~ m!Download:.*<a href="/CPAN/authors/id/(.*?)">.*?</a>!
+        and return cpan_uri($1);
+
+    return;
 }
 
 sub build_stuff {
@@ -205,15 +247,6 @@ sub build_stuff {
         diag "Sorry, I don't know how to build $dir\n";
         return;
     }
-}
-
-sub find_module {
-    my $module = shift;
-    my $html = get("http://search.cpan.org/perldoc?$module");
-    $html =~ m!Download:<br/> <a href="(/CPAN/.*?)">.*?</a></p>!
-        and return "http://search.cpan.org$1";
-
-    return;
 }
 
 sub which {
