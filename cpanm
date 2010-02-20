@@ -149,7 +149,17 @@ sub fetch_module {
     diag "Fetching $uri ...\n";
 
     my $name = basename $uri;
-    mirror($uri, $name);
+
+    my $cancelled;
+    eval {
+        local $SIG{INT} = sub { $cancelled = 1; die "SIGINT\n" };
+        mirror($uri, $name);
+    };
+
+    if ($cancelled) {
+        diag "Download cancelled.\n";
+        return;
+    }
 
     unless (-e $name) {
         diag "Failed to download $uri\n";
