@@ -266,6 +266,12 @@ sub which {
     return;
 }
 
+sub file_mirror {
+    my($uri, $path) = @_;
+    require File::Copy;
+    File::Copy::copy($uri, $path);
+}
+
 sub init_tools {
     if (eval { require LWP::Simple }) {
         *get = \&LWP::Simple::get;
@@ -279,7 +285,8 @@ sub init_tools {
         };
         *mirror = sub ($$) {
             my($uri, $path) = @_;
-            `$wget $uri -O $path`;
+            return file_mirror($uri, $path) if $uri =~ s!^file:!!;
+            system "$wget $uri -O $path";
         };
     }
     # TODO curl
