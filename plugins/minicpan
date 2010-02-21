@@ -1,7 +1,7 @@
 # NAME: minicpan - fallback to local minicpan when a dist is not found
 # AUTHOR: Tatsuhiko Miyagawa
 
-my $minicpan_home = File::Spec->catfile("$ENV{HOME}", "minicpan"); # CHANGE THIS
+my $minicpan_home = $ENV{PERL_MINICPAN_HOME} || File::Spec->catfile($ENV{HOME}, "minicpan");
 
 hook search_module => sub {
     my $args = shift;
