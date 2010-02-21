@@ -458,14 +458,16 @@ sub init_tools {
     } elsif (my $wget = which 'wget') {
         *get = sub ($) {
             my $uri = shift;
-            open my $fh, "$wget $uri -O - |" or die "wget $uri: $!";
+            my $q = $app->{verbose} ? '' : '-q';
+            open my $fh, "$wget $uri $q -O - |" or die "wget $uri: $!";
             local $/;
             <$fh>;
         };
         *mirror = sub ($$) {
             my($uri, $path) = @_;
             return file_mirror($uri, $path) if $uri =~ s!^file:/+!/!;
-            system "$wget $uri -O $path";
+            my $q = $app->{verbose} ? '' : '-q';
+            system "$wget $uri $q -O $path";
         };
     }
     # TODO curl
