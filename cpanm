@@ -160,11 +160,11 @@ sub install_module {
     my $dir = fetch_module($module);
 
     unless ($dir) {
-        diag "Can't locate module $module\n";
+        diag "! Couldn't find module or a distribution $module\n";
         return;
     }
 
-    chat "Entering $dir ...\n";
+    chat "Entering $dir...\n";
     _chdir $Base;
     _chdir $dir;
 
@@ -186,7 +186,7 @@ sub fetch_module {
     }
 
     _chdir $Base;
-    diag "Fetching $uri ...\n";
+    diag "Fetching $uri\n";
 
     my $name = basename $uri;
 
@@ -197,19 +197,19 @@ sub fetch_module {
     };
 
     if ($cancelled) {
-        diag "Download cancelled.\n";
+        diag "! Download cancelled.\n";
         return;
     }
 
     unless (-e $name) {
-        diag "Failed to download $uri\n";
+        diag "! Failed to download $uri\n";
         return;
     }
 
-    diag "Unpacking $name ...\n";
+    chat "Unpacking $name...\n";
     my $dir = untar $name;
     unless ($dir) {
-        diag "Failed to unpack $name: no directory\n";
+        diag "! Failed to unpack $name: no directory\n";
         return;
     }
 
@@ -259,7 +259,7 @@ sub install_deps {
     my @install;
     while (my($mod, $ver) = each %deps) {
         next if $mod eq 'perl' or $mod eq 'Config';
-        chat "Checking if you have $mod $ver ... ";
+        chat "Checking if you have $mod $ver... ";
         $ver = '' if $ver == 0;
         my $test = `$^X -e ${quote}eval q{use $mod $ver (); print q{OK:}, q/$mod/->VERSION};print \$\@ if \$\@${quote}`;
         if ($test =~ s/^\s*OK://) {
@@ -273,7 +273,7 @@ sub install_deps {
     }
 
     if (@install) {
-        diag "Found dependencies: ", join(", ", @install), "\n";
+        diag "==> Found dependencies: ", join(", ", @install), "\n";
     }
 
     for my $mod (@install) {
@@ -288,7 +288,7 @@ sub build_stuff {
     my($module, $dir, $is_dep) = @_;
 
     if (-e 'META.yml') {
-        chat "Checking configure dependencies from META.yml ...\n";
+        chat "Checking configure dependencies from META.yml...\n";
         my $meta = parse_meta('META.yml');
         my %deps = %{$meta->{configure_requires} || {}};
 
@@ -308,7 +308,7 @@ sub build_stuff {
     my %deps;
     my($metayml) = grep -e $_, qw( MYMETA.yml META.yml );
     if ($metayml) {
-        chat "Checking dependencies from $metayml ...\n";
+        chat "Checking dependencies from $metayml...\n";
         my $meta = parse_meta($metayml);
         %deps = (%{$meta->{requires} || {}});
         unless ($notest) {
@@ -317,7 +317,7 @@ sub build_stuff {
     }
 
     if (-e 'Makefile') {
-        chat "Finding PREREQ from Makefile ...\n";
+        chat "Finding PREREQ from Makefile...\n";
         open my $mf, "Makefile";
         while (<$mf>) {
             if (/^\#\s+PREREQ_PM => ({.*?})/) {
@@ -332,19 +332,19 @@ sub build_stuff {
     install_deps($dir, %deps);
 
     if ($installdeps && !$is_dep) {
-        diag "Install dependencies for $module. Finishing.\n";
+        diag "<== Installed dependencies for $module. Finishing.\n";
         return 1;
     }
 
     unless ($make or -e "Build") {
-        diag "Oops, you don't have make. Trying to build a stub Build file for you. Hope this works!\n";
+        diag "! Oops, you don't have make. Trying to build a stub Build file for you. Hope this works!\n";
         eval {
             require Module::Build;
             Module::Build->new(module_name => $module)->create_build_script;
         };
     }
 
-    diag "Building ", ($notest ? "" : "and testing "), "$dir for $module ...\n";
+    diag "Building ", ($notest ? "" : "and testing "), "$dir for $module...\n";
 
     my $installed;
     if (-e 'Build') {
@@ -358,7 +358,7 @@ sub build_stuff {
         install "$make install" &&
         $installed++;
     } else {
-        diag "Sorry, I don't know how to build $dir\n";
+        diag "! Sorry, I don't know how to build $dir\n";
         return;
     }
 
@@ -366,7 +366,7 @@ sub build_stuff {
         diag "$module installed successfully.\n";
         return 1;
     } else {
-        diag "Installing $module failed. See $log for details.\n";
+        diag "! Installing $module failed. See $log for details.\n";
         return;
     }
 }
