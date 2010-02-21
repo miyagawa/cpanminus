@@ -3,30 +3,31 @@
 
 my $entries;
 
-hook search_module => sub {
+hook search_module => 0, sub {
     my $args = shift;
 
-    my $dist = $args->{module};
-    $dist =~ s/::/-/g;
+    push @{$args->{uris}}, sub {
+        my $dist = $args->{module};
+        $dist =~ s/::/-/g;
 
-    require JSON;
+        require JSON;
 
-    unless ($entries) {
-        $args->{app}->chat("Querying http://friendfeed.cpan/cpan for $dist...\n");
-        my $json = Util::get("http://friendfeed-api.com/v2/feed/cpan");
-        $entries = eval { JSON::decode_json($json)->{entries} } || [];
-    }
-
-    for my $entry (@$entries) {
-        my $info = parse_entry($entry->{body}) or next;
-        if ($info->{dist} eq $dist) {
-            $args->{app}->chat("Found $dist on CPAN realtime feed => $info->{url}\n");
-            unshift @{$args->{uris}}, $info->{url};
-            return;
+        unless ($entries) {
+            $args->{app}->chat("Querying http://friendfeed.cpan/cpan for $dist...\n");
+            my $json = Util::get("http://friendfeed-api.com/v2/feed/cpan");
+            $entries = eval { JSON::decode_json($json)->{entries} } || [];
         }
-    }
 
-    return;
+        for my $entry (@$entries) {
+            my $info = parse_entry($entry->{body}) or next;
+            if ($info->{dist} eq $dist) {
+                $args->{app}->chat("Found $dist on CPAN realtime feed => $info->{url}\n");
+                return $info->{url};
+            }
+        }
+
+        return;
+    };
 };
 
 sub parse_entry {

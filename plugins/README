@@ -7,3 +7,5 @@ TODO:
 * dzil - build from git checkout that has dzil.ini (but no Makefile.PL/Build.PL)
 * test_reporter - report test success/failures
 
+recent command (search.cpan.org/recent + friendfeed.com/cpan)
+

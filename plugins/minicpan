@@ -4,7 +4,7 @@
 my $minicpan_rc   = File::Spec->catfile($ENV{HOME}, ".minicpanrc");
 my $minicpan_home = find_home($minicpan_rc) || File::Spec->catfile($ENV{HOME}, "minicpan");
 
-hook search_module => sub {
+hook search_module => 100, sub {
     my $args = shift;
 
     my $pkgs = File::Spec->catfile($minicpan_home, "modules", "02packages.details.txt.gz");

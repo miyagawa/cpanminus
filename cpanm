@@ -104,9 +104,27 @@ sub setup_home {
    $self->{plugin_dir} = $ENV{CPANM_DEV} ? 'plugins' : File::Spec->catfile($self->{home}, "plugins");
 }
 
+sub register_core_hooks {
+    my $self = shift;
+    
+    $self->hook('core_search_cpan', search_module => sub {
+        my $args = shift;
+        push @{$args->{uris}}, sub {
+            $self->chat("Searching $args->{module} on search.cpan.org...\n");
+            my $html = Util::get("http://search.cpan.org/perldoc?$args->{module}");
+            $html =~ m!Download:.*<a href="/CPAN/authors/id/(.*?)">.*?</a>!
+                and return $self->cpan_uri($1);
+            $self->diag("! Finding $args->{module} on search.cpan.org failed.\n");
+            return;
+        };
+    });
+}
+
 sub load_plugins {
     my $self = shift;
 
+    $self->register_core_hooks;
+    
     return unless $self->{plugin_dir} && -e $self->{plugin_dir};
 
     opendir my $dh, $self->{plugin_dir} or return;
@@ -114,31 +132,39 @@ sub load_plugins {
     while (my $e = readdir $dh) {
         my $f = File::Spec->catfile($self->{plugin_dir}, $e);
         next unless -f $f && $e =~ /^[A-Za-z0-9_]+$/ && $e ne 'README';
-        push @plugins, $f;
+        push @plugins, [ $f, $e ];
     }
 
-    for my $plugin (sort { $a <=> $b } @plugins) {
-        $self->load_plugin($plugin);
+    for my $plugin (sort { $a->[1] <=> $b->[1] } @plugins) {
+        $self->load_plugin(@$plugin);
+    }
+
+    for my $hook (keys %{$self->{hooks}}) {
+        $self->{hooks}->{$hook} = [ sort { $a->[0] <=> $b->[0] } @{$self->{hooks}->{$hook}} ];
     }
 
     $self->run_hook(init => {});
 }
 
 sub load_plugin {
-    my($self, $file) = @_;
+    my($self, $file, $name) = @_;
 
     $self->chat("Loading plugin $file\n");
 
     (my $package = $file) =~ s/[^a-zA-Z0-9_]/_/g;
     my $code = do { open my $io, "<$file"; local $/; <$io> };
-    eval "package App::cpanplus::plugin::$package; use strict; sub hook { \$self->hook(\@_) };\n$code";
+    eval "package App::cpanplus::plugin::$package;\n".
+        "use strict;\n" .
+        "sub hook { \$self->hook('$name', \@_) };\n$code";
 
     $self->diag("! Loading plugin $file faield: $@") if $@;
 }
 
 sub hook {
-    my($self, $hook, $cb) = @_;
-    push @{$self->{hooks}->{$hook}}, $cb;
+    my $cb = pop;
+    my($self, $name, $hook, $order) = @_;
+    $order = 50 unless defined $order;
+    push @{$self->{hooks}->{$hook}}, [ $order, $cb, $name ];
 }
 
 sub run_hook {
@@ -150,9 +176,10 @@ sub run_hooks {
     my($self, $hook, $args, $first) = @_;
 
     my $res;
-    for my $cb (@{$self->{hooks}->{$hook} || []}) {
-        $res = eval { $cb->({ %$args, app => $self }) };
-        $self->chat("Running hook error: $@") if $@;
+    for my $plugin (@{$self->{hooks}->{$hook} || []}) {
+        $self->chat("Running '$hook' for $plugin->[2]\n");
+        $res = eval { $plugin->[1]->({ %$args, app => $self }) };
+        $self->chat("Running hook '$plugin->[2]' error: $@") if $@;
         last if $res && $first;
     }
 
@@ -310,10 +337,8 @@ sub generator_cb {
         }
 
         return -1 unless @$ref;
-        my $curr = shift @$ref;
-        if (ref $curr eq 'CODE') {
-            return $curr->();
-        } elsif (ref $curr eq 'ARRAY') {
+        my $curr = (shift @$ref)->();
+        if (ref $curr eq 'ARRAY') {
             @stack = @$curr;
             return shift @stack;
         } else {
@@ -390,33 +415,25 @@ sub locate_dist {
     my($self, $module) = @_;
 
     # URL
-    return $module if $module =~ /^(ftp|https?|file):/;
+    return sub { $module } if $module =~ /^(ftp|https?|file):/;
 
     # Directory
     return undef, Cwd::abs_path($module) if -e $module && -d _;
 
     # File
-    return "file://" . Cwd::abs_path($module) if -f $module;
+    return sub { "file://" . Cwd::abs_path($module) } if -f $module;
 
     # PAUSEID/foo
     $module =~ s!^([A-Z]{3,})/!substr($1, 0, 1)."/".substr($1, 0, 2) ."/" . $1 . "/"!e;
 
     # CPAN tarball
-    return $self->cpan_uri($module) if $module =~ m!/!;
+    return sub { $self->cpan_uri($module) } if $module =~ m!/!;
 
     # Module name -- search.cpan.org
-    my @uris = $self->search_module($module);
-    return \@uris;
+    return $self->search_module($module);
 }
 
 sub cpan_uri {
-    my($self, $dist) = @_;
-
-    my $uri = $self->cpan_uris($dist);
-    return $uri;
-}
-
-sub cpan_uris {
     my($self, $dist) = @_;
 
     my @mirrors = @{$self->{mirrors}};
@@ -428,19 +445,10 @@ sub cpan_uris {
 sub search_module {
     my($self, $module) = @_;
 
-    my @uris;
-    push @uris, sub {
-        $self->chat("Searching $module on search.cpan.org...\n");
-        my $html = Util::get("http://search.cpan.org/perldoc?$module");
-        $html =~ m!Download:.*<a href="/CPAN/authors/id/(.*?)">.*?</a>!
-            and return $self->cpan_uris($1);
-        $self->diag("! Finding $module on search.cpan.org failed.\n");
-        return;
-    };
+    my @cbs;
+    $self->run_hooks(search_module => { module => $module, uris => \@cbs });
 
-    $self->run_hooks(search_module => { module => $module, uris => \@uris });
-
-    return @uris;
+    return \@cbs;
 }
 
 sub install_deps {

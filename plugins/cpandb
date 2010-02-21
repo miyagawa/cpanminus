@@ -6,17 +6,19 @@ hook search_module => sub {
 
     return unless $args->{module} =~ /^[A-Za-z0-9:]+$/;
 
-    require YAML;
-    $args->{app}->chat("Querying CPANDB for $args->{module}\n");
+    push @{$args->{uris}}, sub {
+        require YAML;
+        $args->{app}->chat("Querying CPANDB for $args->{module}\n");
 
-    my $yaml = Util::get("http://cabbage.bingosnet.co.uk/cpandb/yaml/mod/$args->{module}");
-    my $meta = (YAML::Load($yaml))[0];
+        my $yaml = Util::get("http://cabbage.bingosnet.co.uk/cpandb/yaml/mod/$args->{module}");
+        my $meta = (YAML::Load($yaml))[0];
 
-    if (my $d = $meta->[0]) {
-        $args->{app}->chat("Got a response from CPANDB => $d->{dist_file}\n");
-        push @{$args->{uris}}, $args->{app}->cpan_uri($d->{dist_file});
+        if (my $d = $meta->[0]) {
+            $args->{app}->chat("Got a response from CPANDB => $d->{dist_file}\n");
+            return $args->{app}->cpan_uri($d->{dist_file});
+        }
+
+        $args->{app}->chat("! Finding $args->{module} on cpandb failed.\n");
         return;
-    }
-
-    return;
+    };
 };
