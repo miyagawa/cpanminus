@@ -219,6 +219,7 @@ Usage: cpanm [--verbose] [--force] [--notest] [--sudo] Module
   -S,--sudo      sudo to run install commands
   --look         Download the tarball and open the directory with your shell
   --installdeps  Only install dependencies
+  --recent       Show recently updated modules
 
 Examples:
 
