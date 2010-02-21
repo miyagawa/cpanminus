@@ -32,6 +32,7 @@ sub new {
         make  => undef,
         verbose => undef,
         log => undef,
+        mirrors => [],
         argv => [],
         hooks => {},
     }, $class;
@@ -62,11 +63,12 @@ sub parse_options {
 
 sub doit {
     my $self = shift;
-    $self->setup_home();
-    $self->load_plugins();
-    $self->sanity_check();
 
-    $self->{make}  = Util::which($Config{make});
+    $self->setup_home;
+    $self->load_plugins;
+    $self->sanity_check;
+
+    $self->{make} = Util::which($Config{make});
 
     Util::init_tools();
 
@@ -75,6 +77,9 @@ sub doit {
     }
 
     $self->help(1) unless @{$self->{argv}};
+
+    $self->configure_mirrors;
+
     for my $module (@{$self->{argv}}) {
         $self->install_module($module);
     }
@@ -249,6 +254,16 @@ sub chdir {
     chdir(File::Spec->canonpath($_[0])) or die "$_[0]: $!";
 }
 
+sub configure_mirrors {
+    my $self = shift;
+
+    my @mirrors;
+    $self->run_hook(configure_mirrors => { mirrors => \@mirrors });
+
+    @mirrors = ('http://search.cpan.org/CPAN') unless @mirrors;
+    $self->{mirrors} = \@mirrors;
+}
+
 sub install_module {
     my($self, $module, $is_dep) = @_;
 
@@ -281,6 +296,30 @@ sub install_module {
     }
 }
 
+sub generator_cb {
+    my($self, $ref) = @_;
+
+    $ref = [ $ref ] unless ref $ref eq 'ARRAY';
+
+    my @stack;
+    return sub {
+        if (@stack) {
+            return shift @stack;
+        }
+
+        my $curr = shift @$ref or return;
+
+        if (ref $curr eq 'CODE') {
+            return $curr->();
+        } elsif (ref $curr eq 'ARRAY') {
+            @stack = @$curr;
+            return shift @stack;
+        } else {
+            return $curr;
+        }
+    };
+}
+
 sub fetch_module {
     my($self, $module) = @_;
 
@@ -289,11 +328,9 @@ sub fetch_module {
     return $local_dir if $local_dir;
     return unless $uris;
 
-    $uris = [ $uris ] unless ref $uris eq 'ARRAY';
+    my $iter = $self->generator_cb($uris);
 
-    for my $uri (@$uris) {
-        $uri = $uri->() if ref $uri eq 'CODE'; # lazy load
-
+    for my $uri ($iter->()) {
         if ($uri =~ m{/perl-5}){
             $self->diag("skip $uri\n");
             next;
@@ -369,21 +406,30 @@ sub locate_dist {
 sub cpan_uri {
     my($self, $dist) = @_;
 
-    my $uri = $self->run_hook(cpan_uri => { dist => $dist })
-        || "http://search.cpan.org/CPAN/authors/id/$dist";
+    my $uri = $self->cpan_uris($dist);
+    return $uri;
+}
+
+sub cpan_uris {
+    my($self, $dist) = @_;
+
+    my @mirrors = @{$self->{mirrors}};
+    my @urls    = map "$_/authors/id/$dist", @mirrors;
+
+    return wantarray ? @urls : $urls[int(rand($#urls))];
 }
 
 sub search_module {
     my($self, $module) = @_;
 
     my @uris;
-    $self->run_hooks(search_module => { module => $module, uris => \@uris });
-
-    unless (@uris) {
+    push @uris, sub {
         my $html = Util::get("http://search.cpan.org/perldoc?$module");
         $html =~ m!Download:.*<a href="/CPAN/authors/id/(.*?)">.*?</a>!
-            and push @uris, $self->cpan_uri($1);
-    }
+            and return $self->cpan_uris($1);
+    };
+
+    $self->run_hooks(search_module => { module => $module, uris => \@uris });
 
     return @uris;
 }

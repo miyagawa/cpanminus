@@ -18,7 +18,7 @@ hook search_module => sub {
         my $info = parse_entry($entry->{body}) or next;
         if ($info->{dist} eq $dist) {
             $args->{app}->chat("Found $dist on CPAN realtime feed => $info->{url}\n");
-            push @{$args->{uris}}, $info->{url};
+            unshift @{$args->{uris}}, $info->{url};
             return;
         }
     }

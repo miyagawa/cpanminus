@@ -2,4 +2,5 @@ Copy the plugin file you want to ~/.cpanm/plugins
 
 TODO:
 - fix cp562an to actually query the distribution (parse 02packages?)
-- gitpan/backpan plugin to get a specific version from from BackPAN or GitPAN
+- gitpan/backpan plugin to get a specific version from BackPAN or GitPAN
+- nearest_mirror - automatically pick the nearest mirror (and cache it)
