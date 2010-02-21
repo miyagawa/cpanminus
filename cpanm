@@ -559,6 +559,7 @@ sub build_stuff {
 
     if ($installed) {
         $self->diag("$module installed successfully.\n");
+        $self->run_hooks(install_success => { module => $module, build_dir => $dir, meta => $meta });
         return 1;
     } else {
         $self->diag("! Installing $module failed. See $self->{log} for details.\n");
@@ -573,6 +574,11 @@ sub get($);
 sub mirror($$);
 sub untar;
 
+sub quote {
+    my $stuff = shift;
+    $quote . $stuff . $quote;
+}
+
 sub which {
     my($name) = @_;
     my $exe_ext = $Config{_exe};
@@ -580,7 +586,7 @@ sub which {
         my $fullpath = File::Spec->catfile($dir, $name);
         if (-x $fullpath || -x ($fullpath .= $exe_ext)){
             if ($fullpath =~ /\s/ && $fullpath !~ /^$quote/) {
-                $fullpath = "$quote$fullpath$quote"
+                $fullpath = Util::quote($fullpath);
             }
             return $fullpath;
         }
