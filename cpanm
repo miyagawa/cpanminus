@@ -11,7 +11,7 @@ use constant WIN32 => $^O eq 'MSWin32';
 
 our $VERSION = "0.08";
 
-my($Base, %seen, $notest, $installdeps, $force, $sudo, $quote, $make, $quiet, $log);
+my($Base, %seen, $notest, $installdeps, $force, $sudo, $quote, $make, $verbose, $log);
 
 main();
 
@@ -56,9 +56,12 @@ sub parse_options {
         'h|help'   => \$help,
         'i|install' => sub {},
         'installdeps' => \$installdeps,
-        'v|version' => \$version,
-        'q|quiet'   => sub { $quiet = 1; $ENV{PERL_MM_USE_DEFAULT} = 1 },
+        'V|version' => \$version,
+        'v|verbose' => \$verbose,
+        'q|quiet'   => sub { }, # now default: just ignore
     );
+
+    $ENV{PERL_MM_USE_DEFAULT} = 1 unless $verbose;
 
     help(0)   if $help;
     version() if $version;
@@ -71,9 +74,9 @@ sub version {
 
 sub help {
     print <<USAGE;
-Usage: cpanm [--quiet] [--force] [--notest] [--sudo] Module
+Usage: cpanm [--verbose] [--force] [--notest] [--sudo] Module
 
-  -q,--quiet     Turns off (but logs) verbose build log
+  -v,--verbose   Turns on chatty output (required when you install Task:: modules)
   -f,--force     force install
   -n,--notest    Do not run unit tests
   -S,--sudo      sudo to run install commands
@@ -89,6 +92,9 @@ Examples:
 
   # specify the version
   cpanm MIYAGAWA/Plack-0.99_05.tar.gz
+
+  # install Task:: modlues (You need -v to answer questions)
+  cpanm -v Task::Kensho
 
   # install from the current directory, just like `cpan .`
   cpanm .
@@ -114,7 +120,7 @@ sub diag {
 }
 
 sub chat {
-    print STDERR @_ unless $quiet;
+    print STDERR @_ if $verbose;
     _log(@_);
 }
 
@@ -126,7 +132,7 @@ sub _log {
 sub run($) {
     my $cmd = shift;
 
-    if ($quiet) {
+    unless ($verbose) {
         $cmd .= WIN32 ? ">> $log" : ">> $log 2>&1";
     }
 
@@ -415,7 +421,7 @@ sub init_tools {
         *untar = sub {
             my($tarfile) = @_;
 
-            my $xf = "xf" . ($quiet ? '' : 'v');
+            my $xf = "xf" . ($verbose ? 'v' : '');
             my $ar = $tarfile =~ /bz2$/ ? 'j' : 'z';
 
             my($root, @others) = `$tar tf$ar $tarfile`
@@ -916,7 +922,7 @@ Patches contributed by: Goro Fuji, Kazuhiro Osawa, Tokuhiro Matsuno,
 Kenichi Ishigaki, Ian Wells, Pedro Melo.
 
 Feedbacks sent by: Jesse Vincent, David Golden, Chris Williams, Matt S
-Trout, Adam Kennedy.
+Trout, Adam Kennedy, J. Shirley, Chris Prather, Jesse Luehrs.
 
 =head1 NO WARRANTY
 
