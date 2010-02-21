@@ -287,6 +287,8 @@ sub fetch_module {
     $uris = [ $uris ] unless ref $uris eq 'ARRAY';
 
     for my $uri (@$uris) {
+        $uri = $uri->() if ref $uri eq 'CODE'; # lazy load
+
         if ($uri =~ m{/perl-5}){
             $self->diag("skip $uri\n");
             next;
