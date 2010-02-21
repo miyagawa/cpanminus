@@ -307,8 +307,8 @@ sub generator_cb {
             return shift @stack;
         }
 
-        my $curr = shift @$ref or return;
-
+        return -1 unless @$ref;
+        my $curr = shift @$ref;
         if (ref $curr eq 'CODE') {
             return $curr->();
         } elsif (ref $curr eq 'ARRAY') {
@@ -330,7 +330,11 @@ sub fetch_module {
 
     my $iter = $self->generator_cb($uris);
 
-    for my $uri ($iter->()) {
+    while (1) {
+        my $uri = $iter->();
+        last if $uri == -1;
+        next unless $uri;
+
         if ($uri =~ m{/perl-5}){
             $self->diag("skip $uri\n");
             next;
@@ -428,6 +432,8 @@ sub search_module {
         my $html = Util::get("http://search.cpan.org/perldoc?$module");
         $html =~ m!Download:.*<a href="/CPAN/authors/id/(.*?)">.*?</a>!
             and return $self->cpan_uris($1);
+        $self->diag("! Finding $module on search.cpan.org failed.\n");
+        return;
     };
 
     $self->run_hooks(search_module => { module => $module, uris => \@uris });
