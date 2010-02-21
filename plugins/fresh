@@ -11,9 +11,8 @@ hook search_module => sub {
 
     require JSON;
 
-    $args->{app}->chat("Querying http://friendfeed.cpan/cpan for $dist...\n");
-
     unless ($entries) {
+        $args->{app}->chat("Querying http://friendfeed.cpan/cpan for $dist...\n");
         my $json = Util::get("http://friendfeed-api.com/v2/feed/cpan");
         $entries = eval { JSON::decode_json($json)->{entries} } || [];
     }
