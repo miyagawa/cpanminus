@@ -33,6 +33,7 @@ sub new {
         verbose => undef,
         log => undef,
         argv => [],
+        hooks => {},
     }, $class;
 }
 
@@ -62,6 +63,7 @@ sub parse_options {
 sub doit {
     my $self = shift;
     $self->setup_home();
+    $self->load_plugins();
     $self->sanity_check();
 
     $self->{make}  = Util::which($Config{make});
@@ -84,12 +86,60 @@ sub setup_home {
     $self->{home} = $ENV{CPANMINUS_HOME} if $ENV{CPANMINUS_HOME};
     mkdir $self->{home}, 0777 unless -e $self->{home};
 
+    my $plugins = File::Spec->catfile($self->{home}, "plugins");
+    mkdir $plugins, 0777 unless -e $plugins;
+
     $self->{base} = File::Spec->catfile($self->{home}, "build-" . time . ".$$");
     mkdir $self->{base}, 0777 or die "$self->{base}: $!";
 
     $self->{log} = File::Spec->catfile($self->{home}, "build.log");
     open my $out, ">$self->{log}" or die "$self->{log}: $!";
     print $out "Beginning a new cpanminus installation: build direcotry is $self->{base}\n";
+
+   $self->{plugin_dir} = $ENV{CPANM_DEV} ? 'plugins' : File::Spec->catfile($self->{home}, "plugins");
+}
+
+sub load_plugins {
+    my $self = shift;
+
+    return unless $self->{plugin_dir} && -e $self->{plugin_dir};
+
+    opendir my $dh, $self->{plugin_dir} or return;
+    while (my $e = readdir $dh) {
+        my $f = File::Spec->catfile($self->{plugin_dir}, $e);
+        next unless -f $f && $e =~ /^[A-Za-z0-9_]+$/ && $e ne 'README';
+        $self->load_plugin($f);
+    }
+}
+
+sub load_plugin {
+    my($self, $file) = @_;
+
+    $self->chat("Loading plugin $file\n");
+
+    (my $package = $file) =~ s/[^a-zA-Z0-9_]/_/g;
+    my $code = do { open my $io, "<$file"; local $/; <$io> };
+    eval "package App::cpanplus::plugin::$package; sub hook { \$self->hook(\@_) };\n$code";
+
+    $self->diag("! Loading plugin $file faield: $@") if $@;
+}
+
+sub hook {
+    my($self, $hook, $cb) = @_;
+    push @{$self->{hooks}->{$hook}}, $cb;
+}
+
+sub run_hook {
+    my($self, $hook, $args) = @_;
+
+    my $res;
+    for my $cb (@{$self->{hooks}->{$hook} || []}) {
+        $res = eval { $cb->({ %$args, app => $self }) };
+        $self->chat("Running hook error: $@") if $@;
+        last if $res;
+    }
+
+    return $res;
 }
 
 sub version {
@@ -306,6 +356,9 @@ sub cpan_uri {
 
 sub search_module {
     my($self, $module) = @_;
+
+    my $uri = $self->run_hook(search_module => { module => $module });
+    return $uri if $uri;
 
     my $html = Util::get("http://search.cpan.org/perldoc?$module");
     $html =~ m!Download:.*<a href="/CPAN/authors/id/(.*?)">.*?</a>!

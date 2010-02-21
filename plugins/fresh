@@ -1,0 +1,41 @@
+# NAME: fresh - Fetch the latest release from http://friendfeed.com/cpan
+# AUTHOR: Tatsuhiko Miyagawa
+
+hook search_module => sub {
+    my $args = shift;
+
+    my $dist = $args->{module};
+    $dist =~ s/::/-/g;
+
+    require JSON;
+
+    $args->{app}->chat("Querying http://friendfeed.cpan/cpan for $dist...\n");
+
+    my $json = Util::get("http://friendfeed-api.com/v2/feed/cpan");
+    my $res  = JSON::decode_json($json);
+
+    for my $entry (@{$res->{entries}}) {
+        my $info = parse_entry($entry->{body}) or next;
+        if ($info->{dist} eq $dist) {
+            $args->{app}->chat("Found $info->{dist} $info->{version} on CPAN Realtime feed\n");
+            return $info->{url};
+        }
+    }
+
+    return;
+};
+
+sub parse_entry {
+    my $body = shift;
+
+    if ($body =~ /^([\w\-]+) ([0-9\._]*) by (.+?) - <a.*href="(http:.*?\.tar\.gz)"/) {
+        return {
+            dist    => $1,
+            version => $2,
+            author  => $3,
+            url     => $4,
+        };
+    }
+
+    return;
+}
