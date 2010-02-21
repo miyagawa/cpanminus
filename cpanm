@@ -197,23 +197,34 @@ sub fetch_module {
     my $name = basename $uri;
 
     my $cancelled;
-    eval {
-        local $SIG{INT} = sub { $cancelled = 1; die "SIGINT\n" };
-        mirror($uri, $name);
+    my $fetch = sub {
+        eval {
+            local $SIG{INT} = sub { $cancelled = 1; die "SIGINT\n" };
+            mirror($uri, $name);
+            return $name if -e $name;
+            return;
+        };
     };
+
+    my($try, $file);
+    while ($try++ < 3) {
+        $file = $fetch->();
+        last if $cancelled or $file;
+        diag "Download $uri failed. Retrying ...\n";
+    }
 
     if ($cancelled) {
         diag "! Download cancelled.\n";
         return;
     }
 
-    unless (-e $name) {
+    unless ($file) {
         diag "! Failed to download $uri\n";
         return;
     }
 
-    chat "Unpacking $name...\n";
-    my $dir = untar $name;
+    chat "Unpacking $file...\n";
+    my $dir = untar $file;
     unless ($dir) {
         diag "! Failed to unpack $name: no directory\n";
         return;
