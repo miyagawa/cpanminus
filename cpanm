@@ -53,6 +53,7 @@ sub parse_options {
         'V|version' => sub { $self->{cmd} = 'version' },
         'v|verbose' => \$self->{verbose},
         'look'      => sub { $self->{action} = 'look' },
+        'recent'    => sub { $self->{cmd} = 'show_recent' },
         'q|quiet'   => sub {},
     );
 
@@ -74,6 +75,7 @@ sub doit {
 
     if (my $cmd = $self->{cmd}) {
         $self->$cmd();
+        return;
     }
 
     $self->help(1) unless @{$self->{argv}};
@@ -118,13 +120,26 @@ sub register_core_hooks {
             return;
         };
     });
+
+    $self->hook('core_show_recent', show_recent => sub {
+        my $args = shift;
+
+        $self->chat("Fetching recent feed from search.cpan.org...\n");
+        my $feed = Util::get("http://search.cpan.org/uploads.rdf");
+
+        my @dists;
+        while ($feed =~ m!<link>http://search\.cpan\.org/~([a-z_\-0-9]+)/(.*?)/</link>!g) {
+            my($pause_id, $dist) = (uc $1, $2);
+            push @dists, substr($pause_id, 0, 1) . "/" . substr($pause_id, 0, 2) . "/" . $pause_id . "/$dist.tar.gz";
+        }
+
+        return \@dists;
+    });
 }
 
 sub load_plugins {
     my $self = shift;
 
-    $self->register_core_hooks;
-    
     return unless $self->{plugin_dir} && -e $self->{plugin_dir};
 
     opendir my $dh, $self->{plugin_dir} or return;
@@ -138,6 +153,8 @@ sub load_plugins {
     for my $plugin (sort { $a->[1] <=> $b->[1] } @plugins) {
         $self->load_plugin(@$plugin);
     }
+
+    $self->register_core_hooks;
 
     for my $hook (keys %{$self->{hooks}}) {
         $self->{hooks}->{$hook} = [ sort { $a->[0] <=> $b->[0] } @{$self->{hooks}->{$hook}} ];
@@ -291,6 +308,15 @@ sub configure_mirrors {
 
     @mirrors = ('http://search.cpan.org/CPAN') unless @mirrors;
     $self->{mirrors} = \@mirrors;
+}
+
+sub show_recent {
+    my $self = shift;
+
+    my $dists = $self->run_hook(show_recent => {});
+    for my $dist (@$dists) {
+        print $dist, "\n";
+    }
 }
 
 sub install_module {
