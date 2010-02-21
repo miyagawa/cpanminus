@@ -417,16 +417,19 @@ sub init_tools {
 
             my $xf = "xf" . ($quiet ? '' : 'v');
             my $ar = $tarfile =~ /bz2$/ ? 'j' : 'z';
-            system "$tar $xf$ar $tarfile";
 
-            my @files = `$tar tf$ar $tarfile`;
-            if (@files) {
-                $files[0] =~ s{^(.+)/[^/]+$}{$1};
-                chomp $files[0];
-                return $files[0];
-            } else {
-                return undef;
+            my($root, @others) = `$tar tf$ar $tarfile`
+                or return undef;
+
+            chomp $root;
+            $root =~ s{^(.+/)[^/]+$}{$1};
+
+            if ($root =~ s!/$!!) {
+                system "$tar $xf$ar $tarfile";
+                return $root if -d $root;
             }
+
+            return undef;
         }
     } elsif (eval { require Archive::Tar }) { # uses too much memory!
         *untar = sub {
@@ -763,7 +766,7 @@ Run C<cpanm -h> for more options.
 
 cpanminus is a script to get, unpack, build and install modules from CPAN.
 
-Its catch? Deps-free, zero-conf, standalone ~200 LOC script
+Its catch? Deps-free, zero-conf, standalone ~350 LOC script
 (i.e. hackable) and requires less than 10MB RAM. See below for its cons.
 
 =head1 INSTALLATION
