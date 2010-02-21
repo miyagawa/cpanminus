@@ -1121,10 +1121,10 @@ auto sudo when running the install command.
 
 =head2 Does this really work?
 
-I tested installing MojoMojo, KiokuDB, Catalyst, Jifty and Plack using
-cpanminus and the installations including dependencies were mostly
-successful. So multiplies of I<half of CPAN> behave really nicely and
-appear to work.
+I tested installing MojoMojo, Task::Kensho, KiokuDB, Catalyst, Jifty
+and Plack using cpanminus and the installations including dependencies
+were mostly successful. So multiplies of I<half of CPAN> behave really
+nicely and appear to work.
 
 However, there are some distributions that will miserably fail,
 because of the nasty edge cases (funky archive formats, naughty
