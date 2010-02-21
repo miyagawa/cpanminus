@@ -93,11 +93,17 @@ Examples:
   # specify the version
   cpanm MIYAGAWA/Plack-0.99_05.tar.gz
 
+  # install from an URL
+  cpan http://backpan.perl.org/authors/id/L/LD/LDS/CGI.pm-3.20.tar.gz
+
   # install Task:: modlues (You need -v to answer questions)
   cpanm -v Task::Kensho
 
-  # install from the current directory, just like `cpan .`
+  # install from local directory, just like `cpan .`
   cpanm .
+
+  # install from a local file
+  cpanm ~/dists/MyCompany-Enterprise-1.00.tar.gz
 
 USAGE
 
@@ -783,7 +789,7 @@ Run C<cpanm -h> for more options.
 cpanminus is a script to get, unpack, build and install modules from CPAN.
 
 Its catch? Deps-free, zero-conf, standalone ~350 LOC script
-(i.e. hackable) and requires less than 10MB RAM. See below for its cons.
+(i.e. hackable) and requires 8MB of RAM. See below for its cons.
 
 =head1 INSTALLATION
 
