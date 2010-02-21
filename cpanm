@@ -101,7 +101,7 @@ sub setup_home {
     open my $out, ">$self->{log}" or die "$self->{log}: $!";
     print $out "Beginning a new cpanminus installation: build direcotry is $self->{base}\n";
 
-   $self->{plugin_dir} = $ENV{CPANM_DEV} ? 'plugins' : File::Spec->catfile($self->{home}, "plugins");
+   $self->{plugin_dir} = File::Spec->catfile($self->{home}, "plugins");
 }
 
 sub register_core_hooks {
