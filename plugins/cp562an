@@ -23,7 +23,7 @@ sub detect_platform {
         return '5.8.8';
     } elsif ($] eq '5.008009') {
         return '5.8.9';
-    } elsif ($] eq '5.00602') {
+    } elsif ($] eq '5.006002') {
         return '5.6.2';
     } elsif ($] eq '5.00503') {
         return '5.5.3';
