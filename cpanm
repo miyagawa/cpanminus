@@ -344,7 +344,7 @@ sub build_stuff {
         };
     }
 
-    diag "Building ", ($notest ? "" : "and testing "), "$module ...\n";
+    diag "Building ", ($notest ? "" : "and testing "), "$dir for $module ...\n";
 
     my $installed;
     if (-e 'Build') {
