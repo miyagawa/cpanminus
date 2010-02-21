@@ -120,6 +120,8 @@ sub load_plugins {
     for my $plugin (sort { $a <=> $b } @plugins) {
         $self->load_plugin($plugin);
     }
+
+    $self->run_hook(init => {});
 }
 
 sub load_plugin {
