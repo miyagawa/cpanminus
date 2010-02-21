@@ -328,11 +328,11 @@ sub build_stuff {
         run "$^X Makefile.PL";
     }
 
-    my %deps;
+    my(%deps, $meta);
     my($metayml) = grep -e $_, qw( MYMETA.yml META.yml );
     if ($metayml) {
         chat "Checking dependencies from $metayml...\n";
-        my $meta = parse_meta($metayml);
+        $meta = parse_meta($metayml);
         %deps = (%{$meta->{requires} || {}});
         unless ($notest) {
             %deps = (%deps, %{$meta->{build_requires} || {}}, %{$meta->{test_requires} || {}});
@@ -361,10 +361,14 @@ sub build_stuff {
 
     unless ($make or -e "Build") {
         diag "! Oops, you don't have make. Trying to build a stub Build file for you. Hope this works!\n";
-        eval {
-            require Module::Build;
-            Module::Build->new(module_name => $module)->create_build_script;
-        };
+        {
+            open my $mb, ">Build.PL";
+            print $mb "require Module::Build;Module::Build->new(module_name => '$module',";
+            print $mb "dist_name => '$meta->{name}', dist_version => '$meta->{version}'" if $meta;
+            print $mb ")->create_build_script;";
+        }
+
+        run "$^X Build.PL";
     }
 
     diag "Building ", ($notest ? "" : "and testing "), "$dir for $module...\n";
