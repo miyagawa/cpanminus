@@ -131,12 +131,17 @@ sub hook {
 
 sub run_hook {
     my($self, $hook, $args) = @_;
+    $self->run_hooks($hook, $args, 1);
+}
+
+sub run_hooks {
+    my($self, $hook, $args, $first) = @_;
 
     my $res;
     for my $cb (@{$self->{hooks}->{$hook} || []}) {
         $res = eval { $cb->({ %$args, app => $self }) };
         $self->chat("Running hook error: $@") if $@;
-        last if $res;
+        last if $res && $first;
     }
 
     return $res;
@@ -274,60 +279,64 @@ sub install_module {
 sub fetch_module {
     my($self, $module) = @_;
 
-    my($uri, $local_dir) = $self->locate_archive($module);
+    my($uris, $local_dir) = $self->locate_dist($module);
 
     return $local_dir if $local_dir;
-    return unless $uri;
+    return unless $uris;
 
-    if ($uri =~ m{/perl-5}){
-        $self->diag("skip $uri\n");
-        return;
-    }
+    $uris = [ $uris ] unless ref $uris eq 'ARRAY';
 
-    $self->chdir($self->{base});
-    $self->diag("Fetching $uri\n");
+    for my $uri (@$uris) {
+        if ($uri =~ m{/perl-5}){
+            $self->diag("skip $uri\n");
+            next;
+        }
 
-    my $name = File::Basename::basename $uri;
+        $self->chdir($self->{base});
+        $self->diag("Fetching $uri\n");
 
-    my $cancelled;
-    my $fetch = sub {
-        eval {
-            local $SIG{INT} = sub { $cancelled = 1; die "SIGINT\n" };
-            Util::mirror($uri, $name);
-            return $name if -e $name;
-            return;
+        my $name = File::Basename::basename $uri;
+
+        my $cancelled;
+        my $fetch = sub {
+            eval {
+                local $SIG{INT} = sub { $cancelled = 1; die "SIGINT\n" };
+                Util::mirror($uri, $name);
+                return $name if -e $name;
+                return;
+            };
         };
-    };
 
-    my($try, $file);
-    while ($try++ < 3) {
-        $file = $fetch->();
-        last if $cancelled or $file;
-        $self->diag("Download $uri failed. Retrying ...\n");
+        my($try, $file);
+        while ($try++ < 3) {
+            $file = $fetch->();
+            last if $cancelled or $file;
+            $self->diag("Download $uri failed. Retrying ...\n");
+        }
+
+        if ($cancelled) {
+            $self->diag("! Download cancelled.\n");
+            return;
+        }
+
+        unless ($file) {
+            $self->diag("! Failed to download $uri\n");
+            next;
+        }
+
+        $self->chat("Unpacking $file...\n");
+
+        my $dir = Util::untar($file);
+        unless ($dir) {
+            $self->diag("! Failed to unpack $name: no directory\n");
+            next;
+        }
+
+        return $dir;
     }
-
-    if ($cancelled) {
-        $self->diag("! Download cancelled.\n");
-        return;
-    }
-
-    unless ($file) {
-        $self->diag("! Failed to download $uri\n");
-        return;
-    }
-
-    $self->chat("Unpacking $file...\n");
-
-    my $dir = Util::untar($file);
-    unless ($dir) {
-        $self->diag("! Failed to unpack $name: no directory\n");
-        return;
-    }
-
-    return $dir;
 }
 
-sub locate_archive {
+sub locate_dist {
     my($self, $module) = @_;
 
     # URL
@@ -346,25 +355,28 @@ sub locate_archive {
     return $self->cpan_uri($module) if $module =~ m!/!;
 
     # Module name -- search.cpan.org
-    return $self->search_module($module);
+    my @uris = $self->search_module($module);
+    return \@uris;
 }
 
 sub cpan_uri {
-    my($self, $module) = @_;
-    return "http://search.cpan.org/CPAN/authors/id/$module";
+    my($self, $dist) = @_;
+    return "http://search.cpan.org/CPAN/authors/id/$dist";
 }
 
 sub search_module {
     my($self, $module) = @_;
 
-    my $uri = $self->run_hook(search_module => { module => $module });
-    return $uri if $uri;
+    my @uris;
+    $self->run_hooks(search_module => { module => $module, uris => \@uris });
 
-    my $html = Util::get("http://search.cpan.org/perldoc?$module");
-    $html =~ m!Download:.*<a href="/CPAN/authors/id/(.*?)">.*?</a>!
-        and return $self->cpan_uri($1);
+    unless (@uris) {
+        my $html = Util::get("http://search.cpan.org/perldoc?$module");
+        $html =~ m!Download:.*<a href="/CPAN/authors/id/(.*?)">.*?</a>!
+            and push @uris, $self->cpan_uri($1);
+    }
 
-    return;
+    return @uris;
 }
 
 sub install_deps {

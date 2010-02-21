@@ -7,7 +7,6 @@ hook search_module => sub {
     return unless $args->{module} =~ /^[A-Za-z0-9:]+$/;
 
     require YAML;
-
     $args->{app}->chat("Querying CPANDB for $args->{module}\n");
 
     my $yaml = Util::get("http://cabbage.bingosnet.co.uk/cpandb/yaml/mod/$args->{module}");
@@ -15,7 +14,8 @@ hook search_module => sub {
 
     if (my $d = $meta->[0]) {
         $args->{app}->chat("Got a response from CPANDB => $d->{dist_file}\n");
-        return $args->{app}->cpan_uri($d->{dist_file});
+        push @{$args->{uris}}, $args->{app}->cpan_uri($d->{dist_file});
+        return;
     }
 
     return;
