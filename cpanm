@@ -105,6 +105,7 @@ sub load_plugins {
     return unless $self->{plugin_dir} && -e $self->{plugin_dir};
 
     opendir my $dh, $self->{plugin_dir} or return;
+    my @plugins;
     while (my $e = readdir $dh) {
         my $f = File::Spec->catfile($self->{plugin_dir}, $e);
         next unless -f $f && $e =~ /^[A-Za-z0-9_]+$/ && $e ne 'README';
