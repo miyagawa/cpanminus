@@ -1,6 +1,8 @@
 # NAME: fresh - Fetch the latest release from http://friendfeed.com/cpan
 # AUTHOR: Tatsuhiko Miyagawa
 
+my $entries;
+
 hook search_module => sub {
     my $args = shift;
 
@@ -11,10 +13,12 @@ hook search_module => sub {
 
     $args->{app}->chat("Querying http://friendfeed.cpan/cpan for $dist...\n");
 
-    my $json = Util::get("http://friendfeed-api.com/v2/feed/cpan");
-    my $res  = JSON::decode_json($json);
+    unless ($entries) {
+        my $json = Util::get("http://friendfeed-api.com/v2/feed/cpan");
+        $entries = eval { JSON::decode_json($json)->{entries} } || [];
+    }
 
-    for my $entry (@{$res->{entries}}) {
+    for my $entry (@$entries) {
         my $info = parse_entry($entry->{body}) or next;
         if ($info->{dist} eq $dist) {
             $args->{app}->chat("Found $dist on CPAN realtime feed => $info->{url}\n");
