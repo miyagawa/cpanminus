@@ -241,7 +241,7 @@ Examples:
   cpanm MIYAGAWA/Plack-0.99_05.tar.gz
 
   # install from an URL
-  cpan http://backpan.perl.org/authors/id/L/LD/LDS/CGI.pm-3.20.tar.gz
+  cpanm http://backpan.perl.org/authors/id/L/LD/LDS/CGI.pm-3.20.tar.gz
 
   # install Task:: modlues (You need -v to answer questions)
   cpanm -v Task::Kensho
