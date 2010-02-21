@@ -9,7 +9,7 @@ use File::Spec;
 use Getopt::Long;
 use constant WIN32 => $^O eq 'MSWin32';
 
-our $VERSION = "0.08";
+our $VERSION = "0.09";
 
 my($Base, %seen, $notest, $installdeps, $force, $sudo, $quote, $make, $verbose, $log);
 
