@@ -18,5 +18,6 @@ WriteMakefile(
         'LWP' => 0,
         'Module::Build' => 0,
     },
+    LICENSE => 'perl',
     EXE_FILES => [ 'bin/cpanm' ],
 );
