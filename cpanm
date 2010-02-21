@@ -55,6 +55,7 @@ sub parse_options {
         'look'      => sub { $self->{action} = 'look' },
         'recent'    => sub { $self->{cmd} = 'show_recent' },
         'q|quiet'   => sub {},
+        'disable-plugins' => \$self->{disable_plugins},
     );
 
     $ENV{PERL_MM_USE_DEFAULT} = 1 unless $self->{verbose};
@@ -140,6 +141,20 @@ sub register_core_hooks {
 sub load_plugins {
     my $self = shift;
 
+    $self->_load_plugins;
+    $self->register_core_hooks;
+
+    for my $hook (keys %{$self->{hooks}}) {
+        $self->{hooks}->{$hook} = [ sort { $a->[0] <=> $b->[0] } @{$self->{hooks}->{$hook}} ];
+    }
+
+    $self->run_hook(init => {});
+}
+
+sub _load_plugins {
+    my $self = shift;
+
+    return if $self->{disable_plugins};
     return unless $self->{plugin_dir} && -e $self->{plugin_dir};
 
     opendir my $dh, $self->{plugin_dir} or return;
@@ -153,14 +168,6 @@ sub load_plugins {
     for my $plugin (sort { $a->[1] <=> $b->[1] } @plugins) {
         $self->load_plugin(@$plugin);
     }
-
-    $self->register_core_hooks;
-
-    for my $hook (keys %{$self->{hooks}}) {
-        $self->{hooks}->{$hook} = [ sort { $a->[0] <=> $b->[0] } @{$self->{hooks}->{$hook}} ];
-    }
-
-    $self->run_hook(init => {});
 }
 
 sub load_plugin {
@@ -213,13 +220,14 @@ sub help {
     print <<USAGE;
 Usage: cpanm [--verbose] [--force] [--notest] [--sudo] Module
 
-  -v,--verbose   Turns on chatty output (required when you install Task:: modules)
-  -f,--force     force install
-  -n,--notest    Do not run unit tests
-  -S,--sudo      sudo to run install commands
-  --look         Download the tarball and open the directory with your shell
-  --installdeps  Only install dependencies
-  --recent       Show recently updated modules
+  -v,--verbose       Turns on chatty output (required when you install Task:: modules)
+  -f,--force         force install
+  -n,--notest        Do not run unit tests
+  -S,--sudo          sudo to run install commands
+  --look             Download the tarball and open the directory with your shell
+  --installdeps      Only install dependencies
+  --recent           Show recently updated modules
+  --disable-plugins  Disable plugin loading
 
 Examples:
 
