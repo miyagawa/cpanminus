@@ -1,70 +1,93 @@
 #!/usr/bin/env perl
+my $quote = $^O eq 'MSWin32' ? q/"/ : q/'/;
+
+my $app = App::cpanminus::script->new;
+$app->parse_options(@ARGV);
+$app->doit;
+
 package App::cpanminus::script;
 use strict;
 use Config;
 use Cwd;
-use File::Basename qw(basename);
-use Fatal qw(chdir);
+use File::Basename;
 use File::Spec;
 use Getopt::Long;
+
 use constant WIN32 => $^O eq 'MSWin32';
 
 our $VERSION = "0.09";
 
-my($Base, %seen, $notest, $installdeps, $force, $sudo, $quote, $make, $verbose, $log);
+sub new {
+    my $class = shift;
 
-main();
-
-sub main {
-    parse_options();
-    setup_home();
-    sanity_check();
-
-    $quote = WIN32 ? q/"/ : q/'/;
-    $make  = which($Config{make});
-
-    init_tools();
-
-    help(1) unless @ARGV;
-    for my $module (@ARGV) {
-        install_module($module);
-    }
-}
-
-sub setup_home {
-    $Base = $ENV{CPANMINUS_HOME} || "$ENV{HOME}/.cpanm";
-    mkdir $Base, 0777 unless -e $Base;
-
-    my $build_dir = "build-" . time . ".$$";
-
-    $log = File::Spec->catfile($Base, "build.log");
-    open my $out, ">$log" or die "$log: $!";
-    print $out "Beginning a new cpanminus installation: build direcotry is $build_dir\n";
-
-    $Base = File::Spec->catfile($Base, $build_dir);
-    mkdir $Base, 0777;
+    bless {
+        home => File::Spec->catfile($ENV{HOME}, ".cpanm"),
+        seen => {},
+        notest => undef,
+        installdeps => undef,
+        force => undef,
+        sudo => undef,
+        make  => undef,
+        verbose => undef,
+        log => undef,
+        argv => [],
+    }, $class;
 }
 
 sub parse_options {
+    my $self = shift;
+    local @ARGV = @_;
+
     my($help, $version);
 
     Getopt::Long::Configure("bundling");
     GetOptions(
-        'f|force'  => \$force,
-        'n|notest' => \$notest,
-        'S|sudo'   => \$sudo,
+        'f|force'  => \$self->{force},
+        'n|notest' => \$self->{notest},
+        'S|sudo'   => \$self->{sudo},
         'h|help'   => \$help,
         'i|install' => sub {},
-        'installdeps' => \$installdeps,
+        'installdeps' => \$self->{installdeps},
         'V|version' => \$version,
-        'v|verbose' => \$verbose,
-        'q|quiet'   => sub { }, # now default: just ignore
+        'v|verbose' => \$self->{verbose},
+        'q|quiet'   => sub {},
     );
 
-    $ENV{PERL_MM_USE_DEFAULT} = 1 unless $verbose;
+    $ENV{PERL_MM_USE_DEFAULT} = 1 unless $self->{verbose};
 
-    help(0)   if $help;
-    version() if $version;
+    $self->help(0)   if $help;
+    $self->version() if $version;
+
+    $self->{argv} = \@ARGV;
+}
+
+sub doit {
+    my $self = shift;
+    $self->setup_home();
+    $self->sanity_check();
+
+    $self->{make}  = Util::which($Config{make});
+
+    Util::init_tools();
+
+    $self->help(1) unless @{$self->{argv}};
+    for my $module (@{$self->{argv}}) {
+        $self->install_module($module);
+    }
+}
+
+sub setup_home {
+    my $self = shift;
+
+    $self->{home} = $ENV{CPANMINUS_HOME} if $ENV{CPANMINUS_HOME};
+    mkdir $self->{home}, 0777 unless -e $self->{home};
+
+    $self->{base} = File::Spec->catfile($self->{home}, "build-" . time . ".$$");
+    mkdir $self->{base}, 0777 or die "$self->{base}: $!";
+
+    $self->{log} = File::Spec->catfile($self->{home}, "build.log");
+    open my $out, ">$self->{log}" or die "$self->{log}: $!";
+    print $out "Beginning a new cpanminus installation: build direcotry is $self->{base}\n";
 }
 
 sub version {
@@ -73,6 +96,7 @@ sub version {
 }
 
 sub help {
+    my $self = shift;
     print <<USAGE;
 Usage: cpanm [--verbose] [--force] [--notest] [--sudo] Module
 
@@ -111,102 +135,102 @@ USAGE
 }
 
 sub sanity_check {
-    unless ($ENV{PERL_MM_OPT} or $ENV{MODULEBUILDRC} or -w $Config{installsitelib} or $sudo) {
+    my $self = shift;
+    unless ($ENV{PERL_MM_OPT} or $ENV{MODULEBUILDRC} or -w $Config{installsitelib} or $self->{sudo}) {
         die "Can't write to $Config{installsitelib}: Run me as root or with --sudo option.\n";
     }
 }
 
-sub get($);
-sub mirror($$);
-sub untar;
-
 sub diag {
+    my $self = shift;
     print STDERR @_;
-    _log(@_);
+    $self->log(@_);
 }
 
 sub chat {
-    print STDERR @_ if $verbose;
-    _log(@_);
+    my $self = shift;
+    print STDERR @_ if $self->{verbose};
+    $self->log(@_);
 }
 
-sub _log {
-    open my $out, ">>$log";
+sub log {
+    my $self = shift;
+    open my $out, ">>$self->{log}";
     print $out @_;
 }
 
-sub run($) {
-    my $cmd = shift;
+sub run {
+    my($self, $cmd) = @_;
 
-    unless ($verbose) {
-        $cmd .= WIN32 ? ">> $log" : ">> $log 2>&1";
+    unless ($self->{verbose}) {
+        $cmd .= WIN32 ? ">> $self->{log}" : ">> $self->{log} 2>&1";
     }
 
     !system $cmd;
 }
 
-sub test($) {
-    my $cmd = shift;
-    return 1 if $notest;
-    return run($cmd) || $force;
+sub test {
+    my($self, $cmd) = @_;
+    return 1 if $self->{notest};
+    return $self->run($cmd) || $self->{force};
 }
 
-sub install($) {
-    my $cmd = shift;
-    $cmd = "sudo $cmd" if $sudo;
-    run($cmd);
+sub install {
+    my($self, $cmd) = @_;
+    $cmd = "sudo $cmd" if $self->{sudo};
+    $self->run($cmd);
 }
 
-sub _chdir {
-    chdir(File::Spec->canonpath($_[0]));
+sub chdir {
+    my $self = shift;
+    chdir(File::Spec->canonpath($_[0])) or die "$_[0]: $!";
 }
 
 sub install_module {
-    my($module, $is_dep) = @_;
+    my($self, $module, $is_dep) = @_;
 
-    if ($seen{$module}++) {
-        diag "Already tried $module. Skipping\n";
+    if ($self->{seen}{$module}++) {
+        $self->diag("Already tried $module. Skipping\n");
         return;
     }
 
-    my $dir = fetch_module($module);
+    my $dir = $self->fetch_module($module);
 
     unless ($dir) {
-        diag "! Couldn't find module or a distribution $module\n";
+        $self->diag("! Couldn't find module or a distribution $module\n");
         return;
     }
 
-    chat "Entering $dir...\n";
-    _chdir $Base;
-    _chdir $dir;
+    $self->chat("Entering $dir...\n");
+    $self->chdir($self->{base});
+    $self->chdir($dir);
 
-    build_stuff($module, $dir, $is_dep)
+    $self->build_stuff($module, $dir, $is_dep)
 }
 
 sub fetch_module {
-    my $module = shift;
+    my($self, $module) = @_;
 
-    my($uri, $dir) = locate_archive($module);
+    my($uri, $local_dir) = $self->locate_archive($module);
 
-    return $dir if $dir;
-
+    return $local_dir if $local_dir;
     return unless $uri;
 
     if ($uri =~ m{/perl-5}){
-        diag "skip $uri\n";
+        $self->diag("skip $uri\n");
         return;
     }
 
-    _chdir $Base;
-    diag "Fetching $uri\n";
+    $self->chdir($self->{base});
+    $self->diag("Fetching $uri\n");
 
-    my $name = basename $uri;
+    my $name = File::Basename::basename $uri;
 
     my $cancelled;
     my $fetch = sub {
         eval {
             local $SIG{INT} = sub { $cancelled = 1; die "SIGINT\n" };
-            mirror($uri, $name);
+            Util::mirror($uri, $name);
             return $name if -e $name;
             return;
         };
@@ -216,23 +240,24 @@ sub fetch_module {
     while ($try++ < 3) {
         $file = $fetch->();
         last if $cancelled or $file;
-        diag "Download $uri failed. Retrying ...\n";
+        $self->diag("Download $uri failed. Retrying ...\n");
     }
 
     if ($cancelled) {
-        diag "! Download cancelled.\n";
+        $self->diag("! Download cancelled.\n");
         return;
     }
 
     unless ($file) {
-        diag "! Failed to download $uri\n";
+        $self->diag("! Failed to download $uri\n");
         return;
     }
 
-    chat "Unpacking $file...\n";
-    my $dir = untar $file;
+    $self->chat("Unpacking $file...\n");
+
+    my $dir = Util::untar($file);
     unless ($dir) {
-        diag "! Failed to unpack $name: no directory\n";
+        $self->diag("! Failed to unpack $name: no directory\n");
         return;
     }
 
@@ -240,7 +265,7 @@ sub fetch_module {
 }
 
 sub locate_archive {
-    my $module = shift;
+    my($self, $module) = @_;
 
     # URL
     return $module if $module =~ /^(ftp|https?|file):/;
@@ -255,92 +280,92 @@ sub locate_archive {
     $module =~ s!^([A-Z]{3,})/!substr($1, 0, 1)."/".substr($1, 0, 2) ."/" . $1 . "/"!e;
 
     # CPAN tarball
-    return cpan_uri($module) if $module =~ m!/!;
+    return $self->cpan_uri($module) if $module =~ m!/!;
 
     # Module name -- search.cpan.org
-    return search_module($module);
+    return $self->search_module($module);
 }
 
 sub cpan_uri {
-    my $module = shift;
+    my($self, $module) = @_;
     return "http://search.cpan.org/CPAN/authors/id/$module";
 }
 
 sub search_module {
-    my $module = shift;
+    my($self, $module) = @_;
 
-    my $html = get("http://search.cpan.org/perldoc?$module");
+    my $html = Util::get("http://search.cpan.org/perldoc?$module");
     $html =~ m!Download:.*<a href="/CPAN/authors/id/(.*?)">.*?</a>!
-        and return cpan_uri($1);
+        and return $self->cpan_uri($1);
 
     return;
 }
 
 sub install_deps {
-    my($dir, %deps) = @_;
+    my($self, $dir, %deps) = @_;
 
     my @install;
     while (my($mod, $ver) = each %deps) {
         next if $mod eq 'perl' or $mod eq 'Config';
-        chat "Checking if you have $mod $ver... ";
+        $self->chat("Checking if you have $mod $ver... ");
         $ver = '' if $ver == 0;
         my $test = `$^X -e ${quote}eval q{use $mod $ver (); print q{OK:}, q/$mod/->VERSION};print \$\@ if \$\@${quote}`;
         if ($test =~ s/^\s*OK://) {
-            chat "Yes ($test)\n";
+            $self->chat("Yes ($test)\n");
         } elsif ($test =~ /^Can't locate|required--this is only version (\S+)/) {
-            chat "No ", ($1 ? "($1 < $ver)\n" : "\n");
+            $self->chat("No ", ($1 ? "($1 < $ver)\n" : "\n"));
             push @install, $mod;
         } else {
-            chat "Unknown ($test)\n";
+            $self->chat("Unknown ($test)\n");
         }
     }
 
     if (@install) {
-        diag "==> Found dependencies: ", join(", ", @install), "\n";
+        $self->diag("==> Found dependencies: ", join(", ", @install), "\n");
     }
 
     for my $mod (@install) {
-        install_module($mod, 1);
+        $self->install_module($mod, 1);
     }
 
-    _chdir $Base;
-    _chdir $dir;
+    $self->chdir($self->{base});
+    $self->chdir($dir);
 }
 
 sub build_stuff {
-    my($module, $dir, $is_dep) = @_;
+    my($self, $module, $dir, $is_dep) = @_;
 
     if (-e 'META.yml') {
-        chat "Checking configure dependencies from META.yml...\n";
-        my $meta = parse_meta('META.yml');
+        $self->chat("Checking configure dependencies from META.yml...\n");
+        my $meta = Util::parse_meta('META.yml');
         my %deps = %{$meta->{configure_requires} || {}};
 
-        install_deps($dir, %deps);
+        $self->install_deps($dir, %deps);
     }
 
     # trick AutoInstall
     $ENV{PERL5_CPAN_IS_RUNNING} = 1;
 
     if (-e 'Build.PL') {
-        run "$^X Build.PL";
+        $self->run("$^X Build.PL");
     } elsif (-e 'Makefile.PL') {
         $ENV{X_MYMETA} = 'YAML';
-        run "$^X Makefile.PL";
+        $self->run("$^X Makefile.PL");
     }
 
     my(%deps, $meta);
     my($metayml) = grep -e $_, qw( MYMETA.yml META.yml );
     if ($metayml) {
-        chat "Checking dependencies from $metayml...\n";
-        $meta = parse_meta($metayml);
+        $self->chat("Checking dependencies from $metayml...\n");
+        $meta = Util::parse_meta($metayml);
         %deps = (%{$meta->{requires} || {}});
-        unless ($notest) {
+        unless ($self->{notest}) {
             %deps = (%deps, %{$meta->{build_requires} || {}}, %{$meta->{test_requires} || {}});
         }
     }
 
     if (-e 'Makefile') {
-        chat "Finding PREREQ from Makefile...\n";
+        $self->chat("Finding PREREQ from Makefile...\n");
         open my $mf, "Makefile";
         while (<$mf>) {
             if (/^\#\s+PREREQ_PM => ({.*?})/) {
@@ -352,15 +377,15 @@ sub build_stuff {
         }
     }
 
-    install_deps($dir, %deps);
+    $self->install_deps($dir, %deps);
 
-    if ($installdeps && !$is_dep) {
-        diag "<== Installed dependencies for $module. Finishing.\n";
+    if ($self->{installdeps} && !$is_dep) {
+        $self->diag("<== Installed dependencies for $module. Finishing.\n");
         return 1;
     }
 
-    unless ($make or -e "Build") {
-        diag "! Oops, you don't have make. Trying to build a stub Build file for you. Hope this works!\n";
+    unless ($self->{make} or -e "Build") {
+        $self->diag("! Oops, you don't have make. Trying to build a stub Build file for you. Hope this works!\n");
         {
             open my $mb, ">Build.PL";
             print $mb "require Module::Build;Module::Build->new(module_name => '$module',";
@@ -368,40 +393,47 @@ sub build_stuff {
             print $mb ")->create_build_script;";
         }
 
-        run "$^X Build.PL";
+        $self->run("$^X Build.PL");
     }
 
-    diag "Building ", ($notest ? "" : "and testing "), "$dir for $module...\n";
+    $self->diag("Building ", ($self->{notest} ? "" : "and testing "), "$dir for $module...\n");
 
     my $installed;
     if (-e 'Build') {
-        run "$^X ./Build" &&
-        test "$^X ./Build test" &&
-        install "$^X ./Build install" &&
+        $self->run("$^X ./Build") &&
+        $self->test("$^X ./Build test") &&
+        $self->install("$^X ./Build install") &&
         $installed++;
-    } elsif ($make && -e 'Makefile') {
-        run "$make" &&
-        test "$make test" &&
-        install "$make install" &&
+    } elsif ($self->{make} && -e 'Makefile') {
+        $self->run("$self->{make}") &&
+        $self->test("$self->{make} test") &&
+        $self->install("$self->{make} install") &&
         $installed++;
     } else {
-        diag "! Sorry, I don't know how to build $dir\n";
+        $self->diag("! Sorry, I don't know how to build $dir\n");
         return;
     }
 
     if ($installed) {
-        diag "$module installed successfully.\n";
+        $self->diag("$module installed successfully.\n");
         return 1;
     } else {
-        diag "! Installing $module failed. See $log for details.\n";
+        $self->diag("! Installing $module failed. See $self->{log} for details.\n");
         return;
     }
 }
 
+package Util;
+
+use Config;
+sub get($);
+sub mirror($$);
+sub untar;
+
 sub which {
     my($name) = @_;
     my $exe_ext = $Config{_exe};
-    foreach my $dir(File::Spec->path){
+    foreach my $dir (File::Spec->path){
         my $fullpath = File::Spec->catfile($dir, $name);
         if (-x $fullpath || -x ($fullpath .= $exe_ext)){
             if ($fullpath =~ /\s/ && $fullpath !~ /^$quote/) {
@@ -442,7 +474,7 @@ sub init_tools {
         *untar = sub {
             my($tarfile) = @_;
 
-            my $xf = "xf" . ($verbose ? 'v' : '');
+            my $xf = "xf" . ($app->{verbose} ? 'v' : '');
             my $ar = $tarfile =~ /bz2$/ ? 'j' : 'z';
 
             my($root, @others) = `$tar tf$ar $tarfile`
@@ -454,7 +486,7 @@ sub init_tools {
             system "$tar $xf$ar $tarfile";
             return $root if -d $root;
 
-            diag "Bad archive: $tarfile\n";
+            $app->diag("Bad archive: $tarfile\n");
             return undef;
         }
     } elsif (eval { require Archive::Tar }) { # uses too much memory!
