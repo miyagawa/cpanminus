@@ -15,7 +15,9 @@ use Getopt::Long;
 
 use constant WIN32 => $^O eq 'MSWin32';
 
-our $VERSION = "0.09";
+our $VERSION;BEGIN{
+$VERSION = "0.09";
+}
 
 sub new {
     my $class = shift;
@@ -38,25 +40,21 @@ sub parse_options {
     my $self = shift;
     local @ARGV = @_;
 
-    my($help, $version);
-
     Getopt::Long::Configure("bundling");
     GetOptions(
         'f|force'  => \$self->{force},
         'n|notest' => \$self->{notest},
         'S|sudo'   => \$self->{sudo},
-        'h|help'   => \$help,
+        'h|help'   => sub { $self->{cmd} = 'help' },
         'i|install' => sub {},
         'installdeps' => \$self->{installdeps},
-        'V|version' => \$version,
+        'V|version' => sub { $self->{cmd} = 'version' },
         'v|verbose' => \$self->{verbose},
+        'look'      => sub { $self->{action} = 'look' },
         'q|quiet'   => sub {},
     );
 
     $ENV{PERL_MM_USE_DEFAULT} = 1 unless $self->{verbose};
-
-    $self->help(0)   if $help;
-    $self->version() if $version;
 
     $self->{argv} = \@ARGV;
 }
@@ -69,6 +67,10 @@ sub doit {
     $self->{make}  = Util::which($Config{make});
 
     Util::init_tools();
+
+    if (my $cmd = $self->{cmd}) {
+        $self->$cmd();
+    }
 
     $self->help(1) unless @{$self->{argv}};
     for my $module (@{$self->{argv}}) {
@@ -104,6 +106,7 @@ Usage: cpanm [--verbose] [--force] [--notest] [--sudo] Module
   -f,--force     force install
   -n,--notest    Do not run unit tests
   -S,--sudo      sudo to run install commands
+  --look         Download the tarball and open the directory with your shell
   --installdeps  Only install dependencies
 
 Examples:
@@ -205,7 +208,12 @@ sub install_module {
     $self->chdir($self->{base});
     $self->chdir($dir);
 
-    $self->build_stuff($module, $dir, $is_dep)
+    if ($self->{action} eq 'look') {
+        $self->diag("Entering $dir with $ENV{SHELL}\n");
+        system $ENV{SHELL};
+    } else {
+        $self->build_stuff($module, $dir, $is_dep)
+    }
 }
 
 sub fetch_module {
