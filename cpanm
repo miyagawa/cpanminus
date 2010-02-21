@@ -354,11 +354,13 @@ sub build_stuff {
     # trick AutoInstall
     $ENV{PERL5_CPAN_IS_RUNNING} = 1;
 
+    my $use_module_build;
     if ($self->{make} && -e 'Makefile.PL') {
         $ENV{X_MYMETA} = 'YAML';
         $self->run("$^X Makefile.PL");
     } elsif (-e 'Build.PL') {
         $self->run("$^X Build.PL");
+        $use_module_build = 1;
     }
 
     my(%deps, $meta);
@@ -392,7 +394,7 @@ sub build_stuff {
         return 1;
     }
 
-    unless ($self->{make} or -e "Build") {
+    unless ($self->{make} or (-e "Build" && -f _)) {
         $self->diag("! Oops, you don't have make. Trying to build a stub Build file for you. Hope this works!\n");
         {
             open my $mb, ">Build.PL";
@@ -402,12 +404,13 @@ sub build_stuff {
         }
 
         $self->run("$^X Build.PL");
+        $use_module_build = 1;
     }
 
     $self->diag("Building ", ($self->{notest} ? "" : "and testing "), "$dir for $module...\n");
 
     my $installed;
-    if (-e 'Build') {
+    if ($use_module_build && -e 'Build' && -f _) {
         $self->run("$^X ./Build") &&
         $self->test("$^X ./Build test") &&
         $self->install("$^X ./Build install") &&
