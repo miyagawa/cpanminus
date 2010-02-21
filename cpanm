@@ -424,6 +424,7 @@ sub search_module {
 
     my @uris;
     push @uris, sub {
+        $self->chat("Searching $module on search.cpan.org...\n");
         my $html = Util::get("http://search.cpan.org/perldoc?$module");
         $html =~ m!Download:.*<a href="/CPAN/authors/id/(.*?)">.*?</a>!
             and return $self->cpan_uris($1);
