@@ -422,13 +422,12 @@ sub init_tools {
                 or return undef;
 
             chomp $root;
-            $root =~ s{^(.+/)[^/]+$}{$1};
+            $root =~ s{^(.+)/[^/]*$}{$1};
 
-            if ($root =~ s!/$!!) {
-                system "$tar $xf$ar $tarfile";
-                return $root if -d $root;
-            }
+            system "$tar $xf$ar $tarfile";
+            return $root if -d $root;
 
+            diag "Bad archive: $tarfile\n";
             return undef;
         }
     } elsif (eval { require Archive::Tar }) { # uses too much memory!
