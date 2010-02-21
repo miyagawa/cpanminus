@@ -119,7 +119,7 @@ sub load_plugin {
 
     (my $package = $file) =~ s/[^a-zA-Z0-9_]/_/g;
     my $code = do { open my $io, "<$file"; local $/; <$io> };
-    eval "package App::cpanplus::plugin::$package; sub hook { \$self->hook(\@_) };\n$code";
+    eval "package App::cpanplus::plugin::$package; use strict; sub hook { \$self->hook(\@_) };\n$code";
 
     $self->diag("! Loading plugin $file faield: $@") if $@;
 }

@@ -17,7 +17,7 @@ hook search_module => sub {
     for my $entry (@{$res->{entries}}) {
         my $info = parse_entry($entry->{body}) or next;
         if ($info->{dist} eq $dist) {
-            $args->{app}->chat("Found $info->{dist} $info->{version} on CPAN Realtime feed\n");
+            $args->{app}->chat("Found $dist on CPAN realtime feed => $info->{url}\n");
             return $info->{url};
         }
     }
