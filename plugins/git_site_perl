@@ -29,8 +29,9 @@ hook install_success => sub {
     if (-e $site_perl && -w _) {
         my $cwd = Cwd::cwd();
         chdir $site_perl or die $!;
+        my $message = "$args->{meta}->{name} $args->{meta}->{version} ($args->{module})";
         $args->{app}->run("git add .") &&
-        $args->{app}->run("git commit -m " . Util::quote($args->{module}));
+        $args->{app}->run("git commit -m " . Util::quote($message));
         chdir $cwd;
     }
 };
