@@ -163,7 +163,7 @@ sub run {
     my($self, $cmd) = @_;
 
     unless ($self->{verbose}) {
-        $cmd .= WIN32 ? ">> $quote$self->{log}$quote" : ">> $quote$self->{log}$quote 2>&1";
+        $cmd .= ">> $quote$self->{log}$quote 2>&1";
     }
 
     !system $cmd;
