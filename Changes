@@ -1,5 +1,13 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+0.09  Sat Feb 20 23:47:16 PST 2010
+      - Fixed the way archives are untared
+      - Log file is now always ~/.cpanm/build.log
+      - Improve the diag message
+      - Made quiet mode the default. Use -v|--verbose to make it chatty like CPAN(PLUS)
+      - Added retry for HTTP downloads
+      - Fixed the way it generates a stub Build.PL when make is not available
+
 0.08  Sat Feb 20 15:36:53 PST 2010
       - Implemented --installdeps
       - Implemented -q|--quiet that makes you a peaceful install experience
