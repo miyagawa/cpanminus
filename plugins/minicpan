@@ -10,9 +10,8 @@ hook search_module => 100, sub {
     my $pkgs = File::Spec->catfile($minicpan_home, "modules", "02packages.details.txt.gz");
     return unless -e $pkgs;
 
-    require IO::Zlib;
-
     push @{$args->{uris}}, sub {
+        require IO::Zlib;
         my $fh = IO::Zlib->new($pkgs, 'rb') or return;
         $args->{app}->chat("Scanning $pkgs to find $args->{module}...\n");
         while (<$fh>) {
