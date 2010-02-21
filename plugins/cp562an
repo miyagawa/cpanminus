@@ -1,0 +1,37 @@
+# NAME: cp562an - Use CP5.6.2AN (or other similar) mirrors
+# AUTHOR: Tatsuhiko Miyagawa
+
+my $mirror_base = 'http://cp__WHAT__an.barnyard.co.uk/';
+
+hook search_module => sub {
+    my $args = shift;
+    my $what = detect_platform();
+
+    if ($what) {
+        my $mirror = $mirror_base;
+        $mirror =~ s/__WHAT__/$what/;
+
+        $args->{app}->chat("Using $mirror");
+        # TODO query the mirror
+    }
+
+    return;
+};
+
+sub detect_platform {
+    if ($] eq '5.008008') {
+        return '5.8.8';
+    } elsif ($] eq '5.008009') {
+        return '5.8.9';
+    } elsif ($] eq '5.00602') {
+        return '5.6.2';
+    } elsif ($] eq '5.00503') {
+        return '5.5.3';
+    }
+
+    my %p = map { $_ => 1 } qw( MSWin32 cygwin irix netbsd solaris );
+    return $^O if $p{$^O};
+
+    return;
+}
+

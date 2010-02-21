@@ -368,7 +368,9 @@ sub locate_dist {
 
 sub cpan_uri {
     my($self, $dist) = @_;
-    return "http://search.cpan.org/CPAN/authors/id/$dist";
+
+    my $uri = $self->run_hook(cpan_uri => { dist => $dist })
+        || "http://search.cpan.org/CPAN/authors/id/$dist";
 }
 
 sub search_module {
