@@ -35,12 +35,14 @@ sub setup_home {
     $Base = $ENV{CPANMINUS_HOME} || "$ENV{HOME}/.cpanm";
     mkdir $Base, 0777 unless -e $Base;
 
-    $Base = File::Spec->catfile($Base, "build-" . time . ".$$");
-    mkdir $Base, 0777;
+    my $build_dir = "build-" . time . ".$$";
 
-    $log = File::Spec->catfile($Base, "cpanm.log");
+    $log = File::Spec->catfile($Base, "build.log");
     open my $out, ">$log" or die "$log: $!";
-    print $out "Beginning a new cpanminus installation: ", scalar(localtime), "\n";
+    print $out "Beginning a new cpanminus installation: build direcotry is $build_dir\n";
+
+    $Base = File::Spec->catfile($Base, $build_dir);
+    mkdir $Base, 0777;
 }
 
 sub parse_options {
