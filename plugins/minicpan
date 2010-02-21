@@ -21,6 +21,7 @@ hook search_module => sub {
                 return "file://" . File::Spec->catfile($minicpan_home, "authors", "id", $dist);
             }
         }
+        return;
     };
 
     return;
