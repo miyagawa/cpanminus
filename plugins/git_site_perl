@@ -1,0 +1,30 @@
+# NAME: git_site_perl - Hooks to keep site_perl in git
+# AUTHOR: Tatsuhiko Miyagawa
+
+use Config;
+use Cwd;
+
+my $site_perl = ($ENV{PERL_MM_OPT} =~ /INSTALL_BASE=(\S+)/)[0] || $Config{installsitelib};
+
+if (-e $site_perl && !-e File::Spec->catfile($site_perl, ".git")) {
+    warn "Initializing git repository for $site_perl\n";
+    my $cwd = Cwd::cwd();
+    if (chdir $site_perl) {
+        system(qw( git init ));
+        system(qw( git add .));
+        system(qw( git commit -m ), "initial commit");
+        chdir $cwd;
+    }
+}
+
+hook install_success => sub {
+    my $args = shift;
+
+    if (-e $site_perl && -w _) {
+        my $cwd = Cwd::cwd();
+        chdir $site_perl or die $!;
+        $args->{app}->run("git add .") &&
+        $args->{app}->run("git commit -m " . Util::quote($args->{module}));
+        chdir $cwd;
+    }
+};
