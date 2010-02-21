@@ -27,8 +27,6 @@ sub detect_platform {
         return '5.8.9';
     } elsif ($] eq '5.006002') {
         return '5.6.2';
-    } elsif ($] eq '5.00503') {
-        return '5.5.3';
     }
 
     my %p = map { $_ => 1 } qw( MSWin32 cygwin irix netbsd solaris );
