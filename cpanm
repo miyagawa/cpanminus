@@ -625,6 +625,7 @@ package Util;
 use Config;
 sub get($);
 sub mirror($$);
+sub redirect;
 sub untar;
 
 sub quote {
@@ -657,6 +658,12 @@ sub init_tools {
     if (eval { require LWP::Simple }) {
         *get = \&LWP::Simple::get;
         *mirror = \&LWP::Simple::mirror;
+        *redirect = sub {
+            my $ua = LWP::UserAgent->new(max_redirect => 1, env_proxy => 1);
+            my $res = $ua->simple_request(HTTP::Request->new(GET => $_[0]));
+            return $res->header('Location') if $res->is_redirect;
+            return;
+        };
     } elsif (my $wget = which 'wget') {
         *get = sub ($) {
             my $uri = shift;
@@ -670,6 +677,14 @@ sub init_tools {
             return file_mirror($uri, $path) if $uri =~ s!^file:/+!/!;
             my $q = $app->{verbose} ? '' : '-q';
             system "$wget $uri $q -O $path";
+        };
+        *redirect = sub {
+            my $uri = shift;
+            my $out = `$wget --max-redirect=0 $uri 2>&1`;
+            if ($out =~ /^Location: (\S+)/) {
+                return $1;
+            }
+            return;
         };
     }
     # TODO curl

@@ -1,0 +1,21 @@
+# NAME: query_mirror - mst's hack to get redirects by module name on CPAN mirrors
+# AUTHOR: Tatsuhiko Miyagawa
+
+my $mirror = "http://cpan.shadowcatprojects.net";
+
+hook search_module => sub {
+    my $args = shift;
+
+    return unless $args->{module} =~ /^[A-Za-z0-9:]+$/;
+
+    push @{$args->{uris}}, sub {
+        require YAML;
+        $args->{app}->chat("Querying $args->{module} with by-module against $mirror\n");
+
+        my $uri = Util::redirect("$mirror/by-module/$args->{module}");
+        return $uri if $uri;
+
+        $args->{app}->chat("! Finding $args->{module} with by-module failed.\n");
+        return;
+    };
+};
