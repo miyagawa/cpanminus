@@ -7,7 +7,6 @@ TODO/Ideas:
 * test_reporter - report test success/failures
 * local_lib - Something to do with local::lib. Maybe auto-setup?
 * dzil - Uses dzil to test and install modules
-* verify_signature - Verify module SIGNATURE file
 * via_git, via_svn, via_ssh - install via git:// URL (and svn:// and such)
 * clone_repo - Clones (checks out) repository using META.yml repository info
 

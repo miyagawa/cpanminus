@@ -536,6 +536,14 @@ sub install_deps {
 sub build_stuff {
     my($self, $module, $dir, $is_dep) = @_;
 
+    my $fail;
+    $self->run_hooks(verify_dist => { module => $module, dir => $dir, fail => \$fail });
+
+    if ($fail && !$self->{force}) {
+        $self->diag("! Verifying the module $module failed. Skipping. (use --force to install)\n");
+        return;
+    }
+
     if (-e 'META.yml') {
         $self->chat("Checking configure dependencies from META.yml...\n");
         my $meta = Util::parse_meta('META.yml');
