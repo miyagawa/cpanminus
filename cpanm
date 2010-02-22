@@ -58,7 +58,9 @@ sub parse_options {
         'disable-plugins' => \$self->{disable_plugins},
     );
 
-    $ENV{PERL_MM_USE_DEFAULT} = 1 unless $self->{verbose};
+    unless ($self->{verbose}) {
+        $ENV{PERL_MM_USE_DEFAULT} = $ENV{AUTOMATED_TESTING} = 1;
+    }
 
     $self->{argv} = \@ARGV;
 }
