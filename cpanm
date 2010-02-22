@@ -222,7 +222,8 @@ sub version {
 
 sub help {
     my $self = shift;
-    print <<USAGE;
+    my $how  = $_[0] ? sub { die @_ } : sub { print @_ };
+    $how->(<<USAGE);
 Usage: cpanm [--verbose] [--interactive] [--force] [--notest] [--sudo] Module
 
   -v,--verbose       Turns on chatty output
