@@ -6,4 +6,7 @@ TODO/Ideas:
 * nearest_mirror - automatically pick the nearest mirror (and cache it)
 * test_reporter - report test success/failures
 * local_lib - Something to do with local::lib. Maybe auto-setup?
+* dzil - Uses dzil to test and install modules
+* growl - Growl install success/failures
+* github - allows you to say cpanm github:miyagawa/Plack
 

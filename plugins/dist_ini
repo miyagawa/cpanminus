@@ -1,6 +1,10 @@
 # NAME: dist_ini - Find depdencies and extract META info from dist.ini
 # AUTHOR: Tatsuhiko Miyagawa
 
+# This is a proof of concept and not really useful since most
+# distributions heavily use Dist::Zilla's feature to mangle docs,
+# auto-generate tests etc.
+
 hook find_deps => sub {
     my $args = shift;
 
