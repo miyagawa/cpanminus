@@ -1,0 +1,30 @@
+# NAME: bundle - grab dependencies from Bundle::
+# AUTHOR: Tatsuhiko Miyagawa
+
+hook find_deps => sub {
+    my $args = shift;
+
+    if ($args->{module} =~ m!^Bundle::!) {
+        my $base = (split /::/, $args->{module})[-1] . ".pm";
+        my $lib  = $args->{module};
+           $lib =~ s!::!/!g;
+           $lib .= ".pm";
+
+        for my $file (grep -e, ($base, $lib)) {
+            $self->chat("Scanning $file for bundle dependencies...");
+            open my $pod, "<$file" or next;
+            my $in_contents;
+            while (<$pod>) {
+                if (/^=head\d\s+CONTENTS/) {
+                    $in_contents = 1;
+                } elsif (/^=/) {
+                    $in_contents = 0;
+                } elsif ($in_contents) {
+                    /^([\w:]+)\s/
+                        and $args->{deps}->{$1} ||= 0;
+                }
+            }
+        }
+    }
+};
+

@@ -569,7 +569,7 @@ sub build_stuff {
         }
     }
 
-    $self->run_hooks(find_deps => { deps => \%deps, meta => $meta });
+    $self->run_hooks(find_deps => { deps => \%deps, module => $module, meta => $meta });
 
     $self->install_deps($dir, %deps);
 
