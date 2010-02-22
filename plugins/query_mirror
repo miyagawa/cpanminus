@@ -9,7 +9,6 @@ hook search_module => sub {
     return unless $args->{module} =~ /^[A-Za-z0-9_:]+$/;
 
     push @{$args->{uris}}, sub {
-        require YAML;
         $args->{app}->chat("Querying $args->{module} with by-module against $mirror\n");
 
         my $uri = Util::redirect("$mirror/by-module/$args->{module}");
