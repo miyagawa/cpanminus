@@ -7,7 +7,7 @@
 hook search_module => sub {
     my $args = shift;
 
-    return unless $args->{module} =~ /^[A-Za-z0-9:]+$/;
+    return unless $args->{module} =~ /^[A-Za-z0-9_:]+$/;
 
     push @{$args->{uris}}, sub {
         require YAML;
