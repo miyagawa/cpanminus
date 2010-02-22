@@ -1211,6 +1211,6 @@ arising from the use of the software.
 
 =head1 SEE ALSO
 
-L<CPAN> L<CPANPLUS>
+L<CPAN> L<CPANPLUS> L<pip>
 
 =cut
