@@ -268,7 +268,12 @@ sub fetch_module {
 
     $self->chat("Unpacking $file...\n");
 
-    my $dir = Util::untar($file);
+    my $dir;
+    if ($file =~ /\.zip$/) {
+        $dir = Util::unzip($file);
+    } else {
+        $dir = Util::untar($file);
+    }
     unless ($dir) {
         $self->diag("! Failed to unpack $name: no directory\n");
         return;
@@ -445,6 +450,7 @@ use Config;
 sub get($);
 sub mirror($$);
 sub untar;
+sub unzip;
 
 sub which {
     my($name) = @_;
@@ -512,6 +518,44 @@ sub init_tools {
             my $t = Archive::Tar->new($_[0]);
             my $root = ($t->list_files)[0];
             $t->extract;
+            return -d $root ? $root : undef;
+        };
+    }
+    if (my $unzip = which 'unzip'){
+        *unzip = sub {
+            my($zipfile) = @_;
+
+            my $opt = $app->{verbose} ? '' : '-q';
+
+            my(undef, $root, @others) = `$unzip -t $zipfile`
+                or return undef;
+
+            chomp $root;
+            $root =~ s{^\s+testing:\s+(.+?)/\s+OK$}{$1};
+
+            system "$unzip $opt $zipfile";
+            return $root if -d $root;
+
+            $app->diag("Bad archive: [$root] $zipfile\n");
+            return undef;
+        }
+    } elsif (eval { require Archive::Zip }) {
+        *unzip = sub {
+            my($file) = @_;
+            my $zip = Archive::Zip->new();
+            my $status;
+            $status = $zip->read($file);
+            $app->diag("Read of file[$file] failed\n")
+                if $status != Archive::Zip::AZ_OK();
+            my @members = $zip->members();
+            my $root;
+            for my $member ( @members ) {
+                my $af = $member->fileName();
+                next if ($af =~ m!^(/|\.\./)!);
+                $root = $af unless $root;
+                $status = $member->extractToFileNamed( $af );
+                $app->diag("Extracting of file[$af] from zipfile[$file failed\n") if $status != Archive::Zip::AZ_OK();
+            }
             return -d $root ? $root : undef;
         };
     }
