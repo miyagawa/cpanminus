@@ -1033,14 +1033,19 @@ Its catch? Deps-free, zero-conf, standalone ~350 LOC script
 
 =head1 INSTALLATION
 
-  cpan> install App::cpanminus
+If you have git,
 
-Or,
+   git clone git://github.com/miyagawa/cpanminus.git
+   cd cpanminus
+   perl Makefile.PL
+   make install
 
-  cd ~/bin
-  wget http://xrl.us/cpanm
-  chmod +x cpanm
-  # edit shebang if you don't have /usr/bin/env
+Otherwise,
+
+    cd ~/bin
+    wget http://xrl.us/cpanm
+    chmod +x cpanm
+    # edit shebang if you don't have /usr/bin/env
 
 =head1 DEPENDENCIES
 
@@ -1079,11 +1084,7 @@ Module::Build (core in 5.10) if you want to install MakeMaker based modules with
 
 =head1 QUESTIONS
 
-=head2 Should I really use this?
-
-Probably not. You should use CPAN or CPANPLUS.
-
-=head2 What's the point?
+=head2 Another CPAN installer? What's the point?
 
 OK, the first motivation was this: CPAN shell gets OOM (or swaps
 heavily and gets really slow) on Slicehost/linode's most affordable
