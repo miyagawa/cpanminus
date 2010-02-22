@@ -1,0 +1,39 @@
+# NAME: dist_ini - Find depdencies and extract META info from dist.ini
+# AUTHOR: Tatsuhiko Miyagawa
+
+hook find_deps => sub {
+    my $args = shift;
+
+    if (-e "dist.ini") {
+        my $hash = read_ini("dist.ini") or return;
+        %{$args->{deps}} = (%{$args->{deps}}, %{$hash->{Prereq}});
+        $args->{meta}->{name} ||= $hash->{_}->{name};
+        # TODO version
+    }
+};
+
+sub read_ini {
+    my $file = shift;
+
+    my $hash = eval {
+        require Config::INI::Reader;
+        Config::INI::Reader->read_file($file);
+    };
+
+    if ($@) {
+        my $sec = '_';
+        open my $in, "<$file" or return;
+        while (<$in>) {
+            s/;.*$//;
+            next unless /\S/;
+            if (/^\[(.*?)\]\s*$/) {
+                $sec = $1;
+            } elsif ($sec) {
+                /^(\S+)\s*=\s*(.*)\s*$/ and $hash->{$sec}{$1} = $2;
+            }
+        }
+    }
+
+    return $hash;
+}
+

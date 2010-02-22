@@ -531,16 +531,21 @@ sub build_stuff {
     # trick AutoInstall
     $ENV{PERL5_CPAN_IS_RUNNING} = 1;
 
-    my $use_module_build;
-    if ($self->{make} && -e 'Makefile.PL') {
+    my($use_module_build, $configured);
+    if (-e 'Makefile.PL') {
         $ENV{X_MYMETA} = 'YAML';
         $self->run("$^X Makefile.PL");
-    } elsif (-e 'Build.PL') {
-        $self->run("$^X Build.PL");
-        $use_module_build = 1;
+        $configured = 1;
     }
 
-    my(%deps, $meta);
+    if ((!$self->{make} or !$configured) and -e 'Build.PL') {
+        $self->run("$^X Build.PL");
+        $use_module_build = 1;
+        $configured = 1;
+    }
+
+    my %deps;
+    my $meta = {};
     my($metayml) = grep -e $_, qw( MYMETA.yml META.yml );
     if ($metayml) {
         $self->chat("Checking dependencies from $metayml...\n");
@@ -564,6 +569,8 @@ sub build_stuff {
         }
     }
 
+    $self->run_hooks(find_deps => { deps => \%deps, meta => $meta });
+
     $self->install_deps($dir, %deps);
 
     if ($self->{installdeps} && !$is_dep) {
@@ -571,8 +578,9 @@ sub build_stuff {
         return 1;
     }
 
-    unless ($self->{make} or (-e "Build" && -f _)) {
-        $self->diag("! Oops, you don't have make. Trying to build a stub Build file for you. Hope this works!\n");
+    unless ($configured) {
+        $self->diag("! Oops, you don't have make or the dist didn't have Makefile.PL.\n");
+        $self->diag("! Trying to build a stub Build file for you. Hope this works!\n");
         {
             open my $mb, ">Build.PL";
             print $mb "require Module::Build;Module::Build->new(module_name => '$module',";
