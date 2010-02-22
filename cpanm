@@ -1138,6 +1138,14 @@ Module::Build (core in 5.10) if you want to install MakeMaker based modules with
 
 =back
 
+=head1 PLUGINS
+
+cpanminus core is a tiny 500 lines of code (with some embedded
+utilities and documents) but can be extended by writing
+plugins. Plugins are flat perl script that should be placed inside
+C<~/.cpanm/plugins>. See C<plugins/> directory in the distribution for
+the list of available and sample plugins.
+
 =head1 QUESTIONS
 
 =head2 Another CPAN installer? What's the point?
@@ -1265,13 +1273,6 @@ If you've got CPAN or CPANPLUS working then you may keep using CPAN or
 CPANPLUS in the longer term, but I just hope this can be a quite handy
 alternative to them for people in other situations. And apparently,
 many people love (at least the idea of) this software :)
-
-=head1 PLUGINS
-
-cpanminus can be extended by writing plugins. Plugins are flat perl
-script that should be placed inside C<~/.cpanm/plugins>. See
-C<plugins/> directory in the distribution for the list of available
-and sample plugins.
 
 =head1 COPYRIGHT
 
