@@ -7,5 +7,5 @@ TODO/Ideas:
 * test_reporter - report test success/failures
 * local_lib - Something to do with local::lib. Maybe auto-setup?
 * dzil - Uses dzil to test and install modules
-* growl - Growl install success/failures
+* p5i - Support .p5i file format
 
