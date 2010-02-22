@@ -459,7 +459,8 @@ sub locate_dist {
     my($self, $module) = @_;
 
     if (my $located = $self->run_hook(locate_dist => { module => $module })) {
-        return ref $located eq 'CODE' ? $located : sub { $located };
+        return ref $located eq 'ARRAY' ? @$located :
+               ref $located eq 'CODE'  ? $located  : sub { $located };
     }
 
     # URL
@@ -1276,11 +1277,12 @@ Same as Perl.
 =head1 CREDITS
 
 Patches contributed by: Goro Fuji, Kazuhiro Osawa, Tokuhiro Matsuno,
-Kenichi Ishigaki, Ian Wells, Pedro Melo.
+Kenichi Ishigaki, Ian Wells and Pedro Melo.
 
 Feedbacks sent by: Jesse Vincent, David Golden, Chris Williams, Matt S
 Trout, Adam Kennedy, J. Shirley, Chris Prather, Jesse Luehrs, Marcus
-Ramberg, Shawn M Moore, chocolateboy, Ingy dot Net, Chirs Nehren.
+Ramberg, Shawn M Moore, chocolateboy, Ingy dot Net, Chirs Nehren and
+Jonathan Rockway.
 
 =head1 NO WARRANTY
 
