@@ -452,7 +452,9 @@ sub fetch_module {
 sub locate_dist {
     my($self, $module) = @_;
 
-    $self->run_hooks(locate_dist => { module => \$module });
+    if (my $located = $self->run_hook(locate_dist => { module => $module })) {
+        return ref $located eq 'CODE' ? $located : sub { $located };
+    }
 
     # URL
     return sub { $module } if $module =~ /^(ftp|https?|file):/;

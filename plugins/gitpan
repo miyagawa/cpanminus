@@ -5,12 +5,12 @@
 hook locate_dist => sub {
     my $args = shift;
 
-    if (${$args->{module}} =~ s/^gitpan://) {
+    if ($args->{module} =~ s/^gitpan://) {
         my $tag = 'master';
-        if (${$args->{module}} =~ s/-([\w\._]+)$//) {
+        if ($args->{module} =~ s/-([\w\._]+)$//) {
             $tag = $1;
         }
-        ${$args->{module}} = "http://github.com/gitpan/${$args->{module}}/tarball/$tag";
+        return "http://github.com/gitpan/$args->{module}/tarball/$tag";
     }
 };
 
