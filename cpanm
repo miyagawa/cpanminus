@@ -64,10 +64,6 @@ sub parse_options {
         'disable-plugins' => \$self->{disable_plugins},
     );
 
-    unless ($self->{interactive}) {
-        $ENV{PERL_MM_USE_DEFAULT} = $ENV{AUTOMATED_TESTING} = 1;
-    }
-
     $self->{argv} = \@ARGV;
 }
 
@@ -311,6 +307,14 @@ sub run {
 
 sub configure {
     my($self, $cmd) = @_;
+
+    # trick AutoInstall
+    local $ENV{PERL5_CPAN_IS_RUNNING} = 1;
+
+    my $use_default = !$self->{interactive};
+    local $ENV{PERL_MM_USE_DEFAULT} = $use_default;
+    local $ENV{AUTOMATED_TESTING}   = $use_default;
+
     local $self->{verbose} = $self->{interactive};
     $self->run($cmd);
 }
@@ -574,9 +578,6 @@ sub build_stuff {
 
         $self->install_deps($dir, %deps);
     }
-
-    # trick AutoInstall
-    $ENV{PERL5_CPAN_IS_RUNNING} = 1;
 
     my($use_module_build, $configured);
     if (-e 'Makefile.PL') {
