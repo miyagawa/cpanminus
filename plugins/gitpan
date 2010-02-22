@@ -1,0 +1,17 @@
+# NAME: gitpan - Install modules from gitpan
+# AUTHOR: Tatsuhiko Miyagawa
+# SYNOPSIS: cpanm gitpan:CGI-1.22
+
+hook locate_dist => sub {
+    my $args = shift;
+
+    if (${$args->{module}} =~ s/^gitpan://) {
+        my $tag = 'master';
+        if (${$args->{module}} =~ s/-([\w\._]+)$//) {
+            $tag = $1;
+        }
+        ${$args->{module}} = "http://github.com/gitpan/${$args->{module}}/tarball/$tag";
+    }
+};
+
+

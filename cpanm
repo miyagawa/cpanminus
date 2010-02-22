@@ -109,7 +109,7 @@ sub setup_home {
 
 sub register_core_hooks {
     my $self = shift;
-    
+
     $self->hook('core_search_cpan', search_module => sub {
         my $args = shift;
         push @{$args->{uris}}, sub {
@@ -447,6 +447,8 @@ sub fetch_module {
 
 sub locate_dist {
     my($self, $module) = @_;
+
+    $self->run_hooks(locate_dist => { module => \$module });
 
     # URL
     return sub { $module } if $module =~ /^(ftp|https?|file):/;
