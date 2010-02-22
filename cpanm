@@ -246,6 +246,9 @@ Examples:
   # install from an URL
   cpanm http://backpan.perl.org/authors/id/L/LD/LDS/CGI.pm-3.20.tar.gz
 
+  # cpan:// URI
+  cpanm cpan:///distfile/MIYAGAWA/Tatsumaki-0.1008.tar.gz
+
   # install Task:: modlues (You need -v to answer questions)
   cpanm -v Task::Kensho
 
