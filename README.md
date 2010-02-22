@@ -4,7 +4,12 @@ App::cpanminus - get, unpack, build and install modules from CPAN
 
 # SYNOPSIS
 
-    cpanm Module
+    cpanm Catalyst
+    cpanm MIYAGAWA/Plack-1.0000.tar.gz
+    cpanm ~/mydists/MyCompany-Framework-1.0.tar.gz
+    cpanm http://example.com/MyModule-0.1.tar.gz
+    cpanm http://github.com/miyagawa/Tatsumaki/tarball/master
+    cpanm -v Task::Kensho
 
 Run `cpanm -h` for more options.
 
