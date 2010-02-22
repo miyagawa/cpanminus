@@ -1,0 +1,13 @@
+# NAME: github - Install distributions from github
+# AUTHOR: Tatsuhiko Miyagawa
+# SYNOPSIS: cpanm github:miyagawa/Plack
+
+hook locate_dist => sub {
+    my $args = shift;
+
+    if (${$args->{module}} =~ s/^github://) {
+        my($who, $what, $tag) = split '/', ${$args->{module}};
+        $tag ||= 'master';
+        ${$args->{module}} = "http://github.com/$who/$what/tarball/$tag";
+    }
+};

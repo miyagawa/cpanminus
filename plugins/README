@@ -2,7 +2,7 @@ Copy (or symlink) the plugins to ~/.cpanm/plugins
 
 TODO/Ideas:
 * fix cp562an to actually query the distribution (parse 02packages?)
-* gitpan/backpan - get a specific version from BackPAN or GitPAN
+* backpan - get a specific version from BackPAN
 * nearest_mirror - automatically pick the nearest mirror (and cache it)
 * test_reporter - report test success/failures
 * local_lib - Something to do with local::lib. Maybe auto-setup?
