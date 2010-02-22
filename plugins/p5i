@@ -1,0 +1,30 @@
+# NAME: p5i - Support .p5i file
+# AUTHOR: Tatsuhiko Miyagawa
+
+hook locate_dist => sub {
+    my $args = shift;
+
+    if ($args->{module} =~ m!\.p5i$!) {
+        my $content;
+        if (-e $args->{module}) {
+            $content = do { open my $fh, "<$args->{module}"; join '', <$fh> };
+        } elsif ($args->{module} =~ /^(https?|ftp|file):/) {
+            $args->{app}->chat("Fetching remote p5i $args->{module}\n");
+            $content = Util::get($args->{module});
+        }
+
+        return unless $content;
+
+        my @lines = split /\r?\n/, $content;
+        my @dists;
+        for (@lines) {
+            s/#.*$//;
+            next unless /\S/;
+            next if /^Module::Plan::Lite/;
+            push @dists, $_;
+        }
+
+        return sub { \@dists };
+    }
+};
+
