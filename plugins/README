@@ -8,5 +8,4 @@ TODO/Ideas:
 * local_lib - Something to do with local::lib. Maybe auto-setup?
 * dzil - Uses dzil to test and install modules
 * growl - Growl install success/failures
-* github - allows you to say cpanm github:miyagawa/Plack
 
