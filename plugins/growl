@@ -11,20 +11,24 @@ hook init => sub {
 
 hook install_success => sub {
     my $args = shift;
-    return unless $growlnotify;
-
-    my $dist = "$args->{meta}->{name}-$args->{meta}->{version}";
-    $dist = $args->{module} if $dist eq '-';
-    $args->{app}->run("$growlnotify -n cpanminus -m " . Util::quote("Successfully installed $dist")
-                      . " " . Util::quote($dist));
+    growl_it($args, "Successfully installed %s", 'ToolbarInfo');
 };
 
 hook build_failure => sub {
     my $args = shift;
+    growl_it($args, "Building %s failed.", 'AlertStopIcon', 1);
+};
+
+sub growl_it {
+    my($args, $template, $icon, $is_sticky) = @_;
+
     return unless $growlnotify;
 
     my $dist = "$args->{meta}->{name}-$args->{meta}->{version}";
     $dist = $args->{module} if $dist eq '-';
-    $args->{app}->run("$growlnotify -n cpanminus -s -m " . Util::quote("Building $dist failed.")
-                      . " " . Util::quote($dist));
+    my $msg = sprintf $template, $dist;
+
+    my $sticky = $is_sticky ? "-s" : "";
+    $args->{app}->run("$growlnotify -n cpanminus $sticky -m " . Util::quote($msg) . " " . Util::quote($dist) .
+                      " --image /System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/$icon.icns");
 };
