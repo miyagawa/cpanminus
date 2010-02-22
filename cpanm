@@ -56,6 +56,7 @@ sub parse_options {
         'interactive' => \$self->{interactive},
         'look'      => sub { $self->{action} = 'look' },
         'recent'    => sub { $self->{cmd} = 'show_recent' },
+        'self-upgrade' => sub { $self->{cmd} = 'self_upgrade' },
         'q|quiet'   => sub {},
         'disable-plugins' => \$self->{disable_plugins},
     );
@@ -79,8 +80,7 @@ sub doit {
     Util::init_tools();
 
     if (my $cmd = $self->{cmd}) {
-        $self->$cmd();
-        return;
+        $self->$cmd() and return;
     }
 
     $self->help(1) unless @{$self->{argv}};
@@ -116,7 +116,7 @@ sub setup_home {
 sub register_core_hooks {
     my $self = shift;
 
-    $self->hook('core_search_cpan', search_module => sub {
+    $self->hook('core', search_module => sub {
         my $args = shift;
         push @{$args->{uris}}, sub {
             $self->chat("Searching $args->{module} on search.cpan.org...\n");
@@ -128,7 +128,7 @@ sub register_core_hooks {
         };
     });
 
-    $self->hook('core_show_recent', show_recent => sub {
+    $self->hook('core', show_recent => sub {
         my $args = shift;
 
         $self->chat("Fetching recent feed from search.cpan.org...\n");
@@ -217,7 +217,7 @@ sub run_hooks {
 
 sub version {
     print "cpanm (App::cpanminus) version $VERSION\n";
-    exit 0;
+    return 1;
 }
 
 sub help {
@@ -230,6 +230,7 @@ Usage: cpanm [--verbose] [--interactive] [--force] [--notest] [--sudo] Module
   -f,--force         force install
   -n,--notest        Do not run unit tests
   -S,--sudo          sudo to run install commands
+  --self-upgrade     upgrades itself
   --look             Download the tarball and open the directory with your shell
   --installdeps      Only install dependencies
   --recent           Show recently updated modules
@@ -266,7 +267,7 @@ Examples:
 
 USAGE
 
-    exit $_[0];
+    return 1;
 }
 
 sub sanity_check {
@@ -344,6 +345,14 @@ sub show_recent {
     for my $dist (@$dists) {
         print $dist, "\n";
     }
+
+    return 1;
+}
+
+sub self_upgrade {
+    my $self = shift;
+    $self->{argv} = [ 'App::cpanminus' ];
+    return; # continue
 }
 
 sub install_module {
