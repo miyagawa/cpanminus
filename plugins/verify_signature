@@ -16,10 +16,10 @@ hook verify_dist => sub {
     if (-e "SIGNATURE") {
         $args->{app}->chat("Verifying the module signature...\n");
         my $out = `$cpansign -v --skip 2>&1`;
+        $args->{app}->log($out);
         if ($out =~ /Signature verified OK/) {
             $args->{app}->chat("Signature verified OK!\n");
         } else {
-            $args->{app}->log($out);
             $args->{app}->diag("! SIGNATURE verification for $args->{module} failed.\n");
             ${$args->{fail}}++;
         }
