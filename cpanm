@@ -462,7 +462,7 @@ sub locate_dist {
     $module =~ s!^([A-Z]{3,})/!substr($1, 0, 1)."/".substr($1, 0, 2) ."/" . $1 . "/"!e;
 
     # CPAN tarball
-    return sub { $self->cpan_uri($module) } if $module =~ m!/!;
+    return sub { $self->cpan_uri($module) } if $module =~ m!^[A-Z]/[A-Z]{2}/!;
 
     # Module name -- search.cpan.org
     return $self->search_module($module);
