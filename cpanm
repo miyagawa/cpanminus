@@ -86,6 +86,8 @@ sub doit {
     for my $module (@{$self->{argv}}) {
         $self->install_module($module);
     }
+
+    $self->run_hooks(finalize => {});
 }
 
 sub setup_home {
@@ -148,7 +150,7 @@ sub load_plugins {
         $self->{hooks}->{$hook} = [ sort { $a->[0] <=> $b->[0] } @{$self->{hooks}->{$hook}} ];
     }
 
-    $self->run_hook(init => {});
+    $self->run_hooks(init => {});
 }
 
 sub _load_plugins {
@@ -617,6 +619,7 @@ sub build_stuff {
         return 1;
     } else {
         $self->diag("! Installing $module failed. See $self->{log} for details.\n");
+        $self->run_hooks(build_failure => { module => $module, build_dir => $dir, meta => $meta });
         return;
     }
 }

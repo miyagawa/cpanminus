@@ -1,0 +1,30 @@
+# NAME: growl - Growl notifications
+# AUTHOR: Tatsuhiko Miyagawa
+
+my $growlnotify;
+
+hook init => sub {
+    my $args = shift;
+    $growlnotify = Util::which("growlnotify")
+        or $args->{app}->diag("! Couldn't find growlnotify. growl plugin is disabled.\n");
+};
+
+hook install_success => sub {
+    my $args = shift;
+    return unless $growlnotify;
+
+    my $dist = "$args->{meta}->{name}-$args->{meta}->{version}";
+    $dist = $args->{module} if $dist eq '-';
+    $args->{app}->run("$growlnotify -n cpanminus -m " . Util::quote("Successfully installed $dist")
+                      . " " . Util::quote($dist));
+};
+
+hook build_failure => sub {
+    my $args = shift;
+    return unless $growlnotify;
+
+    my $dist = "$args->{meta}->{name}-$args->{meta}->{version}";
+    $dist = $args->{module} if $dist eq '-';
+    $args->{app}->run("$growlnotify -n cpanminus -s -m " . Util::quote("Building $dist failed.")
+                      . " " . Util::quote($dist));
+};
