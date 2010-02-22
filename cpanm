@@ -31,6 +31,7 @@ sub new {
         sudo => undef,
         make  => undef,
         verbose => undef,
+        interactive => undef,
         log => undef,
         mirrors => [],
         argv => [],
@@ -51,14 +52,15 @@ sub parse_options {
         'i|install' => sub {},
         'installdeps' => \$self->{installdeps},
         'V|version' => sub { $self->{cmd} = 'version' },
-        'v|verbose' => \$self->{verbose},
+        'v|verbose' => sub { $self->{verbose} = $self->{interactive} = 1 },
+        'interactive' => \$self->{interactive},
         'look'      => sub { $self->{action} = 'look' },
         'recent'    => sub { $self->{cmd} = 'show_recent' },
         'q|quiet'   => sub {},
         'disable-plugins' => \$self->{disable_plugins},
     );
 
-    unless ($self->{verbose}) {
+    unless ($self->{interactive}) {
         $ENV{PERL_MM_USE_DEFAULT} = $ENV{AUTOMATED_TESTING} = 1;
     }
 
@@ -221,9 +223,10 @@ sub version {
 sub help {
     my $self = shift;
     print <<USAGE;
-Usage: cpanm [--verbose] [--force] [--notest] [--sudo] Module
+Usage: cpanm [--verbose] [--interactive] [--force] [--notest] [--sudo] Module
 
-  -v,--verbose       Turns on chatty output (required when you install Task:: modules)
+  -v,--verbose       Turns on chatty output
+  --interactive      Turns on interactive configure (required for Task:: modules)
   -f,--force         force install
   -n,--notest        Do not run unit tests
   -S,--sudo          sudo to run install commands
@@ -249,8 +252,8 @@ Examples:
   # cpan:// URI
   cpanm cpan:///distfile/MIYAGAWA/Tatsumaki-0.1008.tar.gz
 
-  # install Task:: modlues (You need -v to answer questions)
-  cpanm -v Task::Kensho
+  # install Task:: modlues (You need --interactive or -v to answer questions)
+  cpanm --interactive Task::Kensho
 
   # install from local directory, just like `cpan .`
   cpanm .
@@ -299,6 +302,12 @@ sub run {
     }
 
     !system $cmd;
+}
+
+sub configure {
+    my($self, $cmd) = @_;
+    local $self->{verbose} = $self->{interactive};
+    $self->run($cmd);
 }
 
 sub test {
@@ -559,12 +568,12 @@ sub build_stuff {
     my($use_module_build, $configured);
     if (-e 'Makefile.PL') {
         $ENV{X_MYMETA} = 'YAML';
-        $self->run("$^X Makefile.PL");
+        $self->configure("$^X Makefile.PL");
         $configured = 1;
     }
 
     if ((!$self->{make} or !$configured) and -e 'Build.PL') {
-        $self->run("$^X Build.PL");
+        $self->configure("$^X Build.PL");
         $use_module_build = 1;
         $configured = 1;
     }
@@ -613,7 +622,7 @@ sub build_stuff {
             print $mb ")->create_build_script;";
         }
 
-        $self->run("$^X Build.PL");
+        $self->configure("$^X Build.PL");
         $use_module_build = 1;
     }
 
@@ -1066,7 +1075,7 @@ App::cpanminus - get, unpack, build and install modules from CPAN
     cpanm ~/mydists/MyCompany-Framework-1.0.tar.gz
     cpanm http://example.com/MyModule-0.1.tar.gz
     cpanm http://github.com/miyagawa/Tatsumaki/tarball/master
-    cpanm -v Task::Kensho
+    cpanm --interactive Task::Kensho
 
 Run C<cpanm -h> for more options.
 
