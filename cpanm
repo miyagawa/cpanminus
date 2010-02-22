@@ -201,7 +201,6 @@ sub run_hooks {
 
     my $res;
     for my $plugin (@{$self->{hooks}->{$hook} || []}) {
-        $self->chat("Running '$hook' for $plugin->[2]\n");
         $res = eval { $plugin->[1]->({ %$args, app => $self }) };
         $self->chat("Running hook '$plugin->[2]' error: $@") if $@;
         last if $res && $first;
