@@ -1,6 +1,9 @@
 # NAME: cpandb - query CPAN DB rather than scraping search.cpan.org
 # AUTHOR: Tatsuhiko Miyagawa
 
+# This is a proof-of-concept plugin:
+# DO NOT USE THIS PLUGIN - the server hardcoded here is not frequently updated
+
 hook search_module => sub {
     my $args = shift;
 
