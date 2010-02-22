@@ -1,4 +1,4 @@
-# NAME: fresh - Fetch the latest release from http://friendfeed.com/cpan
+# NAME: cpanfresh - Fetch the latest release from http://friendfeed.com/cpan
 # AUTHOR: Tatsuhiko Miyagawa
 
 my $entries;
