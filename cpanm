@@ -255,6 +255,9 @@ Examples:
   # install from local directory, just like `cpan .`
   cpanm .
 
+  # install all the dependencies for the current directory
+  cpanm --installdeps .
+
   # install from a local file
   cpanm ~/dists/MyCompany-Enterprise-1.00.tar.gz
 
