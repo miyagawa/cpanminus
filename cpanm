@@ -465,6 +465,9 @@ sub locate_dist {
     # File
     return sub { "file://" . Cwd::abs_path($module) } if -f $module;
 
+    # cpan URI
+    $module =~ s!^cpan:///distfile/!!;
+
     # PAUSEID/foo
     $module =~ s!^([A-Z]{3,})/!substr($1, 0, 1)."/".substr($1, 0, 2) ."/" . $1 . "/"!e;
 
