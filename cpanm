@@ -193,7 +193,7 @@ sub install_module {
     my($self, $module, $is_dep) = @_;
 
     if ($self->{seen}{$module}++) {
-        $self->diag("Already tried $module. Skipping\n");
+        $self->diag("Already tried $module. Skipping.\n");
         return;
     }
 
@@ -201,6 +201,11 @@ sub install_module {
 
     unless ($dir) {
         $self->diag("! Couldn't find module or a distribution $module\n");
+        return;
+    }
+
+    if ($self->{seen}{$dir}++) {
+        $self->diag("Already built the distribution $dir. Skipping.\n");
         return;
     }
 
