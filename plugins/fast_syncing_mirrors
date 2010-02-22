@@ -1,0 +1,12 @@
+# NAME: fast_syncing_mirrors - Use fast-syncing PAUSE mirrors
+# AUTHOR: Tatsuhiko Miyagawa
+
+hook configure_mirrors => sub {
+    my $args = shift;
+
+    push @{$args->{mirrors}}, (
+        'http://cpan.cpantesters.org',
+        'http://cpan.hexten.net',
+        'http://www.cpan.org',
+    );
+};
