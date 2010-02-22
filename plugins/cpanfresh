@@ -6,6 +6,8 @@ my $entries;
 hook search_module => 0, sub {
     my $args = shift;
 
+    require JSON;
+
     push @{$args->{uris}}, sub {
         my $dist = $args->{module};
         $dist =~ s/::/-/g;
@@ -31,7 +33,6 @@ hook show_recent => sub {
 sub fetch_feed {
     my $args = shift;
 
-    require JSON;
     $args->{app}->chat("Querying http://friendfeed.cpan/cpan\n");
     my $json = Util::get("http://friendfeed-api.com/v2/feed/cpan");
     my $feed = eval { JSON::decode_json($json) } || {};
