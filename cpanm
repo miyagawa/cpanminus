@@ -2,8 +2,11 @@
 my $quote = $^O eq 'MSWin32' ? q/"/ : q/'/;
 
 my $app = App::cpanminus::script->new;
-$app->parse_options(@ARGV);
-$app->doit;
+
+unless (caller) {
+    $app->parse_options(@ARGV);
+    $app->doit;
+}
 
 package App::cpanminus::script;
 use strict;
