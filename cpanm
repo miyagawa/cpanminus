@@ -1128,11 +1128,11 @@ from CPAN? I don't think so.
 
 =head2 But why a new client?
 
-I don't have an intention to dis CPAN or CPANPLUS developers. They're
-great tools and I've been using it for I<literally> years (Oh, you
-know how many modules I have on CPAN, right?) I really respect their
-efforts of maintaining the most important tools in the CPAN toolchain
-ecosystem.
+First of all, I don't have an intention to dis CPAN or CPANPLUS
+developers. Don't get me wrong. They're great tools and I've been
+using it for I<literally> years (Oh, you know how many modules I have
+on CPAN, right?) I really respect their efforts of maintaining the
+most important tools in the CPAN toolchain ecosystem.
 
 However, I've learned that for less experienced users (mostly from
 outside the Perl community), or even really experienced Perl
@@ -1173,9 +1173,11 @@ without asking any questions to I<just work>.
 
 Note that most of these problems with existing tools are rare, or are
 just overstated and might be already fixed issues, or can be
-configured to work nicer. And I know there's a reason to have many
-options and questions, since they're meant to work everywhere for
-everybody.
+configured to work nicer. For instance the latest CPAN.pm dev release
+has a much better FirstTime experience than previously.
+
+And I know there's a reason for them to have many options and
+questions, since they're meant to work everywhere for everybody.
 
 And yes, of course I should have contributed back to CPAN/CPANPLUS
 instead of writing a new client, but CPAN.pm is nearly impossible to
