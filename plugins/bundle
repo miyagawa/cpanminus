@@ -8,10 +8,9 @@ hook find_deps => sub {
     my $args = shift;
 
     if ($args->{module} =~ m!^Bundle::!) {
-        my $base = (split /::/, $args->{module})[-1] . ".pm";
-        my $lib  = $args->{module};
-           $lib =~ s!::!/!g;
-           $lib .= ".pm";
+        my @module = split /::/, $args->{module};
+        my $base = $module[-1] . ".pm";
+        my $lib  = join("/", "lib", @module) . ".pm";
 
         for my $file (grep -e, ($base, $lib)) {
             $self->chat("Scanning $file for bundle dependencies...");
