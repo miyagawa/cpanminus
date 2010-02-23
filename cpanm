@@ -58,6 +58,7 @@ sub parse_options {
         'v|verbose' => sub { $self->{verbose} = $self->{interactive} = 1 },
         'interactive' => \$self->{interactive},
         'look'      => sub { $self->{action} = 'look' },
+        'info'      => sub { $self->{action} = 'info' },
         'recent'    => sub { $self->{cmd} = 'show_recent' },
         'self-upgrade' => sub { $self->{cmd} = 'self_upgrade' },
         'q|quiet'   => sub {},
@@ -233,6 +234,7 @@ Usage: cpanm [--verbose] [--interactive] [--force] [--notest] [--sudo] Module
   -S,--sudo          sudo to run install commands
   --self-upgrade     upgrades itself
   --look             Download the tarball and open the directory with your shell
+  --info             Displays distribution info on CPAN
   --installdeps      Only install dependencies
   --recent           Show recently updated modules
   --disable-plugins  Disable plugin loading
@@ -374,6 +376,8 @@ sub install_module {
 
     my $dir = $self->fetch_module($module);
 
+    return if $self->{action} eq 'info';
+
     unless ($dir) {
         $self->diag("! Couldn't find module or a distribution $module\n");
         return;
@@ -432,6 +436,13 @@ sub fetch_module {
         my $uri = $iter->();
         last if $uri == -1;
         next unless $uri;
+
+        # Yikes this is dirty
+        if ($self->{action} eq 'info') {
+            $uri =~ s!.*authors/id/!!;
+            print $uri, "\n";
+            return;
+        }
 
         if ($uri =~ m{/perl-5}){
             $self->diag("skip $uri\n");
