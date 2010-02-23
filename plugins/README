@@ -10,5 +10,10 @@ TODO/Ideas:
 * via_git, via_svn, via_ssh - install via git:// URL (and svn:// and such)
   http://blogs.perl.org/users/brian_d_foy/2010/02/who-can-make-lwp-understand-svn.html
 * clone_repo - Clones (checks out) repository using META.yml repository info
-* whatschanged - Gets and displays the changelog diff
+* changes - Gets and displays the changelog
   http://bulknews.typepad.com/blog/2009/11/wanted-cpan-changelog-diff-service.html
+* fetch - just fetch the tarball to the current dir
+* distroprefs - distribution blacklisting
+* ratings - get/post CPAN cpanratings info
+* rt - get/send RT tickets
+* testers - get testers info
