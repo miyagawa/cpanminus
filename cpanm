@@ -1274,7 +1274,7 @@ sample plugins.
 
 =head1 QUESTIONS
 
-=head2 Another CPAN installer? What's the point?
+=head2 Another CPAN installer?
 
 OK, the first motivation was this: CPAN shell gets OOM (or swaps
 heavily and gets really slow) on Slicehost/linode's most affordable
@@ -1339,7 +1339,9 @@ instead of writing a new client, but CPAN.pm is nearly impossible to
 maintain (that's why CPANPLUS was born, right?) and CPANPLUS is a huge
 beast for me to start working on.
 
-And yes, I think my brain has been damaged since I looked at PyPI,
+=head2 Are you on drugs?
+
+Yeah, I think my brain has been damaged since I looked at PyPI,
 gemcutter, pip and rip. They're quite nice and I really wanted
 something as nice for CPAN which I love.
 
