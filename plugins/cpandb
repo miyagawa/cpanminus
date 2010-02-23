@@ -1,5 +1,8 @@
-# NAME: cpandb - query CPAN DB rather than scraping search.cpan.org
-# AUTHOR: Tatsuhiko Miyagawa
+name        'cpandb';
+description 'query CPAN DB rather than scraping search.cpan.org';
+author      'Tatsuhiko Miyagawa';
+
+api_version 0.1;
 
 # This is a proof-of-concept plugin:
 # DO NOT USE THIS PLUGIN - the server hardcoded here is not frequently updated

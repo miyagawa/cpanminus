@@ -1,6 +1,8 @@
-# XXX This does not work
-# NAME: cp562an - Use CP5.6.2AN (or other similar) mirrors
-# AUTHOR: Tatsuhiko Miyagawa
+name        'cp562an';
+description 'Use CP5.6.2AN (or other similar) mirrors';
+author      'Tatsuhiko Miyagawa';
+
+api_version 0.1;
 
 my $mirror_base = 'http://cp__WHAT__an.barnyard.co.uk/';
 

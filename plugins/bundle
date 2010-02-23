@@ -1,5 +1,8 @@
-# NAME: bundle - grab dependencies from Bundle::
-# AUTHOR: Tatsuhiko Miyagawa
+name        'bundle';
+description 'dependencies from Bundle::';
+author      'Tatsuhiko Miyagawa';
+
+api_version 0.1;
 
 hook find_deps => sub {
     my $args = shift;

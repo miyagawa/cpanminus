@@ -1,6 +1,9 @@
-# NAME: github - Install distributions from github
-# AUTHOR: Tatsuhiko Miyagawa
-# SYNOPSIS: cpanm github:miyagawa/Plack
+name        'github';
+description 'Install distributions from github';
+synopsis    'cpanm github:miyagawa/Plack';
+author      'Tatsuhiko Miyagawa';
+
+api_version 0.1;
 
 hook locate_dist => sub {
     my $args = shift;

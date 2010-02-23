@@ -1,5 +1,8 @@
-# NAME: verify_signature - Verify SIGNATURE before installing
-# AUTHOR: Tatsuhiko Miyagawa
+name        'verify_signature';
+description 'Verify SIGNATURE before installing';
+author      'Tatsuhiko Miyagawa';
+
+api_version 0.1;
 
 my $cpansign;
 

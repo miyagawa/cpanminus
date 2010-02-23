@@ -1,5 +1,6 @@
-# NAME: git_site_perl - Hooks to keep site_perl in git
-# AUTHOR: Tatsuhiko Miyagawa
+name        'git_site_perl';
+description 'Hooks to keep site_perl in git';
+author      'Tatsuhiko Miyagawa';
 
 use Config;
 use Cwd;

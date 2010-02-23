@@ -1,5 +1,8 @@
-# NAME: dist_ini - Find depdencies and extract META info from dist.ini
-# AUTHOR: Tatsuhiko Miyagawa
+name        'dist_ini';
+description 'Find depdencies and extract META info from dist.ini';
+author      'Tatsuhiko Miyagawa';
+
+api_version 0.1;
 
 # This is a proof of concept and not really useful since most
 # distributions heavily use Dist::Zilla's feature to mangle docs,

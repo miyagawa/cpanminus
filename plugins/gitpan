@@ -1,6 +1,9 @@
-# NAME: gitpan - Install modules from gitpan
-# AUTHOR: Tatsuhiko Miyagawa
-# SYNOPSIS: cpanm gitpan:CGI-1.22
+name        'gitpan';
+description 'Install modules from gitpan';
+synopsis    'cpanm gitpan:CGI-1.22';
+author      'Tatsuhiko Miyagawa';
+
+api_version 0.1;
 
 hook locate_dist => sub {
     my $args = shift;

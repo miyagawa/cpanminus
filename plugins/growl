@@ -1,5 +1,8 @@
-# NAME: growl - Growl notifications
-# AUTHOR: Tatsuhiko Miyagawa
+name        'growl';
+description 'Growl notifications';
+author      'Tatsuhiko Miyagawa';
+
+api_version 0.1;
 
 my $growlnotify;
 

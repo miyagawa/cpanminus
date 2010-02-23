@@ -1,5 +1,8 @@
-# NAME: cpanfresh - Fetch the latest release from http://friendfeed.com/cpan
-# AUTHOR: Tatsuhiko Miyagawa
+name        'cpanfresh';
+description 'Fetch the latest release from http://friendfeed.com/cpan';
+author      'Tatsuhiko Miyagawa';
+
+api_version 0.1;
 
 my $entries;
 

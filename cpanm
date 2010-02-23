@@ -42,6 +42,7 @@ sub new {
         perl => $^X,
         argv => undef,
         hooks => {},
+        plugins => [],
         @_,
     }, $class;
 }
@@ -61,6 +62,7 @@ sub parse_options {
         'V|version' => sub { $self->{action} = 'version' },
         'perl'      => \$self->{perl},
         'recent'    => sub { $self->{action} = 'show_recent' },
+        'list-plugins' => sub { $self->{action} = 'list_plugins' },
         'installdeps' => \$self->{installdeps},
         'interactive' => \$self->{interactive},
         'i|install' => sub { $self->{cmd} = 'install' },
@@ -201,13 +203,19 @@ sub load_plugin {
 
     $self->chat("Loading plugin $file\n");
 
+    my $plugin = { name => $name, file => $file };
+    my @attr   = qw( name description author version api_version synopsis );
+    my $dsl    = join "\n", map "sub $_ { \$plugin->{$_} = shift }", @attr;
+
     (my $package = $file) =~ s/[^a-zA-Z0-9_]/_/g;
     my $code = do { open my $io, "<$file"; local $/; <$io> };
     eval "package App::cpanplus::plugin::$package;\n".
-        "use strict;\n" .
+        "use strict;\n$dsl\n" .
         "sub hook { \$self->hook('$name', \@_) };\n$code";
 
     $self->diag("! Loading plugin $file faield: $@") if $@;
+
+    push @{$self->{plugins}}, $plugin;
 }
 
 sub hook {
@@ -371,6 +379,16 @@ sub show_recent {
     my $dists = $self->run_hook(show_recent => {});
     for my $dist (@$dists) {
         print $dist, "\n";
+    }
+
+    return 1;
+}
+
+sub list_plugins {
+    my $self = shift;
+
+    for my $plugin (@{$self->{plugins}}) {
+        print "$plugin->{name} - $plugin->{description}\n";
     }
 
     return 1;

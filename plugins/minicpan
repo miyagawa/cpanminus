@@ -1,5 +1,8 @@
-# NAME: minicpan - fallback to local minicpan when a dist is not found
-# AUTHOR: Tatsuhiko Miyagawa
+name        'minicpan';
+description 'fallback to local minicpan when a dist is not found';
+author      'Tatsuhiko Miyagawa';
+
+api_version 0.1;
 
 my $minicpan_rc   = File::Spec->catfile($ENV{HOME}, ".minicpanrc");
 my $minicpan_home = find_home($minicpan_rc) || File::Spec->catfile($ENV{HOME}, "minicpan");
