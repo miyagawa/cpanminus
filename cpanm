@@ -163,6 +163,7 @@ sub register_core_hooks {
         while ($feed =~ m!<link>http://search\.cpan\.org/~([a-z_\-0-9]+)/(.*?)/</link>!g) {
             my($pause_id, $dist) = (uc $1, $2);
             push @dists, substr($pause_id, 0, 1) . "/" . substr($pause_id, 0, 2) . "/" . $pause_id . "/$dist.tar.gz";
+            last if @dists >= 50;
         }
 
         return \@dists;
