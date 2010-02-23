@@ -806,10 +806,13 @@ sub file_mirror {
 sub init_tools {
     my $app = shift;
     if (eval { require LWP::Simple }) {
-        *get = \&LWP::Simple::get;
+        *get = sub ($) {
+            my $ua = LWP::UserAgent->new(parse_head => 0, env_proxy => 1);
+            $ua->request(HTTP::Request->new(GET => $_[0]))->content;
+        },
         *mirror = \&LWP::Simple::mirror;
         *redirect = sub {
-            my $ua = LWP::UserAgent->new(max_redirect => 1, env_proxy => 1);
+            my $ua = LWP::UserAgent->new(parse_head => 0, max_redirect => 1, env_proxy => 1);
             my $res = $ua->simple_request(HTTP::Request->new(GET => $_[0]));
             return $res->header('Location') if $res->is_redirect;
             return;
