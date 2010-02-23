@@ -366,7 +366,7 @@ sub run_timeout {
             alarm 0;
         };
         if ($@ && $@ eq "alarm\n") {
-            $self->diag("! $cmd timed out (> $timeout s) Use --verbose to redo.\n");
+            $self->diag("Timed out (> ${timeout}s). Use --verbose to retry. ");
             local $SIG{TERM} = 'IGNORE';
             kill TERM => 0;
             waitpid $pid, 0;
