@@ -1,9 +1,8 @@
 #!/usr/bin/env perl
 my $quote = $^O eq 'MSWin32' ? q/"/ : q/'/;
 
-my $app = App::cpanminus::script->new;
-
 unless (caller) {
+    my $app = App::cpanminus::script->new;
     $app->parse_options(@ARGV);
     $app->doit;
 }
@@ -22,6 +21,7 @@ use constant WIN32 => $^O eq 'MSWin32';
 our $VERSION;BEGIN{
 $VERSION = "0.09";
 }
+$VERSION = eval $VERSION;
 
 sub new {
     my $class = shift;
@@ -41,6 +41,7 @@ sub new {
         mirrors => [],
         argv => undef,
         hooks => {},
+        @_,
     }, $class;
 }
 
@@ -79,7 +80,7 @@ sub doit {
 
     $self->{make} = Util::which($Config{make});
 
-    Util::init_tools();
+    Util::init_tools($self);
 
     $self->configure_mirrors;
 
@@ -728,6 +729,7 @@ sub file_mirror {
 }
 
 sub init_tools {
+    my $app = shift;
     if (eval { require LWP::Simple }) {
         *get = \&LWP::Simple::get;
         *mirror = \&LWP::Simple::mirror;
