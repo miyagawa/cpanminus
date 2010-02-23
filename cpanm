@@ -144,7 +144,7 @@ sub register_core_hooks {
     $self->hook('core', search_module => sub {
         my $args = shift;
         push @{$args->{uris}}, sub {
-            $self->chat("Searching $args->{module} on search.cpan.org...\n");
+            $self->chat("Searching $args->{module} on search.cpan.org ...\n");
             my $html = Util::get("http://search.cpan.org/perldoc?$args->{module}");
             $html =~ m!Download:.*<a href="/CPAN/authors/id/(.*?)">.*?</a>!
                 and return $self->cpan_uri($1);
@@ -156,7 +156,7 @@ sub register_core_hooks {
     $self->hook('core', show_recent => sub {
         my $args = shift;
 
-        $self->chat("Fetching recent feed from search.cpan.org...\n");
+        $self->chat("Fetching recent feed from search.cpan.org ...\n");
         my $feed = Util::get("http://search.cpan.org/uploads.rdf");
 
         my @dists;
@@ -471,7 +471,7 @@ sub install_module {
         return;
     }
 
-    $self->chat("Entering $dir...\n");
+    $self->chat("Entering $dir\n");
     $self->chdir($self->{base});
     $self->chdir($dir);
 
@@ -533,7 +533,7 @@ sub fetch_module {
         }
 
         $self->chdir($self->{base});
-        $self->diag("Fetching $uri\n");
+        $self->diag("Fetching $uri ... ");
 
         my $name = File::Basename::basename $uri;
 
@@ -551,20 +551,21 @@ sub fetch_module {
         while ($try++ < 3) {
             $file = $fetch->();
             last if $cancelled or $file;
-            $self->diag("Download $uri failed. Retrying ...\n");
+            $self->diag("FAIL\nDownload $uri failed. Retrying ... ");
         }
 
         if ($cancelled) {
-            $self->diag("! Download cancelled.\n");
+            $self->diag("\n! Download cancelled.\n");
             return;
         }
 
         unless ($file) {
-            $self->diag("! Failed to download $uri\n");
+            $self->diag("FAIL\n! Failed to download $uri\n");
             next;
         }
 
-        $self->chat("Unpacking $file...\n");
+        $self->diag("OK\n");
+        $self->chat("Unpacking $file\n");
 
         my $dir = Util::untar($file);
         unless ($dir) {
@@ -630,7 +631,7 @@ sub install_deps {
     my @install;
     while (my($mod, $ver) = each %deps) {
         next if $mod eq 'perl' or $mod eq 'Config';
-        $self->chat("Checking if you have $mod $ver... ");
+        $self->chat("Checking if you have $mod $ver ... ");
         $ver = '' if $ver == 0;
         my $test = `$self->{perl} -e ${quote}eval q{use $mod $ver (); print q{OK:}, q/$mod/->VERSION};print \$\@ if \$\@${quote}`;
         if ($test =~ s/^\s*OK://) {
@@ -667,7 +668,7 @@ sub build_stuff {
     }
 
     if (-e 'META.yml') {
-        $self->chat("Checking configure dependencies from META.yml...\n");
+        $self->chat("Checking configure dependencies from META.yml ...\n");
         my $meta = Util::parse_meta('META.yml');
         my %deps = %{$meta->{configure_requires} || {}};
 
@@ -691,7 +692,7 @@ sub build_stuff {
     my $meta = {};
     my($metayml) = grep -e $_, qw( MYMETA.yml META.yml );
     if ($metayml) {
-        $self->chat("Checking dependencies from $metayml...\n");
+        $self->chat("Checking dependencies from $metayml ...\n");
         $meta = Util::parse_meta($metayml);
         %deps = (%{$meta->{requires} || {}});
         unless ($self->{notest}) {
@@ -700,7 +701,7 @@ sub build_stuff {
     }
 
     if (-e 'Makefile') {
-        $self->chat("Finding PREREQ from Makefile...\n");
+        $self->chat("Finding PREREQ from Makefile ...\n");
         open my $mf, "Makefile";
         while (<$mf>) {
             if (/^\#\s+PREREQ_PM => ({.*?})/) {
@@ -735,7 +736,7 @@ sub build_stuff {
         $use_module_build = 1;
     }
 
-    $self->diag("Building ", ($self->{notest} ? "" : "and testing "), "$dir for $module...\n");
+    $self->diag("Building ", ($self->{notest} ? "" : "and testing "), "$dir for $module ... ");
 
     my $installed;
     if ($use_module_build && -e 'Build' && -f _) {
@@ -749,16 +750,16 @@ sub build_stuff {
         $self->install("$self->{make} install") &&
         $installed++;
     } else {
-        $self->diag("! Sorry, I don't know how to build $dir\n");
+        $self->diag("FAIL\n! Sorry, I don't know how to build $dir\n");
         return;
     }
 
     if ($installed) {
-        $self->diag("$module installed successfully.\n");
+        $self->diag("OK\n$module installed successfully.\n");
         $self->run_hooks(install_success => { module => $module, build_dir => $dir, meta => $meta });
         return 1;
     } else {
-        $self->diag("! Installing $module failed. See $self->{log} for details.\n");
+        $self->diag("FAIL\n! Installing $module failed. See $self->{log} for details.\n");
         $self->run_hooks(build_failure => { module => $module, build_dir => $dir, meta => $meta });
         return;
     }
