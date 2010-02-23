@@ -808,7 +808,7 @@ sub init_tools {
     if (eval { require LWP::Simple }) {
         *get = sub ($) {
             my $ua = LWP::UserAgent->new(parse_head => 0, env_proxy => 1);
-            $ua->request(HTTP::Request->new(GET => $_[0]))->content;
+            $ua->request(HTTP::Request->new(GET => $_[0]))->decoded_content;
         },
         *mirror = \&LWP::Simple::mirror;
         *redirect = sub {
