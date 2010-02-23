@@ -11,10 +11,11 @@ unless (caller) {
 package App::cpanminus::script;
 use strict;
 use Config;
-use Cwd;
-use File::Basename;
-use File::Spec;
-use Getopt::Long;
+use Cwd ();
+use File::Basename ();
+use File::Spec ();
+use File::Copy ();
+use Getopt::Long ();
 
 use constant WIN32 => $^O eq 'MSWin32';
 
@@ -47,7 +48,7 @@ sub parse_options {
     local @ARGV = @_;
 
     Getopt::Long::Configure("bundling");
-    GetOptions(
+    Getopt::Long::GetOptions(
         'f|force'  => \$self->{force},
         'n|notest' => \$self->{notest},
         'S|sudo'   => \$self->{sudo},
@@ -94,22 +95,36 @@ sub doit {
     $self->run_hooks(finalize => {});
 }
 
+sub guard(&) {
+    my $cb = shift;
+    bless $cb, 'Util::Guard';
+}
+
 sub setup_home {
     my $self = shift;
 
     $self->{home} = $ENV{CPANMINUS_HOME} if $ENV{CPANMINUS_HOME};
     mkdir $self->{home}, 0777 unless -e $self->{home};
 
-    my $plugins = File::Spec->catfile($self->{home}, "plugins");
-    mkdir $plugins, 0777 unless -e $plugins;
+    for my $dir (qw( plugins work )) {
+        my $sub = File::Spec->catfile($self->{home}, $dir);
+        unless (-e $sub) {
+            mkdir $sub, 0777 or die "$dir: $!";
+        }
+    }
 
-    $self->{base} = File::Spec->catfile($self->{home}, "build-" . time . ".$$");
+    $self->{base} = File::Spec->catfile($self->{home}, "work", time . ".$$");
     mkdir $self->{base}, 0777 or die "$self->{base}: $!";
 
+    my $link = File::Spec->catfile($self->{home}, 'latest-build');
+    eval { unlink $link; symlink $self->{base}, $link };
+
     $self->{log} = File::Spec->catfile($self->{home}, "build.log");
+    $self->{at_exit} = guard { File::Copy::copy($self->{log}, File::Spec->catfile($self->{base}, 'build.log')) };
+
     open my $out, ">$self->{log}" or die "$self->{log}: $!";
     print $out "cpanm (App::cpanminus) $VERSION on perl $] built for $Config{archname}\n";
-    print $out "Build directory is $self->{base}\n";
+    print $out "Work directory is $self->{base}\n";
 
    $self->{plugin_dir} = File::Spec->catfile($self->{home}, "plugins");
 }
@@ -711,7 +726,6 @@ sub which {
 
 sub file_mirror {
     my($uri, $path) = @_;
-    require File::Copy;
     File::Copy::copy($uri, $path);
 }
 
@@ -783,6 +797,9 @@ sub parse_meta {
     my $file = shift;
     return eval { (Parse::CPAN::Meta::LoadFile($file))[0] } || {};
 }
+
+package Util::Guard;
+sub DESTROY { $_[0]->() }
 
 ### Inline stripped Parse::CPAN::Meta
 # Copyright: Adam Kennedy
