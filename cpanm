@@ -677,7 +677,7 @@ sub build_stuff {
 
     my($use_module_build, $configured);
     if (-e 'Makefile.PL') {
-        $ENV{X_MYMETA} = 'YAML';
+        local $ENV{X_MYMETA} = 'YAML';
         $self->configure("$self->{perl} Makefile.PL");
         $configured = 1;
     }
