@@ -11,7 +11,10 @@ hook search_module => 100, sub {
     my $args = shift;
 
     my $pkgs = File::Spec->catfile($minicpan_home, "modules", "02packages.details.txt.gz");
-    return unless -e $pkgs;
+    unless (-e $pkgs) {
+        $args->{app}->diag("! $pkgs not found. Configure $minicpan_rc correctly. mnicpan plugin is disabled.\n");
+        return;
+    }
 
     push @{$args->{uris}}, sub {
         require IO::Zlib;
