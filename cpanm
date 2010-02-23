@@ -20,7 +20,7 @@ use constant WIN32 => $^O eq 'MSWin32';
 use constant PLUGIN_API_VERSION => 0.1;
 
 our $VERSION;BEGIN{
-$VERSION = "0.09";
+$VERSION = "0.99_01";
 }
 $VERSION = eval $VERSION;
 
@@ -184,7 +184,6 @@ sub load_plugins {
 
 sub _load_plugins {
     my $self = shift;
-
     return if $self->{disable_plugins};
     return unless $self->{plugin_dir} && -e $self->{plugin_dir};
 
@@ -203,6 +202,12 @@ sub _load_plugins {
 
 sub load_plugin {
     my($self, $file, $name) = @_;
+
+    # TODO remove this once plugin API is official
+    unless ($ENV{CPANMINUS_DEV}) {
+        $self->chat("! Found plugin $file but CPANMINUS_DEV is not set. Skipping.\n");
+        return;
+    }
 
     $self->chat("Loading plugin $file\n");
 
@@ -1253,11 +1258,16 @@ Module::Build (core in 5.10) if you want to install MakeMaker based modules with
 
 =head1 PLUGINS
 
-cpanminus core is a tiny 500 lines of code (with some embedded
+B<WARNING: plugin API is not stabled so this feature is turned off by
+default for now. To enable plugins you have to be savvy enough to look
+at the build.log or read the source code to see how :)>
+
+cpanminus core is a tiny 600 lines of code (with some embedded
 utilities and documents) but can be extended by writing
 plugins. Plugins are flat perl script that should be placed inside
-C<~/.cpanm/plugins>. See C<plugins/> directory in the distribution for
-the list of available and sample plugins.
+C<~/.cpanm/plugins>. See C<plugins/> directory in the git repository
+L<http://github.com/miyagawa/cpanminus> for the list of available and
+sample plugins.
 
 =head1 QUESTIONS
 
@@ -1407,6 +1417,16 @@ Feedbacks sent by: Jesse Vincent, David Golden, Chris Williams, Adam
 Kennedy, J. Shirley, Chris Prather, Jesse Luehrs, Marcus Ramberg,
 Shawn M Moore, chocolateboy, Ingy dot Net, Chirs Nehren and Jonathan
 Rockway and Leon Brocard.
+
+=head1 COMMUNITY
+
+=over 4
+
+=item L<http://github.com/miyagawa/cpanminus> - source code repository, issue tracker
+
+=item L<irc://irc.perl.org/#toolchain> - discussions about Perl toolchain. I'm there.
+
+=back
 
 =head1 NO WARRANTY
 

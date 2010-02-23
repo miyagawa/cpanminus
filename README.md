@@ -4,7 +4,7 @@ App::cpanminus - get, unpack, build and install modules from CPAN
 
 # SYNOPSIS
 
-    cpanm Catalyst
+    cpanm Module
     cpanm MIYAGAWA/Plack-1.0000.tar.gz
     cpanm ~/mydists/MyCompany-Framework-1.0.tar.gz
     cpanm http://example.com/MyModule-0.1.tar.gz
@@ -42,14 +42,40 @@ Otherwise,
 perl 5.8 or later (Actually I believe it works with pre 5.8 too but
 haven't tested).
 
-- LWP or 'wget' to get files over HTTP.
-- 'tar' executable (if GNU tar, version 1.22 or later) or Archive::Tar to unpack files.
-- C compiler, if you want to build XS modules.
+- *
+
+LWP or 'wget' to get files over HTTP.
+
+- *
+
+'tar' executable (if GNU tar, version 1.22 or later) or Archive::Tar to unpack files.
+
+- *
+
+C compiler, if you want to build XS modules.
 
 And optionally:
 
-- make, if you want to more reliably install MakeMaker based modules
-- Module::Build (core in 5.10) if you want to install MakeMaker based modules without 'make'
+- *
+
+make, if you want to more reliably install MakeMaker based modules
+
+- *
+
+Module::Build (core in 5.10) if you want to install MakeMaker based modules without 'make'
+
+# PLUGINS
+
+__WARNING: plugin API is not stabled so this feature is turned off by
+default. To use plugins you should set CPANMINUS_DEV environment
+variable set__
+
+cpanminus core is a tiny 600 lines of code (with some embedded
+utilities and documents) but can be extended by writing
+plugins. Plugins are flat perl script that should be placed inside
+`~/.cpanm/plugins`. See `plugins/` directory in the git repository
+<http://github.com/miyagawa/cpanminus> for the list of available and
+sample plugins.
 
 # QUESTIONS
 
@@ -62,11 +88,11 @@ from CPAN? I don't think so.
 
 ## But why a new client?
 
-I don't have an intention to dis CPAN or CPANPLUS developers. They're
-great tools and I've been using it for _literally_ years (Oh, you
-know how many modules I have on CPAN, right?) I really respect their
-efforts of maintaining the most important tools in the CPAN toolchain
-ecosystem.
+First of all, I don't have an intention to dis CPAN or CPANPLUS
+developers. Don't get me wrong. They're great tools and I've been
+using it for _literally_ years (Oh, you know how many modules I have
+on CPAN, right?) I really respect their efforts of maintaining the
+most important tools in the CPAN toolchain ecosystem.
 
 However, I've learned that for less experienced users (mostly from
 outside the Perl community), or even really experienced Perl
@@ -77,11 +103,25 @@ perl code.
 
 In particular, here are the few issues I've been observing:
 
-- Too many questions. No sane defaults.
-- Bootstrap problems. Nearly impossible to fix when newbies encounter this.
-- Noisy output by default.
-- Fetches and rebuilds indexes like every day and takes like a minute
-- ... and hogs 200MB of memory and thrashes/OOMs on my 256MB VPS
+- *
+
+Too many questions. No sane defaults.
+
+- *
+
+Bootstrap problems. Nearly impossible to fix when newbies encounter this.
+
+- *
+
+Noisy output by default.
+
+- *
+
+Fetches and rebuilds indexes like every day and takes like a minute
+
+- *
+
+... and hogs 200MB of memory and thrashes/OOMs on my 256MB VPS
 
 And cpanminus is designed to be very quiet (but logs all output to
 `~/.cpanm/build.log`), pick whatever the sanest defaults as possible
@@ -89,9 +129,11 @@ without asking any questions to _just work_.
 
 Note that most of these problems with existing tools are rare, or are
 just overstated and might be already fixed issues, or can be
-configured to work nicer. And I know there's a reason to have many
-options and questions, since they're meant to work everywhere for
-everybody.
+configured to work nicer. For instance the latest CPAN.pm dev release
+has a much better FirstTime experience than previously.
+
+And I know there's a reason for them to have many options and
+questions, since they're meant to work everywhere for everybody.
 
 And yes, of course I should have contributed back to CPAN/CPANPLUS
 instead of writing a new client, but CPAN.pm is nearly impossible to
@@ -159,13 +201,6 @@ CPANPLUS in the longer term, but I just hope this can be a quite handy
 alternative to them for people in other situations. And apparently,
 many people love (at least the idea of) this software :)
 
-# PLUGINS
-
-cpanminus can be extended by writing plugins. Plugins are flat perl
-script that should be placed inside `~/.cpanm/plugins`. See
-`plugins/` directory in the distribution for the list of available
-and sample plugins.
-
 # COPYRIGHT
 
 Copyright 2010- Tatsuhiko Miyagawa
@@ -179,11 +214,13 @@ Same as Perl.
 # CREDITS
 
 Patches contributed by: Goro Fuji, Kazuhiro Osawa, Tokuhiro Matsuno,
-Kenichi Ishigaki, Ian Wells, Pedro Melo.
+Kenichi Ishigaki, Ian Wells, Pedro Melo, Masayoshi Sekimura and Matt S
+Trout.
 
-Feedbacks sent by: Jesse Vincent, David Golden, Chris Williams, Matt S
-Trout, Adam Kennedy, J. Shirley, Chris Prather, Jesse Luehrs, Marcus
-Ramberg, Shawn M Moore, chocolateboy, Ingy dot Net, Chirs Nehren.
+Feedbacks sent by: Jesse Vincent, David Golden, Chris Williams, Adam
+Kennedy, J. Shirley, Chris Prather, Jesse Luehrs, Marcus Ramberg,
+Shawn M Moore, chocolateboy, Ingy dot Net, Chirs Nehren and Jonathan
+Rockway and Leon Brocard.
 
 # NO WARRANTY
 

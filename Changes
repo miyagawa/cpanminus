@@ -1,5 +1,37 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+0.99_01 Tue Feb 23 12:31:56 PST 2010
+   [Improvements]
+      - Improved the duplicated or circular dependent package detections (gfx, Yappo)
+      - Improved the progressive message format
+      - Support .zip files (sekimura)
+      - Added --look command, like CPAN shell's look
+      - Added --recent command that shows you the recent updated modules
+      - Added --interactive option, good middleground when install Task:: modules
+      - Added --self-upgrade (NOTE: it will downgrade to the stable if you run from the dev release!)
+      - Fixed the installation doc to prefer git over CPAN shell
+      - Documented that you need GNU tar >= 1.22
+      - Wraps configure and test with alarm timeout to not choke on bad dists (hirose31, yappo, tokuhirom)
+
+   [Bug fixes]
+      - Fixed a bug where log appending fails on Win32 (xaicron)
+      - Various fixes on win32 (charsbar)
+      - Fixed a bug failing on dists with dual Build.PL/Makefile.PL (mst, aperion)
+      - Fixed a bug where build/ directory is treated as Module::Build's Build file on HFS
+
+   [Developer fixes]
+      - Changed the ~/.cpanm directroy layout - much easier to dig through
+      - Rewrote the documentation to be less defensive
+      - set AUTOMATED_TESTING when testing a distribution
+      - Mentions pip in the doc (chocolateboy, adamk)
+      - Support cpan:// URI
+      - Added --perl option to specify which perl path to use (mst)
+      - Specify minimum versions for ExtUtils::MakeMaker, Module::Build and ExtUtils::Install
+
+   [Beta features]
+      - Rewrote the internal using a sane and simple object oriented programming
+      - Implemented plugin architectures - this is unstable and turned off by default
+
 0.09  Sat Feb 20 23:47:16 PST 2010
       - Fixed the way archives are untared
       - Log file is now always ~/.cpanm/build.log
