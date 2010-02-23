@@ -28,6 +28,7 @@ sub new {
 
     bless {
         home => File::Spec->catfile($ENV{HOME}, ".cpanm"),
+        cmd  => 'install',
         seen => {},
         notest => undef,
         installdeps => undef,
@@ -38,7 +39,7 @@ sub new {
         interactive => undef,
         log => undef,
         mirrors => [],
-        argv => [],
+        argv => undef,
         hooks => {},
     }, $class;
 }
@@ -52,21 +53,21 @@ sub parse_options {
         'f|force'  => \$self->{force},
         'n|notest' => \$self->{notest},
         'S|sudo'   => \$self->{sudo},
-        'h|help'   => sub { $self->{cmd} = 'help' },
-        'i|install' => sub {},
-        'installdeps' => \$self->{installdeps},
-        'V|version' => sub { $self->{cmd} = 'version' },
         'v|verbose' => sub { $self->{verbose} = $self->{interactive} = 1 },
-        'interactive' => \$self->{interactive},
-        'look'      => sub { $self->{action} = 'look' },
-        'info'      => sub { $self->{action} = 'info' },
-        'recent'    => sub { $self->{cmd} = 'show_recent' },
-        'self-upgrade' => sub { $self->{cmd} = 'self_upgrade' },
         'q|quiet'   => sub {},
+        'h|help'    => sub { $self->{action} = 'help' },
+        'V|version' => sub { $self->{action} = 'version' },
+        'recent'    => sub { $self->{action} = 'show_recent' },
+        'installdeps' => \$self->{installdeps},
+        'interactive' => \$self->{interactive},
+        'i|install' => sub { $self->{cmd} = 'install' },
+        'look'      => sub { $self->{cmd} = 'look' },
+        'info'      => sub { $self->{cmd} = 'info' },
+        'self-upgrade' => sub { $self->{cmd} = 'install'; $self->{argv} = [ 'App::cpanminus' ] },
         'disable-plugins' => \$self->{disable_plugins},
     );
 
-    $self->{argv} = \@ARGV;
+    $self->{argv} ||= \@ARGV;
 }
 
 sub doit {
@@ -80,13 +81,13 @@ sub doit {
 
     Util::init_tools();
 
-    if (my $cmd = $self->{cmd}) {
-        $self->$cmd() and return;
+    $self->configure_mirrors;
+
+    if (my $action = $self->{action}) {
+        $self->$action() and return;
     }
 
     $self->help(1) unless @{$self->{argv}};
-
-    $self->configure_mirrors;
 
     for my $module (@{$self->{argv}}) {
         $self->install_module($module);
@@ -240,7 +241,7 @@ sub help {
     my $self = shift;
     my $how  = $_[0] ? sub { die @_ } : sub { print @_ };
     $how->(<<USAGE);
-Usage: cpanm [options] Module
+Usage: cpanm [options] Module [...]
 
 Options:
   -v,--verbose       Turns on chatty output
@@ -261,9 +262,6 @@ Examples:
 
   # install CGI
   cpanm CGI
-
-  # force install MojoMojo and its deps
-  cpanm -f MojoMojo
 
   # specify the version
   cpanm MIYAGAWA/Plack-0.99_05.tar.gz
@@ -317,7 +315,7 @@ sub run {
     my($self, $cmd) = @_;
 
     unless ($self->{verbose}) {
-        $cmd .= ">> $quote$self->{log}$quote 2>&1";
+        $cmd .= " >> " . Util::quote($self->{log}) . " 2>&1";
     }
 
     !system $cmd;
@@ -391,7 +389,7 @@ sub install_module {
 
     my $dir = $self->fetch_module($module);
 
-    return if $self->{action} eq 'info';
+    return if $self->{cmd} eq 'info';
 
     unless ($dir) {
         $self->diag("! Couldn't find module or a distribution $module\n");
@@ -407,7 +405,7 @@ sub install_module {
     $self->chdir($self->{base});
     $self->chdir($dir);
 
-    if ($self->{action} eq 'look') {
+    if ($self->{cmd} eq 'look') {
         $self->diag("Entering $dir with $ENV{SHELL}\n");
         system $ENV{SHELL};
     } else {
@@ -453,7 +451,7 @@ sub fetch_module {
         next unless $uri;
 
         # Yikes this is dirty
-        if ($self->{action} eq 'info') {
+        if ($self->{cmd} eq 'info') {
             $uri =~ s!.*authors/id/!!;
             print $uri, "\n";
             return;
