@@ -355,7 +355,7 @@ sub run_exec {
 
 sub run_timeout {
     my($self, $cmd, $timeout) = @_;
-    return $self->run($cmd) if $self->{verbose};
+    return $self->run($cmd) if WIN32 || $self->{verbose};
 
     my $pid = fork;
     if ($pid) {
