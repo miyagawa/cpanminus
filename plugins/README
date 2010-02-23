@@ -18,3 +18,4 @@ TODO/Ideas:
 * rt - get/send RT tickets
 * testers - get testers info
 * cpandoc - perldoc
+* gtk2notify - same as growl, uses Gtk2Notify
