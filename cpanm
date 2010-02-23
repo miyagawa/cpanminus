@@ -44,6 +44,8 @@ sub new {
         argv => undef,
         hooks => {},
         plugins => [],
+        configure_timeout => 60,
+        test_timeout => 60 * 10,
         @_,
     }, $class;
 }
@@ -336,12 +338,47 @@ sub log {
 
 sub run {
     my($self, $cmd) = @_;
-
     unless ($self->{verbose}) {
         $cmd .= " >> " . Util::quote($self->{log}) . " 2>&1";
     }
-
     !system $cmd;
+}
+
+sub run_exec {
+    my($self, $cmd) = @_;
+    unless ($self->{verbose}) {
+        $cmd .= " >> " . Util::quote($self->{log}) . " 2>&1";
+    }
+    exec $cmd;
+    return;
+}
+
+sub run_timeout {
+    my($self, $cmd, $timeout) = @_;
+    return $self->run($cmd) if $self->{verbose};
+
+    my $pid = fork;
+    if ($pid) {
+        eval {
+            local $SIG{ALRM} = sub { die "alarm\n" };
+            alarm $timeout;
+            waitpid $pid, 0;
+            alarm 0;
+        };
+        if ($@ && $@ eq "alarm\n") {
+            $self->diag("! $cmd timed out (> $timeout s) Use --verbose to redo.\n");
+            local $SIG{TERM} = 'IGNORE';
+            kill TERM => 0;
+            waitpid $pid, 0;
+            return;
+        }
+        return !$?;
+    } elsif ($pid == 0) {
+        $self->run_exec($cmd);
+    } else {
+        $self->chat("! fork failed: falling back to system()\n");
+        $self->run($cmd);
+    }
 }
 
 sub configure {
@@ -355,13 +392,13 @@ sub configure {
     local $ENV{AUTOMATED_TESTING}   = $use_default;
 
     local $self->{verbose} = $self->{interactive};
-    $self->run($cmd);
+    $self->run_timeout($cmd, $self->{configure_timeout});
 }
 
 sub test {
     my($self, $cmd) = @_;
     return 1 if $self->{notest};
-    return $self->run($cmd) || $self->{force};
+    return $self->run_timeout($cmd,  $self->{test_timeout}) || $self->{force};
 }
 
 sub install {
