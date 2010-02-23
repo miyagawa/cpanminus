@@ -1302,15 +1302,13 @@ In particular, here are the few issues I've been observing:
 
 =item *
 
-Too many questions. No sane defaults.
+Too many questions. No sane defaults. Normal user doesn't (and
+shouldn't have to) know what's the right answer for the question
+C<Parameters for the 'perl Build.PL' command? []>
 
 =item *
 
-Bootstrap problems. Nearly impossible to fix when newbies encounter this.
-
-=item *
-
-Noisy output by default.
+Very noisy output by default.
 
 =item *
 
