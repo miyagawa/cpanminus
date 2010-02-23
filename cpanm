@@ -240,19 +240,22 @@ sub help {
     my $self = shift;
     my $how  = $_[0] ? sub { die @_ } : sub { print @_ };
     $how->(<<USAGE);
-Usage: cpanm [--verbose] [--interactive] [--force] [--notest] [--sudo] Module
+Usage: cpanm [options] Module
 
+Options:
   -v,--verbose       Turns on chatty output
   --interactive      Turns on interactive configure (required for Task:: modules)
   -f,--force         force install
   -n,--notest        Do not run unit tests
   -S,--sudo          sudo to run install commands
+  --installdeps      Only install dependencies
+  --disable-plugins  Disable plugin loading
+
+Commands:
   --self-upgrade     upgrades itself
   --look             Download the tarball and open the directory with your shell
   --info             Displays distribution info on CPAN
-  --installdeps      Only install dependencies
   --recent           Show recently updated modules
-  --disable-plugins  Disable plugin loading
 
 Examples:
 
@@ -267,9 +270,6 @@ Examples:
 
   # install from an URL
   cpanm http://backpan.perl.org/authors/id/L/LD/LDS/CGI.pm-3.20.tar.gz
-
-  # cpan:// URI
-  cpanm cpan:///distfile/MIYAGAWA/Tatsumaki-0.1008.tar.gz
 
   # install Task:: modlues (You need --interactive or -v to answer questions)
   cpanm --interactive Task::Kensho
