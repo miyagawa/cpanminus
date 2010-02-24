@@ -45,7 +45,8 @@ sub new {
         hooks => {},
         plugins => [],
         configure_timeout => 60,
-        test_timeout => 60 * 10,
+        build_timeout => 60 * 10,
+        test_timeout  => 60 * 10,
         @_,
     }, $class;
 }
@@ -407,6 +408,11 @@ sub configure {
     $self->run_timeout($cmd, $self->{configure_timeout});
 }
 
+sub build {
+    my($self, $cmd) = @_;
+    $self->run_timeout($cmd, $self->{build_timeout});
+}
+
 sub test {
     my($self, $cmd) = @_;
     return 1 if $self->{notest};
@@ -752,12 +758,12 @@ sub build_stuff {
 
     my $installed;
     if ($use_module_build && -e 'Build' && -f _) {
-        $self->run("$self->{perl} ./Build") &&
+        $self->build("$self->{perl} ./Build") &&
         $self->test("$self->{perl} ./Build test") &&
         $self->install("$self->{perl} ./Build install") &&
         $installed++;
     } elsif ($self->{make} && -e 'Makefile') {
-        $self->run("$self->{make}") &&
+        $self->build("$self->{make}") &&
         $self->test("$self->{make} test") &&
         $self->install("$self->{make} install") &&
         $installed++;
