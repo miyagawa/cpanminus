@@ -139,6 +139,10 @@ sub setup_home {
     eval { unlink $link; symlink $self->{base}, $link };
 
     $self->{log} = File::Spec->catfile($self->{home}, "build.log");
+
+    # NOTE: this guard thing is only working because it contains $self and that makes the circular reference
+    # $app is also referenced in Util:: in the init_tools() time, so it's like a time bomb. Yikes.
+    # However I do not want to add Scalar::Util::weaken() dependency here...
     $self->{at_exit} = guard { File::Copy::copy($self->{log}, File::Spec->catfile($self->{base}, 'build.log')) };
 
     open my $out, ">$self->{log}" or die "$self->{log}: $!";
