@@ -1,5 +1,19 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+0.99_02 Tue Feb 23 22:13:46 PST 2010
+   [Improvements]
+      - Limit the number of --recent to 50
+
+   [Bug fixes]
+      - Work around with broken LWP installations (yannk)
+
+   [Developer fixes]
+      - Updated cpandb URI (BinGOs)
+      - Standardize env var keys to PERL_CPANM_* so `env | grep PERL` can be used (miyagawa, mst)
+      - Added ->env method
+      - Added PERL_CPANM_NO_LWP=1 so it can upgrade LWP without LWP
+      - Move documents to lib/App/cpanminus.pm
+
 0.99_01 Tue Feb 23 12:31:56 PST 2010
    [Improvements]
       - Improved the duplicated or circular dependent package detections (gfx, Yappo)
