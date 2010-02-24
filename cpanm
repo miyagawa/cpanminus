@@ -695,33 +695,44 @@ sub build_stuff {
         return;
     }
 
+    my $meta;
     if (-e 'META.yml') {
         $self->chat("Checking configure dependencies from META.yml ...\n");
-        my $meta = Util::parse_meta('META.yml');
+        $meta = Util::parse_meta('META.yml');
         my %deps = %{$meta->{configure_requires} || {}};
 
         $self->install_deps($dir, %deps);
     }
 
-    my($use_module_build, $configured);
+    my $target = $meta->{name} ? "$meta->{name}-$meta->{version}" : $module;
+    $self->diag("Configuring $target ... ");
+
+    my($use_module_build, $configured, $configured_ok);
     if (-e 'Makefile.PL') {
         local $ENV{X_MYMETA} = 'YAML';
-        $self->configure("$self->{perl} Makefile.PL");
-        $configured = 1;
+
+        # NOTE: according to Devel::CheckLib, most XS module' exit
+        # with 0 even if header files are missing, to avoid receiving
+        # tons of FAIL reports in such cases. So exit code can't be
+        # trusted if it went well (See Devel::CheckLib comments for
+        # details)
+        if ($self->configure("$self->{perl} Makefile.PL")) {
+            $configured_ok = -e 'Makefile';
+        }
+
+        $configured++;
     }
 
-    if ((!$self->{make} or !$configured) and -e 'Build.PL') {
-        $self->configure("$self->{perl} Build.PL");
-        $use_module_build = 1;
-        $configured = 1;
+    if ((!$self->{make} or !$configured_ok) and -e 'Build.PL') {
+        $self->configure("$self->{perl} Build.PL") && ++$configured_ok;
+        $use_module_build++;
+        $configured++;
     }
 
     my %deps;
-    my $meta = {};
-    my($metayml) = grep -e $_, qw( MYMETA.yml META.yml );
-    if ($metayml) {
-        $self->chat("Checking dependencies from $metayml ...\n");
-        $meta = Util::parse_meta($metayml);
+    if (-e 'MYMETA.yml') {
+        $self->chat("Checking dependencies from MYMETA.yml ...\n");
+        $meta = Util::parse_meta('MYMETA.yml');
         %deps = (%{$meta->{requires} || {}});
         unless ($self->{notest}) {
             %deps = (%deps, %{$meta->{build_requires} || {}}, %{$meta->{test_requires} || {}});
@@ -741,6 +752,8 @@ sub build_stuff {
         }
     }
 
+    $self->diag($configured_ok ? "OK\n" : "N/A\n");
+
     $self->run_hooks(find_deps => { deps => \%deps, module => $module, meta => $meta });
 
     $self->install_deps($dir, %deps);
@@ -750,35 +763,27 @@ sub build_stuff {
         return 1;
     }
 
-    unless ($configured) {
-        $self->diag("! Oops, you don't have make or the dist didn't have Makefile.PL.\n");
-        $self->diag("! Trying to build a stub Build file for you. Hope this works!\n");
-        {
-            open my $mb, ">Build.PL";
-            print $mb "require Module::Build;Module::Build->new(module_name => '$module',";
-            print $mb "dist_name => '$meta->{name}', dist_version => '$meta->{version}'" if $meta;
-            print $mb ")->create_build_script;";
-        }
-
-        $self->configure("$self->{perl} Build.PL");
-        $use_module_build = 1;
-    }
-
-    $self->diag("Building ", ($self->{notest} ? "" : "and testing "), "$dir for $module ... ");
-
     my $installed;
     if ($use_module_build && -e 'Build' && -f _) {
+        $self->diag("Building ", ($self->{notest} ? "" : "and testing "), "$dir for $module ... ");
         $self->build("$self->{perl} ./Build") &&
         $self->test("$self->{perl} ./Build test") &&
         $self->install("$self->{perl} ./Build install") &&
         $installed++;
     } elsif ($self->{make} && -e 'Makefile') {
+        $self->diag("Building ", ($self->{notest} ? "" : "and testing "), "$dir for $module ... ");
         $self->build("$self->{make}") &&
         $self->test("$self->{make} test") &&
         $self->install("$self->{make} install") &&
         $installed++;
     } else {
-        $self->diag("FAIL\n! Sorry, I don't know how to build $dir\n");
+        my $why;
+        if ($configured)      { $why = "Configure failed on $dir." }
+        elsif ($self->{make}) { $why = "The distribution doesn't have a proper Makefile.PL/Build.PL" }
+        else                  { $why = "Can't configure the distribution. You probably need to have 'make'." }
+
+        $self->diag("! $why See $self->{log} for details.\n");
+        $self->run_hooks(configure_failure => { module => $module, build_dir => $dir, meta => $meta });
         return;
     }
 
