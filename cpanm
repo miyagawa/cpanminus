@@ -843,7 +843,7 @@ sub init_tools {
         *redirect = sub {
             my $uri = shift;
             my $out = `$wget --max-redirect=0 $uri 2>&1`;
-            if ($out =~ /^Location: (\S+)/) {
+            if ($out =~ /^Location: (\S+)/m) {
                 return $1;
             }
             return;
