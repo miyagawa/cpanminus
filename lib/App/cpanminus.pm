@@ -149,9 +149,10 @@ And I know there's a reason for them to have many options and
 questions, since they're meant to work everywhere for everybody.
 
 And yes, of course I should have contributed back to CPAN/CPANPLUS
-instead of writing a new client, but CPAN.pm is nearly impossible to
-maintain (that's why CPANPLUS was born, right?) and CPANPLUS is a huge
-beast for me to start working on.
+instead of writing a new client, but CPAN.pm is nearly impossibler
+(for anyone other than andk or xdg) to maintain (that's why CPANPLUS
+was born, right?) and CPANPLUS is a huge beast for me to start working
+on.
 
 =head2 Are you on drugs?
 
@@ -164,7 +165,7 @@ something as nice for CPAN which I love.
 So, imagine you don't have CPAN or CPANPLUS. What you're going to do
 is to search the module on the CPAN search site, download a tarball,
 unpack it and then run C<perl Makefile.PL> (or C<perl Build.PL>). If
-the module has dependencies you probably have to recurively resolve
+the module has dependencies you probably have to recursively resolve
 those dependencies by hand before doing so. And then run the unit
 tests and C<make install> (or C<./Build install>).
 
@@ -179,7 +180,7 @@ building a queriable CPAN DB website so I can stop scraping.
 Fetched files are unpacked in C<~/.cpanm> but you can configure with
 C<PERL_CPANM_HOME> environment variable.
 
-=head2 Where does this install modules to?
+=head2 Where does this install modules to? Do I need a root access?
 
 It installs to wherever ExtUtils::MakeMaker and Module::Build are
 configured to (i.e. via C<PERL_MM_OPT> and C<MODULEBUILDRC>). So if
@@ -190,7 +191,9 @@ cpanminus at a boot time checks whether you configured local::lib
 setup, or have the permission to install modules to the sitelib
 directory, and warns you otherwise so that you need to run C<cpanm>
 command as root, or run with C<--sudo> option to auto sudo when
-running the install command.
+running the install command. Yes, it's already in the plan to
+automatically bootstraps L<local::lib> at the initial launch if you're
+non-root. I'm working on it with local::lib developers -- Stay tuned.
 
 =head2 Does this really work?
 
