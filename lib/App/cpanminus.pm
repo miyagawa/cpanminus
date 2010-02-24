@@ -202,11 +202,39 @@ and Plack using cpanminus and the installations including dependencies
 were mostly successful. So multiplies of I<half of CPAN> behave really
 nicely and appear to work.
 
-However, there are some distributions that will miserably fail,
-because of the nasty edge cases (funky archive formats, naughty
-tarball that extracts to the current directory, META.yml that is
-outdated and cannot be resurrected, Bundle:: modules, circular
-dependencies etc.) while CPAN and CPANPLUS can possibly handle them.
+However, there might be some distributions that will miserably fail,
+because of the nasty edge case, a.k.a. bad distros. Here are some
+examples:
+
+=over 4
+
+=item *
+
+Packages uploaded to PAUSE in 90's and doesn't live under the standard
+C<authors/id/A/AA> directory hierarchy.
+
+=imte *
+
+C<Makefile.PL> or C<Build.PL> that asks you questions without using
+C<prompt> function. However cpanminus has a mechanism to kill those
+questions with a timeout, and you can always say C<--interactive> to
+make the configuration interactive.
+
+=item *
+
+Distributions that are not shipped with C<META.yml> file but requires
+some specific version of toolchain in the configuration time.
+
+=item *
+
+Distributions that tests SIGNATURE in the C<*.t> unit tests. Signature
+testing is for the security and running it in unit tests is too late
+since we run C<Makefile.PL> in the configuration time.
+
+cpanminus has C<verity_signature> plugin to verify the dist before
+configurations.
+
+=back
 
 Well in other words, cpanminus is aimed to work against 99% of modules
 on CPAN for 99% of people. It may not be perfect, but it should just
