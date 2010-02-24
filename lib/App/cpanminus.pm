@@ -1,5 +1,5 @@
 package App::cpanminus;
-our $VERSION = "0.99_02";
+our $VERSION = "0.99_03";
 
 =head1 NAME
 
