@@ -719,12 +719,13 @@ sub build_stuff {
         if ($self->configure("$self->{perl} Makefile.PL")) {
             $configured_ok = -e 'Makefile';
         }
-
         $configured++;
     }
 
     if ((!$self->{make} or !$configured_ok) and -e 'Build.PL') {
-        $self->configure("$self->{perl} Build.PL") && ++$configured_ok;
+        if ($self->configure("$self->{perl} Build.PL")) {
+            $configured_ok = -e 'Build' && -f _;
+        }
         $use_module_build++;
         $configured++;
     }
