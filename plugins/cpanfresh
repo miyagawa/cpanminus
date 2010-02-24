@@ -1,0 +1,62 @@
+name        'cpanfresh';
+description 'Fetch the latest release from http://friendfeed.com/cpan';
+author      'Tatsuhiko Miyagawa';
+
+api_version 0.1;
+
+my $entries;
+
+hook search_module => 0, sub {
+    my $args = shift;
+
+    push @{$args->{uris}}, sub {
+        my $dist = $args->{module};
+        $dist =~ s/::/-/g;
+        $entries ||= eval { fetch_feed($args) } || [];
+        $args->{app}->diag("! Fetching cpanfresh failed: $@") if $@;
+
+        for my $info (@$entries) {
+            if ($info->{name} eq $dist) {
+                $args->{app}->chat("Found $dist on CPAN realtime feed => $info->{url}\n");
+                return $info->{url};
+            }
+        }
+
+        return;
+    };
+};
+
+hook show_recent => sub {
+    my $args = shift;
+    $entries ||= fetch_feed($args);
+    return [ map $_->{dist}, @$entries ];
+};
+
+sub fetch_feed {
+    my $args = shift;
+
+    require JSON;
+
+    $args->{app}->chat("Querying http://friendfeed.cpan/cpan\n");
+    my $json = Util::get("http://friendfeed-api.com/v2/feed/cpan");
+    my $feed = eval { JSON::decode_json($json) } || {};
+
+    my @dists = map { parse_entry($_->{body}) || () } @{$feed->{entries}};
+    return \@dists;
+}
+
+sub parse_entry {
+    my $body = shift;
+
+    if ($body =~ m!^([\w\-]+) ([0-9\._]*) by (.+?) - <a.*href="(http:.*?/authors/id/(.*?\.tar\.gz))"!) {
+        return {
+            name    => $1,
+            version => $2,
+            author  => $3,
+            url     => $4,
+            dist    => $5,
+        };
+    }
+
+    return;
+}

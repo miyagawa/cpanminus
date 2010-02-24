@@ -1,0 +1,30 @@
+name        'verify_signature';
+description 'Verify SIGNATURE before installing';
+author      'Tatsuhiko Miyagawa';
+
+api_version 0.1;
+
+my $cpansign;
+
+hook init => sub {
+    my $args = shift;
+    $cpansign = Util::which("cpansign")
+        or $args->{app}->diag("! cpansign not found. signature plugin is diabled.\n");
+};
+
+hook verify_dist => sub {
+    my $args = shift;
+    return unless $cpansign;
+
+    if (-e "SIGNATURE") {
+        $args->{app}->chat("Verifying the module signature...\n");
+        my $out = `$cpansign -v --skip 2>&1`;
+        $args->{app}->log($out);
+        if ($out =~ /Signature verified OK/) {
+            $args->{app}->chat("Signature verified OK!\n");
+        } else {
+            $args->{app}->diag("! SIGNATURE verification for $args->{module} failed.\n");
+            ${$args->{fail}}++;
+        }
+    }
+};

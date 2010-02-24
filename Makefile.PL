@@ -16,7 +16,9 @@ WriteMakefile(
     ABSTRACT => 'Get, unpack, build and install modules from CPAN.',
     PREREQ_PM => {
         'LWP' => 0,
-        'Module::Build' => 0,
+        'Module::Build' => 0.28,
+        'ExtUtils::MakeMaker' => 6.31,
+        'ExtUtils::Install' => 1.43,
     },
     LICENSE => 'perl',
     EXE_FILES => [ 'bin/cpanm' ],

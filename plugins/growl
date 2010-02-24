@@ -1,0 +1,37 @@
+name        'growl';
+description 'Growl notifications';
+author      'Tatsuhiko Miyagawa';
+
+api_version 0.1;
+
+my $growlnotify;
+
+hook init => sub {
+    my $args = shift;
+    $growlnotify = Util::which("growlnotify")
+        or $args->{app}->diag("! Couldn't find growlnotify. growl plugin is disabled.\n");
+};
+
+hook install_success => sub {
+    my $args = shift;
+    growl_it($args, "Successfully installed %s", 'ToolbarInfo');
+};
+
+hook build_failure => sub {
+    my $args = shift;
+    growl_it($args, "Building %s failed.", 'AlertStopIcon', 1);
+};
+
+sub growl_it {
+    my($args, $template, $icon, $is_sticky) = @_;
+
+    return unless $growlnotify;
+
+    my $dist = "$args->{meta}->{name}-$args->{meta}->{version}";
+    $dist = $args->{module} if $dist eq '-';
+    my $msg = sprintf $template, $dist;
+
+    my $sticky = $is_sticky ? "-s" : "";
+    $args->{app}->run("$growlnotify -n cpanminus $sticky -m " . Util::quote($msg) . " " . Util::quote($dist) .
+                      " --image /System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/$icon.icns");
+};

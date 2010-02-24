@@ -1,0 +1,21 @@
+Copy (or symlink) the plugins to ~/.cpanm/plugins
+
+TODO/Ideas:
+* fix cp562an to actually query the distribution (parse 02packages?)
+* backpan - get a specific version from BackPAN
+* nearest_mirror - automatically pick the nearest mirror (and cache it)
+* test_reporter - report test success/failures
+* local_lib - Something to do with local::lib. Maybe auto-setup?
+* dzil - Uses dzil to test and install modules
+* via_git, via_svn, via_ssh - install via git:// URL (and svn:// and such)
+  http://blogs.perl.org/users/brian_d_foy/2010/02/who-can-make-lwp-understand-svn.html
+* clone_repo - Clones (checks out) repository using META.yml repository info
+* changes - Gets and displays the changelog
+  http://bulknews.typepad.com/blog/2009/11/wanted-cpan-changelog-diff-service.html
+* fetch - just fetch the tarball to the current dir
+* distroprefs - distribution blacklisting
+* ratings - get/post CPAN cpanratings info
+* rt - get/send RT tickets
+* testers - get testers info
+* cpandoc - perldoc
+* gtk2notify - same as growl, uses Gtk2Notify
