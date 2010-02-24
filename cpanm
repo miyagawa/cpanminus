@@ -645,7 +645,7 @@ sub install_deps {
         next if $mod eq 'perl' or $mod eq 'Config';
         $self->chat("Checking if you have $mod $ver ... ");
         $ver = '' if $ver == 0;
-        my $test = `$self->{perl} -e ${quote}eval q{use $mod $ver (); print q{OK:}, q/$mod/->VERSION};print \$\@ if \$\@${quote}`;
+        my $test = `$self->{perl} -e ${quote}eval q{use $mod $ver (); print q{OK:}, $mod\::->VERSION};print \$\@ if \$\@${quote}`;
         if ($test =~ s/^\s*OK://) {
             $self->chat("Yes ($test)\n");
         } elsif ($test =~ /^Can't locate|required--this is only version (\S+)/) {
