@@ -84,7 +84,7 @@ sub parse_options {
     $self->{argv} ||= \@ARGV;
 }
 
-sub doit {
+sub init {
     my $self = shift;
 
     $self->setup_home;
@@ -92,9 +92,13 @@ sub doit {
     $self->sanity_check;
 
     $self->{make} = Util::which($Config{make});
-
     Util::init_tools($self);
+}
 
+sub doit {
+    my $self = shift;
+
+    $self->init;
     $self->configure_mirrors;
 
     if (my $action = $self->{action}) {
