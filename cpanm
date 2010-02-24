@@ -50,6 +50,11 @@ sub new {
     }, $class;
 }
 
+sub env {
+    my($self, $key) = @_;
+    $ENV{"CPANMINUS_" . uc($key)}; # support PERL_CPANMINUS_ too?
+}
+
 sub parse_options {
     my $self = shift;
     local @ARGV = @_;
@@ -112,7 +117,7 @@ sub guard(&) {
 sub setup_home {
     my $self = shift;
 
-    $self->{home} = $ENV{CPANMINUS_HOME} if $ENV{CPANMINUS_HOME};
+    $self->{home} = $self->env('HOME') if $self->env('HOME');
     mkdir $self->{home}, 0777 unless -e $self->{home};
 
     for my $dir (qw( plugins work )) {
@@ -205,7 +210,7 @@ sub load_plugin {
     my($self, $file, $name) = @_;
 
     # TODO remove this once plugin API is official
-    unless ($ENV{CPANMINUS_DEV}) {
+    unless ($self->env('DEV')) {
         $self->chat("! Found plugin $file but CPANMINUS_DEV is not set. Skipping.\n");
         return;
     }
