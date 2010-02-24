@@ -150,7 +150,8 @@ sub register_core_hooks {
         my $args = shift;
         push @{$args->{uris}}, sub {
             $self->chat("Searching $args->{module} on search.cpan.org ...\n");
-            my $html = Util::get("http://search.cpan.org/perldoc?$args->{module}");
+            my $uri  = "http://search.cpan.org/perldoc?$args->{module}";
+            my $html = Util::get($uri);
             $html =~ m!Download:.*<a href="/CPAN/authors/id/(.*?)">.*?</a>!
                 and return $self->cpan_uri($1);
             $self->diag("! Finding $args->{module} on search.cpan.org failed.\n");
@@ -811,7 +812,9 @@ sub file_mirror {
 
 sub init_tools {
     my $app = shift;
-    if (eval { require LWP::Simple }) {
+
+    # use CPANMINUS_NO_LWP=1 if they have a broken LWP, to upgrade LWP
+    if (!$app->env('NO_LWP') && eval { require LWP::Simple }) {
         *get = sub ($) {
             my $ua = LWP::UserAgent->new(parse_head => 0, env_proxy => 1);
             $ua->request(HTTP::Request->new(GET => $_[0]))->decoded_content;
