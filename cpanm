@@ -153,7 +153,7 @@ sub register_core_hooks {
             $self->chat("Searching $args->{module} on search.cpan.org ...\n");
             my $uri  = "http://search.cpan.org/perldoc?$args->{module}";
             my $html = Util::get($uri);
-            $html =~ m!Download:.*<a href="/CPAN/authors/id/(.*?)">.*?</a>!
+            $html =~ m!<a href="/CPAN/authors/id/(.*?\.(?:tar\.gz|tar\.bz2|zip))">!
                 and return $self->cpan_uri($1);
             $self->diag("! Finding $args->{module} on search.cpan.org failed.\n");
             return;
