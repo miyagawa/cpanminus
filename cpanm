@@ -330,7 +330,8 @@ USAGE
 
 sub sanity_check {
     my $self = shift;
-    unless ($ENV{PERL_MM_OPT} or $ENV{MODULEBUILDRC} or -w $Config{installsitelib} or $self->{sudo}) {
+    unless (   ($ENV{PERL_MM_OPT} and ($ENV{MODULEBUILDRC} or $ENV{PERL_MB_OPT}))
+            or -w $Config{installsitelib} or $self->{sudo}) {
         die "Can't write to $Config{installsitelib}: Run me as root or with --sudo option.\n";
     }
 }
