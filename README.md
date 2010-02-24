@@ -18,8 +18,8 @@ Run `cpanm -h` for more options.
 cpanminus is a script to get, unpack, build and install modules from CPAN.
 
 Its catch? Deps-free, zero-conf, standalone but maintainable and
-extensible with plugins. In the runtime it only requires 8MB of
-RAM.
+extensible with plugins and shell scripting friendly. In the runtime
+it only requires 10MB of RAM.
 
 # INSTALLATION
 
@@ -66,9 +66,9 @@ Module::Build (core in 5.10) if you want to install MakeMaker based modules with
 
 # PLUGINS
 
-__WARNING: plugin API is not stabled so this feature is turned off by
-default. To use plugins you should set CPANMINUS_DEV environment
-variable set__
+__WARNING: plugin API is not stable so this feature is turned off by
+default for now. To enable plugins you have to be savvy enough to look
+at the build.log or read the source code to see how :)__
 
 cpanminus core is a tiny 600 lines of code (with some embedded
 utilities and documents) but can be extended by writing
@@ -79,7 +79,7 @@ sample plugins.
 
 # QUESTIONS
 
-## Another CPAN installer? What's the point?
+## Another CPAN installer?
 
 OK, the first motivation was this: CPAN shell gets OOM (or swaps
 heavily and gets really slow) on Slicehost/linode's most affordable
@@ -105,15 +105,13 @@ In particular, here are the few issues I've been observing:
 
 - *
 
-Too many questions. No sane defaults.
+Too many questions. No sane defaults. Normal user doesn't (and
+shouldn't have to) know what's the right answer for the question
+`Parameters for the 'perl Build.PL' command? []`
 
 - *
 
-Bootstrap problems. Nearly impossible to fix when newbies encounter this.
-
-- *
-
-Noisy output by default.
+Very noisy output by default.
 
 - *
 
@@ -140,7 +138,9 @@ instead of writing a new client, but CPAN.pm is nearly impossible to
 maintain (that's why CPANPLUS was born, right?) and CPANPLUS is a huge
 beast for me to start working on.
 
-And yes, I think my brain has been damaged since I looked at PyPI,
+## Are you on drugs?
+
+Yeah, I think my brain has been damaged since I looked at PyPI,
 gemcutter, pip and rip. They're quite nice and I really wanted
 something as nice for CPAN which I love.
 
@@ -162,7 +162,7 @@ fragile. I hope (and have already talked to) QA/toolchain people for
 building a queriable CPAN DB website so I can stop scraping.
 
 Fetched files are unpacked in `~/.cpanm` but you can configure with
-`CPANMINUS_HOME` environment variable.
+`PERL_CPANM_HOME` environment variable.
 
 ## Where does this install modules to?
 
@@ -219,8 +219,14 @@ Trout.
 
 Feedbacks sent by: Jesse Vincent, David Golden, Chris Williams, Adam
 Kennedy, J. Shirley, Chris Prather, Jesse Luehrs, Marcus Ramberg,
-Shawn M Moore, chocolateboy, Ingy dot Net, Chirs Nehren and Jonathan
+Shawn M Moore, chocolateboy, Ingy dot Net, Chirs Nehren, Jonathan
 Rockway and Leon Brocard.
+
+# COMMUNITY
+
+- <http://github.com/miyagawa/cpanminus> - source code repository, issue tracker
+
+- L<irc://irc.perl.org/#toolchain> - discussions about Perl toolchain. I'm there.
 
 # NO WARRANTY
 

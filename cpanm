@@ -53,7 +53,7 @@ sub new {
 
 sub env {
     my($self, $key) = @_;
-    $ENV{"CPANMINUS_" . uc($key)}; # support PERL_CPANMINUS_ too?
+    $ENV{"PERL_CPANM_" . $key} || $ENV{"CPANMINUS_" . $key};
 }
 
 sub parse_options {
@@ -213,7 +213,7 @@ sub load_plugin {
 
     # TODO remove this once plugin API is official
     unless ($self->env('DEV')) {
-        $self->chat("! Found plugin $file but CPANMINUS_DEV is not set. Skipping.\n");
+        $self->chat("! Found plugin $file but PERL_CPANM_DEV is not set. Skipping.\n");
         return;
     }
 
@@ -819,7 +819,7 @@ sub file_mirror {
 sub init_tools {
     my $app = shift;
 
-    # use CPANMINUS_NO_LWP=1 if they have a broken LWP, to upgrade LWP
+    # use PERL_CPANM_NO_LWP=1 if they have a broken LWP, to upgrade LWP
     if (!$app->env('NO_LWP') && eval { require LWP::Simple }) {
         *get = sub ($) {
             my $ua = LWP::UserAgent->new(parse_head => 0, env_proxy => 1);
@@ -1376,7 +1376,7 @@ fragile. I hope (and have already talked to) QA/toolchain people for
 building a queriable CPAN DB website so I can stop scraping.
 
 Fetched files are unpacked in C<~/.cpanm> but you can configure with
-C<CPANMINUS_HOME> environment variable.
+C<PERL_CPANM_HOME> environment variable.
 
 =head2 Where does this install modules to?
 
