@@ -498,8 +498,14 @@ sub install_module {
     $self->chdir($dir);
 
     if ($self->{cmd} eq 'look') {
-        $self->diag("Entering $dir with $ENV{SHELL}\n");
-        system $ENV{SHELL};
+        my $shell = $ENV{SHELL};
+        $shell  ||= $ENV{COMSPEC} if WIN32;
+        if ($shell) {
+            $self->diag("Entering $dir with $shell\n");
+            system $shell;
+        } else {
+            $self->diag("! You don't seem to have a SHELL :/\n");
+        }
     } else {
         $self->build_stuff($module, $dir, $is_dep)
     }
