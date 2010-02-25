@@ -1,6 +1,6 @@
 use strict;
 use Test::More;
-require 'cpanm';
+use App::cpanminus::script;
 
 use File::Temp;
 $ENV{PERL_CPANM_HOME} = File::Temp::tempdir;
