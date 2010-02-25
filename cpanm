@@ -659,6 +659,20 @@ sub search_module {
     return \@cbs;
 }
 
+sub check_module {
+    my($self, $mod, $ver) = @_;
+
+    $ver = '' if $ver == 0;
+    my $test = `$self->{perl} -e ${quote}eval q{use $mod $ver (); print q{OK:}, $mod\::->VERSION};print \$\@ if \$\@${quote}`;
+    if ($test =~ s/^\s*OK://) {
+        return 1, $test;
+    } elsif ($test =~ /^Can't locate|required--this is only version (\S+)/) {
+        return 0, $1;
+    } else {
+        return 0, undef, $test;
+    }
+}
+
 sub install_deps {
     my($self, $dir, %deps) = @_;
 
@@ -666,16 +680,18 @@ sub install_deps {
     while (my($mod, $ver) = each %deps) {
         next if $mod eq 'perl' or $mod eq 'Config';
         $self->chat("Checking if you have $mod $ver ... ");
-        $ver = '' if $ver == 0;
-        my $test = `$self->{perl} -e ${quote}eval q{use $mod $ver (); print q{OK:}, $mod\::->VERSION};print \$\@ if \$\@${quote}`;
-        if ($test =~ s/^\s*OK://) {
-            $self->chat("Yes ($test)\n");
-        } elsif ($test =~ /^Can't locate|required--this is only version (\S+)/) {
-            $self->chat("No ", ($1 ? "($1 < $ver)\n" : "\n"));
-            push @install, $mod;
-        } else {
-            $self->chat("Unknown ($test)\n");
+        my($ok, $local, $err) = $self->check_module($mod, $ver);
+
+        if ($err) {
+            $self->chat("Unknown ($err)\n");
+            next;
         }
+
+        if ($ok)       { $self->chat("Yes ($local)\n") }
+        elsif ($local) { $self->chat("No ($local < $ver)\n") }
+        else           { $self->chat("No\n") }
+
+        push @install, $mod unless $ok;
     }
 
     if (@install) {
