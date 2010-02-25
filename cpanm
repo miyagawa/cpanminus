@@ -114,11 +114,6 @@ sub doit {
     $self->run_hooks(finalize => {});
 }
 
-sub guard(&) {
-    my $cb = shift;
-    bless $cb, 'Util::Guard';
-}
-
 sub setup_home {
     my $self = shift;
 
@@ -140,10 +135,10 @@ sub setup_home {
 
     $self->{log} = File::Spec->catfile($self->{home}, "build.log");
 
-    # NOTE: this guard thing is only working because it contains $self and that makes the circular reference
-    # $app is also referenced in Util:: in the init_tools() time, so it's like a time bomb. Yikes.
-    # However I do not want to add Scalar::Util::weaken() dependency here...
-    $self->{at_exit} = guard { File::Copy::copy($self->{log}, File::Spec->catfile($self->{base}, 'build.log')) };
+    {
+        my $log = $self->{log}; my $base = $self->{base};
+        $self->{at_exit} = sub { File::Copy::copy($log, File::Spec->catfile($base, 'build.log')) };
+    }
 
     open my $out, ">$self->{log}" or die "$self->{log}: $!";
     print $out "cpanm (App::cpanminus) $VERSION on perl $] built for $Config{archname}\n";
@@ -826,6 +821,11 @@ sub build_stuff {
     }
 }
 
+sub DESTROY {
+    my $self = shift;
+    $self->{at_exit}->($self) if $self->{at_exit};
+}
+
 package Util;
 
 use Config;
@@ -973,9 +973,6 @@ sub parse_meta {
     my $file = shift;
     return eval { (Parse::CPAN::Meta::LoadFile($file))[0] } || {};
 }
-
-package Util::Guard;
-sub DESTROY { $_[0]->() }
 
 ### Inline stripped Parse::CPAN::Meta
 # Copyright: Adam Kennedy
