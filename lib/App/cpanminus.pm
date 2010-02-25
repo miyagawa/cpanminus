@@ -227,12 +227,19 @@ some specific version of toolchain in the configuration time.
 
 =item *
 
-Distributions that tests SIGNATURE in the C<*.t> unit tests. Signature
+Distributions that tests SIGNATURE in the C<*.t> unit tests and has
+C<MANIFEST.SKIP> file in the distribution at the same time. Signature
 testing is for the security and running it in unit tests is too late
 since we run C<Makefile.PL> in the configuration time.
 
 cpanminus has C<verity_signature> plugin to verify the dist before
 configurations.
+
+=item *
+
+Distributions that has a C<META.yml> file that is encoded in YAML 1.1
+format using L<YAML::XS>. This will be eventually solved once we move
+to C<META.json>.
 
 =back
 

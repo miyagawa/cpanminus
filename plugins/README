@@ -19,3 +19,4 @@ TODO/Ideas:
 * testers - get testers info
 * cpandoc - perldoc
 * gtk2notify - same as growl, uses Gtk2Notify
+* codesearch - Google code search lang:perl package:search.cpan.org
