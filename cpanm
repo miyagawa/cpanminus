@@ -1,12 +1,5 @@
 #!/usr/bin/env perl
 # DO NOT EDIT -- this is an auto generated file
-use strict;
-
-unless (caller) {
-    my $app = App::cpanminus::script->new;
-    $app->parse_options(@ARGV);
-    $app->doit;
-}
 # lib/App/cpanminus/script.pm (auto embedded by script/build.PL)
 package App::cpanminus::script;
 use strict;
@@ -1318,3 +1311,13 @@ sub _hash ($$$) {
 	return 1;
 }
 
+package main;
+#!/usr/bin/env perl
+# DO NOT EDIT -- this is an auto generated file
+use strict;
+
+unless (caller) {
+    my $app = App::cpanminus::script->new;
+    $app->parse_options(@ARGV);
+    $app->doit;
+}

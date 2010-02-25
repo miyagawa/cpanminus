@@ -13,7 +13,7 @@
 
 use lib "lib"; # to include the latest App/cpanminus/script.pm
 
-my @embed;
+my(@embed, @code);
 
 open my $in,  "<", "script/cpanm.PL" or die $!;
 open my $out, ">", "cpanm" or die $!;
@@ -23,10 +23,11 @@ print STDERR "Generating cpanm from script/cpanm.PL\n";
 while (<$in>) {
     next if /Auto-removed/;
     s/DEVELOPERS:.*/DO NOT EDIT -- this is an auto generated file/;
+    /^#/ and print $out $_;
     if (/^use (.*);.*embed/) {
         push @embed, $1;
     } else {
-        print $out $_;
+        push @code, $_;
     }
 }
 
@@ -43,6 +44,12 @@ for my $embed (@embed) {
         print $out $_;
     }
 }
+
+print $out "package main;\n";
+for my $code (@code) {
+    print $out $code;
+}
+
 
 chmod 0755, "cpanm";
 
