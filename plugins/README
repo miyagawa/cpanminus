@@ -1,7 +1,6 @@
 Copy (or symlink) the plugins to ~/.cpanm/plugins
 
-TODO/Ideas:
-* fix cp562an to actually query the distribution (parse 02packages?)
+Ideas:
 * backpan - get a specific version from BackPAN
 * nearest_mirror - automatically pick the nearest mirror (and cache it)
 * test_reporter - report test success/failures
@@ -21,3 +20,5 @@ TODO/Ideas:
 * gtk2notify - same as growl, uses Gtk2Notify
 * codesearch - Google code search lang:perl package:cpan.org
 * yaml11 - parse YAML 1.1 META.yml aka mlehmann's
+* showbuildlog - Auto show build.log with PAGER when one of the builds failed
+* autointeractive - Automatically make configure interactive when it's known to dynamically config
