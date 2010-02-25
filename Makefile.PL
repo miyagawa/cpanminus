@@ -1,4 +1,5 @@
-my $author    = $ARGV[0] eq 'PACK=1' ? do { shift @ARGV } : undef;
+my $author = -d '.git' && `git remote -v` =~ /git\@github/;
+print STDERR "Running as an author mode!\n";
 
 # Author: perl Makefile.PL PACK=1 packs 'script/cpanm.PL' -> 'cpanm'
 if ($author) {
