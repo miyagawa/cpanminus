@@ -1,5 +1,20 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+0.99_04 Thu Feb 25 09:11:44 PST 2010
+   [Improvements]
+      - Supported modules and packages without POD on search.cpan.org
+      - --look command now works on Win32 (charsbar, xaicron)
+      - Improved the error message when configure fails (tokuhirom)
+      - Supported modules with .tgz format archive (frew)
+
+   [Developer fixes]
+      - Improved the way it checks configuration results (mst, confound, rjbs, LeoNerd)
+      - Killed the automatic Build.PL stub generation because it doesn't work.
+      - Support PERL_MB_OPT in the sanity check
+      - Adds PERL5_CPANPLUS_IS_RUNNING to work with older Module::AutoInstall (0.73) (Alias)
+      - Changed the way plugins check api_version
+      - Rewrote internals for the at_exit hook and removed Util:: functions (vincent, mst, ewhilhelm)
+
 0.99_03 Tue Feb 23 23:03:20 PST 2010
    [Bug fixes]
       - .zip support didn't go through the proper merge process. Now merged

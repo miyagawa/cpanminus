@@ -20,7 +20,7 @@ use constant WIN32 => $^O eq 'MSWin32';
 use constant PLUGIN_API_VERSION => 0.1;
 
 our $VERSION;BEGIN{
-$VERSION = "0.99_03";
+$VERSION = "0.99_04";
 }
 $VERSION = eval $VERSION;
 
