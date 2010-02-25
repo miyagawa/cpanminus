@@ -32,7 +32,7 @@ sub notify {
     my $msg = sprintf $template, $dist;
 
     $notify->create(
-	timeout => -1,
-	summary => $msg,
+        timeout => -1,
+        summary => $msg,
     )->show;
 }
