@@ -229,27 +229,32 @@ sub load_plugin {
     $self->chat("Loading plugin $file\n");
 
     my $plugin = { name => $name, file => $file };
-    my @attr   = qw( name description author version api_version synopsis );
+    my @attr   = qw( name description author version synopsis );
     my $dsl    = join "\n", map "sub $_ { \$plugin->{$_} = shift }", @attr;
 
     (my $package = $file) =~ s/[^a-zA-Z0-9_]/_/g;
     my $code = do { open my $io, "<$file"; local $/; <$io> };
 
+    my $api_version = PLUGIN_API_VERSION;
+
     my @hooks;
     eval "package App::cpanplus::plugin::$package;\n".
         "use strict;\n$dsl\n" .
+        'sub api_version { die "API_COMPAT: $_[0]" if $_[0] < $api_version }' . "\n" .
         "sub hook { push \@hooks, [\@_] };\n$code";
 
-    if ($plugin->{api_version} < PLUGIN_API_VERSION) {
-        $self->diag("! $plugin->{name} plugin API version is outdated ($plugin->{api_version}) and needs an update.\n");
+    if ($@ =~ /API_COMPAT: (\S+)/) {
+        $self->diag("! $plugin->{name} plugin API version is outdated ($1 < $api_version) and needs an update.\n");
+        return;
+    } elsif ($@) {
+        $self->diag("! Loading $name plugin failed. See $self->{log} for details.\n");
+        $self->chat($@);
         return;
     }
 
     for my $hook (@hooks) {
         $self->hook($plugin->{name}, @$hook);
     }
-
-    $self->diag("! Loading plugin $file faield: $@") if $@;
 
     push @{$self->{plugins}}, $plugin;
 }
