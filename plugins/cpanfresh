@@ -38,7 +38,7 @@ sub fetch_feed {
     require JSON;
 
     $args->{app}->chat("Querying http://friendfeed.cpan/cpan\n");
-    my $json = Util::get("http://friendfeed-api.com/v2/feed/cpan");
+    my $json = $args->{app}->get("http://friendfeed-api.com/v2/feed/cpan");
     my $feed = eval { JSON::decode_json($json) } || {};
 
     my @dists = map { parse_entry($_->{body}) || () } @{$feed->{entries}};

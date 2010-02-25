@@ -11,13 +11,14 @@ hook search_module => sub {
 
     return unless $args->{module} =~ /^[A-Za-z0-9_:]+$/;
 
+    my $app = $args->{app};
     push @{$args->{uris}}, sub {
-        $args->{app}->chat("Querying $args->{module} with by-module against $mirror\n");
+        $app->chat("Querying $args->{module} with by-module against $mirror\n");
 
-        my $uri = Util::redirect("$mirror/by-module/$args->{module}");
+        my $uri = $app->redirect("$mirror/by-module/$args->{module}");
         return $uri if $uri;
 
-        $args->{app}->chat("! Finding $args->{module} with by-module failed.\n");
+        $app->chat("! Finding $args->{module} with by-module failed.\n");
         return;
     };
 };

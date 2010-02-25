@@ -13,7 +13,7 @@ hook locate_dist => sub {
             $content = do { open my $fh, "<$args->{module}"; join '', <$fh> };
         } elsif ($args->{module} =~ /^(https?|ftp|file):/) {
             $args->{app}->chat("Fetching remote p5i $args->{module}\n");
-            $content = Util::get($args->{module});
+            $content = $args->{app}->get($args->{module});
         }
 
         return unless $content;

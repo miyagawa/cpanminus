@@ -91,8 +91,8 @@ sub init {
     $self->load_plugins;
     $self->sanity_check;
 
-    $self->{make} = Util::which($Config{make});
-    Util::init_tools($self);
+    $self->{make} = $self->which($Config{make});
+    $self->init_tools;
 }
 
 sub doit {
@@ -155,7 +155,7 @@ sub register_core_hooks {
         push @{$args->{uris}}, sub {
             $self->chat("Searching $args->{module} on search.cpan.org ...\n");
             my $uri  = "http://search.cpan.org/perldoc?$args->{module}";
-            my $html = Util::get($uri);
+            my $html = $self->get($uri);
             $html =~ m!<a href="/CPAN/authors/id/(.*?\.(?:tar\.gz|tgz|tar\.bz2|zip))">!
                 and return $self->cpan_uri($1);
             $self->diag("! Finding $args->{module} on search.cpan.org failed.\n");
@@ -167,7 +167,7 @@ sub register_core_hooks {
         my $args = shift;
 
         $self->chat("Fetching recent feed from search.cpan.org ...\n");
-        my $feed = Util::get("http://search.cpan.org/uploads.rdf");
+        my $feed = $self->get("http://search.cpan.org/uploads.rdf");
 
         my @dists;
         while ($feed =~ m!<link>http://search\.cpan\.org/~([a-z_\-0-9]+)/(.*?)/</link>!g) {
@@ -362,7 +362,7 @@ sub log {
 sub run {
     my($self, $cmd) = @_;
     unless ($self->{verbose}) {
-        $cmd .= " >> " . Util::quote($self->{log}) . " 2>&1";
+        $cmd .= " >> " . $self->shell_quote($self->{log}) . " 2>&1";
     }
     !system $cmd;
 }
@@ -370,7 +370,7 @@ sub run {
 sub run_exec {
     my($self, $cmd) = @_;
     unless ($self->{verbose}) {
-        $cmd .= " >> " . Util::quote($self->{log}) . " 2>&1";
+        $cmd .= " >> " . $self->shell_quote($self->{log}) . " 2>&1";
     }
     exec $cmd;
     return;
@@ -575,7 +575,7 @@ sub fetch_module {
         my $fetch = sub {
             eval {
                 local $SIG{INT} = sub { $cancelled = 1; die "SIGINT\n" };
-                Util::mirror($uri, $name);
+                $self->mirror($uri, $name);
                 return $name if -e $name;
                 return;
             };
@@ -601,7 +601,7 @@ sub fetch_module {
         $self->diag("OK\n");
         $self->chat("Unpacking $file\n");
 
-        my $dir = $file =~ /\.zip/i ? Util::unzip($file) : Util::untar($file);
+        my $dir = $file =~ /\.zip/i ? $self->unzip($file) : $self->untar($file);
         unless ($dir) {
             $self->diag("! Failed to unpack $name: no directory\n");
             next;
@@ -720,7 +720,7 @@ sub build_stuff {
     my $meta;
     if (-e 'META.yml') {
         $self->chat("Checking configure dependencies from META.yml ...\n");
-        $meta = Util::parse_meta('META.yml');
+        $meta = $self->parse_meta('META.yml');
         my %deps = %{$meta->{configure_requires} || {}};
 
         $self->install_deps($dir, %deps);
@@ -755,7 +755,7 @@ sub build_stuff {
     my %deps;
     if (-e 'MYMETA.yml') {
         $self->chat("Checking dependencies from MYMETA.yml ...\n");
-        $meta = Util::parse_meta('MYMETA.yml');
+        $meta = $self->parse_meta('MYMETA.yml');
         %deps = (%{$meta->{requires} || {}});
         unless ($self->{notest}) {
             %deps = (%deps, %{$meta->{build_requires} || {}}, %{$meta->{test_requires} || {}});
@@ -826,28 +826,21 @@ sub DESTROY {
     $self->{at_exit}->($self) if $self->{at_exit};
 }
 
-package Util;
+# Utils
 
-use Config;
-sub get($);
-sub mirror($$);
-sub redirect;
-sub untar;
-sub unzip;
-
-sub quote {
-    my $stuff = shift;
+sub shell_quote {
+    my($self, $stuff) = @_;
     $quote . $stuff . $quote;
 }
 
 sub which {
-    my($name) = @_;
+    my($self, $name) = @_;
     my $exe_ext = $Config{_exe};
-    foreach my $dir (File::Spec->path){
+    for my $dir (File::Spec->path) {
         my $fullpath = File::Spec->catfile($dir, $name);
-        if (-x $fullpath || -x ($fullpath .= $exe_ext)){
+        if (-x $fullpath || -x ($fullpath .= $exe_ext)) {
             if ($fullpath =~ /\s/ && $fullpath !~ /^$quote/) {
-                $fullpath = Util::quote($fullpath);
+                $fullpath = $self->shell_quote($fullpath);
             }
             return $fullpath;
         }
@@ -855,44 +848,55 @@ sub which {
     return;
 }
 
+sub get      { shift->{_backends}{get}->(@_) };
+sub mirror   { shift->{_backends}{mirror}->(@_) };
+sub redirect { shift->{_backends}{redirect}->(@_) };
+sub untar    { shift->{_backends}{untar}->(@_) };
+sub unzip    { shift->{_backends}{unzip}->(@_) };
+
 sub file_mirror {
-    my($uri, $path) = @_;
+    my($self, $uri, $path) = @_;
     File::Copy::copy($uri, $path);
 }
 
 sub init_tools {
-    my $app = shift;
+    my $self = shift;
 
     # use PERL_CPANM_NO_LWP=1 if they have a broken LWP, to upgrade LWP
-    if (!$app->env('NO_LWP') && eval { require LWP::Simple }) {
+    if (!$self->env('NO_LWP') && eval { require LWP::Simple }) {
         require LWP::UserAgent; # needed for LWP < 5.828
-        *get = sub ($) {
+        $self->{_backends}{get} = sub {
+            my $self = shift;
             my $ua = LWP::UserAgent->new(parse_head => 0, env_proxy => 1);
             $ua->request(HTTP::Request->new(GET => $_[0]))->decoded_content;
-        },
-        *mirror = \&LWP::Simple::mirror;
-        *redirect = sub {
-            my $ua = LWP::UserAgent->new(parse_head => 0, max_redirect => 1, env_proxy => 1);
-            my $res = $ua->simple_request(HTTP::Request->new(GET => $_[0]));
+        };
+        $self->{_backends}{mirror} = sub {
+            my $self = shift;
+            LWP::Simple::mirror(@_);
+        };
+        $self->{_backends}{redirect} = sub {
+            my $self = shift;
+            my $ua   = LWP::UserAgent->new(parse_head => 0, max_redirect => 1, env_proxy => 1);
+            my $res  = $ua->simple_request(HTTP::Request->new(GET => $_[0]));
             return $res->header('Location') if $res->is_redirect;
             return;
         };
-    } elsif (my $wget = which 'wget') {
-        *get = sub ($) {
-            my $uri = shift;
-            my $q = $app->{verbose} ? '' : '-q';
+    } elsif (my $wget = $self->which('wget')) {
+        $self->{_backends}{get} = sub {
+            my($self, $uri) = @_;
+            my $q = $self->{verbose} ? '' : '-q';
             open my $fh, "$wget $uri $q -O - |" or die "wget $uri: $!";
             local $/;
             <$fh>;
         };
-        *mirror = sub ($$) {
-            my($uri, $path) = @_;
-            return file_mirror($uri, $path) if $uri =~ s!^file:/+!/!;
-            my $q = $app->{verbose} ? '' : '-q';
+        $self->{_backends}{mirror} = sub {
+            my($self, $uri, $path) = @_;
+            return $self->file_mirror($uri, $path) if $uri =~ s!^file:/+!/!;
+            my $q = $self->{verbose} ? '' : '-q';
             system "$wget $uri $q -O $path";
         };
-        *redirect = sub {
-            my $uri = shift;
+        $self->{_backends}{redirect} = sub {
+            my($self, $uri) = @_;
             my $out = `$wget --max-redirect=0 $uri 2>&1`;
             if ($out =~ /^Location: (\S+)/m) {
                 return $1;
@@ -902,11 +906,11 @@ sub init_tools {
     }
     # TODO curl
 
-    if (my $tar = which 'tar'){
-        *untar = sub {
-            my($tarfile) = @_;
+    if (my $tar = $self->which('tar')){
+        $self->{_backends}{untar} = sub {
+            my($self, $tarfile) = @_;
 
-            my $xf = "xf" . ($app->{verbose} ? 'v' : '');
+            my $xf = "xf" . ($self->{verbose} ? 'v' : '');
             my $ar = $tarfile =~ /bz2$/ ? 'j' : 'z';
 
             my($root, @others) = `$tar tf$ar $tarfile`
@@ -918,23 +922,23 @@ sub init_tools {
             system "$tar $xf$ar $tarfile";
             return $root if -d $root;
 
-            $app->diag("Bad archive: $tarfile\n");
+            $self->diag("! Bad archive: $tarfile\n");
             return undef;
         }
     } elsif (eval { require Archive::Tar }) { # uses too much memory!
-        *untar = sub {
+        $self->{_backends}{untar} = sub {
+            my $self = shift;
             my $t = Archive::Tar->new($_[0]);
             my $root = ($t->list_files)[0];
             $t->extract;
             return -d $root ? $root : undef;
         };
     }
-    if (my $unzip = which 'unzip'){
-        *unzip = sub {
-            my($zipfile) = @_;
+    if (my $unzip = $self->which('unzip')) {
+        $self->{_backends}{unzip} = sub {
+            my($self, $zipfile) = @_;
 
-            my $opt = $app->{verbose} ? '' : '-q';
-
+            my $opt = $self->{verbose} ? '' : '-q';
             my(undef, $root, @others) = `$unzip -t $zipfile`
                 or return undef;
 
@@ -944,16 +948,16 @@ sub init_tools {
             system "$unzip $opt $zipfile";
             return $root if -d $root;
 
-            $app->diag("Bad archive: [$root] $zipfile\n");
+            $self->diag("! Bad archive: [$root] $zipfile\n");
             return undef;
         }
     } elsif (eval { require Archive::Zip }) {
-        *unzip = sub {
-            my($file) = @_;
+        $self->{_backends}{unzip} = sub {
+            my($self, $file) = @_;
             my $zip = Archive::Zip->new();
             my $status;
             $status = $zip->read($file);
-            $app->diag("Read of file[$file] failed\n")
+            $self->diag("Read of file[$file] failed\n")
                 if $status != Archive::Zip::AZ_OK();
             my @members = $zip->members();
             my $root;
@@ -962,7 +966,7 @@ sub init_tools {
                 next if ($af =~ m!^(/|\.\./)!);
                 $root = $af unless $root;
                 $status = $member->extractToFileNamed( $af );
-                $app->diag("Extracting of file[$af] from zipfile[$file failed\n") if $status != Archive::Zip::AZ_OK();
+                $self->diag("Extracting of file[$af] from zipfile[$file failed\n") if $status != Archive::Zip::AZ_OK();
             }
             return -d $root ? $root : undef;
         };
@@ -970,7 +974,7 @@ sub init_tools {
 }
 
 sub parse_meta {
-    my $file = shift;
+    my($self, $file) = @_;
     return eval { (Parse::CPAN::Meta::LoadFile($file))[0] } || {};
 }
 

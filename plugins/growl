@@ -8,7 +8,7 @@ my $growlnotify;
 
 hook init => sub {
     my $args = shift;
-    $growlnotify = Util::which("growlnotify")
+    $growlnotify = $args->{app}->which("growlnotify")
         or $args->{app}->diag("! Couldn't find growlnotify. growl plugin is disabled.\n");
 };
 
@@ -32,6 +32,7 @@ sub growl_it {
     my $msg = sprintf $template, $dist;
 
     my $sticky = $is_sticky ? "-s" : "";
-    $args->{app}->run("$growlnotify -n cpanminus $sticky -m " . Util::quote($msg) . " " . Util::quote($dist) .
+    $args->{app}->run("$growlnotify -n cpanminus $sticky -m " . $args->{app}->shell_quote($msg) .
+                      " " . $args->{app}->shell_quote($dist) .
                       " --image /System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/$icon.icns");
 };

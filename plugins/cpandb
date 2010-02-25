@@ -16,7 +16,7 @@ hook search_module => sub {
         require YAML;
         $args->{app}->chat("Querying CPANDB for $args->{module}\n");
 
-        my $yaml = Util::get("http://cpanidx.bingosnet.co.uk/cpandb/yaml/mod/$args->{module}");
+        my $yaml = $args->{app}->get("http://cpanidx.bingosnet.co.uk/cpandb/yaml/mod/$args->{module}");
         my $meta = (YAML::Load($yaml))[0];
 
         if (my $d = $meta->[0]) {

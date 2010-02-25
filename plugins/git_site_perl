@@ -18,7 +18,7 @@ hook init => sub {
         if (chdir $site_perl) {
             $args->{app}->run("git init") &&
             $args->{app}->run("git add .") &&
-            $args->{app}->run("git commit -m " . Util::quote("initial commit"));
+            $args->{app}->run("git commit -m " . $args->{app}->shell_quote("initial commit"));
             chdir $cwd;
         }
     }
@@ -33,7 +33,7 @@ hook install_success => sub {
         my $message = "$args->{meta}->{name} $args->{meta}->{version} ($args->{module})";
         $args->{app}->diag("Committing updates in $site_perl to git...\n");
         $args->{app}->run("git add .") &&
-        $args->{app}->run("git commit -m " . Util::quote($message));
+        $args->{app}->run("git commit -m " . $args->{app}->shell_quote($message));
         chdir $cwd;
     }
 };

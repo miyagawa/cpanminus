@@ -8,7 +8,7 @@ my $cpansign;
 
 hook init => sub {
     my $args = shift;
-    $cpansign = Util::which("cpansign")
+    $cpansign = $args->{app}->which("cpansign")
         or $args->{app}->diag("! cpansign not found. signature plugin is diabled.\n");
 };
 
