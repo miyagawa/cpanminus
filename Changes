@@ -6,12 +6,13 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
       - --look command now works on Win32 (charsbar, xaicron)
       - Improved the error message when configure fails (tokuhirom)
       - Supported modules with .tgz format archive (frew)
+      - Supported older LWP < 5.828 (chocolateboy)
 
    [Developer fixes]
       - Improved the way it checks configuration results (mst, confound, rjbs, LeoNerd)
       - Killed the automatic Build.PL stub generation because it doesn't work.
       - Support PERL_MB_OPT in the sanity check
-      - Adds PERL5_CPANPLUS_IS_RUNNING to work with older Module::AutoInstall (0.73) (Alias)
+      - Adds PERL5_CPANPLUS_IS_RUNNING to work with older Module::AutoInstall < 0.73 (Alias)
       - Changed the way plugins check api_version
       - Rewrote internals for the at_exit hook and removed Util:: functions (vincent, mst, ewhilhelm)
 

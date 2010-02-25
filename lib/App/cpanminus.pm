@@ -67,11 +67,11 @@ And optionally:
 
 =item *
 
-make, if you want to more reliably install MakeMaker based modules
+make, if you want to reliably install MakeMaker based modules
 
 =item *
 
-Module::Build (core in 5.10) if you want to install MakeMaker based modules without 'make'
+Module::Build (core in 5.10) to install Build.PL based modules
 
 =back
 
