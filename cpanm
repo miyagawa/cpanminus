@@ -865,6 +865,7 @@ sub init_tools {
 
     # use PERL_CPANM_NO_LWP=1 if they have a broken LWP, to upgrade LWP
     if (!$app->env('NO_LWP') && eval { require LWP::Simple }) {
+        require LWP::UserAgent; # needed for LWP < 5.828
         *get = sub ($) {
             my $ua = LWP::UserAgent->new(parse_head => 0, env_proxy => 1);
             $ua->request(HTTP::Request->new(GET => $_[0]))->decoded_content;
