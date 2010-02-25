@@ -1,5 +1,8 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+0.99_06 Thu Feb 25 14:50:51 PST 2010
+      - Fixed packaging and VERSION
+
 0.99_05 Thu Feb 25 14:39:07 PST 2010
    [Developer fixes]
       - Changed the way 'cpanm' standalone script is generated

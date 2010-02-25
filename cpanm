@@ -13,7 +13,7 @@ use Getopt::Long ();
 use constant WIN32 => $^O eq 'MSWin32';
 use constant PLUGIN_API_VERSION => 0.1;
 
-our $VERSION = "0.99_04";
+our $VERSION = "0.99_06";
 $VERSION = eval $VERSION;
 
 my $quote = $^O eq 'MSWin32' ? q/"/ : q/'/;
