@@ -161,7 +161,7 @@ sub register_core_hooks {
             $self->chat("Searching $args->{module} on search.cpan.org ...\n");
             my $uri  = "http://search.cpan.org/perldoc?$args->{module}";
             my $html = Util::get($uri);
-            $html =~ m!<a href="/CPAN/authors/id/(.*?\.(?:tar\.gz|tar\.bz2|zip))">!
+            $html =~ m!<a href="/CPAN/authors/id/(.*?\.(?:tar\.gz|tgz|tar\.bz2|zip))">!
                 and return $self->cpan_uri($1);
             $self->diag("! Finding $args->{module} on search.cpan.org failed.\n");
             return;
@@ -177,6 +177,7 @@ sub register_core_hooks {
         my @dists;
         while ($feed =~ m!<link>http://search\.cpan\.org/~([a-z_\-0-9]+)/(.*?)/</link>!g) {
             my($pause_id, $dist) = (uc $1, $2);
+            # FIXME Yes, it doesn't always have to be 'tar.gz'
             push @dists, substr($pause_id, 0, 1) . "/" . substr($pause_id, 0, 2) . "/" . $pause_id . "/$dist.tar.gz";
             last if @dists >= 50;
         }
