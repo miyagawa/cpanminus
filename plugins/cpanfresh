@@ -1,5 +1,5 @@
 name        'cpanfresh';
-description 'Fetch the latest release from http://friendfeed.com/cpan';
+description 'Fetch the latest release from CPAN Fresh http://friendfeed.com/cpan';
 author      'Tatsuhiko Miyagawa';
 
 api_version 0.1;
@@ -13,11 +13,11 @@ hook search_module => 0, sub {
         my $dist = $args->{module};
         $dist =~ s/::/-/g;
         $entries ||= eval { fetch_feed($args) } || [];
-        $args->{app}->diag("! Fetching cpanfresh failed: $@") if $@;
+        $args->{app}->diag("! Fetching CPAN Fresh failed: $@") if $@;
 
         for my $info (@$entries) {
             if ($info->{name} eq $dist) {
-                $args->{app}->chat("Found $dist on CPAN realtime feed => $info->{url}\n");
+                $args->{app}->chat("Found $dist on CPAN Fresh feed => $info->{url}\n");
                 return $info->{url};
             }
         }
