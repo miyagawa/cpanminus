@@ -1,5 +1,5 @@
 name        'desktop_notify';
-description 'Desktop Notifications';
+description 'Notify build results using the Desktop Notifications framework on the Linux desktop';
 author      'Dagfinn Ilmari Mannsåker';
 
 api_version 0.1;
