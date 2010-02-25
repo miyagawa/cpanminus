@@ -1,5 +1,10 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+0.99_05 Thu Feb 25 14:39:07 PST 2010
+   [Developer fixes]
+      - Changed the way 'cpanm' standalone script is generated
+      - Developers checking out from git should use script/cpanm.PL for test drive
+
 0.99_04 Thu Feb 25 09:11:44 PST 2010
    [Improvements]
       - Supported modules and packages without POD on search.cpan.org
