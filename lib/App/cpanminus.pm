@@ -213,7 +213,7 @@ examples:
 Packages uploaded to PAUSE in 90's and doesn't live under the standard
 C<authors/id/A/AA> directory hierarchy.
 
-=imte *
+=item *
 
 C<Makefile.PL> or C<Build.PL> that asks you questions without using
 C<prompt> function. However cpanminus has a mechanism to kill those
@@ -230,10 +230,8 @@ some specific version of toolchain in the configuration time.
 Distributions that tests SIGNATURE in the C<*.t> unit tests and has
 C<MANIFEST.SKIP> file in the distribution at the same time. Signature
 testing is for the security and running it in unit tests is too late
-since we run C<Makefile.PL> in the configuration time.
-
-cpanminus has C<verity_signature> plugin to verify the dist before
-configurations.
+since we run C<Makefile.PL> in the configuration time. cpanminus has
+C<verity_signature> plugin to verify the dist before configurations.
 
 =item *
 
@@ -243,16 +241,20 @@ to C<META.json>.
 
 =back
 
-Well in other words, cpanminus is aimed to work against 99% of modules
-on CPAN for 99% of people. It may not be perfect, but it should just
-work in most cases.
+Well in other words, cpanminus is aimed to work against 99.9% of
+modules on CPAN for 99.9% of people. It may not be perfect, but it
+should just work in most cases.
+
+If this tool doesn't work for your very rare environment, then I'm
+sorry, but you should use CPAN or CPANPLUS, or build and install
+modules manually.
 
 =head2 That sounds fantastic. Should I switch to this from CPAN(PLUS)?
 
-If you've got CPAN or CPANPLUS working then you may keep using CPAN or
-CPANPLUS in the longer term, but I just hope this can be a quite handy
-alternative to them for people in other situations. And apparently,
-many people love (at least the idea of) this software :)
+If you've got CPAN or CPANPLUS working then you may want to keep using
+CPAN or CPANPLUS in the longer term, but I just hope this can be a
+quite handy alternative to them for people in other situations. And
+apparently, many people love (at least the idea of) this software :)
 
 =head1 COPYRIGHT
 
