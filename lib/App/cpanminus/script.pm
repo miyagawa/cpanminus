@@ -844,9 +844,9 @@ sub build_stuff {
         $installed++;
     } else {
         my $why;
-        if ($configured)      { $why = "Configure failed on $dir." }
-        elsif ($self->{make}) { $why = "The distribution doesn't have a proper Makefile.PL/Build.PL" }
-        else                  { $why = "Can't configure the distribution. You probably need to have 'make'." }
+        if ($configured && !$configured_ok) { $why = "Configure failed on $dir." }
+        elsif ($self->{make})               { $why = "The distribution doesn't have a proper Makefile.PL/Build.PL" }
+        else                                { $why = "Can't configure the distribution. You probably need to have 'make'." }
 
         $self->diag("! $why See $self->{log} for details.\n");
         $self->run_hooks(configure_failure => { module => $module, build_dir => $dir, meta => $meta });
@@ -969,10 +969,13 @@ sub init_tools {
             }
             return;
         };
+    } else {
+        $self->{_backends}{get} = $self->{_backends}{mirror} = $self->{_backends}{redirect} = sub {
+            die "Failed to download the URL $_[1] - You need to have either LWP, wget or curl installed.\n";
+        };
     }
 
-
-    if (my $tar = $self->which('tar')){
+    if (my $tar = $self->which('tar')) {
         $self->{_backends}{untar} = sub {
             my($self, $tarfile) = @_;
 
@@ -999,7 +1002,12 @@ sub init_tools {
             $t->extract;
             return -d $root ? $root : undef;
         };
+    } else {
+        $self->{_backends}{untar} = sub {
+            die "Failed to extract $_[1] - You need to have tar or Archive::Tar installed.\n";
+        };
     }
+
     if (my $unzip = $self->which('unzip')) {
         $self->{_backends}{unzip} = sub {
             my($self, $zipfile) = @_;
@@ -1035,6 +1043,10 @@ sub init_tools {
                 $self->diag("Extracting of file[$af] from zipfile[$file failed\n") if $status != Archive::Zip::AZ_OK();
             }
             return -d $root ? $root : undef;
+        };
+    } else {
+        $self->{_backends}{unzip} = sub {
+            die "Failed to extract $_[1] - You need to have unzip or Archive::Zip installed.\n";
         };
     }
 }
