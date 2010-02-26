@@ -331,7 +331,7 @@ sub bootstrap {
     # root, locally-installed perl or --sudo: don't care about install_base
     return if -w ($Config{installsitelib} and -w $Config{sitescript}) or $self->{sudo};
 
-    # local::lib is configured on the shell -- yay
+    # local::lib is configured in the shell -- yay
     return if $ENV{PERL_MM_OPT} and ($ENV{MODULEBUILDRC} or $ENV{PERL_MB_OPT});
 
     $self->_try_local_lib;
@@ -339,10 +339,10 @@ sub bootstrap {
     $self->diag(<<DIAG);
 !
 ! Can't write to $Config{installsitelib} and $Config{sitescript}: Installing modules to $ENV{HOME}/perl5
-! To turn off this warnings, you have 3 options:
+! To turn off this warning, you have 3 options:
 !   - run me as a root or with --sudo option (to install to $Config{installsitelib} and $Config{sitescript})
-!   - Configure local::lib on your shell to set PERL_MM_OPT etc.
-!   - Set PERL_CPANM_OPT="-l ~/perl5" on your shell
+!   - Configure local::lib in your shell to set PERL_MM_OPT etc.
+!   - Set PERL_CPANM_OPT="--local-lib=~/perl5" in your shell
 !
 DIAG
     sleep 2;
@@ -368,7 +368,7 @@ sub _try_local_lib {
 }
 
 # XXX Installing local::lib using cpanm causes CPAN.pm configuration
-# as of 1.4.9, so avoid that until it can by bypassed
+# as of 1.4.9, so avoid that until it can be bypassed
 sub _bootstrap_local_lib {
     my $self = shift;
 
@@ -768,11 +768,10 @@ sub build_stuff {
     if (-e 'Makefile.PL') {
         local $ENV{X_MYMETA} = 'YAML';
 
-        # NOTE: according to Devel::CheckLib, most XS module' exit
+        # NOTE: according to Devel::CheckLib, most XS modules exit
         # with 0 even if header files are missing, to avoid receiving
         # tons of FAIL reports in such cases. So exit code can't be
-        # trusted if it went well (See Devel::CheckLib comments for
-        # details)
+        # trusted if it went well.
         if ($self->configure("$self->{perl} Makefile.PL")) {
             $configured_ok = -e 'Makefile';
         }
