@@ -73,6 +73,7 @@ sub parse_options {
         'info'      => sub { $self->{cmd} = 'info' },
         'self-upgrade' => sub { $self->{cmd} = 'install'; $self->{argv} = [ 'App::cpanminus' ] },
         'disable-plugins' => \$self->{disable_plugins},
+        'no-lwp'    => \$self->{no_lwp},
     );
 
     $self->{argv} ||= \@ARGV;
@@ -904,8 +905,8 @@ sub file_mirror {
 sub init_tools {
     my $self = shift;
 
-    # use PERL_CPANM_NO_LWP=1 if they have a broken LWP, to upgrade LWP
-    if (!$self->env('NO_LWP') && eval { require LWP::UserAgent }) {
+    # use --no-lwp if they have a broken LWP, to upgrade LWP
+    if (!$self->{no_lwp} && eval { require LWP::UserAgent }) {
         $self->{_backends}{get} = sub {
             my $self = shift;
             my $ua = LWP::UserAgent->new(parse_head => 0, env_proxy => 1);
