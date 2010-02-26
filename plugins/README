@@ -4,7 +4,6 @@ Ideas:
 * backpan - get a specific version from BackPAN
 * nearest_mirror - automatically pick the nearest mirror (and cache it)
 * test_reporter - report test success/failures
-* local_lib - Something to do with local::lib. Maybe auto-setup?
 * dzil - Uses dzil to test and install modules
 * via_git, via_svn, via_ssh - install via git:// URL (and svn:// and such)
   http://blogs.perl.org/users/brian_d_foy/2010/02/who-can-make-lwp-understand-svn.html
@@ -21,4 +20,6 @@ Ideas:
 * codesearch - Google code search lang:perl package:cpan.org
 * yaml11 - parse YAML 1.1 META.yml aka mlehmann's
 * showbuildlog - Auto show build.log with PAGER when one of the builds failed
-* autointeractive - Automatically make configure interactive when it's known to dynamically config
+* askme - Ask to proceed or bailout if the build fails
+* needs_upgrade - port cpan-outdated
+* darkpan - makes it easy to work with DarkPAN indexes
