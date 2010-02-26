@@ -898,8 +898,7 @@ sub init_tools {
     my $self = shift;
 
     # use PERL_CPANM_NO_LWP=1 if they have a broken LWP, to upgrade LWP
-    if (!$self->env('NO_LWP') && eval { require LWP::Simple }) {
-        require LWP::UserAgent; # needed for LWP < 5.828
+    if (!$self->env('NO_LWP') && eval { require LWP::UserAgent }) {
         $self->{_backends}{get} = sub {
             my $self = shift;
             my $ua = LWP::UserAgent->new(parse_head => 0, env_proxy => 1);
