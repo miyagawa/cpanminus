@@ -14,7 +14,7 @@
 use lib "lib"; # to include the latest App/cpanminus/script.pm
 
 open my $in,  "<", "script/cpanm.PL" or die $!;
-open my $out, ">", "cpanm" or die $!;
+open my $out, ">", "cpanm.tmp" or die $!;
 
 print STDERR "Generating cpanm from script/cpanm.PL\n";
 
@@ -48,9 +48,10 @@ sub embed_module {
     }
 }
 
+close $out;
+
+unlink "cpanm";
+rename "cpanm.tmp", "cpanm";
 chmod 0755, "cpanm";
 
-
-
-
-
+END { unlink "cpanm.tmp" }
