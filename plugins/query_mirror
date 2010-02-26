@@ -1,5 +1,5 @@
 name        'query_mirror';
-description "mst's hack to get redirects by module name on CPAN mirrors"
+description "mst's hack to get redirects by module name on CPAN mirrors";
 author      'Tatsuhiko Miyagawa';
 
 api_version 0.1;

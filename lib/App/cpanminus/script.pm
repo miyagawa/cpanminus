@@ -938,8 +938,30 @@ sub init_tools {
             }
             return;
         };
+    } elsif (my $curl = $self->which('curl')) {
+        $self->{_backends}{get} = sub {
+            my($self, $uri) = @_;
+            my $q = $self->{verbose} ? '' : '-s';
+            open my $fh, "$curl -L $q $uri |" or die "curl $uri: $!";
+            local $/;
+            <$fh>;
+        };
+        $self->{_backends}{mirror} = sub {
+            my($self, $uri, $path) = @_;
+            return $self->file_mirror($uri, $path) if $uri =~ s!^file:/+!/!;
+            my $q = $self->{verbose} ? '' : '-s';
+            system "$curl -L $uri $q -# -o $path";
+        };
+        $self->{_backends}{redirect} = sub {
+            my($self, $uri) = @_;
+            my $out = `$curl -I -s $uri 2>&1`;
+            if ($out =~ /^Location: (\S+)/m) {
+                return $1;
+            }
+            return;
+        };
     }
-    # TODO curl
+
 
     if (my $tar = $self->which('tar')){
         $self->{_backends}{untar} = sub {
