@@ -853,7 +853,7 @@ sub build_stuff {
     }
 
     if ($installed) {
-        $self->diag("OK\n$module installed successfully.\n");
+        $self->diag("OK\n+ $module installed successfully.\n");
         $self->run_hooks(install_success => { module => $module, build_dir => $dir, meta => $meta });
         return 1;
     } else {
