@@ -286,8 +286,16 @@ sub version {
 
 sub help {
     my $self = shift;
-    my $how  = $_[0] ? sub { die @_ } : sub { print @_ };
-    $how->(<<USAGE);
+
+    if ($_[0]) {
+        die <<USAGE;
+Usage: cpanm [options] Module [...]
+
+Try `cpanm --help` for more options.
+USAGE
+    }
+
+    print <<HELP;
 Usage: cpanm [options] Module [...]
 
 Options:
@@ -315,7 +323,7 @@ Examples:
   cpanm .                                                   # install from local directory
   cpanm --installdeps .                                     # install all the deps for the current directory
 
-USAGE
+HELP
 
     return 1;
 }
