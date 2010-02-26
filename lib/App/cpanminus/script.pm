@@ -28,6 +28,7 @@ sub new {
         sudo => undef,
         make  => undef,
         verbose => undef,
+        quiet => undef,
         interactive => undef,
         log => undef,
         mirrors => [],
@@ -35,6 +36,7 @@ sub new {
         argv => undef,
         hooks => {},
         plugins => [],
+        local_lib => undef,
         configure_timeout => 60,
         build_timeout => 60 * 10,
         test_timeout  => 60 * 10,
@@ -57,10 +59,11 @@ sub parse_options {
         'n|notest' => \$self->{notest},
         'S|sudo'   => \$self->{sudo},
         'v|verbose' => sub { $self->{verbose} = $self->{interactive} = 1 },
-        'q|quiet'   => sub {},
+        'q|quiet'   => \$self->{quiet},
         'h|help'    => sub { $self->{action} = 'help' },
         'V|version' => sub { $self->{action} = 'version' },
         'perl=s'    => \$self->{perl},
+        'l|local-lib=s' => \$self->{local_lib},
         'recent'    => sub { $self->{action} = 'show_recent' },
         'list-plugins' => sub { $self->{action} = 'list_plugins' },
         'installdeps' => \$self->{installdeps},
@@ -80,10 +83,16 @@ sub init {
 
     $self->setup_home;
     $self->load_plugins;
-    $self->sanity_check;
+    $self->bootstrap;
 
     $self->{make} = $self->which($Config{make});
     $self->init_tools;
+
+    if ($self->{bootstrap_deps}) {
+        $self->configure_mirrors;
+        local $self->{force} = 1; # to force install EUMM
+        $self->install_deps($self->{base}, %{$self->{bootstrap_deps}});
+    }
 }
 
 sub doit {
@@ -298,43 +307,78 @@ Commands:
 
 Examples:
 
-  # install CGI
-  cpanm CGI
-
-  # specify the version
-  cpanm MIYAGAWA/Plack-0.99_05.tar.gz
-
-  # install from an URL
-  cpanm http://backpan.perl.org/authors/id/L/LD/LDS/CGI.pm-3.20.tar.gz
-
-  # install Task:: modlues (You need --interactive or -v to answer questions)
-  cpanm --interactive Task::Kensho
-
-  # install from local directory, just like `cpan .`
-  cpanm .
-
-  # install all the dependencies for the current directory
-  cpanm --installdeps .
-
-  # install from a local file
-  cpanm ~/dists/MyCompany-Enterprise-1.00.tar.gz
+  cpanm CGI                                                 # install CGI
+  cpanm MIYAGAWA/Plack-0.99_05.tar.gz                       # full distribution name
+  cpanm http://example.org/LDS/CGI.pm-3.20.tar.gz           # install from URL
+  cpanm ~/dists/MyCompany-Enterprise-1.00.tar.gz            # install from a local file
+  cpanm --interactive Task::Kensho                          # Configure interactively
+  cpanm .                                                   # install from local directory
+  cpanm --installdeps .                                     # install all the deps for the current directory
 
 USAGE
 
     return 1;
 }
 
-sub sanity_check {
+sub bootstrap {
     my $self = shift;
-    unless (   ($ENV{PERL_MM_OPT} and ($ENV{MODULEBUILDRC} or $ENV{PERL_MB_OPT}))
-            or -w $Config{installsitelib} or $self->{sudo}) {
-        die "Can't write to $Config{installsitelib}: Run me as root or with --sudo option.\n";
+
+    # If -l is specified, use that.
+    if ($self->{local_lib}) {
+        return $self->_try_local_lib($self->{local_lib});
     }
+
+    # root, locally-installed perl or --sudo: don't care about install_base
+    return if -w ($Config{installsitelib} and -w $Config{sitescript}) or $self->{sudo};
+
+    # local::lib is configured on the shell -- yay
+    return if $ENV{PERL_MM_OPT} and ($ENV{MODULEBUILDRC} or $ENV{PERL_MB_OPT});
+
+    $self->_try_local_lib;
+
+    $self->diag(<<DIAG);
+!
+! Can't write to $Config{installsitelib} and $Config{sitescript}: Installing modules to $ENV{HOME}/perl5
+! To turn off this warnings, you have 3 options:
+!   - run me as a root or with --sudo option (to install to $Config{installsitelib} and $Config{sitescript})
+!   - Configure local::lib on your shell to set PERL_MM_OPT etc.
+!   - Set PERL_CPANM_OPT="-l ~/perl5" on your shell
+!
+DIAG
+    sleep 2;
+}
+
+sub _try_local_lib {
+    my($self, $base) = @_;
+
+    my $bootstrap;
+    eval    { require local::lib };
+    if ($@) { $self->_bootstrap_local_lib; $bootstrap = 1 };
+
+    # TODO -L option should remove PERL5LIB here
+
+    local::lib->import($base || "~/perl5");
+
+    if ($bootstrap) {
+        $self->{bootstrap_deps} = {
+            'ExtUtils::MakeMaker' => 6.31,
+            'ExtUtils::Install'   => 1.43,
+        };
+    }
+}
+
+# XXX Installing local::lib using cpanm causes CPAN.pm configuration
+# as of 1.4.9, so avoid that until it can by bypassed
+sub _bootstrap_local_lib {
+    my $self = shift;
+
+    my $code = join '', <::DATA>;
+    eval $code or die $@;
 }
 
 sub diag {
     my $self = shift;
-    print STDERR @_;
+    print STDERR @_ unless $self->{quiet};
     $self->log(@_);
 }
 
@@ -694,7 +738,7 @@ sub install_deps {
     }
 
     $self->chdir($self->{base});
-    $self->chdir($dir);
+    $self->chdir($dir) if $dir;
 }
 
 sub build_stuff {
@@ -863,7 +907,9 @@ sub init_tools {
         };
         $self->{_backends}{mirror} = sub {
             my $self = shift;
-            LWP::Simple::mirror(@_);
+            my $ua = LWP::UserAgent->new(parse_head => 0, env_proxy => 1);
+            my $res = $ua->mirror(@_);
+            $res->code;
         };
         $self->{_backends}{redirect} = sub {
             my $self = shift;

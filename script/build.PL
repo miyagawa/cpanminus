@@ -13,8 +13,6 @@
 
 use lib "lib"; # to include the latest App/cpanminus/script.pm
 
-my(@embed, @code);
-
 open my $in,  "<", "script/cpanm.PL" or die $!;
 open my $out, ">", "cpanm" or die $!;
 
@@ -23,33 +21,32 @@ print STDERR "Generating cpanm from script/cpanm.PL\n";
 while (<$in>) {
     next if /Auto-removed/;
     s/DEVELOPERS:.*/DO NOT EDIT -- this is an auto generated file/;
-    /^#/ and print $out $_;
-    if (/^use (.*);.*embed/) {
-        push @embed, $1;
+    if (/^use (.*);.*# embed/) {
+        embed_module($out, $1);
     } else {
-        push @code, $_;
+        print $out $_;
     }
 }
 
-for my $embed (@embed) {
-    my $file = $embed;
+sub embed_module {
+    my($out, $file) = @_;
+
     $file =~ s!::!/!g;
     my $inc = do { eval "require '$file.pm'"; $INC{"$file.pm"} };
     die $@ if $@;
     open my $mod, "<", $inc or die $!;
     print STDERR "embedding $inc\n";
     print $out "# $inc (auto embedded by script/build.PL)\n";
+
+    my $in_pod;
     while (<$mod>) {
         last if /__(?:END|DATA)__|^1;/;
-        print $out $_;
+        if (/^=cut/)    { $in_pod = 0; next }
+        elsif (/^=\w+/) { $in_pod = 1; next }
+
+        print $out $_ unless $in_pod;
     }
 }
-
-print $out "package main;\n";
-for my $code (@code) {
-    print $out $code;
-}
-
 
 chmod 0755, "cpanm";
 
