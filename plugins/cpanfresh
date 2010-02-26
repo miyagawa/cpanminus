@@ -37,7 +37,7 @@ sub fetch_feed {
 
     require JSON;
 
-    $args->{app}->chat("Querying http://friendfeed.cpan/cpan\n");
+    $args->{app}->chat("Querying http://friendfeed.com/cpan\n");
     my $json = $args->{app}->get("http://friendfeed-api.com/v2/feed/cpan");
     my $feed = eval { JSON::decode_json($json) } || {};
 
