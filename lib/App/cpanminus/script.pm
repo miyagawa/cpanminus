@@ -60,7 +60,7 @@ sub parse_options {
         'q|quiet'   => sub {},
         'h|help'    => sub { $self->{action} = 'help' },
         'V|version' => sub { $self->{action} = 'version' },
-        'perl'      => \$self->{perl},
+        'perl=s'    => \$self->{perl},
         'recent'    => sub { $self->{action} = 'show_recent' },
         'list-plugins' => sub { $self->{action} = 'list_plugins' },
         'installdeps' => \$self->{installdeps},
