@@ -49,10 +49,6 @@ haven't tested).
 
 =item *
 
-LWP or 'wget' to get files over HTTP.
-
-=item *
-
 'tar' executable (if GNU tar, version 1.22 or later) or Archive::Tar to unpack files.
 
 =item *

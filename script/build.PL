@@ -21,30 +21,38 @@ print STDERR "Generating cpanm from script/cpanm.PL\n";
 while (<$in>) {
     next if /Auto-removed/;
     s/DEVELOPERS:.*/DO NOT EDIT -- this is an auto generated file/;
-    if (/^use (.*);.*# embed/) {
-        embed_module($out, $1);
+    if (/^use (.*);.*# embed( lazy)?/) {
+        embed_module($out, $1, $2);
     } else {
         print $out $_;
     }
 }
 
 sub embed_module {
-    my($out, $file) = @_;
+    my($out, $mod, $lazy) = @_;
 
-    $file =~ s!::!/!g;
+    (my $file = $mod) =~ s!::!/!g;
     my $inc = do { eval "require '$file.pm'"; $INC{"$file.pm"} };
     die $@ if $@;
-    open my $mod, "<", $inc or die $!;
+    open my $in, "<", $inc or die $!;
     print STDERR "embedding $inc\n";
     print $out "# $inc (auto embedded by script/build.PL)\n";
 
+    if ($lazy) {
+        print $out "# CPANM_EMBED_BEGIN $mod\n";
+    }
+
     my $in_pod;
-    while (<$mod>) {
+    while (<$in>) {
         last if /__(?:END|DATA)__|^1;/;
         if (/^=cut/)    { $in_pod = 0; next }
         elsif (/^=\w+/) { $in_pod = 1; next }
 
         print $out $_ unless $in_pod;
+    }
+
+    if ($lazy) {
+        print $out "# CPANM_EMBED_END $mod\n";
     }
 }
 

@@ -380,9 +380,25 @@ sub _try_local_lib {
 # as of 1.4.9, so avoid that until it can be bypassed
 sub _bootstrap_local_lib {
     my $self = shift;
+    $self->_require('local::lib');
+}
 
-    my $code = join '', <::DATA>;
-    eval $code or die $@;
+sub _require {
+    my($self, $module) = @_;
+
+    $self->{_embed_cache} ||= do {
+        my($cache, $curr);
+        while (<::DATA>) {
+            if (/^# CPANM_EMBED_BEGIN (\S+)/)  { $curr = $1 }
+            elsif (/^# CPANM_EMBED_END (\S+)/) { $curr = undef }
+            elsif ($curr) {
+                $cache->{$curr} .= $_;
+            }
+        }
+        $cache || {};
+    };
+
+    eval $self->{_embed_cache}{$module};
 }
 
 sub diag {
@@ -617,12 +633,14 @@ sub fetch_module {
 
         my $cancelled;
         my $fetch = sub {
+            my $file;
             eval {
                 local $SIG{INT} = sub { $cancelled = 1; die "SIGINT\n" };
                 $self->mirror($uri, $name);
-                return $name if -e $name;
-                return;
+                $file = $name if -e $name;
             };
+            $self->chat("$@") if $@ && $@ ne "SIGINT\n";
+            return $file;
         };
 
         my($try, $file);
@@ -897,6 +915,12 @@ sub redirect { shift->{_backends}{redirect}->(@_) };
 sub untar    { shift->{_backends}{untar}->(@_) };
 sub unzip    { shift->{_backends}{unzip}->(@_) };
 
+sub file_get {
+    my($self, $uri) = @_;
+    open my $fh, "<$uri" or return;
+    join '', <$fh>;
+}
+
 sub file_mirror {
     my($self, $uri, $path) = @_;
     File::Copy::copy($uri, $path);
@@ -928,6 +952,7 @@ sub init_tools {
     } elsif (my $wget = $self->which('wget')) {
         $self->{_backends}{get} = sub {
             my($self, $uri) = @_;
+            return $self->file_get($uri) if $uri =~ s!^file:/+!/!;
             my $q = $self->{verbose} ? '' : '-q';
             open my $fh, "$wget $uri $q -O - |" or die "wget $uri: $!";
             local $/;
@@ -950,6 +975,7 @@ sub init_tools {
     } elsif (my $curl = $self->which('curl')) {
         $self->{_backends}{get} = sub {
             my($self, $uri) = @_;
+            return $self->file_get($uri) if $uri =~ s!^file:/+!/!;
             my $q = $self->{verbose} ? '' : '-s';
             open my $fh, "$curl -L $q $uri |" or die "curl $uri: $!";
             local $/;
@@ -970,8 +996,68 @@ sub init_tools {
             return;
         };
     } else {
-        $self->{_backends}{get} = $self->{_backends}{mirror} = $self->{_backends}{redirect} = sub {
-            die "Failed to download the URL $_[1] - You need to have either LWP, wget or curl installed.\n";
+        eval    { require HTTP::Lite };
+        if ($@) { $self->_require('HTTP::Lite') }
+
+        my $http_cb = sub {
+            my($uri, $redir, $cb_gen) = @_;
+
+            my $http = HTTP::Lite->new;
+
+            my($data_cb, $done_cb) = $cb_gen ? $cb_gen->() : ();
+            my $req = $http->request($uri, $data_cb);
+            $done_cb->($req) if $done_cb;
+
+            my $redir_count;
+            while ($req == 302 or $req == 301)  {
+                last if $redir_count++ > 5;
+                my $loc;
+                for ($http->headers_array) {
+                    /Location: (\S+)/ and $loc = $1, last;
+                }
+                $loc or last;
+                if ($loc =~ m!^/!) {
+                    $uri =~ s!^(\w+?://[^/]+)/.*$!$1!;
+                    $uri .= $loc;
+                } else {
+                    $uri = $loc;
+                }
+
+                return $uri if $redir;
+
+                my($data_cb, $done_cb) = $cb_gen ? $cb_gen->() : ();
+                $req = $http->request($uri, $data_cb);
+                $done_cb->($req) if $done_cb;
+            }
+
+            return if $redir;
+            return ($http, $req);
+        };
+
+
+        $self->{_backends}{get} = sub {
+            my($self, $uri) = @_;
+            return $self->file_get($uri) if $uri =~ s!^file:/+!/!;
+            my($http, $req) = $http_cb->($uri);
+            return $http->body;
+        };
+
+        $self->{_backends}{mirror} = sub {
+            my($self, $uri, $path) = @_;
+            return $self->file_mirror($uri, $path) if $uri =~ s!^file:/+!/!;
+
+            my($http, $req) = $http_cb->($uri, undef, sub {
+                open my $out, ">$path" or die "$path: $!";
+                binmode $out;
+                sub { print $out ${$_[1]} }, sub { close $out };
+            });
+
+            return $req;
+        };
+
+        $self->{_backends}{redirect} = sub {
+            my($self, $uri) = @_;
+            return $http_cb->($uri, 1);
         };
     }
 

@@ -14,4 +14,6 @@ unless (caller) {
 }
 
 __DATA__
-use local::lib; # embed
+use local::lib; # embed lazy
+use HTTP::Lite; # embed lazy
+
