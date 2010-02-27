@@ -26,12 +26,23 @@ it only requires 10MB of RAM.
 
 =head1 INSTALLATION
 
-If you have git,
+There are Debian package, RPM, FreeBSD ports and packages for other
+operation systems available. If you want to use the package maangement
+system, search for cpanminus and use the appropriate command to
+install. This makes it easy to install C<cpanm> to your system and
+later upgrade.
+
+If you want to build the latest from source,
 
     git clone git://github.com/miyagawa/cpanminus.git
     cd cpanminus
     perl Makefile.PL
-    make install
+    make install # or sudo make install if you're non root
+
+This will install C<cpanm> to your bin directory like
+C</usr/local/bin> (unless you configured C<INSTALL_BASE> with
+L<local::lib>), so you might need to sudo. Later you can say C<cpanm
+--self-upgrade --sudo> to upgrade to the latest version.
 
 Otherwise,
 
@@ -39,6 +50,9 @@ Otherwise,
     wget http://xrl.us/cpanm
     chmod +x cpanm
     # edit shebang if you don't have /usr/bin/env
+
+just works, but be sure to grab the new version manually when you
+upgrade (C<--self-upgrade> might not work).
 
 =head1 DEPENDENCIES
 
