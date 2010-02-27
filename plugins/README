@@ -23,3 +23,4 @@ Ideas:
 * askme - Ask to proceed or bailout if the build fails
 * needs_upgrade - port cpan-outdated
 * darkpan - makes it easy to work with DarkPAN indexes
+* autolook - look at the code in the shell when make test fails
