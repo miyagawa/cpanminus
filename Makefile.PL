@@ -1,10 +1,10 @@
-my $author = -d '.git' && `git remote -v` =~ /git\@github/;
+my $author = ((grep{ $_ eq '--author' } @ARGV) or -d '.git' && `git remote -v` =~ /git\@github/);
 print STDERR "Running as an author mode!\n" if $author;
 
 # Author: perl Makefile.PL packs 'script/cpanm.PL' -> 'cpanm'
 if ($author) {
     shift @ARGV;
-    system "script/build.PL" and die $?;
+    system $^X, "script/build.PL" and die $?;
 }
 
 # perl Makefile.PL (from git repo) copies 'cpanm' -> 'bin/cpanm'
