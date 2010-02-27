@@ -71,6 +71,7 @@ sub parse_options {
         'recent'    => sub { $self->{action} = 'show_recent' },
         'list-plugins' => sub { $self->{action} = 'list_plugins' },
         'installdeps' => \$self->{installdeps},
+        'skip-installed' => \$self->{skip_installed},
         'interactive' => \$self->{interactive},
         'i|install' => sub { $self->{cmd} = 'install' },
         'look'      => sub { $self->{cmd} = 'look' },
@@ -421,7 +422,7 @@ sub _require {
 
 sub diag {
     my $self = shift;
-    print STDERR @_ unless $self->{quiet};
+    print STDERR @_ if $self->{verbose} or !$self->{quiet};
     $self->log(@_);
 }
 
@@ -563,6 +564,8 @@ sub install_module {
         return;
     }
 
+    # FIXME return richer data strture including version number here
+    # so --skip-installed option etc. can skip it
     my $dir = $self->fetch_module($module);
 
     return if $self->{cmd} eq 'info';
@@ -745,12 +748,33 @@ sub check_module {
     $ver = '' if $ver == 0;
     my $test = `$self->{perl} -e ${quote}eval q{use $mod $ver (); print q{OK:}, $mod\::->VERSION};print \$\@ if \$\@${quote}`;
     if ($test =~ s/^\s*OK://) {
+        $self->{local_versions}{$mod} = $test;
         return 1, $test;
     } elsif ($test =~ /^Can't locate|required--this is only version (\S+)/) {
+        $self->{local_versions}{$mod} = $1;
         return 0, $1;
     } else {
         return 0, undef, $test;
     }
+}
+
+sub should_install {
+    my($self, $mod, $ver) = @_;
+
+    $self->chat("Checking if you have $mod $ver ... ");
+    my($ok, $local, $err) = $self->check_module($mod, $ver);
+
+    if ($err) {
+        $self->chat("Unknown ($err)\n");
+        return;
+    }
+
+    if ($ok)       { $self->chat("Yes ($local)\n") }
+    elsif ($local) { $self->chat("No ($local < $ver)\n") }
+    else           { $self->chat("No\n") }
+
+    return $mod unless $ok;
+    return;
 }
 
 sub install_deps {
@@ -759,19 +783,7 @@ sub install_deps {
     my @install;
     while (my($mod, $ver) = each %deps) {
         next if $mod eq 'perl' or $mod eq 'Config';
-        $self->chat("Checking if you have $mod $ver ... ");
-        my($ok, $local, $err) = $self->check_module($mod, $ver);
-
-        if ($err) {
-            $self->chat("Unknown ($err)\n");
-            next;
-        }
-
-        if ($ok)       { $self->chat("Yes ($local)\n") }
-        elsif ($local) { $self->chat("No ($local < $ver)\n") }
-        else           { $self->chat("No\n") }
-
-        push @install, $mod unless $ok;
+        push @install, $self->should_install($mod, $ver);
     }
 
     if (@install) {
@@ -797,14 +809,18 @@ sub build_stuff {
         return;
     }
 
-    my $meta;
+    # TODO metadata extraction have to be moved earlier phase for --skip-installed etc.
+
+    my($meta, @config_deps);
     if (-e 'META.yml') {
         $self->chat("Checking configure dependencies from META.yml ...\n");
         $meta = $self->parse_meta('META.yml');
-        my %deps = %{$meta->{configure_requires} || {}};
-
-        $self->install_deps($dir, %deps);
+        push @config_deps, %{$meta->{configure_requires} || {}};
     }
+
+    $self->run_hooks(pre_configure => { meta => $meta, deps => \@config_deps });
+
+    $self->install_deps($dir, @config_deps);
 
     my $target = $meta->{name} ? "$meta->{name}-$meta->{version}" : $dir;
     $self->diag("Configuring $target ... ");
@@ -860,7 +876,14 @@ sub build_stuff {
 
     $self->install_deps($dir, %deps);
 
-    if ($self->{installdeps} && !$is_dep) {
+    if ($self->{skip_installed} && !$is_dep && $meta->{version}) {
+        # TODO $module doesn't always have to be CPAN module
+        my($ok, $local, $err) = $self->check_module($module, $meta->{version});
+        if ($ok) {
+            $self->diag("$module is up to date. ($local)\n");
+            return;
+        }
+    } elsif ($self->{installdeps} && !$is_dep) {
         $self->diag("<== Installed dependencies for $module. Finishing.\n");
         return 1;
     }
