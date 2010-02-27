@@ -97,7 +97,7 @@ sub init {
     if (@{$self->{bootstrap_deps} || []}) {
         $self->configure_mirrors;
         local $self->{force} = 1; # to force install EUMM
-        $self->install_deps($self->{base}, @{$self->{bootstrap_deps}});
+        $self->install_deps($self->{base}, 0, @{$self->{bootstrap_deps}});
     }
 }
 
@@ -114,7 +114,7 @@ sub doit {
     $self->help(1) unless @{$self->{argv}};
 
     for my $module (@{$self->{argv}}) {
-        $self->install_module($module);
+        $self->install_module($module, 0);
     }
 
     $self->run_hooks(finalize => {});
@@ -557,7 +557,7 @@ sub self_upgrade {
 }
 
 sub install_module {
-    my($self, $module, $is_dep) = @_;
+    my($self, $module, $depth) = @_;
 
     if ($self->{seen}{$module}++) {
         $self->diag("Already tried $module. Skipping.\n");
@@ -594,7 +594,7 @@ sub install_module {
             $self->diag("! You don't seem to have a SHELL :/\n");
         }
     } else {
-        $self->build_stuff($module, $dir, $is_dep)
+        $self->build_stuff($module, $dir, $depth);
     }
 }
 
@@ -778,7 +778,7 @@ sub should_install {
 }
 
 sub install_deps {
-    my($self, $dir, %deps) = @_;
+    my($self, $dir, $depth, %deps) = @_;
 
     my @install;
     while (my($mod, $ver) = each %deps) {
@@ -791,7 +791,7 @@ sub install_deps {
     }
 
     for my $mod (@install) {
-        $self->install_module($mod, 1);
+        $self->install_module($mod, $depth + 1);
     }
 
     $self->chdir($self->{base});
@@ -799,7 +799,7 @@ sub install_deps {
 }
 
 sub build_stuff {
-    my($self, $module, $dir, $is_dep) = @_;
+    my($self, $module, $dir, $depth) = @_;
 
     my $fail;
     $self->run_hooks(verify_dist => { module => $module, dir => $dir, fail => \$fail });
@@ -818,7 +818,7 @@ sub build_stuff {
 
     # TODO yikes, $module doesn't always have to be CPAN module
     # TODO extract/fetch meta info earlier so you don't need to download tarballs
-    if (!$is_dep && $meta->{version} && $module =~ /^[a-zA-Z0-9_:]+$/) {
+    if ($depth == 0 && $meta->{version} && $module =~ /^[a-zA-Z0-9_:]+$/) {
         my($ok, $local, $err) = $self->check_module($module, $meta->{version});
         if ($self->{skip_installed} && $ok) {
             $self->diag("$module is up to date. ($local)\n");
@@ -828,7 +828,7 @@ sub build_stuff {
 
     $self->run_hooks(pre_configure => { meta => $meta, deps => \@config_deps });
 
-    $self->install_deps($dir, @config_deps);
+    $self->install_deps($dir, $depth, @config_deps);
 
     my $target = $meta->{name} ? "$meta->{name}-$meta->{version}" : $dir;
     $self->diag("Configuring $target ... ");
@@ -882,9 +882,9 @@ sub build_stuff {
 
     $self->run_hooks(find_deps => { deps => \%deps, module => $module, meta => $meta });
 
-    $self->install_deps($dir, %deps);
+    $self->install_deps($dir, $depth, %deps);
 
-    if ($self->{installdeps} && !$is_dep) {
+    if ($self->{installdeps} && $depth == 0) {
         $self->diag("<== Installed dependencies for $module. Finishing.\n");
         return 1;
     }
@@ -923,7 +923,7 @@ sub build_stuff {
         $self->diag("OK\n+ $module $how successfully.\n");
         $self->run_hooks(install_success => {
             module => $module, build_dir => $dir, meta => $meta,
-            local => $local, reinstall => $reinstall,
+            local => $local, reinstall => $reinstall, depth => $depth,
         });
         return 1;
     } else {
