@@ -79,9 +79,9 @@ at the build.log or read the source code to see how :)>
 
 cpanminus core is a compact and simple 1000 lines of code (with some
 embedded utilities and documents) but can be extended by writing
-plugins. Plugins are flat perl script that should be placed inside
+plugins. Plugins are flat perl scripts that should be placed inside
 C<~/.cpanm/plugins>. You can copy (or symlink, if you're a developer)
-the plugin file to the directory to enable plugins, and delete the
+a plugin file to the directory to enable plugins, and delete the
 file to disable.
 
 See C<plugins/> directory in the git repository
