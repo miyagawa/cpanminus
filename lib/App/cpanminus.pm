@@ -77,10 +77,14 @@ B<WARNING: plugin API is not stable so this feature is turned off by
 default for now. To enable plugins you have to be savvy enough to look
 at the build.log or read the source code to see how :)>
 
-cpanminus core is a tiny 600 lines of code (with some embedded
-utilities and documents) but can be extended by writing
+cpanminus core is a compact and simple 1000 lines of code (with some
+embedded utilities and documents) but can be extended by writing
 plugins. Plugins are flat perl script that should be placed inside
-C<~/.cpanm/plugins>. See C<plugins/> directory in the git repository
+C<~/.cpanm/plugins>. You can copy (or symlink, if you're a developer)
+the plugin file to the directory to enable plugins, and delete the
+file to disable.
+
+See C<plugins/> directory in the git repository
 L<http://github.com/miyagawa/cpanminus> for the list of available and
 sample plugins.
 
