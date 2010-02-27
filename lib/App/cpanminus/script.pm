@@ -876,14 +876,16 @@ sub build_stuff {
 
     $self->install_deps($dir, %deps);
 
-    if ($self->{skip_installed} && !$is_dep && $meta->{version}) {
-        # TODO $module doesn't always have to be CPAN module
+    # TODO yikes, $module doesn't always have to be CPAN module
+    if (!$is_dep && $meta->{version}) {
         my($ok, $local, $err) = $self->check_module($module, $meta->{version});
-        if ($ok) {
+        if ($self->{skip_installed} && $ok) {
             $self->diag("$module is up to date. ($local)\n");
             return;
         }
-    } elsif ($self->{installdeps} && !$is_dep) {
+    }
+
+    if ($self->{installdeps} && !$is_dep) {
         $self->diag("<== Installed dependencies for $module. Finishing.\n");
         return 1;
     }
