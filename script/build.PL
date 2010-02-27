@@ -36,7 +36,7 @@ sub embed_module {
     die $@ if $@;
     open my $in, "<", $inc or die $!;
     print STDERR "embedding $inc\n";
-    print $out "# $inc (auto embedded by script/build.PL)\n";
+    print $out "# $mod @{[ $mod->VERSION ]} (auto embedded by script/build.PL)\n";
 
     if ($lazy) {
         print $out "# CPANM_EMBED_BEGIN $mod\n";
