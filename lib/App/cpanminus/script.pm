@@ -877,7 +877,7 @@ sub build_stuff {
     $self->install_deps($dir, %deps);
 
     # TODO yikes, $module doesn't always have to be CPAN module
-    if (!$is_dep && $meta->{version}) {
+    if (!$is_dep && $meta->{version} && $module =~ /^[a-zA-Z0-9_:]+$/) {
         my($ok, $local, $err) = $self->check_module($module, $meta->{version});
         if ($self->{skip_installed} && $ok) {
             $self->diag("$module is up to date. ($local)\n");
