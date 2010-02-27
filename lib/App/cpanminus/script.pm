@@ -53,6 +53,10 @@ sub parse_options {
     my $self = shift;
     local @ARGV = @_;
 
+    if(!-t STDIN){ # e.g. $ cpanm < author/requires.cpanm
+        push @ARGV, $self->load_argv_from_fh(\*STDIN);
+    }
+
     Getopt::Long::Configure("bundling");
     Getopt::Long::GetOptions(
         'f|force'  => \$self->{force},
@@ -253,6 +257,21 @@ sub load_plugin {
     }
 
     push @{$self->{plugins}}, $plugin;
+}
+
+sub load_argv_from_fh {
+    my($self, $fh) = @_;
+
+    my @argv;
+    while(defined(my $line = <$fh>)){
+        chomp $line;
+        $line =~ s/#.+$//; # comment
+        $line =~ s/^\s+//; # trim spaces
+        $line =~ s/\s+$//; # trim spaces
+
+        push @argv, split ' ', $line if $line;
+    }
+    return @argv;
 }
 
 sub hook {
