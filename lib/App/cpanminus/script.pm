@@ -89,10 +89,10 @@ sub init {
     $self->{make} = $self->which($Config{make});
     $self->init_tools;
 
-    if ($self->{bootstrap_deps}) {
+    if (@{$self->{bootstrap_deps} || []}) {
         $self->configure_mirrors;
         local $self->{force} = 1; # to force install EUMM
-        $self->install_deps($self->{base}, %{$self->{bootstrap_deps}});
+        $self->install_deps($self->{base}, @{$self->{bootstrap_deps}});
     }
 }
 
@@ -369,10 +369,9 @@ sub _try_local_lib {
     local::lib->import($base || "~/perl5");
 
     if ($bootstrap) {
-        $self->{bootstrap_deps} = {
+        push @{$self->{bootstrap_deps}},
             'ExtUtils::MakeMaker' => 6.31,
-            'ExtUtils::Install'   => 1.43,
-        };
+            'ExtUtils::Install'   => 1.43;
     }
 }
 
