@@ -1,16 +1,11 @@
 use strict;
 use Test::More;
-use App::cpanminus::script;
+use xt::Run;
 
-use File::Temp;
-$ENV{PERL_CPANM_HOME} = File::Temp::tempdir;
+run "App::cpanoutdated";
 
-{
-    my $app = App::cpanminus::script->new(mirrors => [ '/tmp' ]);
-    $app->init;
-    my $uris = $app->locate_dist("App::cpanoutdated");
-    like $uris->[0]->(), qr/TOKUHIROM/;
-}
+my $log = last_build_log;
+like $log, qr/App::cpanoutdated installed successfully/;
 
 done_testing;
 
