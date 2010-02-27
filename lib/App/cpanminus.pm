@@ -256,7 +256,17 @@ apparently, many people love (at least the idea of) this software :)
 
 Copyright 2010- Tatsuhiko Miyagawa
 
-L<Parse::CPAN::Meta>, included in this script, is Copyright 2006-2009 Adam Kennedy
+The standalone executable contains the following modules embedded.
+
+=over 4
+
+=item L<Parse::CPAN::Meta> Copyright 2006-2009 Adam Kennedy
+
+=item L<local::lib> Copyright 2007-2009 Matt S Trout
+
+=item L<HTTP::Lite> Copyright 2000-2002 Roy Hopper, 2009 Adam Kennedy
+
+=back
 
 =head1 LICENSE
 
