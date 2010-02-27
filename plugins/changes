@@ -1,0 +1,53 @@
+name        'changes';
+description 'Show changes before/after installing a new module';
+author      'Tatsuhiko Miyagawa, Tokurhiro Matsuno';
+
+api_version 0.1;
+
+# TODO Adds hooks to display this *before* installing modules (and prompt)
+# TODO Adds --changes command
+# TODO make it work with cpanfresh feed -- the new releases are not on CPAN
+
+hook install_success => sub {
+    my $args = shift;
+    extract_changes($args);
+};
+
+sub extract_changes {
+    my $args = shift;
+
+    my $dist = "$args->{meta}->{name}-$args->{local}";
+    return if $dist eq '-' or $args->{reinstall};
+
+    eval    { require Algorithm::Diff };
+    if ($@) { $args->{app}->chat("$@\n"); return }
+
+    # All I need here is PAUSE, but search.cpan.org has some "Special
+    # Files" support so let's figure out from there ...
+    my $html = $args->{app}->get("http://search.cpan.org/dist/$dist");
+    if ($html =~ m!<a href="(/src/[^"]+)">(Change.*)</a>!i) {
+        my($link, $file) = ($1, $2);
+
+        open my $fh, "<$file" or return;
+        my $new_changes = join '', <$fh>;
+
+        $args->{app}->chat("Found $file file. Fetching $link\n");
+
+        my $old_changes = $args->{app}->get("http://cpansearch.perl.org$link");
+        my $diff = Algorithm::Diff->new(
+            [ split /\n/, $old_changes ],
+            [ split /\n/, $new_changes ],
+        );
+        $diff->Base(1);
+
+        my $result;
+        while ($diff->Next()) {
+            next if $diff->Same();
+            $result .= "$_\n" for $diff->Items(2);
+        }
+
+        $args->{app}->diag("\n" . $result) if $result;
+    } else {
+        $args->{app}->chat("$dist doesn't seem to have Changes file.\n");
+    }
+}

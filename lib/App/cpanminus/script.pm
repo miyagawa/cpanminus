@@ -921,7 +921,10 @@ sub build_stuff {
                 : $local     ? "$meta->{version} installed (upgraded from $local)"
                              : "$meta->{version} newly installed" ;
         $self->diag("OK\n+ $module $how successfully.\n");
-        $self->run_hooks(install_success => { module => $module, build_dir => $dir, meta => $meta, local => $local });
+        $self->run_hooks(install_success => {
+            module => $module, build_dir => $dir, meta => $meta,
+            local => $local, reinstall => $reinstall,
+        });
         return 1;
     } else {
         $self->diag("FAIL\n! Installing $module failed. See $self->{log} for details.\n");
