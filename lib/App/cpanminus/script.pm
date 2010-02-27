@@ -809,13 +809,21 @@ sub build_stuff {
         return;
     }
 
-    # TODO metadata extraction have to be moved earlier phase for --skip-installed etc.
-
     my($meta, @config_deps);
     if (-e 'META.yml') {
         $self->chat("Checking configure dependencies from META.yml ...\n");
         $meta = $self->parse_meta('META.yml');
         push @config_deps, %{$meta->{configure_requires} || {}};
+    }
+
+    # TODO yikes, $module doesn't always have to be CPAN module
+    # TODO extract/fetch meta info earlier so you don't need to download tarballs
+    if (!$is_dep && $meta->{version} && $module =~ /^[a-zA-Z0-9_:]+$/) {
+        my($ok, $local, $err) = $self->check_module($module, $meta->{version});
+        if ($self->{skip_installed} && $ok) {
+            $self->diag("$module is up to date. ($local)\n");
+            return;
+        }
     }
 
     $self->run_hooks(pre_configure => { meta => $meta, deps => \@config_deps });
@@ -875,15 +883,6 @@ sub build_stuff {
     $self->run_hooks(find_deps => { deps => \%deps, module => $module, meta => $meta });
 
     $self->install_deps($dir, %deps);
-
-    # TODO yikes, $module doesn't always have to be CPAN module
-    if (!$is_dep && $meta->{version} && $module =~ /^[a-zA-Z0-9_:]+$/) {
-        my($ok, $local, $err) = $self->check_module($module, $meta->{version});
-        if ($self->{skip_installed} && $ok) {
-            $self->diag("$module is up to date. ($local)\n");
-            return;
-        }
-    }
 
     if ($self->{installdeps} && !$is_dep) {
         $self->diag("<== Installed dependencies for $module. Finishing.\n");
