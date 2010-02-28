@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 # DO NOT EDIT -- this is an auto generated file
-# lib/App/cpanminus/script.pm (auto embedded by script/build.PL)
+use strict;
+# App::cpanminus::script 0.9906 (auto embedded by script/build.PL)
 package App::cpanminus::script;
 use strict;
 use Config;
@@ -31,13 +32,15 @@ sub new {
         sudo => undef,
         make  => undef,
         verbose => undef,
+        quiet => undef,
         interactive => undef,
         log => undef,
         mirrors => [],
         perl => $^X,
-        argv => undef,
+        argv => [],
         hooks => {},
         plugins => [],
+        local_lib => undef,
         configure_timeout => 60,
         build_timeout => 60 * 10,
         test_timeout  => 60 * 10,
@@ -52,7 +55,14 @@ sub env {
 
 sub parse_options {
     my $self = shift;
-    local @ARGV = @_;
+
+    local @ARGV = @{$self->{argv}};
+    push @ARGV, split /\s+/, $self->env('OPT');
+    push @ARGV, @_;
+
+    if(!-t STDIN){ # e.g. $ cpanm < author/requires.cpanm
+        push @ARGV, $self->load_argv_from_fh(\*STDIN);
+    }
 
     Getopt::Long::Configure("bundling");
     Getopt::Long::GetOptions(
@@ -60,22 +70,25 @@ sub parse_options {
         'n|notest' => \$self->{notest},
         'S|sudo'   => \$self->{sudo},
         'v|verbose' => sub { $self->{verbose} = $self->{interactive} = 1 },
-        'q|quiet'   => sub {},
+        'q|quiet'   => \$self->{quiet},
         'h|help'    => sub { $self->{action} = 'help' },
         'V|version' => sub { $self->{action} = 'version' },
-        'perl'      => \$self->{perl},
+        'perl=s'    => \$self->{perl},
+        'l|local-lib=s' => \$self->{local_lib},
         'recent'    => sub { $self->{action} = 'show_recent' },
         'list-plugins' => sub { $self->{action} = 'list_plugins' },
         'installdeps' => \$self->{installdeps},
+        'skip-installed' => \$self->{skip_installed},
         'interactive' => \$self->{interactive},
         'i|install' => sub { $self->{cmd} = 'install' },
         'look'      => sub { $self->{cmd} = 'look' },
         'info'      => sub { $self->{cmd} = 'info' },
         'self-upgrade' => sub { $self->{cmd} = 'install'; $self->{argv} = [ 'App::cpanminus' ] },
         'disable-plugins' => \$self->{disable_plugins},
+        'no-lwp'    => \$self->{no_lwp},
     );
 
-    $self->{argv} ||= \@ARGV;
+    $self->{argv} = \@ARGV;
 }
 
 sub init {
@@ -83,10 +96,16 @@ sub init {
 
     $self->setup_home;
     $self->load_plugins;
-    $self->sanity_check;
+    $self->bootstrap;
 
     $self->{make} = $self->which($Config{make});
     $self->init_tools;
+
+    if (@{$self->{bootstrap_deps} || []}) {
+        $self->configure_mirrors;
+        local $self->{force} = 1; # to force install EUMM
+        $self->install_deps($self->{base}, 0, @{$self->{bootstrap_deps}});
+    }
 }
 
 sub doit {
@@ -102,7 +121,7 @@ sub doit {
     $self->help(1) unless @{$self->{argv}};
 
     for my $module (@{$self->{argv}}) {
-        $self->install_module($module);
+        $self->install_module($module, 0);
     }
 
     $self->run_hooks(finalize => {});
@@ -248,6 +267,21 @@ sub load_plugin {
     push @{$self->{plugins}}, $plugin;
 }
 
+sub load_argv_from_fh {
+    my($self, $fh) = @_;
+
+    my @argv;
+    while(defined(my $line = <$fh>)){
+        chomp $line;
+        $line =~ s/#.+$//; # comment
+        $line =~ s/^\s+//; # trim spaces
+        $line =~ s/\s+$//; # trim spaces
+
+        push @argv, split ' ', $line if $line;
+    }
+    return @argv;
+}
+
 sub hook {
     my $cb = pop;
     my($self, $name, $hook, $order) = @_;
@@ -262,10 +296,10 @@ sub run_hook {
 
 sub run_hooks {
     my($self, $hook, $args, $first) = @_;
-
+    $args->{app} = $self;
     my $res;
     for my $plugin (@{$self->{hooks}->{$hook} || []}) {
-        $res = eval { $plugin->[1]->({ %$args, app => $self }) };
+        $res = eval { $plugin->[1]->($args) };
         $self->chat("Running hook '$plugin->[2]' error: $@") if $@;
         last if $res && $first;
     }
@@ -280,8 +314,16 @@ sub version {
 
 sub help {
     my $self = shift;
-    my $how  = $_[0] ? sub { die @_ } : sub { print @_ };
-    $how->(<<USAGE);
+
+    if ($_[0]) {
+        die <<USAGE;
+Usage: cpanm [options] Module [...]
+
+Try `cpanm --help` for more options.
+USAGE
+    }
+
+    print <<HELP;
 Usage: cpanm [options] Module [...]
 
 Options:
@@ -301,43 +343,93 @@ Commands:
 
 Examples:
 
-  # install CGI
-  cpanm CGI
+  cpanm CGI                                                 # install CGI
+  cpanm MIYAGAWA/Plack-0.99_05.tar.gz                       # full distribution name
+  cpanm http://example.org/LDS/CGI.pm-3.20.tar.gz           # install from URL
+  cpanm ~/dists/MyCompany-Enterprise-1.00.tar.gz            # install from a local file
+  cpanm --interactive Task::Kensho                          # Configure interactively
+  cpanm .                                                   # install from local directory
+  cpanm --installdeps .                                     # install all the deps for the current directory
 
-  # specify the version
-  cpanm MIYAGAWA/Plack-0.99_05.tar.gz
-
-  # install from an URL
-  cpanm http://backpan.perl.org/authors/id/L/LD/LDS/CGI.pm-3.20.tar.gz
-
-  # install Task:: modlues (You need --interactive or -v to answer questions)
-  cpanm --interactive Task::Kensho
-
-  # install from local directory, just like `cpan .`
-  cpanm .
-
-  # install all the dependencies for the current directory
-  cpanm --installdeps .
-
-  # install from a local file
-  cpanm ~/dists/MyCompany-Enterprise-1.00.tar.gz
-
-USAGE
+HELP
 
     return 1;
 }
 
-sub sanity_check {
+sub bootstrap {
     my $self = shift;
-    unless (   ($ENV{PERL_MM_OPT} and ($ENV{MODULEBUILDRC} or $ENV{PERL_MB_OPT}))
-            or -w $Config{installsitelib} or $self->{sudo}) {
-        die "Can't write to $Config{installsitelib}: Run me as root or with --sudo option.\n";
+
+    # If -l is specified, use that.
+    if ($self->{local_lib}) {
+        return $self->_try_local_lib($self->{local_lib});
     }
+
+    # root, locally-installed perl or --sudo: don't care about install_base
+    return if $self->{sudo} or (-w $Config{installsitelib} and -w $Config{sitescript});
+
+    # local::lib is configured in the shell -- yay
+    return if $ENV{PERL_MM_OPT} and ($ENV{MODULEBUILDRC} or $ENV{PERL_MB_OPT});
+
+    $self->_try_local_lib;
+
+    $self->diag(<<DIAG);
+!
+! Can't write to $Config{installsitelib} and $Config{sitescript}: Installing modules to $ENV{HOME}/perl5
+! To turn off this warning, you have 3 options:
+!   - run me as a root or with --sudo option (to install to $Config{installsitelib} and $Config{sitescript})
+!   - Configure local::lib in your shell to set PERL_MM_OPT etc.
+!   - Set PERL_CPANM_OPT="--local-lib=~/perl5" in your shell
+!
+DIAG
+    sleep 2;
+}
+
+sub _try_local_lib {
+    my($self, $base) = @_;
+
+    my $bootstrap;
+    eval    { require local::lib };
+    if ($@) { $self->_bootstrap_local_lib; $bootstrap = 1 };
+
+    # TODO -L option should remove PERL5LIB here
+
+    local::lib->import($base || "~/perl5");
+
+    if ($bootstrap) {
+        push @{$self->{bootstrap_deps}},
+            'ExtUtils::MakeMaker' => 6.31,
+            'ExtUtils::Install'   => 1.43;
+    }
+}
+
+# XXX Installing local::lib using cpanm causes CPAN.pm configuration
+# as of 1.4.9, so avoid that until it can be bypassed
+sub _bootstrap_local_lib {
+    my $self = shift;
+    $self->_require('local::lib');
+}
+
+sub _require {
+    my($self, $module) = @_;
+
+    $self->{_embed_cache} ||= do {
+        my($cache, $curr);
+        while (<::DATA>) {
+            if (/^# CPANM_EMBED_BEGIN (\S+)/)  { $curr = $1 }
+            elsif (/^# CPANM_EMBED_END (\S+)/) { $curr = undef }
+            elsif ($curr) {
+                $cache->{$curr} .= $_;
+            }
+        }
+        $cache || {};
+    };
+
+    eval $self->{_embed_cache}{$module};
 }
 
 sub diag {
     my $self = shift;
-    print STDERR @_;
+    print STDERR @_ if $self->{verbose} or !$self->{quiet};
     $self->log(@_);
 }
 
@@ -472,13 +564,15 @@ sub self_upgrade {
 }
 
 sub install_module {
-    my($self, $module, $is_dep) = @_;
+    my($self, $module, $depth) = @_;
 
     if ($self->{seen}{$module}++) {
         $self->diag("Already tried $module. Skipping.\n");
         return;
     }
 
+    # FIXME return richer data strture including version number here
+    # so --skip-installed option etc. can skip it
     my $dir = $self->fetch_module($module);
 
     return if $self->{cmd} eq 'info';
@@ -507,7 +601,7 @@ sub install_module {
             $self->diag("! You don't seem to have a SHELL :/\n");
         }
     } else {
-        $self->build_stuff($module, $dir, $is_dep)
+        $self->build_stuff($module, $dir, $depth);
     }
 }
 
@@ -567,12 +661,14 @@ sub fetch_module {
 
         my $cancelled;
         my $fetch = sub {
+            my $file;
             eval {
                 local $SIG{INT} = sub { $cancelled = 1; die "SIGINT\n" };
                 $self->mirror($uri, $name);
-                return $name if -e $name;
-                return;
+                $file = $name if -e $name;
             };
+            $self->chat("$@") if $@ && $@ ne "SIGINT\n";
+            return $file;
         };
 
         my($try, $file);
@@ -593,6 +689,16 @@ sub fetch_module {
         }
 
         $self->diag("OK\n");
+
+        # TODO add more metadata so plugins can tell how to verify and pass through
+        my $args = { file => $file, uri => $uri, fail => 0 };
+        $self->run_hooks(verify_archive => $args);
+
+        if ($args->{fail} && !$self->{force}) {
+            $self->diag("! Verifying the archive $file failed. Skipping. (use --force to install)\n");
+            next;
+        }
+
         $self->chat("Unpacking $file\n");
 
         my $dir = $file =~ /\.zip/i ? $self->unzip($file) : $self->untar($file);
@@ -659,33 +765,42 @@ sub check_module {
     $ver = '' if $ver == 0;
     my $test = `$self->{perl} -e ${quote}eval q{use $mod $ver (); print q{OK:}, $mod\::->VERSION};print \$\@ if \$\@${quote}`;
     if ($test =~ s/^\s*OK://) {
+        $self->{local_versions}{$mod} = $test;
         return 1, $test;
     } elsif ($test =~ /^Can't locate|required--this is only version (\S+)/) {
+        $self->{local_versions}{$mod} = $1;
         return 0, $1;
     } else {
         return 0, undef, $test;
     }
 }
 
+sub should_install {
+    my($self, $mod, $ver) = @_;
+
+    $self->chat("Checking if you have $mod $ver ... ");
+    my($ok, $local, $err) = $self->check_module($mod, $ver);
+
+    if ($err) {
+        $self->chat("Unknown ($err)\n");
+        return;
+    }
+
+    if ($ok)       { $self->chat("Yes ($local)\n") }
+    elsif ($local) { $self->chat("No ($local < $ver)\n") }
+    else           { $self->chat("No\n") }
+
+    return $mod unless $ok;
+    return;
+}
+
 sub install_deps {
-    my($self, $dir, %deps) = @_;
+    my($self, $dir, $depth, %deps) = @_;
 
     my @install;
     while (my($mod, $ver) = each %deps) {
         next if $mod eq 'perl' or $mod eq 'Config';
-        $self->chat("Checking if you have $mod $ver ... ");
-        my($ok, $local, $err) = $self->check_module($mod, $ver);
-
-        if ($err) {
-            $self->chat("Unknown ($err)\n");
-            next;
-        }
-
-        if ($ok)       { $self->chat("Yes ($local)\n") }
-        elsif ($local) { $self->chat("No ($local < $ver)\n") }
-        else           { $self->chat("No\n") }
-
-        push @install, $mod unless $ok;
+        push @install, $self->should_install($mod, $ver);
     }
 
     if (@install) {
@@ -693,32 +808,44 @@ sub install_deps {
     }
 
     for my $mod (@install) {
-        $self->install_module($mod, 1);
+        $self->install_module($mod, $depth + 1);
     }
 
     $self->chdir($self->{base});
-    $self->chdir($dir);
+    $self->chdir($dir) if $dir;
 }
 
 sub build_stuff {
-    my($self, $module, $dir, $is_dep) = @_;
+    my($self, $module, $dir, $depth) = @_;
 
-    my $fail;
-    $self->run_hooks(verify_dist => { module => $module, dir => $dir, fail => \$fail });
+    my $args = { module => $module, dir => $dir };
+    $self->run_hooks(verify_dist => $args);
 
-    if ($fail && !$self->{force}) {
+    if ($args->{fail} && !$self->{force}) {
         $self->diag("! Verifying the module $module failed. Skipping. (use --force to install)\n");
         return;
     }
 
-    my $meta;
+    my($meta, @config_deps);
     if (-e 'META.yml') {
         $self->chat("Checking configure dependencies from META.yml ...\n");
         $meta = $self->parse_meta('META.yml');
-        my %deps = %{$meta->{configure_requires} || {}};
-
-        $self->install_deps($dir, %deps);
+        push @config_deps, %{$meta->{configure_requires} || {}};
     }
+
+    # TODO yikes, $module doesn't always have to be CPAN module
+    # TODO extract/fetch meta info earlier so you don't need to download tarballs
+    if ($depth == 0 && $meta->{version} && $module =~ /^[a-zA-Z0-9_:]+$/) {
+        my($ok, $local, $err) = $self->check_module($module, $meta->{version});
+        if ($self->{skip_installed} && $ok) {
+            $self->diag("$module is up to date. ($local)\n");
+            return;
+        }
+    }
+
+    $self->run_hooks(pre_configure => { meta => $meta, deps => \@config_deps });
+
+    $self->install_deps($dir, $depth, @config_deps);
 
     my $target = $meta->{name} ? "$meta->{name}-$meta->{version}" : $dir;
     $self->diag("Configuring $target ... ");
@@ -727,11 +854,10 @@ sub build_stuff {
     if (-e 'Makefile.PL') {
         local $ENV{X_MYMETA} = 'YAML';
 
-        # NOTE: according to Devel::CheckLib, most XS module' exit
+        # NOTE: according to Devel::CheckLib, most XS modules exit
         # with 0 even if header files are missing, to avoid receiving
         # tons of FAIL reports in such cases. So exit code can't be
-        # trusted if it went well (See Devel::CheckLib comments for
-        # details)
+        # trusted if it went well.
         if ($self->configure("$self->{perl} Makefile.PL")) {
             $configured_ok = -e 'Makefile';
         }
@@ -773,9 +899,9 @@ sub build_stuff {
 
     $self->run_hooks(find_deps => { deps => \%deps, module => $module, meta => $meta });
 
-    $self->install_deps($dir, %deps);
+    $self->install_deps($dir, $depth, %deps);
 
-    if ($self->{installdeps} && !$is_dep) {
+    if ($self->{installdeps} && $depth == 0) {
         $self->diag("<== Installed dependencies for $module. Finishing.\n");
         return 1;
     }
@@ -795,22 +921,40 @@ sub build_stuff {
         $installed++;
     } else {
         my $why;
-        if ($configured)      { $why = "Configure failed on $dir." }
-        elsif ($self->{make}) { $why = "The distribution doesn't have a proper Makefile.PL/Build.PL" }
-        else                  { $why = "Can't configure the distribution. You probably need to have 'make'." }
+        if ($configured && !$configured_ok) { $why = "Configure failed on $dir." }
+        elsif ($self->{make})               { $why = "The distribution doesn't have a proper Makefile.PL/Build.PL" }
+        else                                { $why = "Can't configure the distribution. You probably need to have 'make'." }
 
         $self->diag("! $why See $self->{log} for details.\n");
         $self->run_hooks(configure_failure => { module => $module, build_dir => $dir, meta => $meta });
         return;
     }
 
+    # TODO calculate this earlier and put it in the stash
+    my $distname = $meta->{name} ? "$meta->{name}-$meta->{version}" : $module;
+
     if ($installed) {
-        $self->diag("OK\n$module installed successfully.\n");
-        $self->run_hooks(install_success => { module => $module, build_dir => $dir, meta => $meta });
+        my $local = $self->{local_versions}{$module};
+        my $reinstall = $local && $local eq $meta->{version};
+
+        my $how = $reinstall ? "reinstalled $distname"
+                : $local     ? "installed $distname (upgraded from $local)"
+                             : "installed $distname" ;
+        my $msg = "Successfully $how";
+        $self->diag("OK\n$msg\n");
+        $self->run_hooks(install_success => {
+            module => $module, build_dir => $dir, meta => $meta,
+            local => $local, reinstall => $reinstall, depth => $depth,
+            message => $msg, dist => $distname
+        });
         return 1;
     } else {
+        my $msg = "Building $distname failed";
         $self->diag("FAIL\n! Installing $module failed. See $self->{log} for details.\n");
-        $self->run_hooks(build_failure => { module => $module, build_dir => $dir, meta => $meta });
+        $self->run_hooks(build_failure => {
+            module => $module, build_dir => $dir, meta => $meta,
+            message => $msg, dist => $distname,
+        });
         return;
     }
 }
@@ -848,6 +992,12 @@ sub redirect { shift->{_backends}{redirect}->(@_) };
 sub untar    { shift->{_backends}{untar}->(@_) };
 sub unzip    { shift->{_backends}{unzip}->(@_) };
 
+sub file_get {
+    my($self, $uri) = @_;
+    open my $fh, "<$uri" or return;
+    join '', <$fh>;
+}
+
 sub file_mirror {
     my($self, $uri, $path) = @_;
     File::Copy::copy($uri, $path);
@@ -856,9 +1006,8 @@ sub file_mirror {
 sub init_tools {
     my $self = shift;
 
-    # use PERL_CPANM_NO_LWP=1 if they have a broken LWP, to upgrade LWP
-    if (!$self->env('NO_LWP') && eval { require LWP::Simple }) {
-        require LWP::UserAgent; # needed for LWP < 5.828
+    # use --no-lwp if they have a broken LWP, to upgrade LWP
+    if (!$self->{no_lwp} && eval { require LWP::UserAgent }) {
         $self->{_backends}{get} = sub {
             my $self = shift;
             my $ua = LWP::UserAgent->new(parse_head => 0, env_proxy => 1);
@@ -866,7 +1015,9 @@ sub init_tools {
         };
         $self->{_backends}{mirror} = sub {
             my $self = shift;
-            LWP::Simple::mirror(@_);
+            my $ua = LWP::UserAgent->new(parse_head => 0, env_proxy => 1);
+            my $res = $ua->mirror(@_);
+            $res->code;
         };
         $self->{_backends}{redirect} = sub {
             my $self = shift;
@@ -878,6 +1029,7 @@ sub init_tools {
     } elsif (my $wget = $self->which('wget')) {
         $self->{_backends}{get} = sub {
             my($self, $uri) = @_;
+            return $self->file_get($uri) if $uri =~ s!^file:/+!/!;
             my $q = $self->{verbose} ? '' : '-q';
             open my $fh, "$wget $uri $q -O - |" or die "wget $uri: $!";
             local $/;
@@ -897,10 +1049,96 @@ sub init_tools {
             }
             return;
         };
-    }
-    # TODO curl
+    } elsif (my $curl = $self->which('curl')) {
+        $self->{_backends}{get} = sub {
+            my($self, $uri) = @_;
+            return $self->file_get($uri) if $uri =~ s!^file:/+!/!;
+            my $q = $self->{verbose} ? '' : '-s';
+            open my $fh, "$curl -L $q $uri |" or die "curl $uri: $!";
+            local $/;
+            <$fh>;
+        };
+        $self->{_backends}{mirror} = sub {
+            my($self, $uri, $path) = @_;
+            return $self->file_mirror($uri, $path) if $uri =~ s!^file:/+!/!;
+            my $q = $self->{verbose} ? '' : '-s';
+            system "$curl -L $uri $q -# -o $path";
+        };
+        $self->{_backends}{redirect} = sub {
+            my($self, $uri) = @_;
+            my $out = `$curl -I -s $uri 2>&1`;
+            if ($out =~ /^Location: (\S+)/m) {
+                return $1;
+            }
+            return;
+        };
+    } else {
+        eval    { require HTTP::Lite };
+        if ($@) { $self->_require('HTTP::Lite') }
 
-    if (my $tar = $self->which('tar')){
+        my $http_cb = sub {
+            my($uri, $redir, $cb_gen) = @_;
+
+            my $http = HTTP::Lite->new;
+
+            my($data_cb, $done_cb) = $cb_gen ? $cb_gen->() : ();
+            my $req = $http->request($uri, $data_cb);
+            $done_cb->($req) if $done_cb;
+
+            my $redir_count;
+            while ($req == 302 or $req == 301)  {
+                last if $redir_count++ > 5;
+                my $loc;
+                for ($http->headers_array) {
+                    /Location: (\S+)/ and $loc = $1, last;
+                }
+                $loc or last;
+                if ($loc =~ m!^/!) {
+                    $uri =~ s!^(\w+?://[^/]+)/.*$!$1!;
+                    $uri .= $loc;
+                } else {
+                    $uri = $loc;
+                }
+
+                return $uri if $redir;
+
+                my($data_cb, $done_cb) = $cb_gen ? $cb_gen->() : ();
+                $req = $http->request($uri, $data_cb);
+                $done_cb->($req) if $done_cb;
+            }
+
+            return if $redir;
+            return ($http, $req);
+        };
+
+
+        $self->{_backends}{get} = sub {
+            my($self, $uri) = @_;
+            return $self->file_get($uri) if $uri =~ s!^file:/+!/!;
+            my($http, $req) = $http_cb->($uri);
+            return $http->body;
+        };
+
+        $self->{_backends}{mirror} = sub {
+            my($self, $uri, $path) = @_;
+            return $self->file_mirror($uri, $path) if $uri =~ s!^file:/+!/!;
+
+            my($http, $req) = $http_cb->($uri, undef, sub {
+                open my $out, ">$path" or die "$path: $!";
+                binmode $out;
+                sub { print $out ${$_[1]} }, sub { close $out };
+            });
+
+            return $req;
+        };
+
+        $self->{_backends}{redirect} = sub {
+            my($self, $uri) = @_;
+            return $http_cb->($uri, 1);
+        };
+    }
+
+    if (my $tar = $self->which('tar')) {
         $self->{_backends}{untar} = sub {
             my($self, $tarfile) = @_;
 
@@ -927,7 +1165,12 @@ sub init_tools {
             $t->extract;
             return -d $root ? $root : undef;
         };
+    } else {
+        $self->{_backends}{untar} = sub {
+            die "Failed to extract $_[1] - You need to have tar or Archive::Tar installed.\n";
+        };
     }
+
     if (my $unzip = $self->which('unzip')) {
         $self->{_backends}{unzip} = sub {
             my($self, $zipfile) = @_;
@@ -964,6 +1207,10 @@ sub init_tools {
             }
             return -d $root ? $root : undef;
         };
+    } else {
+        $self->{_backends}{unzip} = sub {
+            die "Failed to extract $_[1] - You need to have unzip or Archive::Zip installed.\n";
+        };
     }
 }
 
@@ -972,7 +1219,7 @@ sub parse_meta {
     return eval { (Parse::CPAN::Meta::LoadFile($file))[0] } || {};
 }
 
-# /Users/miyagawa/perl5/lib/perl5/Parse/CPAN/Meta.pm (auto embedded by script/build.PL)
+# Parse::CPAN::Meta 1.40 (auto embedded by script/build.PL)
 package Parse::CPAN::Meta;
 
 use strict;
@@ -1311,13 +1558,1102 @@ sub _hash ($$$) {
 	return 1;
 }
 
+
 package main;
-#!/usr/bin/env perl
-# DO NOT EDIT -- this is an auto generated file
-use strict;
 
 unless (caller) {
     my $app = App::cpanminus::script->new;
     $app->parse_options(@ARGV);
     $app->doit;
 }
+
+__DATA__
+# local::lib 1.004009 (auto embedded by script/build.PL)
+# CPANM_EMBED_BEGIN local::lib
+use strict;
+use warnings;
+
+package local::lib;
+
+use 5.008001; # probably works with earlier versions but I'm not supporting them
+              # (patches would, of course, be welcome)
+
+use File::Spec ();
+use File::Path ();
+use Carp ();
+use Config;
+
+our $VERSION = '1.004009'; # 1.4.9
+my @KNOWN_FLAGS = (qw/--self-contained/);
+
+sub import {
+  my ($class, @args) = @_;
+  @args <= 1 + @KNOWN_FLAGS or die <<'DEATH';
+Please see `perldoc local::lib` for directions on using this module.
+DEATH
+
+  # Remember what PERL5LIB was when we started
+  my $perl5lib = $ENV{PERL5LIB} || '';
+
+  my %arg_store;
+  for my $arg (@args) {
+    # check for lethal dash first to stop processing before causing problems
+    if ($arg =~ /−/) {
+      die <<'DEATH';
+WHOA THERE! It looks like you've got some fancy dashes in your commandline!
+These are *not* the traditional -- dashes that software recognizes. You
+probably got these by copy-pasting from the perldoc for this module as
+rendered by a UTF8-capable formatter. This most typically happens on an OS X
+terminal, but can happen elsewhere too. Please try again after replacing the
+dashes with normal minus signs.
+DEATH
+    }
+    elsif(grep { $arg eq $_ } @KNOWN_FLAGS) {
+      (my $flag = $arg) =~ s/--//;
+      $arg_store{$flag} = 1;
+    }
+    elsif($arg =~ /^--/) {
+      die "Unknown import argument: $arg";
+    }
+    else {
+      # assume that what's left is a path
+      $arg_store{path} = $arg;
+    }
+  }
+
+  if($arg_store{'self-contained'}) {
+    # The only directories that remain are those that we just defined and those
+    # where core modules are stored.  We put PERL5LIB first, so it'll be favored
+    # over privlibexp and archlibexp
+
+    @INC = _uniq(
+      $class->install_base_arch_path($arg_store{path}),
+      $class->install_base_perl_path($arg_store{path}),
+      split( $Config{path_sep}, $perl5lib ),
+      $Config::Config{archlibexp},
+      $Config::Config{privlibexp},
+    );
+
+    # We explicitly set PERL5LIB here to the above de-duped list to prevent
+    # @INC from growing with each invocation
+    $ENV{PERL5LIB} = join( $Config{path_sep}, @INC );
+  }
+
+  $arg_store{path} = $class->resolve_path($arg_store{path});
+  $class->setup_local_lib_for($arg_store{path});
+
+  for (@INC) { # Untaint @INC
+    next if ref; # Skip entry if it is an ARRAY, CODE, blessed, etc.
+    m/(.*)/ and $_ = $1;
+  }
+}
+
+sub pipeline;
+
+sub pipeline {
+  my @methods = @_;
+  my $last = pop(@methods);
+  if (@methods) {
+    \sub {
+      my ($obj, @args) = @_;
+      $obj->${pipeline @methods}(
+        $obj->$last(@args)
+      );
+    };
+  } else {
+    \sub {
+      shift->$last(@_);
+    };
+  }
+}
+
+
+sub _uniq {
+    my %seen;
+    grep { ! $seen{$_}++ } @_;
+}
+
+sub resolve_path {
+  my ($class, $path) = @_;
+  $class->${pipeline qw(
+    resolve_relative_path
+    resolve_home_path
+    resolve_empty_path
+  )}($path);
+}
+
+sub resolve_empty_path {
+  my ($class, $path) = @_;
+  if (defined $path) {
+    $path;
+  } else {
+    '~/perl5';
+  }
+}
+
+
+sub resolve_home_path {
+  my ($class, $path) = @_;
+  return $path unless ($path =~ /^~/);
+  my ($user) = ($path =~ /^~([^\/]+)/); # can assume ^~ so undef for 'us'
+  my $tried_file_homedir;
+  my $homedir = do {
+    if (eval { require File::HomeDir } && $File::HomeDir::VERSION >= 0.65) {
+      $tried_file_homedir = 1;
+      if (defined $user) {
+        File::HomeDir->users_home($user);
+      } else {
+        File::HomeDir->my_home;
+      }
+    } else {
+      if (defined $user) {
+        (getpwnam $user)[7];
+      } else {
+        if (defined $ENV{HOME}) {
+          $ENV{HOME};
+        } else {
+          (getpwuid $<)[7];
+        }
+      }
+    }
+  };
+  unless (defined $homedir) {
+    Carp::croak(
+      "Couldn't resolve homedir for "
+      .(defined $user ? $user : 'current user')
+      .($tried_file_homedir ? '' : ' - consider installing File::HomeDir')
+    );
+  }
+  $path =~ s/^~[^\/]*/$homedir/;
+  $path;
+}
+
+sub resolve_relative_path {
+  my ($class, $path) = @_;
+  $path = File::Spec->rel2abs($path);
+}
+
+
+sub setup_local_lib_for {
+  my ($class, $path) = @_;
+  $path = $class->ensure_dir_structure_for($path);
+  if ($0 eq '-') {
+    $class->print_environment_vars_for($path);
+    exit 0;
+  } else {
+    $class->setup_env_hash_for($path);
+    @INC = _uniq(split($Config{path_sep}, $ENV{PERL5LIB}), @INC);
+  }
+}
+
+sub modulebuildrc_path {
+  my ($class, $path) = @_;
+  File::Spec->catfile($path, '.modulebuildrc');
+}
+
+sub install_base_bin_path {
+  my ($class, $path) = @_;
+  File::Spec->catdir($path, 'bin');
+}
+
+sub install_base_perl_path {
+  my ($class, $path) = @_;
+  File::Spec->catdir($path, 'lib', 'perl5');
+}
+
+sub install_base_arch_path {
+  my ($class, $path) = @_;
+  File::Spec->catdir($class->install_base_perl_path($path), $Config{archname});
+}
+
+sub ensure_dir_structure_for {
+  my ($class, $path) = @_;
+  unless (-d $path) {
+    warn "Attempting to create directory ${path}\n";
+  }
+  File::Path::mkpath($path);
+  # Need to have the path exist to make a short name for it, so
+  # converting to a short name here.
+  $path = Win32::GetShortPathName($path) if $^O eq 'MSWin32';
+  my $modulebuildrc_path = $class->modulebuildrc_path($path);
+  if (-e $modulebuildrc_path) {
+    unless (-f _) {
+      Carp::croak("${modulebuildrc_path} exists but is not a plain file");
+    }
+  } else {
+    warn "Attempting to create file ${modulebuildrc_path}\n";
+    open MODULEBUILDRC, '>', $modulebuildrc_path
+      || Carp::croak("Couldn't open ${modulebuildrc_path} for writing: $!");
+    print MODULEBUILDRC qq{install  --install_base  ${path}\n}
+      || Carp::croak("Couldn't write line to ${modulebuildrc_path}: $!");
+    close MODULEBUILDRC
+      || Carp::croak("Couldn't close file ${modulebuildrc_path}: $@");
+  }
+
+  return $path;
+}
+
+sub INTERPOLATE_ENV () { 1 }
+sub LITERAL_ENV     () { 0 }
+
+sub print_environment_vars_for {
+  my ($class, $path) = @_;
+  my @envs = $class->build_environment_vars_for($path, LITERAL_ENV);
+  my $out = '';
+
+  # rather basic csh detection, goes on the assumption that something won't
+  # call itself csh unless it really is. also, default to bourne in the
+  # pathological situation where a user doesn't have $ENV{SHELL} defined.
+  # note also that shells with funny names, like zoid, are assumed to be
+  # bourne.
+  my $shellbin = 'sh';
+  if(defined $ENV{'SHELL'}) {
+      my @shell_bin_path_parts = File::Spec->splitpath($ENV{'SHELL'});
+      $shellbin = $shell_bin_path_parts[-1];
+  }
+  my $shelltype = do {
+      local $_ = $shellbin;
+      if(/csh/) {
+          'csh'
+      } else {
+          'bourne'
+      }
+  };
+
+  # Both Win32 and Cygwin have $ENV{COMSPEC} set.
+  if (defined $ENV{'COMSPEC'} && $^O ne 'cygwin') {
+      my @shell_bin_path_parts = File::Spec->splitpath($ENV{'COMSPEC'});
+      $shellbin = $shell_bin_path_parts[-1];
+         $shelltype = do {
+                 local $_ = $shellbin;
+                 if(/command\.com/) {
+                         'win32'
+                 } elsif(/cmd\.exe/) {
+                         'win32'
+                 } elsif(/4nt\.exe/) {
+                         'win32'
+                 } else {
+                         $shelltype
+                 }
+         };
+  }
+
+  while (@envs) {
+    my ($name, $value) = (shift(@envs), shift(@envs));
+    $value =~ s/(\\")/\\$1/g;
+    $out .= $class->${\"build_${shelltype}_env_declaration"}($name, $value);
+  }
+  print $out;
+}
+
+# simple routines that take two arguments: an %ENV key and a value. return
+# strings that are suitable for passing directly to the relevant shell to set
+# said key to said value.
+sub build_bourne_env_declaration {
+  my $class = shift;
+  my($name, $value) = @_;
+  return qq{export ${name}="${value}"\n};
+}
+
+sub build_csh_env_declaration {
+  my $class = shift;
+  my($name, $value) = @_;
+  return qq{setenv ${name} "${value}"\n};
+}
+
+sub build_win32_env_declaration {
+  my $class = shift;
+  my($name, $value) = @_;
+  return qq{set ${name}=${value}\n};
+}
+
+sub setup_env_hash_for {
+  my ($class, $path) = @_;
+  my %envs = $class->build_environment_vars_for($path, INTERPOLATE_ENV);
+  @ENV{keys %envs} = values %envs;
+}
+
+sub build_environment_vars_for {
+  my ($class, $path, $interpolate) = @_;
+  return (
+    MODULEBUILDRC => $class->modulebuildrc_path($path),
+    PERL_MM_OPT => "INSTALL_BASE=${path}",
+    PERL5LIB => join($Config{path_sep},
+                  $class->install_base_perl_path($path),
+                  $class->install_base_arch_path($path),
+                  ($ENV{PERL5LIB} ?
+                    ($interpolate == INTERPOLATE_ENV
+                      ? ($ENV{PERL5LIB})
+                      : (($^O ne 'MSWin32') ? '$PERL5LIB' : '%PERL5LIB%' ))
+                    : ())
+                ),
+    PATH => join($Config{path_sep},
+              $class->install_base_bin_path($path),
+              ($interpolate == INTERPOLATE_ENV
+                ? $ENV{PATH}
+                : (($^O ne 'MSWin32') ? '$PATH' : '%PATH%' ))
+             ),
+  )
+}
+
+
+# CPANM_EMBED_END local::lib
+# HTTP::Lite 2.2 (auto embedded by script/build.PL)
+# CPANM_EMBED_BEGIN HTTP::Lite
+package HTTP::Lite;
+
+use 5.005;
+use strict;
+use Socket 1.3;
+use Fcntl;
+use Errno qw(EAGAIN);
+
+use vars qw($VERSION);
+BEGIN {
+	$VERSION = "2.2";
+}
+
+my $BLOCKSIZE = 65536;
+my $CRLF = "\r\n";
+my $URLENCODE_VALID = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-.";
+
+# Forward declarations
+sub prepare_post;
+sub http_write;
+sub http_readline;
+sub http_read;
+sub http_readbytes;
+
+# Prepare the urlencode validchars lookup hash
+my @urlencode_valid;
+foreach my $char (split('', $URLENCODE_VALID)) {
+  $urlencode_valid[ord $char]=$char;
+}
+for (my $n=0;$n<255;$n++) {
+  if (!defined($urlencode_valid[$n])) {
+    $urlencode_valid[$n]=sprintf("%%%02X", $n);
+  }
+}
+
+sub new 
+{
+  my $self = {};
+  bless $self;
+  $self->initialize();
+  return $self;
+}
+
+sub initialize
+{
+  my $self = shift;
+  $self->reset;
+  $self->{timeout} = 120;
+  $self->{HTTP11} = 0;
+  $self->{DEBUG} = 0;
+  $self->{header_at_once} = 0; 
+  $self->{holdback} = 0;       # needed for http_write 
+}
+
+sub header_at_once
+{
+  my $self=shift;
+  $self->{header_at_once} = 1;
+}
+
+sub local_addr
+{
+  my $self = shift;
+  my $val = shift;
+  my $oldval = $self->{'local_addr'};
+  if (defined($val)) {
+    $self->{'local_addr'} = $val;
+  }
+  return $oldval;
+}
+
+sub local_port
+{
+  my $self = shift;
+  my $val = shift;
+  my $oldval = $self->{'local_port'};
+  if (defined($val)) {
+    $self->{'local_port'} = $val;
+   }
+  return $oldval;
+}
+
+sub method
+{
+  my $self = shift;
+  my $method = shift;
+  $method = uc($method);
+  $self->{method} = $method;
+}
+
+sub DEBUG
+{
+  my $self = shift;
+  if ($self->{DEBUG}) {
+    print STDERR join(" ", @_),"\n";
+  }
+}
+
+sub reset
+{
+  my $self = shift;
+  foreach my $var ("body", "request", "content", "status", "proxy",
+    "proxyport", "resp-protocol", "error-message",  
+    "resp-headers", "CBARGS", "callback_function", "callback_params")
+  {
+    $self->{$var} = undef;
+  }
+  $self->{HTTPReadBuffer} = "";
+  $self->{method} = "GET";
+  $self->{headers} = { 'user-agent' => "HTTP::Lite/$VERSION" };
+  $self->{headermap} = { 'user-agent'  => 'User-Agent' };
+}
+
+
+# URL-encode data
+sub escape {
+  my $toencode = shift;
+  return join('', 
+    map { $urlencode_valid[ord $_] } split('', $toencode));
+}
+
+sub set_callback {
+  my ($self, $callback, @callbackparams) = @_;
+  $self->{'callback_function'} = $callback;
+  $self->{'callback_params'} = [ @callbackparams ];
+}
+
+sub request
+{
+  my ($self, $url, $data_callback, $cbargs) = @_;
+  
+  my $method = $self->{method};
+  if (defined($cbargs)) {
+    $self->{CBARGS} = $cbargs;
+  }
+
+  my $callback_func = $self->{'callback_function'};
+  my $callback_params = $self->{'callback_params'};
+
+  # Parse URL 
+  my ($protocol,$host,$junk,$port,$object) = 
+    $url =~ m{^([^:/]+)://([^/:]*)(:(\d+))?(/.*)$};
+
+  # Only HTTP is supported here
+  if ($protocol ne "http")
+  {
+    warn "Only http is supported by HTTP::Lite";
+    return undef;
+  }
+  
+  # Setup the connection
+  my $proto = getprotobyname('tcp');
+  local *FH;
+  socket(FH, PF_INET, SOCK_STREAM, $proto);
+  $port = 80 if !$port;
+
+  my $connecthost = $self->{'proxy'} || $host;
+  $connecthost = $connecthost ? $connecthost : $host;
+  my $connectport = $self->{'proxyport'} || $port;
+  $connectport = $connectport ? $connectport : $port;
+  my $addr = inet_aton($connecthost);
+  if (!$addr) {
+    close(FH);
+    return undef;
+  }
+  if ($connecthost ne $host)
+  {
+    # if proxy active, use full URL as object to request
+    $object = "$url";
+  }
+
+  # choose local port and address
+  my $local_addr = INADDR_ANY; 
+  my $local_port = "0";
+  if (defined($self->{'local_addr'})) {
+    $local_addr = $self->{'local_addr'};
+    if ($local_addr eq "0.0.0.0" || $local_addr eq "0") {
+      $local_addr = INADDR_ANY;
+    } else {
+      $local_addr = inet_aton($local_addr);
+    }
+  }
+  if (defined($self->{'local_port'})) {
+    $local_port = $self->{'local_port'};
+  }
+  my $paddr = pack_sockaddr_in($local_port, $local_addr); 
+  bind(FH, $paddr) || return undef;  # Failing to bind is fatal.
+
+  my $sin = sockaddr_in($connectport,$addr);
+  connect(FH, $sin) || return undef;
+  # Set nonblocking IO on the handle to allow timeouts
+  if ( $^O ne "MSWin32" ) {
+    fcntl(FH, F_SETFL, O_NONBLOCK);
+  }
+
+  if (defined($callback_func)) {
+    &$callback_func($self, "connect", undef, @$callback_params);
+  }  
+
+  if ($self->{header_at_once}) {
+    $self->{holdback} = 1;    # http_write should buffer only, no sending yet
+  }
+
+  # Start the request (HTTP/1.1 mode)
+  if ($self->{HTTP11}) {
+    $self->http_write(*FH, "$method $object HTTP/1.1$CRLF");
+  } else {
+    $self->http_write(*FH, "$method $object HTTP/1.0$CRLF");
+  }
+
+  # Add some required headers
+  # we only support a single transaction per request in this version.
+  $self->add_req_header("Connection", "close");    
+  if ($port != 80) {
+    $self->add_req_header("Host", "$host:$port");
+  } else {
+    $self->add_req_header("Host", $host);
+  }
+  if (!defined($self->get_req_header("Accept"))) {
+    $self->add_req_header("Accept", "*/*");
+  }
+
+  if ($method eq 'POST') {
+    $self->http_write(*FH, "Content-Type: application/x-www-form-urlencoded$CRLF");
+  }
+  
+  # Purge a couple others
+  $self->delete_req_header("Content-Type");
+  $self->delete_req_header("Content-Length");
+  
+  # Output headers
+  foreach my $header ($self->enum_req_headers())
+  {
+    my $value = $self->get_req_header($header);
+    $self->http_write(*FH, $self->{headermap}{$header}.": ".$value."$CRLF");
+  }
+  
+  my $content_length;
+  if (defined($self->{content}))
+  {
+    $content_length = length($self->{content});
+  }
+  if (defined($callback_func)) {
+    my $ncontent_length = &$callback_func($self, "content-length", undef, @$callback_params);
+    if (defined($ncontent_length)) {
+      $content_length = $ncontent_length;
+    }
+  }  
+
+  if ($content_length) {
+    $self->http_write(*FH, "Content-Length: $content_length$CRLF");
+  }
+  
+  if (defined($callback_func)) {
+    &$callback_func($self, "done-headers", undef, @$callback_params);
+  }  
+  # End of headers
+  $self->http_write(*FH, "$CRLF");
+  
+  if ($self->{header_at_once}) {
+    $self->{holdback} = 0; 
+    $self->http_write(*FH, ""); # pseudocall to get http_write going
+  }  
+  
+  my $content_out = 0;
+  if (defined($callback_func)) {
+    while (my $content = &$callback_func($self, "content", undef, @$callback_params)) {
+      $self->http_write(*FH, $content);
+      $content_out++;
+    }
+  } 
+  
+  # Output content, if any
+  if (!$content_out && defined($self->{content}))
+  {
+    $self->http_write(*FH, $self->{content});
+  }
+  
+  if (defined($callback_func)) {
+    &$callback_func($self, "content-done", undef, @$callback_params);
+  }  
+
+
+  # Read response from server
+  my $headmode=1;
+  my $chunkmode=0;
+  my $chunksize=0;
+  my $chunklength=0;
+  my $chunk;
+  my $line = 0;
+  my $data;
+  while ($data = $self->http_read(*FH,$headmode,$chunkmode,$chunksize))
+  {
+    $self->{DEBUG} && $self->DEBUG("reading: $chunkmode, $chunksize, $chunklength, $headmode, ".
+        length($self->{'body'}));
+    if ($self->{DEBUG}) {
+      foreach my $var ("body", "request", "content", "status", "proxy",
+        "proxyport", "resp-protocol", "error-message", 
+        "resp-headers", "CBARGS", "HTTPReadBuffer") 
+      {
+        $self->DEBUG("state $var ".length($self->{$var}));
+      }
+    }
+    $line++;
+    if ($line == 1)
+    {
+      my ($proto,$status,$message) = split(' ', $$data, 3);
+      $self->{DEBUG} && $self->DEBUG("header $$data");
+      $self->{status}=$status;
+      $self->{'resp-protocol'}=$proto;
+      $self->{'error-message'}=$message;
+      next;
+    } 
+    if (($headmode || $chunkmode eq "entity-header") && $$data =~ /^[\r\n]*$/)
+    {
+      if ($chunkmode)
+      {
+        $chunkmode = 0;
+      }
+      $headmode = 0;
+      
+      # Check for Transfer-Encoding
+      my $te = $self->get_header("Transfer-Encoding");
+      if (defined($te)) {
+        my $header = join(' ',@{$te});
+        if ($header =~ /chunked/i)
+        {
+          $chunkmode = "chunksize";
+        }
+      }
+      next;
+    }
+    if ($headmode || $chunkmode eq "entity-header")
+    {
+      my ($var,$datastr) = $$data =~ /^([^:]*):\s*(.*)$/;
+      if (defined($var))
+      {
+        $datastr =~s/[\r\n]$//g;
+        $var = lc($var);
+        $var =~ s/^(.)/&upper($1)/ge;
+        $var =~ s/(-.)/&upper($1)/ge;
+        my $hr = ${$self->{'resp-headers'}}{$var};
+        if (!ref($hr))
+        {
+          $hr = [ $datastr ];
+        }
+        else 
+        {
+          push @{ $hr }, $datastr;
+        }
+        ${$self->{'resp-headers'}}{$var} = $hr;
+      }
+    } elsif ($chunkmode)
+    {
+      if ($chunkmode eq "chunksize")
+      {
+        $chunksize = $$data;
+        $chunksize =~ s/^\s*|;.*$//g;
+        $chunksize =~ s/\s*$//g;
+        my $cshx = $chunksize;
+        if (length($chunksize) > 0) {
+          # read another line
+          if ($chunksize !~ /^[a-f0-9]+$/i) {
+            $self->{DEBUG} && $self->DEBUG("chunksize not a hex string");
+          }
+          $chunksize = hex($chunksize);
+          $self->{DEBUG} && $self->DEBUG("chunksize was $chunksize (HEX was $cshx)");
+          if ($chunksize == 0)
+          {
+            $chunkmode = "entity-header";
+          } else {
+            $chunkmode = "chunk";
+            $chunklength = 0;
+          }
+        } else {
+          $self->{DEBUG} && $self->DEBUG("chunksize empty string, checking next line!");
+        }
+      } elsif ($chunkmode eq "chunk")
+      {
+        $chunk .= $$data;
+        $chunklength += length($$data);
+        if ($chunklength >= $chunksize)
+        {
+          $chunkmode = "chunksize";
+          if ($chunklength > $chunksize)
+          {
+            $chunk = substr($chunk,0,$chunksize);
+          } 
+          elsif ($chunklength == $chunksize && $chunk !~ /$CRLF$/) 
+          {
+            # chunk data is exactly chunksize -- need CRLF still
+            $chunkmode = "ignorecrlf";
+          }
+          $self->add_to_body(\$chunk, $data_callback);
+          $chunk="";
+          $chunklength = 0;
+          $chunksize = "";
+        } 
+      } elsif ($chunkmode eq "ignorecrlf")
+      {
+        $chunkmode = "chunksize";
+      }
+    } else {
+      $self->add_to_body($data, $data_callback);
+    }
+  }
+  if (defined($callback_func)) {
+    &$callback_func($self, "done", undef, @$callback_params);
+  }
+  close(FH);
+  return $self->{status};
+}
+
+sub add_to_body
+{
+  my $self = shift;
+  my ($dataref, $data_callback) = @_;
+  
+  my $callback_func = $self->{'callback_function'};
+  my $callback_params = $self->{'callback_params'};
+
+  if (!defined($data_callback) && !defined($callback_func)) {
+    $self->{DEBUG} && $self->DEBUG("no callback");
+    $self->{'body'}.=$$dataref;
+  } else {
+    my $newdata;
+    if (defined($callback_func)) {
+      $newdata = &$callback_func($self, "data", $dataref, @$callback_params);
+    } else {
+      $newdata = &$data_callback($self, $dataref, $self->{CBARGS});
+    }
+    if ($self->{DEBUG}) {
+      $self->DEBUG("callback got back a ".ref($newdata));
+      if (ref($newdata) eq "SCALAR") {
+        $self->DEBUG("callback got back ".length($$newdata)." bytes");
+      }
+    }
+    if (defined($newdata) && ref($newdata) eq "SCALAR") {
+      $self->{'body'} .= $$newdata;
+    }
+  }
+}
+
+sub add_req_header
+{
+  my $self = shift;
+  my ($header, $value) = @_;
+  
+  my $lcheader = lc($header);
+  $self->{DEBUG} && $self->DEBUG("add_req_header $header $value");
+  ${$self->{headers}}{$lcheader} = $value;
+  ${$self->{headermap}}{$lcheader} = $header;
+}
+
+sub get_req_header
+{
+  my $self = shift;
+  my ($header) = @_;
+  
+  return $self->{headers}{lc($header)};
+}
+
+sub delete_req_header
+{
+  my $self = shift;
+  my ($header) = @_;
+  
+  my $exists;
+  if ($exists=defined(${$self->{headers}}{lc($header)}))
+  {
+    delete ${$self->{headers}}{lc($header)};
+    delete ${$self->{headermap}}{lc($header)};
+  }
+  return $exists;
+}
+
+sub enum_req_headers
+{
+  my $self = shift;
+  my ($header) = @_;
+  
+  my $exists;
+  return keys %{$self->{headermap}};
+}
+
+sub body
+{
+  my $self = shift;
+  return $self->{'body'};
+}
+
+sub status
+{
+  my $self = shift;
+  return $self->{status};
+}
+
+sub protocol
+{
+  my $self = shift;
+  return $self->{'resp-protocol'};
+}
+
+sub status_message
+{
+  my $self = shift;
+  return $self->{'error-message'};
+}
+
+sub proxy
+{
+  my $self = shift;
+  my ($value) = @_;
+  
+  # Parse URL 
+  my ($protocol,$host,$junk,$port,$object) = 
+    $value =~ m{^(\S+)://([^/:]*)(:(\d+))?(/.*)$};
+  if (!$host)
+  {
+    ($host,$port) = $value =~ /^([^:]+):(.*)$/;
+  }
+
+  $self->{'proxy'} = $host || $value;
+  $self->{'proxyport'} = $port || 80;
+}
+
+sub headers_array
+{
+  my $self = shift;
+  
+  my @array = ();
+  
+  foreach my $header (keys %{$self->{'resp-headers'}})
+  {
+    my $aref = ${$self->{'resp-headers'}}{$header};
+    foreach my $value (@$aref)
+    {
+      push @array, "$header: $value";
+    }
+  }
+  return @array;
+}
+
+sub headers_string
+{
+  my $self = shift;
+  
+  my $string = "";
+  
+  foreach my $header (keys %{$self->{'resp-headers'}})
+  {
+    my $aref = ${$self->{'resp-headers'}}{$header};
+    foreach my $value (@$aref)
+    {
+      $string .= "$header: $value\n";
+    }
+  }
+  return $string;
+}
+
+sub get_header
+{
+  my $self = shift;
+  my $header = shift;
+
+  return $self->{'resp-headers'}{$header};
+}
+
+sub http11_mode
+{
+  my $self = shift;
+  my $mode = shift;
+
+  $self->{HTTP11} = $mode;
+}
+
+sub prepare_post
+{
+  my $self = shift;
+  my $varref = shift;
+  
+  my $body = "";
+  while (my ($var,$value) = map { escape($_) } each %$varref)
+  {
+    if ($body)
+    {
+      $body .= "&$var=$value";
+    } else {
+      $body = "$var=$value";
+    }
+  }
+  $self->{content} = $body;
+  $self->{headers}{'Content-Type'} = "application/x-www-form-urlencoded"
+    unless defined ($self->{headers}{'Content-Type'}) and 
+    $self->{headers}{'Content-Type'};
+  $self->{method} = "POST";
+}
+
+sub http_write
+{
+  my $self = shift;
+  my ($fh,$line) = @_;
+
+  if ($self->{holdback}) {
+     $self->{HTTPWriteBuffer} .= $line;
+     return;
+  } else {
+     if (defined $self->{HTTPWriteBuffer}) {   # copy previously buffered, if any
+         $line = $self->{HTTPWriteBuffer} . $line;
+     }
+  }
+
+  my $size = length($line);
+  my $bytes = syswrite($fh, $line, length($line) , 0 );  # please double check new length limit
+                                                         # is this ok?
+  while ( ($size - $bytes) > 0) {
+    $bytes += syswrite($fh, $line, length($line)-$bytes, $bytes );  # also here
+  }
+}
+ 
+sub http_read
+{
+  my $self = shift;
+  my ($fh,$headmode,$chunkmode,$chunksize) = @_;
+
+  $self->{DEBUG} && $self->DEBUG("read handle=$fh, headm=$headmode, chunkm=$chunkmode, chunksize=$chunksize");
+
+  my $res;
+  if (($headmode == 0 && $chunkmode eq "0") || ($chunkmode eq "chunk")) {
+    my $bytes_to_read = $chunkmode eq "chunk" ?
+        ($chunksize < $BLOCKSIZE ? $chunksize : $BLOCKSIZE) :
+        $BLOCKSIZE;
+    $res = $self->http_readbytes($fh,$self->{timeout},$bytes_to_read);
+  } else { 
+    $res = $self->http_readline($fh,$self->{timeout});  
+  }
+  if ($res) {
+    if ($self->{DEBUG}) {
+      $self->DEBUG("read got ".length($$res)." bytes");
+      my $str = $$res;
+      $str =~ s{([\x00-\x1F\x7F-\xFF])}{.}g;
+      $self->DEBUG("read: ".$str);
+    }
+  }
+  return $res;
+}
+
+sub http_readline
+{
+  my $self = shift;
+  my ($fh, $timeout) = @_;
+  my $EOL = "\n";
+
+  $self->{DEBUG} && $self->DEBUG("readline handle=$fh, timeout=$timeout");
+  
+  # is there a line in the buffer yet?
+  while ($self->{HTTPReadBuffer} !~ /$EOL/)
+  {
+    # nope -- wait for incoming data
+    my ($inbuf,$bits,$chars) = ("","",0);
+    vec($bits,fileno($fh),1)=1;
+    my $nfound = select($bits, undef, $bits, $timeout);
+    if ($nfound == 0)
+    {
+      # Timed out
+      return undef;
+    } else {
+      # Get the data
+      $chars = sysread($fh, $inbuf, $BLOCKSIZE);
+      $self->{DEBUG} && $self->DEBUG("sysread $chars bytes");
+    }
+    # End of stream?
+    if ($chars <= 0 && !$!{EAGAIN})
+    {
+      last;
+    }
+    # tag data onto end of buffer
+    $self->{HTTPReadBuffer}.=$inbuf;
+  }
+  # get a single line from the buffer
+  my $nlat = index($self->{HTTPReadBuffer}, $EOL);
+  my $newline;
+  my $oldline;
+  if ($nlat > -1)
+  {
+    $newline = substr($self->{HTTPReadBuffer},0,$nlat+1);
+    $oldline = substr($self->{HTTPReadBuffer},$nlat+1);
+  } else {
+    $newline = substr($self->{HTTPReadBuffer},0);
+    $oldline = "";
+  }
+  # and update the buffer
+  $self->{HTTPReadBuffer}=$oldline;
+  return length($newline) ? \$newline : 0;
+}
+
+sub http_readbytes
+{
+  my $self = shift;
+  my ($fh, $timeout, $bytes) = @_;
+  my $EOL = "\n";
+
+  $self->{DEBUG} && $self->DEBUG("readbytes handle=$fh, timeout=$timeout, bytes=$bytes");
+  
+  # is there enough data in the buffer yet?
+  while (length($self->{HTTPReadBuffer}) < $bytes)
+  {
+    # nope -- wait for incoming data
+    my ($inbuf,$bits,$chars) = ("","",0);
+    vec($bits,fileno($fh),1)=1;
+    my $nfound = select($bits, undef, $bits, $timeout);
+    if ($nfound == 0)
+    {
+      # Timed out
+      return undef;
+    } else {
+      # Get the data
+      $chars = sysread($fh, $inbuf, $BLOCKSIZE);
+      $self->{DEBUG} && $self->DEBUG("sysread $chars bytes");
+    }
+    # End of stream?
+    if ($chars <= 0 && !$!{EAGAIN})
+    {
+      last;
+    }
+    # tag data onto end of buffer
+    $self->{HTTPReadBuffer}.=$inbuf;
+  }
+  my $newline;
+  my $buflen;
+  if (($buflen=length($self->{HTTPReadBuffer})) >= $bytes)
+  {
+    $newline = substr($self->{HTTPReadBuffer},0,$bytes+1);
+    if ($bytes+1 < $buflen) {
+      $self->{HTTPReadBuffer} = substr($self->{HTTPReadBuffer},$bytes+1);
+    } else {
+      $self->{HTTPReadBuffer} = "";
+    }
+  } else {
+    $newline = substr($self->{HTTPReadBuffer},0);
+    $self->{HTTPReadBuffer} = "";
+  }
+  return length($newline) ? \$newline : 0;
+}
+
+sub upper
+{
+  my ($str) = @_;
+  if (defined($str)) {
+    return uc($str);
+  } else {
+    return undef;
+  }
+}
+
+# CPANM_EMBED_END HTTP::Lite
+
