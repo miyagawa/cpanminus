@@ -380,8 +380,7 @@ sub _try_local_lib {
     if ($@) { $self->_bootstrap_local_lib; $bootstrap = 1 };
 
     # TODO -L option should remove PERL5LIB here
-
-    local::lib->import($base || "~/perl5");
+    { local $0 = 'cpanm'; local::lib->import($base || "~/perl5") };
 
     if ($bootstrap) {
         push @{$self->{bootstrap_deps}},
