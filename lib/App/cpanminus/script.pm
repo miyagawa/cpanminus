@@ -13,7 +13,7 @@ use constant PLUGIN_API_VERSION => 0.1;
 our $VERSION = "0.99_07";
 $VERSION = eval $VERSION;
 
-my $quote = $^O eq 'MSWin32' ? q/"/ : q/'/;
+my $quote = WIN32 ? q/"/ : q/'/;
 
 sub new {
     my $class = shift;
