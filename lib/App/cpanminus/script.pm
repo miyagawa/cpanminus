@@ -682,6 +682,16 @@ sub fetch_module {
         }
 
         $self->diag("OK\n");
+
+        # TODO add more metadata so plugins can tell how to verify and pass through
+        my $args = { file => $file, uri => $uri, fail => 0 };
+        $self->run_hooks(verify_archive => $args);
+
+        if ($args->{fail} && !$self->{force}) {
+            $self->diag("! Verifying the archive $file failed. Skipping. (use --force to install)\n");
+            next;
+        }
+
         $self->chat("Unpacking $file\n");
 
         my $dir = $file =~ /\.zip/i ? $self->unzip($file) : $self->untar($file);
