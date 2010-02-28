@@ -1,5 +1,30 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+0.99_07 Sat Feb 27 21:05:08 PST 2010
+   [Improvements]
+      - Bootstrap local::lib directory in ~/perl5 for the first run
+      - Bootstrap ExtUtils::MakeMaker, ExtUtils::Install and Module::Build in the first run
+      - Support --local-lib|-l option to specify which path to set local::lib dir
+      - Added PERL_CPANM_OPT command line option to add global command line options
+      - Support curl fallback (squeeky, gfx)
+      - Improved the installation success message to indicate it is a new, upgrade
+        or reinstall of the distribution
+      - Improved the error message in configure failure
+      - Fall back to embedded HTTP::Lite when any of LWP/wget/curl is unavailable
+      - Support piping module/dist for cpanm command, like `cat module_list | cpanm`
+      - Added --skip-installed option which makes cpanm behave like cpan
+      - Documented how to upgrade cpanm itself
+
+   [Developer fixes]
+      - Remove LWP::Simple and switch to LWP::UserAgent
+      - Create a temp file first when to generate standalone executable (gfx)
+      - cpanm (without argument) will output a shorten help
+      - Changed the NO_LWP env var to --no-lwp option
+      - Improved the permission check to also check sitebin directory
+      - Added --author option to Makefile.PL to generate cpanm from git repo (gfx)
+      - Introduced $depth parameter when installing dependencies. Unused in any places yet
+
+
 0.99_06 Thu Feb 25 14:50:51 PST 2010
       - Fixed packaging and VERSION
 
