@@ -18,7 +18,7 @@ hook verify_archive => sub {
 
     my $pause_id  = $2; # TODO this can be in the context
     my $chk_uri   = "$base/CHECKSUMS";
-    $args->{app}->chat("Fetching $chk_uri to verifying checksums...\n");
+    $args->{app}->chat("Fetching $chk_uri ...\n");
 
     my $chk_file = "$pause_id.CHECKSUMS";
     $args->{app}->mirror($chk_uri, $chk_file);
@@ -52,8 +52,6 @@ hook verify_archive => sub {
         }
 
         if (my $sha = $chksum->{$args->{file}}{sha256}) {
-            $args->{app}->chat("Found the checksum for $args->{file}: $sha\n");
-
             open my $fh, "<$args->{file}" or die "$args->{file}: $!";
             my $dg = Digest::SHA->new(256);
             my($data);
@@ -65,7 +63,7 @@ hook verify_archive => sub {
             if ($hex eq $sha) {
                 $args->{app}->chat("Checksum for $args->{file}: Verified!\n");
             } else {
-                $args->{app}->diag("! Checksum mismatch for $args->{file}: $hex != $sha\n");
+                $args->{app}->diag("Checksum mismatch for $args->{file}\n");
             }
         } else {
             $args->{app}->chat("Checksum for $args->{file} not found in CHECKSUMS.\n");
