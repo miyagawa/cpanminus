@@ -33,7 +33,7 @@ sub new {
         log => undef,
         mirrors => [],
         perl => $^X,
-        argv => undef,
+        argv => [],
         hooks => {},
         plugins => [],
         local_lib => undef,
@@ -51,7 +51,10 @@ sub env {
 
 sub parse_options {
     my $self = shift;
-    local @ARGV = @_;
+
+    local @ARGV = @{$self->{argv}};
+    push @ARGV, split /\s+/, $self->env('OPT');
+    push @ARGV, @_;
 
     if(!-t STDIN){ # e.g. $ cpanm < author/requires.cpanm
         push @ARGV, $self->load_argv_from_fh(\*STDIN);
@@ -81,7 +84,7 @@ sub parse_options {
         'no-lwp'    => \$self->{no_lwp},
     );
 
-    $self->{argv} ||= \@ARGV;
+    $self->{argv} = \@ARGV;
 }
 
 sub init {
