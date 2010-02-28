@@ -3,6 +3,7 @@ use strict;
 use Config;
 use Cwd ();
 use File::Basename ();
+use File::Path ();
 use File::Spec ();
 use File::Copy ();
 use Getopt::Long ();
@@ -19,7 +20,7 @@ sub new {
     my $class = shift;
 
     bless {
-        home => File::Spec->catfile($ENV{HOME}, ".cpanm"),
+        home => "$ENV{HOME}/.cpanm",
         cmd  => 'install',
         seen => {},
         notest => undef,
@@ -127,33 +128,24 @@ sub setup_home {
     my $self = shift;
 
     $self->{home} = $self->env('HOME') if $self->env('HOME');
-    mkdir $self->{home}, 0777 unless -e $self->{home};
 
-    for my $dir (qw( plugins work )) {
-        my $sub = File::Spec->catfile($self->{home}, $dir);
-        unless (-e $sub) {
-            mkdir $sub, 0777 or die "$dir: $!";
-        }
-    }
+    $self->{base} = "$self->{home}/work/" . time . ".$$";
+    $self->{plugin_dir} = "$self->{home}/plugins";
+    File::Path::mkpath([ $self->{base}, $self->{plugin_dir} ], 0, 0777);
 
-    $self->{base} = File::Spec->catfile($self->{home}, "work", time . ".$$");
-    mkdir $self->{base}, 0777 or die "$self->{base}: $!";
-
-    my $link = File::Spec->catfile($self->{home}, 'latest-build');
+    my $link = "$self->{home}/latest-build";
     eval { unlink $link; symlink $self->{base}, $link };
 
-    $self->{log} = File::Spec->catfile($self->{home}, "build.log");
+    $self->{log} = File::Spec->catfile($self->{home}, "build.log"); # because we use shell redirect
 
     {
         my $log = $self->{log}; my $base = $self->{base};
-        $self->{at_exit} = sub { File::Copy::copy($log, File::Spec->catfile($base, 'build.log')) };
+        $self->{at_exit} = sub { File::Copy::copy($log, "$base/build.log") };
     }
 
     open my $out, ">$self->{log}" or die "$self->{log}: $!";
     print $out "cpanm (App::cpanminus) $VERSION on perl $] built for $Config{archname}\n";
     print $out "Work directory is $self->{base}\n";
-
-    $self->{plugin_dir} = File::Spec->catfile($self->{home}, "plugins");
 }
 
 sub register_core_hooks {
@@ -211,7 +203,7 @@ sub _load_plugins {
     opendir my $dh, $self->{plugin_dir} or return;
     my @plugins;
     while (my $e = readdir $dh) {
-        my $f = File::Spec->catfile($self->{plugin_dir}, $e);
+        my $f = "$self->{plugin_dir}/$e";
         next unless -f $f && $e =~ /^[A-Za-z0-9_]+$/ && $e ne 'README';
         push @plugins, [ $f, $e ];
     }
