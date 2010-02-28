@@ -353,7 +353,7 @@ sub bootstrap {
     }
 
     # root, locally-installed perl or --sudo: don't care about install_base
-    return if $self->{sudo} or (-w $Config{installsitelib} and -w $Config{sitebin});
+    return if $self->{sudo} or (-w $Config{installsitelib} and -w $Config{installsitebin});
 
     # local::lib is configured in the shell -- yay
     return if $ENV{PERL_MM_OPT} and ($ENV{MODULEBUILDRC} or $ENV{PERL_MB_OPT});
@@ -362,9 +362,9 @@ sub bootstrap {
 
     $self->diag(<<DIAG);
 !
-! Can't write to $Config{installsitelib} and $Config{sitebin}: Installing modules to $ENV{HOME}/perl5
+! Can't write to $Config{installsitelib} and $Config{installsitebin}: Installing modules to $ENV{HOME}/perl5
 ! To turn off this warning, you have 3 options:
-!   - run me as a root or with --sudo option (to install to $Config{installsitelib} and $Config{sitebin})
+!   - run me as a root or with --sudo option (to install to $Config{installsitelib} and $Config{installsitebin})
 !   - Configure local::lib in your shell to set PERL_MM_OPT etc.
 !   - Set PERL_CPANM_OPT="--local-lib=~/perl5" in your shell
 !
