@@ -913,11 +913,13 @@ sub build_stuff {
         return;
     }
 
+    # TODO calculate this earlier and put it in the stash
+    my $distname = $meta->{name} ? "$meta->{name}-$meta->{version}" : $module;
+
     if ($installed) {
         my $local = $self->{local_versions}{$module};
         my $reinstall = $local && $local eq $meta->{version};
 
-        my $distname = $meta->{name} ? "$meta->{name}-$meta->{version}" : $module;
         my $how = $reinstall ? "reinstalled $distname"
                 : $local     ? "installed $distname (upgraded from $local)"
                              : "installed $distname" ;
@@ -930,9 +932,12 @@ sub build_stuff {
         });
         return 1;
     } else {
-        my $msg = "Building $module failed";
+        my $msg = "Building $distname failed";
         $self->diag("FAIL\n! Installing $module failed. See $self->{log} for details.\n");
-        $self->run_hooks(build_failure => { module => $module, build_dir => $dir, meta => $meta, message => $msg });
+        $self->run_hooks(build_failure => {
+            module => $module, build_dir => $dir, meta => $meta,
+            message => $msg, dist => $distname,
+        });
         return;
     }
 }
