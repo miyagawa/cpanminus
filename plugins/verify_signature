@@ -24,7 +24,7 @@ hook verify_dist => sub {
             $args->{app}->chat("Signature verified OK!\n");
         } else {
             $args->{app}->diag("! SIGNATURE verification for $args->{module} failed.\n");
-            ${$args->{fail}}++;
+            $args->{fail}++;
         }
     }
 };

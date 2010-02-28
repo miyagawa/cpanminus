@@ -801,10 +801,10 @@ sub install_deps {
 sub build_stuff {
     my($self, $module, $dir, $depth) = @_;
 
-    my $fail;
-    $self->run_hooks(verify_dist => { module => $module, dir => $dir, fail => \$fail });
+    my $args = { module => $module, dir => $dir };
+    $self->run_hooks(verify_dist => $args);
 
-    if ($fail && !$self->{force}) {
+    if ($args->{fail} && !$self->{force}) {
         $self->diag("! Verifying the module $module failed. Skipping. (use --force to install)\n");
         return;
     }
