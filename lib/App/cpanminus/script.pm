@@ -917,18 +917,22 @@ sub build_stuff {
         my $local = $self->{local_versions}{$module};
         my $reinstall = $local && $local eq $meta->{version};
 
-        my $how = $reinstall ? "$meta->{version} reinstalled"
-                : $local     ? "$meta->{version} installed (upgraded from $local)"
-                             : "$meta->{version} newly installed" ;
-        $self->diag("OK\n+ $module $how successfully.\n");
+        my $distname = $meta->{name} ? "$meta->{name}-$meta->{version}" : $module;
+        my $how = $reinstall ? "reinstalled $distname"
+                : $local     ? "installed $distname (upgraded from $local)"
+                             : "installed $distname" ;
+        my $msg = "Successfully $how";
+        $self->diag("OK\n$msg\n");
         $self->run_hooks(install_success => {
             module => $module, build_dir => $dir, meta => $meta,
             local => $local, reinstall => $reinstall, depth => $depth,
+            message => $msg, dist => $distname
         });
         return 1;
     } else {
+        my $msg = "Building $module failed";
         $self->diag("FAIL\n! Installing $module failed. See $self->{log} for details.\n");
-        $self->run_hooks(build_failure => { module => $module, build_dir => $dir, meta => $meta });
+        $self->run_hooks(build_failure => { module => $module, build_dir => $dir, meta => $meta, message => $msg });
         return;
     }
 }

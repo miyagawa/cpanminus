@@ -14,25 +14,21 @@ hook init => sub {
 
 hook install_success => sub {
     my $args = shift;
-    growl_it($args, "Successfully installed %s", 'ToolbarInfo');
+    growl_it($args, 'ToolbarInfo');
 };
 
 hook build_failure => sub {
     my $args = shift;
-    growl_it($args, "Building %s failed.", 'AlertStopIcon', 1);
+    growl_it($args, 'AlertStopIcon', 1);
 };
 
 sub growl_it {
-    my($args, $template, $icon, $is_sticky) = @_;
+    my($args, $icon, $is_sticky) = @_;
 
     return unless $growlnotify;
 
-    my $dist = "$args->{meta}->{name}-$args->{meta}->{version}";
-    $dist = $args->{module} if $dist eq '-';
-    my $msg = sprintf $template, $dist;
-
     my $sticky = $is_sticky ? "-s" : "";
-    $args->{app}->run("$growlnotify -n cpanminus $sticky -m " . $args->{app}->shell_quote($msg) .
-                      " " . $args->{app}->shell_quote($dist) .
-                      " --image /System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/$icon.icns");
+    $args->{app}->run("$growlnotify -n cpanminus $sticky -m " . $args->{app}->shell_quote($args->{message}) .
+                      " " . $args->{dist} .
+                      " --image /System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/$icon.icns" );
 };
