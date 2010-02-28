@@ -17,7 +17,7 @@ sub extract_changes {
     my $args = shift;
 
     my $dist = "$args->{meta}->{name}-$args->{local}";
-    return if $dist eq '-' or $args->{reinstall};
+    return if !$args->{local} or $args->{reinstall};
 
     eval    { require Algorithm::Diff };
     if ($@) { $args->{app}->chat("$@\n"); return }
