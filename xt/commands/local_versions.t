@@ -10,7 +10,7 @@ $ENV{PERL5LIB} = 'xt/lib';
 my @opt = ("--local-lib", $local_lib);
 
 run @opt, "Mac::Macbinary";
-like last_build_log, qr/newly installed/;
+like last_build_log, qr/installed/;
 
 $ENV{PERL5LIB} = "xt/lib:$local_lib/lib/perl5";
 
