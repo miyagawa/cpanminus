@@ -39,8 +39,6 @@ sub new {
         plugins => [],
         local_lib => undef,
         configure_timeout => 60,
-        build_timeout => 60 * 10,
-        test_timeout  => 60 * 10,
         @_,
     }, $class;
 }
@@ -451,7 +449,7 @@ sub run_exec {
 
 sub run_timeout {
     my($self, $cmd, $timeout) = @_;
-    return $self->run($cmd) if WIN32 || $self->{verbose};
+    return $self->run($cmd) if WIN32 || $self->{verbose} || !$timeout;
 
     my $pid = fork;
     if ($pid) {
