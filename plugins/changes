@@ -1,5 +1,5 @@
 name        'changes';
-description 'Show changes before/after installing a new module';
+description 'Show changes when upgrading a module';
 author      'Tatsuhiko Miyagawa, Tokurhiro Matsuno';
 
 api_version 0.1;

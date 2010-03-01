@@ -1,5 +1,5 @@
 name        'bundle';
-description 'dependencies from Bundle::';
+description 'Support scanning dependencies from Bundle:: modules';
 author      'Tatsuhiko Miyagawa';
 
 api_version 0.1;
