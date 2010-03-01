@@ -1,5 +1,5 @@
-name        'cpandb';
-description 'query CPAN DB rather than scraping search.cpan.org';
+name        'cpanidx';
+description 'query CPAN IDX rather than scraping search.cpan.org';
 author      'Tatsuhiko Miyagawa';
 
 api_version 0.1;
@@ -14,17 +14,17 @@ hook search_module => sub {
 
     push @{$args->{uris}}, sub {
         require YAML;
-        $args->{app}->chat("Querying CPANDB for $args->{module}\n");
+        $args->{app}->chat("Querying CPANIDX for $args->{module}\n");
 
         my $yaml = $args->{app}->get("http://cpanidx.bingosnet.co.uk/cpandb/yaml/mod/$args->{module}");
         my $meta = (YAML::Load($yaml))[0];
 
         if (my $d = $meta->[0]) {
-            $args->{app}->chat("Got a response from CPANDB => $d->{dist_file}\n");
+            $args->{app}->chat("Got a response from CPANIDX => $d->{dist_file}\n");
             return $args->{app}->cpan_uri($d->{dist_file});
         }
 
-        $args->{app}->chat("! Finding $args->{module} on cpandb failed.\n");
+        $args->{app}->chat("! Finding $args->{module} on cpanidx failed.\n");
         return;
     };
 };
