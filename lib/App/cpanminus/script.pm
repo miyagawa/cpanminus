@@ -485,7 +485,6 @@ sub configure {
 
     my $use_default = !$self->{interactive};
     local $ENV{PERL_MM_USE_DEFAULT} = $use_default;
-    local $ENV{AUTOMATED_TESTING}   = $use_default;
 
     local $self->{verbose} = $self->{interactive};
     $self->run_timeout($cmd, $self->{configure_timeout});
