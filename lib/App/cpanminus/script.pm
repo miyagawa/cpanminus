@@ -80,7 +80,7 @@ sub parse_options {
         'i|install' => sub { $self->{cmd} = 'install' },
         'look'      => sub { $self->{cmd} = 'look' },
         'info'      => sub { $self->{cmd} = 'info' },
-        'self-upgrade' => sub { $self->{cmd} = 'install'; $self->{argv} = [ 'App::cpanminus' ] },
+        'self-upgrade' => sub { $self->{cmd} = 'install'; push @ARGV, 'App::cpanminus' },
         'disable-plugins' => \$self->{disable_plugins},
         'no-lwp'    => \$self->{no_lwp},
     );
