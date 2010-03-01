@@ -57,7 +57,7 @@ sub parse_options {
     push @ARGV, split /\s+/, $self->env('OPT');
     push @ARGV, @_;
 
-    if(!-t STDIN){ # e.g. $ cpanm < author/requires.cpanm
+    if ($0 ne '-' && !-t STDIN){ # e.g. $ cpanm < author/requires.cpanm
         push @ARGV, $self->load_argv_from_fh(\*STDIN);
     }
 
