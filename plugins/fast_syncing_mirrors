@@ -10,6 +10,6 @@ hook configure_mirrors => sub {
     push @{$args->{mirrors}}, (
         'http://cpan.cpantesters.org',
         'http://cpan.hexten.net',
-        'http://www.cpan.org',
+        'http://cpan.dagolden.com',
     );
 };
