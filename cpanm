@@ -43,7 +43,7 @@ sub new {
         plugins => [],
         local_lib => undef,
         configure_timeout => 60,
-        build_timeout => 60 * 10,
+        build_timeout => 60 * 30,
         test_timeout  => 60 * 10,
         @_,
     }, $class;
