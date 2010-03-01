@@ -1,5 +1,14 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+0.9910 Sun Feb 28 21:56:30 PST 2010
+   [Improvements]
+      - wget cpanm | perl - should now work better (hachi, dormando)
+
+   [Developer fixes]
+      - Always use forward slashes even if it's on win32 (charsbar, xaicron)
+      - Check installsitebin (charsbar)
+      - Stop setting AUTOMATED_TESTING
+
 0.99_07 Sat Feb 27 21:05:08 PST 2010
    [Improvements]
       - Bootstrap local::lib directory in ~/perl5 for the first run
