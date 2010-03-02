@@ -707,7 +707,7 @@ sub locate_dist {
     return sub { $module } if $module =~ /^(ftp|https?|file):/;
 
     # Directory
-    return undef, Cwd::abs_path($module) if -e $module && -d _;
+    return undef, Cwd::abs_path($module) if $module =~ m!^[\./]! && -d $module;
 
     # File
     return sub { "file://" . Cwd::abs_path($module) } if -f $module;
