@@ -127,7 +127,6 @@ sub doit {
 
 sub should_init {
     my $self = shift;
-    return 0 unless @{$self->{argv}};
     my $action = $self->{action} or return 1;
     return (grep $action eq $_, qw(help version)) ? 0 : 1;
 }
