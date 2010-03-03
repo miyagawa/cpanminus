@@ -1,5 +1,17 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+0.9912 Tue Mar  2 18:50:23 PST 2010
+   [Improvements]
+      - Some boolean options can now be set to PERL_CPANM_OPT but can be negated
+        using the --no- prefix such as --no-sudo
+      - Directory mode now only works if it begins with / or .
+
+   [Developer fixes]
+      - --self-upgrade skips if it's already the latest
+      - Improved perl Makefile.PL --author 
+      - --help and --version won't bother ~/perl5 initialization (rjbs, ingy)
+      - LWP dependency is injected only if you run from CPAN clients (ingy, marcus)
+
 0.9911 Mon Mar  1 16:27:52 PST 2010
    [Developer fixes]
       - Removed build_timeout and test_timeout by default (rafl)
