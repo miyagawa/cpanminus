@@ -292,14 +292,24 @@ Same as Perl.
 
 =head1 CREDITS
 
-Patches contributed by: Goro Fuji, Kazuhiro Osawa, Tokuhiro Matsuno,
-Kenichi Ishigaki, Ian Wells, Pedro Melo, Masayoshi Sekimura and Matt S
-Trout.
+=head2 CONTRIBUTORS
 
-Feedbacks sent by: Jesse Vincent, David Golden, Chris Williams, Adam
-Kennedy, J. Shirley, Chris Prather, Jesse Luehrs, Marcus Ramberg,
-Shawn M Moore, chocolateboy, Ingy dot Net, Chirs Nehren, Jonathan
-Rockway and Leon Brocard.
+Patches and code improvements were contributed by:
+
+Goro Fuji, Kazuhiro Osawa, Tokuhiro Matsuno, Kenichi Ishigaki, Ian
+Wells, Pedro Melo, Masayoshi Sekimura, Matt S Trout, squeeky, horus
+and Ingy dot Net.
+
+=head2 ACKNOWLEDGEMENTS
+
+Bug reports, suggestions and feedbacks were sent by, or general
+acknowledgement goes to:
+
+Jesse Vincent, David Golden, Andreak Koenig, Jos Boumans, Chris
+Williams, Adam Kennedy, Audrey Tang, J. Shirley, Chris Prather, Jesse
+Luehrs, Marcus Ramberg, Shawn M Moore, chocolateboy, Chirs Nehren,
+Jonathan Rockway, Leon Brocard, Simon Elliott, Ricardo Signes, AEvar
+Arnfjord Bjarmason, Eric Wilhelm, Florian Ragwitz and xaicron.
 
 =head1 COMMUNITY
 
