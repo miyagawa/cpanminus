@@ -1,3 +1,17 @@
+=for developers
+
+If you're a developer, Makefile.PL will pack `cpanm` from
+script/cpanm.PL and then copy that file to `bin/cpanm`.
+
+You can pretend to be an author by running it with:
+
+  perl Makefile.PL --author
+
+Do not commit the changes to `cpanm` standalone executable. We only
+commit changes to this file whenever we tag a new CPAN release.
+
+=cut
+
 my $author = ((grep{ $_ eq '--author' } @ARGV) or -d '.git' && `git remote -v` =~ /git\@github/);
 print STDERR "Running as an author mode!\n" if $author;
 
