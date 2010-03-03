@@ -27,10 +27,10 @@ it only requires 10MB of RAM.
 =head1 INSTALLATION
 
 There are Debian package, RPM, FreeBSD ports and packages for other
-operation systems available. If you want to use the package maangement
+operation systems available. If you want to use the package management
 system, search for cpanminus and use the appropriate command to
-install. This makes it easy to install C<cpanm> to your system and
-later upgrade.
+install. This makes it easy to install C<cpanm> to your system without
+thinking about where to install, and later upgrade.
 
 If you want to build the latest from source,
 
