@@ -39,6 +39,7 @@ sub new {
         plugins => [],
         local_lib => undef,
         configure_timeout => 60,
+        try_lwp => 1,
         @_,
     }, $class;
 }
@@ -61,9 +62,9 @@ sub parse_options {
 
     Getopt::Long::Configure("bundling");
     Getopt::Long::GetOptions(
-        'f|force'  => \$self->{force},
-        'n|notest' => \$self->{notest},
-        'S|sudo'   => \$self->{sudo},
+        'f|force!'  => \$self->{force},
+        'n|notest!' => \$self->{notest},
+        'S|sudo!'   => \$self->{sudo},
         'v|verbose' => sub { $self->{verbose} = $self->{interactive} = 1 },
         'q|quiet'   => \$self->{quiet},
         'h|help'    => sub { $self->{action} = 'help' },
@@ -73,14 +74,14 @@ sub parse_options {
         'recent'    => sub { $self->{action} = 'show_recent' },
         'list-plugins' => sub { $self->{action} = 'list_plugins' },
         'installdeps' => \$self->{installdeps},
-        'skip-installed' => \$self->{skip_installed},
-        'interactive' => \$self->{interactive},
+        'skip-installed!' => \$self->{skip_installed},
+        'interactive!' => \$self->{interactive},
         'i|install' => sub { $self->{cmd} = 'install' },
         'look'      => sub { $self->{cmd} = 'look' },
         'info'      => sub { $self->{cmd} = 'info' },
         'self-upgrade' => sub { $self->{cmd} = 'install'; $self->{skip_installed} = 1; push @ARGV, 'App::cpanminus' },
-        'disable-plugins' => \$self->{disable_plugins},
-        'no-lwp'    => \$self->{no_lwp},
+        'disable-plugins!' => \$self->{disable_plugins},
+        'lwp!'    => \$self->{try_lwp},
     );
 
     $self->{argv} = \@ARGV;
@@ -1000,7 +1001,7 @@ sub init_tools {
     my $self = shift;
 
     # use --no-lwp if they have a broken LWP, to upgrade LWP
-    if (!$self->{no_lwp} && eval { require LWP::UserAgent }) {
+    if ($self->{try_lwp} && eval { require LWP::UserAgent }) {
         $self->{_backends}{get} = sub {
             my $self = shift;
             my $ua = LWP::UserAgent->new(parse_head => 0, env_proxy => 1);
