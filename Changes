@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+0.9913 Tue Mar  2 19:20:34 PST 2010
+   [Bug fixes]
+      - Fixes --recent and --list-plugins to work again
+
 0.9912 Tue Mar  2 18:50:23 PST 2010
    [Improvements]
       - Some boolean options can now be set to PERL_CPANM_OPT but can be negated
