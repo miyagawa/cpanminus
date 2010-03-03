@@ -4,7 +4,7 @@ print STDERR "Running as an author mode!\n" if $author;
 # Author: perl Makefile.PL packs 'script/cpanm.PL' -> 'cpanm'
 if ($author) {
     shift @ARGV;
-    system $^X, "script/build.PL" and die $?;
+    system $^X, "-I", "xt/lib", "script/build.PL" and die $?;
 }
 
 # perl Makefile.PL (from git repo) copies 'cpanm' -> 'bin/cpanm'
