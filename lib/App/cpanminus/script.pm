@@ -106,8 +106,10 @@ sub init {
 sub doit {
     my $self = shift;
 
-    $self->init;
-    $self->configure_mirrors;
+    if ($self->should_init) {
+        $self->init;
+        $self->configure_mirrors;
+    }
 
     if (my $action = $self->{action}) {
         $self->$action() and return;
@@ -120,6 +122,13 @@ sub doit {
     }
 
     $self->run_hooks(finalize => {});
+}
+
+sub should_init {
+    my $self = shift;
+    return 0 unless @{$self->{argv}};
+    my $action = $self->{action} or return 1;
+    return (grep $action eq $_, qw(help version)) ? 0 : 1;
 }
 
 sub setup_home {
