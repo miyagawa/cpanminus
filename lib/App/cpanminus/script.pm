@@ -1019,7 +1019,9 @@ sub init_tools {
         $self->{_backends}{get} = sub {
             my $self = shift;
             my $ua = LWP::UserAgent->new(parse_head => 0, env_proxy => 1);
-            $ua->request(HTTP::Request->new(GET => $_[0]))->decoded_content;
+            my $res = $ua->request(HTTP::Request->new(GET => $_[0]));
+            return unless $res->is_success;
+            return $res->decoded_content;
         };
         $self->{_backends}{mirror} = sub {
             my $self = shift;
