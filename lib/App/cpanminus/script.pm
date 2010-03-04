@@ -147,7 +147,10 @@ sub setup_home {
 
     {
         my $log = $self->{log}; my $base = $self->{base};
-        $self->{at_exit} = sub { File::Copy::copy($log, "$base/build.log") };
+        $self->{at_exit} = sub {
+            my $self = shift;
+            File::Copy::copy($self->{log}, "$self->{base}/build.log");
+        };
     }
 
     open my $out, ">$self->{log}" or die "$self->{log}: $!";
