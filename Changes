@@ -1,5 +1,12 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+0.9914 Thu Mar  4 00:39:49 PST 2010
+   [Improvements]
+      - Use cpanmetadb for the faster and more reliable lookup
+
+   [Developer Fixes]
+      - Fixed ->get on LWP to return undef when the request errored out
+
 0.9913 Tue Mar  2 19:20:34 PST 2010
    [Bug fixes]
       - Fixes --recent and --list-plugins to work again
