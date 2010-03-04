@@ -1024,23 +1024,28 @@ sub init_tools {
 
     # use --no-lwp if they have a broken LWP, to upgrade LWP
     if ($self->{try_lwp} && eval { require LWP::UserAgent }) {
+        my $ua = sub {
+            LWP::UserAgent->new(
+                parse_head => 0,
+                env_proxy => 1,
+                agent => "cpanminus/$VERSION",
+                @_,
+            );
+        };
         $self->{_backends}{get} = sub {
             my $self = shift;
-            my $ua = LWP::UserAgent->new(parse_head => 0, env_proxy => 1);
-            my $res = $ua->request(HTTP::Request->new(GET => $_[0]));
+            my $res = $ua->()->request(HTTP::Request->new(GET => $_[0]));
             return unless $res->is_success;
             return $res->decoded_content;
         };
         $self->{_backends}{mirror} = sub {
             my $self = shift;
-            my $ua = LWP::UserAgent->new(parse_head => 0, env_proxy => 1);
-            my $res = $ua->mirror(@_);
+            my $res = $ua->()->mirror(@_);
             $res->code;
         };
         $self->{_backends}{redirect} = sub {
             my $self = shift;
-            my $ua   = LWP::UserAgent->new(parse_head => 0, max_redirect => 1, env_proxy => 1);
-            my $res  = $ua->simple_request(HTTP::Request->new(GET => $_[0]));
+            my $res  = $ua->(max_redirect => 1)->simple_request(HTTP::Request->new(GET => $_[0]));
             return $res->header('Location') if $res->is_redirect;
             return;
         };
