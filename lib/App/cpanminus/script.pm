@@ -163,34 +163,39 @@ sub register_core_hooks {
 
     $self->hook('core', search_module => sub {
         my $args = shift;
+        my $self   = $args->{app};
+        my $module = $args->{module};
         push @{$args->{uris}}, sub {
-            $self->chat("Searching $args->{module} on cpanmetadb ...\n");
-            my $uri  = "http://cpanmetadb.appspot.com/package/$args->{module}";
+            $self->chat("Searching $module on cpanmetadb ...\n");
+            my $uri  = "http://cpanmetadb.appspot.com/package/$module";
             my $yaml = $self->get($uri);
             my $meta = $self->parse_meta_string($yaml);
             if ($meta->{dist}) {
                 return $self->cpan_uri($meta->{dist});
             }
-            $self->diag("! Finding $args->{module} on cpanmetadb failed.\n");
+            $self->diag("! Finding $module on cpanmetadb failed.\n");
             return;
         };
     });
 
     $self->hook('core', search_module => sub {
         my $args = shift;
+        my $self   = $args->{app};
+        my $module = $args->{module};
         push @{$args->{uris}}, sub {
-            $self->chat("Searching $args->{module} on search.cpan.org ...\n");
-            my $uri  = "http://search.cpan.org/perldoc?$args->{module}";
+            $self->chat("Searching $module on search.cpan.org ...\n");
+            my $uri  = "http://search.cpan.org/perldoc?$module";
             my $html = $self->get($uri);
             $html =~ m!<a href="/CPAN/authors/id/(.*?\.(?:tar\.gz|tgz|tar\.bz2|zip))">!
                 and return $self->cpan_uri($1);
-            $self->diag("! Finding $args->{module} on search.cpan.org failed.\n");
+            $self->diag("! Finding $module on search.cpan.org failed.\n");
             return;
         };
     });
 
     $self->hook('core', show_recent => sub {
         my $args = shift;
+        my $self = $args->{app};
 
         $self->chat("Fetching recent feed from search.cpan.org ...\n");
         my $feed = $self->get("http://search.cpan.org/uploads.rdf");
