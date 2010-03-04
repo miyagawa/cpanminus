@@ -994,11 +994,11 @@ sub which {
     return;
 }
 
-sub get      { shift->{_backends}{get}->(@_) };
-sub mirror   { shift->{_backends}{mirror}->(@_) };
-sub redirect { shift->{_backends}{redirect}->(@_) };
-sub untar    { shift->{_backends}{untar}->(@_) };
-sub unzip    { shift->{_backends}{unzip}->(@_) };
+sub get      { $_[0]->{_backends}{get}->(@_) };
+sub mirror   { $_[0]->{_backends}{mirror}->(@_) };
+sub redirect { $_[0]->{_backends}{redirect}->(@_) };
+sub untar    { $_[0]->{_backends}{untar}->(@_) };
+sub unzip    { $_[0]->{_backends}{unzip}->(@_) };
 
 sub file_get {
     my($self, $uri) = @_;
