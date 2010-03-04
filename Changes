@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+0.9915 Thu Mar  4 01:56:06 PST 2010
+   [Developer Fixes]
+      - Fixed circular references (hopefully)
+
 0.9914 Thu Mar  4 00:39:49 PST 2010
    [Improvements]
       - Use cpanmetadb for the faster and more reliable lookup

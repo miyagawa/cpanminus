@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 # DO NOT EDIT -- this is an auto generated file
 use strict;
-# App::cpanminus::script 0.9914 (auto embedded by script/build.PL)
+# App::cpanminus::script 0.9915 (auto embedded by script/build.PL)
 package App::cpanminus::script;
 use strict;
 use Config;
@@ -15,7 +15,7 @@ use Getopt::Long ();
 use constant WIN32 => $^O eq 'MSWin32';
 use constant PLUGIN_API_VERSION => 0.1;
 
-our $VERSION = "0.9914";
+our $VERSION = "0.9915";
 $VERSION = eval $VERSION;
 
 my $quote = WIN32 ? q/"/ : q/'/;
@@ -151,7 +151,10 @@ sub setup_home {
 
     {
         my $log = $self->{log}; my $base = $self->{base};
-        $self->{at_exit} = sub { File::Copy::copy($log, "$base/build.log") };
+        $self->{at_exit} = sub {
+            my $self = shift;
+            File::Copy::copy($self->{log}, "$self->{base}/build.log");
+        };
     }
 
     open my $out, ">$self->{log}" or die "$self->{log}: $!";
@@ -164,34 +167,39 @@ sub register_core_hooks {
 
     $self->hook('core', search_module => sub {
         my $args = shift;
+        my $self   = $args->{app};
+        my $module = $args->{module};
         push @{$args->{uris}}, sub {
-            $self->chat("Searching $args->{module} on cpanmetadb ...\n");
-            my $uri  = "http://cpanmetadb.appspot.com/package/$args->{module}";
+            $self->chat("Searching $module on cpanmetadb ...\n");
+            my $uri  = "http://cpanmetadb.appspot.com/package/$module";
             my $yaml = $self->get($uri);
             my $meta = $self->parse_meta_string($yaml);
             if ($meta->{dist}) {
                 return $self->cpan_uri($meta->{dist});
             }
-            $self->diag("! Finding $args->{module} on cpanmetadb failed.\n");
+            $self->diag("! Finding $module on cpanmetadb failed.\n");
             return;
         };
     });
 
     $self->hook('core', search_module => sub {
         my $args = shift;
+        my $self   = $args->{app};
+        my $module = $args->{module};
         push @{$args->{uris}}, sub {
-            $self->chat("Searching $args->{module} on search.cpan.org ...\n");
-            my $uri  = "http://search.cpan.org/perldoc?$args->{module}";
+            $self->chat("Searching $module on search.cpan.org ...\n");
+            my $uri  = "http://search.cpan.org/perldoc?$module";
             my $html = $self->get($uri);
             $html =~ m!<a href="/CPAN/authors/id/(.*?\.(?:tar\.gz|tgz|tar\.bz2|zip))">!
                 and return $self->cpan_uri($1);
-            $self->diag("! Finding $args->{module} on search.cpan.org failed.\n");
+            $self->diag("! Finding $module on search.cpan.org failed.\n");
             return;
         };
     });
 
     $self->hook('core', show_recent => sub {
         my $args = shift;
+        my $self = $args->{app};
 
         $self->chat("Fetching recent feed from search.cpan.org ...\n");
         my $feed = $self->get("http://search.cpan.org/uploads.rdf");
@@ -998,11 +1006,11 @@ sub which {
     return;
 }
 
-sub get      { shift->{_backends}{get}->(@_) };
-sub mirror   { shift->{_backends}{mirror}->(@_) };
-sub redirect { shift->{_backends}{redirect}->(@_) };
-sub untar    { shift->{_backends}{untar}->(@_) };
-sub unzip    { shift->{_backends}{unzip}->(@_) };
+sub get      { $_[0]->{_backends}{get}->(@_) };
+sub mirror   { $_[0]->{_backends}{mirror}->(@_) };
+sub redirect { $_[0]->{_backends}{redirect}->(@_) };
+sub untar    { $_[0]->{_backends}{untar}->(@_) };
+sub unzip    { $_[0]->{_backends}{unzip}->(@_) };
 
 sub file_get {
     my($self, $uri) = @_;
@@ -1020,23 +1028,28 @@ sub init_tools {
 
     # use --no-lwp if they have a broken LWP, to upgrade LWP
     if ($self->{try_lwp} && eval { require LWP::UserAgent }) {
+        my $ua = sub {
+            LWP::UserAgent->new(
+                parse_head => 0,
+                env_proxy => 1,
+                agent => "cpanminus/$VERSION",
+                @_,
+            );
+        };
         $self->{_backends}{get} = sub {
             my $self = shift;
-            my $ua = LWP::UserAgent->new(parse_head => 0, env_proxy => 1);
-            my $res = $ua->request(HTTP::Request->new(GET => $_[0]));
+            my $res = $ua->()->request(HTTP::Request->new(GET => $_[0]));
             return unless $res->is_success;
             return $res->decoded_content;
         };
         $self->{_backends}{mirror} = sub {
             my $self = shift;
-            my $ua = LWP::UserAgent->new(parse_head => 0, env_proxy => 1);
-            my $res = $ua->mirror(@_);
+            my $res = $ua->()->mirror(@_);
             $res->code;
         };
         $self->{_backends}{redirect} = sub {
             my $self = shift;
-            my $ua   = LWP::UserAgent->new(parse_head => 0, max_redirect => 1, env_proxy => 1);
-            my $res  = $ua->simple_request(HTTP::Request->new(GET => $_[0]));
+            my $res  = $ua->(max_redirect => 1)->simple_request(HTTP::Request->new(GET => $_[0]));
             return $res->header('Location') if $res->is_redirect;
             return;
         };
