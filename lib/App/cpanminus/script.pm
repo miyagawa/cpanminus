@@ -167,11 +167,11 @@ sub register_core_hooks {
         my $module = $args->{module};
         push @{$args->{uris}}, sub {
             $self->chat("Searching $module on cpanmetadb ...\n");
-            my $uri  = "http://cpanmetadb.appspot.com/package/$module";
+            my $uri  = "http://cpanmetadb.appspot.com/v1.0/package/$module";
             my $yaml = $self->get($uri);
             my $meta = $self->parse_meta_string($yaml);
-            if ($meta->{dist}) {
-                return $self->cpan_uri($meta->{dist});
+            if ($meta->{distfile}) {
+                return $self->cpan_uri($meta->{distfile});
             }
             $self->diag("! Finding $module on cpanmetadb failed.\n");
             return;
