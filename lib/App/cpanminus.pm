@@ -187,9 +187,12 @@ This script just automates that.
 
 =head2 Zero-conf? How does this module get/parse/update the CPAN index?
 
-It scrapes the site L<http://search.cpan.org/>. Yes, it's horrible and
-fragile. I hope (and have already talked to) QA/toolchain people for
-building a queriable CPAN DB website so I can stop scraping.
+It queries the CPAN Meta DB site running on Google AppEngine at
+L<http://cpanmetadb.appspot.com/>. The site is updated every hour to
+reflect the latest changes from fast syncing mirrors. The script then
+also falls back to the site L<http://search.cpan.org/>. I've been
+continuing the talk and work with the QA/toolchain people for building
+a more reliable CPAN DB website.
 
 Fetched files are unpacked in C<~/.cpanm> but you can configure with
 C<PERL_CPANM_HOME> environment variable.
@@ -198,16 +201,18 @@ C<PERL_CPANM_HOME> environment variable.
 
 It installs to wherever ExtUtils::MakeMaker and Module::Build are
 configured to (i.e. via C<PERL_MM_OPT> and C<MODULEBUILDRC>). So if
-you use local::lib then it installs to your local perl5
+you're using local::lib then it installs to your local perl5
 directory. Otherwise it installs to siteperl directory.
 
 cpanminus at a boot time checks whether you configured local::lib
 setup, or have the permission to install modules to the sitelib
-directory, and warns you otherwise so that you need to run C<cpanm>
-command as root, or run with C<--sudo> option to auto sudo when
-running the install command. Yes, it's already in the plan to
-automatically bootstraps L<local::lib> at the initial launch if you're
-non-root. I'm working on it with local::lib developers -- Stay tuned.
+directory, and otherwise automatically sets up local::lib compatible
+installation path in C<perl5> directory under your home directory. To
+avoid this you have to run the script as root user or with C<--sudo>
+option.
+
+This L<local::lib> automatic integration is still considered alpha and
+in the work -- more bootstrapping is under development. Stay tuned.
 
 =head2 Does this really work?
 
