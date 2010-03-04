@@ -161,6 +161,21 @@ sub register_core_hooks {
     $self->hook('core', search_module => sub {
         my $args = shift;
         push @{$args->{uris}}, sub {
+            $self->chat("Searching $args->{module} on cpanmetadb ...\n");
+            my $uri  = "http://cpanmetadb.appspot.com/package/$args->{module}";
+            my $yaml = $self->get($uri);
+            my $meta = $self->parse_meta_string($yaml);
+            if ($meta->{dist}) {
+                return $self->cpan_uri($meta->{dist});
+            }
+            $self->diag("! Finding $args->{module} on cpanmetadb failed.\n");
+            return;
+        };
+    });
+
+    $self->hook('core', search_module => sub {
+        my $args = shift;
+        push @{$args->{uris}}, sub {
             $self->chat("Searching $args->{module} on search.cpan.org ...\n");
             my $uri  = "http://search.cpan.org/perldoc?$args->{module}";
             my $html = $self->get($uri);
@@ -1210,6 +1225,11 @@ sub init_tools {
 sub parse_meta {
     my($self, $file) = @_;
     return eval { (Parse::CPAN::Meta::LoadFile($file))[0] } || {};
+}
+
+sub parse_meta_string {
+    my($self, $yaml) = @_;
+    return eval { (Parse::CPAN::Meta::Load($yaml))[0] } || {};
 }
 
 1;
