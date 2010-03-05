@@ -1023,7 +1023,7 @@ sub init_tools {
     my $self = shift;
 
     # use --no-lwp if they have a broken LWP, to upgrade LWP
-    if ($self->{try_lwp} && eval { require LWP::UserAgent }) {
+    if ($self->{try_lwp} && eval { require LWP::UserAgent; LWP::UserAgent->VERSION >= 5.802 }) {
         my $ua = sub {
             LWP::UserAgent->new(
                 parse_head => 0,
