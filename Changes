@@ -1,5 +1,14 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+0.9917 Tue Mar  9 22:51:21 JST 2010
+   [Improvements]
+      - Do not wait on input on bad tests waiting on STDIN (except on some Win32 environments)
+
+   [Developer Fixes]
+      - Do not uses system() when running Makefile.PL or make etc. but uses fork & exec (tokuhirom)
+      - Depend on newer LWP that has decoded_content
+      - Do not overwrite verbose internal flag (mst)
+
 0.9916 Thu Mar  4 11:33:16 PST 2010
    [Developer Fixes]
       - Use 'distfile' as cpanmetadb key rather than 'dist' (rjbs, xdg)
