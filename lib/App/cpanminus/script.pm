@@ -464,19 +464,40 @@ sub log {
 
 sub run {
     my($self, $cmd) = @_;
-    unless ($self->{verbose}) {
-        $cmd .= " >> " . $self->shell_quote($self->{log}) . " 2>&1";
+
+    if (ref $cmd eq 'ARRAY') {
+        my $pid = fork;
+        if ($pid) {
+            waitpid $pid, 0;
+            return !$?;
+        } else {
+            close STDIN unless $self->{verbose};
+            $self->run_exec($cmd);
+        }
+    } else {
+        unless ($self->{verbose}) {
+            $cmd .= " >> " . $self->shell_quote($self->{log}) . " 2>&1";
+        }
+        !system $cmd;
     }
-    !system $cmd;
 }
 
 sub run_exec {
     my($self, $cmd) = @_;
-    unless ($self->{verbose}) {
-        $cmd .= " >> " . $self->shell_quote($self->{log}) . " 2>&1";
+
+    if (ref $cmd eq 'ARRAY') {
+        unless ($self->{verbose}) {
+            open my $logfh, ">>", $self->{log};
+            open STDERR, '>&', $logfh;
+            open STDOUT, '>&', $logfh;
+        }
+        exec @$cmd;
+    } else {
+        unless ($self->{verbose}) {
+            $cmd .= " >> " . $self->shell_quote($self->{log}) . " 2>&1";
+        }
+        exec $cmd;
     }
-    exec $cmd;
-    return;
 }
 
 sub run_timeout {
@@ -891,15 +912,15 @@ sub build_stuff {
     my $installed;
     if ($use_module_build && -e 'Build' && -f _) {
         $self->diag("Building ", ($self->{notest} ? "" : "and testing "), "$target for $module ... ");
-        $self->build("$self->{perl} ./Build") &&
-        $self->test("$self->{perl} ./Build test") &&
-        $self->install("$self->{perl} ./Build install") &&
+        $self->build([ $self->{perl}, "./Build" ]) &&
+        $self->test([ $self->{perl}, "./Build", "test" ]) &&
+        $self->install([ $self->{perl}, "./Build", "install" ]) &&
         $installed++;
     } elsif ($self->{make} && -e 'Makefile') {
         $self->diag("Building ", ($self->{notest} ? "" : "and testing "), "$target for $module ... ");
-        $self->build("$self->{make}") &&
-        $self->test("$self->{make} test") &&
-        $self->install("$self->{make} install") &&
+        $self->build([ $self->{make} ]) &&
+        $self->test([ $self->{make}, "test" ]) &&
+        $self->install([ $self->{make}, "install" ]) &&
         $installed++;
     } else {
         my $why;
@@ -953,14 +974,14 @@ sub configure_this {
         # with 0 even if header files are missing, to avoid receiving
         # tons of FAIL reports in such cases. So exit code can't be
         # trusted if it went well.
-        if ($self->configure("$self->{perl} Makefile.PL")) {
+        if ($self->configure([ $self->{perl}, "Makefile.PL" ])) {
             $state->{configured_ok} = -e 'Makefile';
         }
         $state->{configured}++;
     }
 
     if ((!$self->{make} or !$state->{configured_ok}) and -e 'Build.PL') {
-        if ($self->configure("$self->{perl} Build.PL")) {
+        if ($self->configure([ $self->{perl}, "Build.PL" ])) {
             $state->{configured_ok} = -e 'Build' && -f _;
         }
         $state->{use_module_build}++;
