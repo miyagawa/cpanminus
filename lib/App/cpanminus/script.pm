@@ -715,16 +715,22 @@ sub fetch_module {
             next;
         }
 
-        $self->chat("Unpacking $file\n");
+        my $dir = $self->unpack($file);
 
-        my $dir = $file =~ /\.zip/i ? $self->unzip($file) : $self->untar($file);
-        unless ($dir) {
-            $self->diag("! Failed to unpack $name: no directory\n");
-            next;
-        }
+        next unless $dir; # unpack failed
 
         return $dir;
     }
+}
+
+sub unpack {
+    my($self, $file) = @_;
+    $self->chat("Unpacking $file\n");
+    my $dir = $file =~ /\.zip/i ? $self->unzip($file) : $self->untar($file);
+    unless ($dir) {
+        $self->diag("! Failed to unpack $file: no directory\n");
+    }
+    return $dir;
 }
 
 sub locate_dist {
@@ -867,51 +873,11 @@ sub build_stuff {
     $self->diag("Configuring $target ... ");
 
     my($use_module_build, $configured, $configured_ok);
-    if (-e 'Makefile.PL') {
-        local $ENV{X_MYMETA} = 'YAML';
+    my $configure_state = $self->configure_this;
 
-        # NOTE: according to Devel::CheckLib, most XS modules exit
-        # with 0 even if header files are missing, to avoid receiving
-        # tons of FAIL reports in such cases. So exit code can't be
-        # trusted if it went well.
-        if ($self->configure("$self->{perl} Makefile.PL")) {
-            $configured_ok = -e 'Makefile';
-        }
-        $configured++;
-    }
+    $self->diag($configure_state->{configured_ok} ? "OK\n" : "N/A\n");
 
-    if ((!$self->{make} or !$configured_ok) and -e 'Build.PL') {
-        if ($self->configure("$self->{perl} Build.PL")) {
-            $configured_ok = -e 'Build' && -f _;
-        }
-        $use_module_build++;
-        $configured++;
-    }
-
-    my %deps;
-    if (-e 'MYMETA.yml') {
-        $self->chat("Checking dependencies from MYMETA.yml ...\n");
-        $meta = $self->parse_meta('MYMETA.yml');
-        %deps = (%{$meta->{requires} || {}});
-        unless ($self->{notest}) {
-            %deps = (%deps, %{$meta->{build_requires} || {}}, %{$meta->{test_requires} || {}});
-        }
-    }
-
-    if (-e 'Makefile') {
-        $self->chat("Finding PREREQ from Makefile ...\n");
-        open my $mf, "Makefile";
-        while (<$mf>) {
-            if (/^\#\s+PREREQ_PM => ({.*?})/) {
-                no strict; # WTF bareword keys
-                my $prereq = eval "+$1";
-                %deps = (%deps, %$prereq) if $prereq;
-                last;
-            }
-        }
-    }
-
-    $self->diag($configured_ok ? "OK\n" : "N/A\n");
+    my %deps = $self->find_prereqs;
 
     $self->run_hooks(find_deps => { deps => \%deps, module => $module, meta => $meta });
 
@@ -973,6 +939,62 @@ sub build_stuff {
         });
         return;
     }
+}
+
+sub configure_this {
+    my($self) = @_;
+
+    my $state = {};
+
+    if (-e 'Makefile.PL') {
+        local $ENV{X_MYMETA} = 'YAML';
+
+        # NOTE: according to Devel::CheckLib, most XS modules exit
+        # with 0 even if header files are missing, to avoid receiving
+        # tons of FAIL reports in such cases. So exit code can't be
+        # trusted if it went well.
+        if ($self->configure("$self->{perl} Makefile.PL")) {
+            $state->{configured_ok} = -e 'Makefile';
+        }
+        $state->{configured}++;
+    }
+
+    if ((!$self->{make} or !$state->{configured_ok}) and -e 'Build.PL') {
+        if ($self->configure("$self->{perl} Build.PL")) {
+            $state->{configured_ok} = -e 'Build' && -f _;
+        }
+        $state->{use_module_build}++;
+        $state->{configured}++;
+    }
+    return $state;
+}
+
+sub find_prereqs {
+    my($self) = @_;
+
+    my %deps;
+    if (-e 'MYMETA.yml') {
+        $self->chat("Checking dependencies from MYMETA.yml ...\n");
+        my $meta = $self->parse_meta('MYMETA.yml');
+        %deps = (%{$meta->{requires} || {}});
+        unless ($self->{notest}) {
+            %deps = (%deps, %{$meta->{build_requires} || {}}, %{$meta->{test_requires} || {}});
+        }
+    }
+
+    if (-e 'Makefile') {
+        $self->chat("Finding PREREQ from Makefile ...\n");
+        open my $mf, "Makefile";
+        while (<$mf>) {
+            if (/^\#\s+PREREQ_PM => ({.*?})/) {
+                no strict; # WTF bareword keys
+                my $prereq = eval "+$1";
+                %deps = (%deps, %$prereq) if $prereq;
+                last;
+            }
+        }
+    }
+    return %deps;
 }
 
 sub DESTROY {
