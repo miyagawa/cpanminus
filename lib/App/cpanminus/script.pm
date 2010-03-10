@@ -893,7 +893,6 @@ sub build_stuff {
     my $target = $meta->{name} ? "$meta->{name}-$meta->{version}" : $dir;
     $self->diag("Configuring $target ... ");
 
-    my($use_module_build, $configured, $configured_ok);
     my $configure_state = $self->configure_this;
 
     $self->diag($configure_state->{configured_ok} ? "OK\n" : "N/A\n");
@@ -910,7 +909,7 @@ sub build_stuff {
     }
 
     my $installed;
-    if ($use_module_build && -e 'Build' && -f _) {
+    if ($configure_state->{use_module_build} && -e 'Build' && -f _) {
         $self->diag("Building ", ($self->{notest} ? "" : "and testing "), "$target for $module ... ");
         $self->build([ $self->{perl}, "./Build" ]) &&
         $self->test([ $self->{perl}, "./Build", "test" ]) &&
@@ -924,9 +923,10 @@ sub build_stuff {
         $installed++;
     } else {
         my $why;
-        if ($configured && !$configured_ok) { $why = "Configure failed on $dir." }
-        elsif ($self->{make})               { $why = "The distribution doesn't have a proper Makefile.PL/Build.PL" }
-        else                                { $why = "Can't configure the distribution. You probably need to have 'make'." }
+        my $configure_failed = $configure_state->{configured} && !$configure_state->{configured_ok};
+        if ($configure_failed) { $why = "Configure failed on $dir." }
+        elsif ($self->{make})  { $why = "The distribution doesn't have a proper Makefile.PL/Build.PL" }
+        else                   { $why = "Can't configure the distribution. You probably need to have 'make'." }
 
         $self->diag("! $why See $self->{log} for details.\n");
         $self->run_hooks(configure_failure => { module => $module, build_dir => $dir, meta => $meta });
