@@ -619,7 +619,7 @@ sub install_module {
         return;
     }
 
-    if ($self->{seen}{$dir}++) {
+    if ($module ne $dir && $self->{seen}{$dir}++) {
         $self->diag("Already built the distribution $dir. Skipping.\n");
         return;
     }
