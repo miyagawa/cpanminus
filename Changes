@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+0.99_20 Wed Mar 10 18:46:45 JST 2010
+   [Developer Fixes]
+      - Prefer Build.PL except some exceptions such as Module::Build dependencies
+
 0.9919 Wed Mar 10 11:39:35 JST 2010
    [Bug Fixes]
       - Fixed Module::Build distribution, broken in 0.9917 (rafl)
