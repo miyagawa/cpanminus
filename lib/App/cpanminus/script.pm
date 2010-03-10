@@ -100,7 +100,7 @@ sub init {
     if (@{$self->{bootstrap_deps} || []}) {
         $self->configure_mirrors;
         local $self->{force} = 1; # to force install EUMM
-        $self->install_deps($self->{base}, 0, @{$self->{bootstrap_deps}});
+        $self->install_deps(Cwd::cwd, 0, @{$self->{bootstrap_deps}});
     }
 }
 
