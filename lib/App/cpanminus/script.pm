@@ -415,7 +415,8 @@ sub _try_local_lib {
     if ($bootstrap) {
         push @{$self->{bootstrap_deps}},
             'ExtUtils::MakeMaker' => 6.31,
-            'ExtUtils::Install'   => 1.43;
+            'ExtUtils::Install'   => 1.43,
+            'Module::Build'       => 0.36;
     }
 }
 
