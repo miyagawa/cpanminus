@@ -554,7 +554,7 @@ sub test {
 
 sub install {
     my($self, $cmd) = @_;
-    $cmd = "sudo $cmd" if $self->{sudo};
+    unshift @$cmd, "sudo" if $self->{sudo};
     $self->run($cmd);
 }
 
