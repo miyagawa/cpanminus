@@ -969,6 +969,7 @@ sub configure_this {
 
     my $try_eumm = sub {
         if (-e 'Makefile.PL') {
+            $self->chat("Running Makefile.PL");
             local $ENV{X_MYMETA} = 'YAML';
 
             # NOTE: according to Devel::CheckLib, most XS modules exit
@@ -984,6 +985,7 @@ sub configure_this {
 
     my $try_mb = sub {
         if (-e 'Build.PL') {
+            $self->chat("Running Build.PL");
             if ($self->configure([ $self->{perl}, "Build.PL" ])) {
                 $state->{configured_ok} = -e 'Build' && -f _;
             }
