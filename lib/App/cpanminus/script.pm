@@ -1228,7 +1228,10 @@ sub init_tools {
         };
     }
 
-    if (my $tar = $self->which('tar')) {
+    my $tar = $self->which('tar');
+    my $maybe_bad_tar = sub { WIN32 || (`$tar --version` =~ /GNU.*1\.13/i) };
+
+    if ($tar && !$maybe_bad_tar->()) {
         $self->{_backends}{untar} = sub {
             my($self, $tarfile) = @_;
 
@@ -1242,6 +1245,27 @@ sub init_tools {
             $root =~ s{^(.+)/[^/]*$}{$1};
 
             system "$tar $xf$ar $tarfile";
+            return $root if -d $root;
+
+            $self->diag("! Bad archive: $tarfile\n");
+            return undef;
+        }
+    } elsif (    $tar
+             and my $gzip = $self->which('gzip')
+             and my $bzip2 = $self->which('bzip2')) {
+        $self->{_backends}{untar} = sub {
+            my($self, $tarfile) = @_;
+
+            my $x  = "x" . ($self->{verbose} ? 'v' : '');
+            my $ar = $tarfile =~ /bz2$/ ? $bzip2 : $gzip;
+
+            my($root, @others) = `$ar -dc $tarfile | $tar t`
+                or return undef;
+
+            chomp $root;
+            $root =~ s{^(.+)/[^/]*$}{$1};
+
+            system "$ar -dc $tarfile | $tar $x";
             return $root if -d $root;
 
             $self->diag("! Bad archive: $tarfile\n");
