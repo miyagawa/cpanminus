@@ -490,6 +490,7 @@ sub run_exec {
             open my $logfh, ">>", $self->{log};
             open STDERR, '>&', $logfh;
             open STDOUT, '>&', $logfh;
+            close $logfh;
         }
         exec @$cmd;
     } else {
