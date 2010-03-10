@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+0.9919 Wed Mar 10 11:39:35 JST 2010
+   [Bug Fixes]
+      - Fixed Module::Build distribution, broken in 0.9917 (rafl)
+
 0.9918 Wed Mar 10 11:19:35 JST 2010
    [Bug Fixes]
       - Fix --sudo broken in 0.9917 (omega)
