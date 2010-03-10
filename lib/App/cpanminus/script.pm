@@ -1022,10 +1022,11 @@ sub find_prereqs {
     if (-e 'MYMETA.yml') {
         $self->chat("Checking dependencies from MYMETA.yml ...\n");
         my $meta = $self->parse_meta('MYMETA.yml');
-        %deps = (%{$meta->{requires} || {}});
-        unless ($self->{notest}) {
-            %deps = (%deps, %{$meta->{build_requires} || {}}, %{$meta->{test_requires} || {}});
-        }
+        %deps = $self->extract_requires($meta);
+    } elsif (-e '_build/prereqs') {
+        $self->chat("Checking dependencies from _build/prereqs ...\n");
+        my $meta = do { open my $in, "_build/prereqs"; eval join "", <$in> };
+        %deps = $self->extract_requires($meta);
     }
 
     if (-e 'Makefile') {
@@ -1041,6 +1042,16 @@ sub find_prereqs {
         }
     }
     return %deps;
+}
+
+sub extract_requires {
+    my($self, $meta) = @_;
+
+    my @deps;
+    push @deps, %{$meta->{requires}} if $meta->{requires};
+    push @deps, %{$meta->{build_requires}} if $meta->{build_requires};
+
+    return @deps;
 }
 
 sub DESTROY {
