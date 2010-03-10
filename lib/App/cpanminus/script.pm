@@ -1015,6 +1015,12 @@ sub configure_this {
     return $state;
 }
 
+sub safe_eval {
+    my($self, $code) = @_;
+    require Safe;
+    Safe->new->reval($code);
+}
+
 sub find_prereqs {
     my($self) = @_;
 
@@ -1025,7 +1031,7 @@ sub find_prereqs {
         %deps = $self->extract_requires($meta);
     } elsif (-e '_build/prereqs') {
         $self->chat("Checking dependencies from _build/prereqs ...\n");
-        my $meta = do { open my $in, "_build/prereqs"; eval join "", <$in> };
+        my $meta = do { open my $in, "_build/prereqs"; $self->safe_eval(join "", <$in>) };
         %deps = $self->extract_requires($meta);
     }
 
@@ -1035,12 +1041,13 @@ sub find_prereqs {
         while (<$mf>) {
             if (/^\#\s+PREREQ_PM => ({.*?})/) {
                 no strict; # WTF bareword keys
-                my $prereq = eval "+$1";
+                my $prereq = $self->safe_eval("+$1");
                 %deps = (%deps, %$prereq) if $prereq;
                 last;
             }
         }
     }
+
     return %deps;
 }
 
