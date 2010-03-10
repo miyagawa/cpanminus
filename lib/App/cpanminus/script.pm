@@ -893,7 +893,7 @@ sub build_stuff {
     my $target = $meta->{name} ? "$meta->{name}-$meta->{version}" : $dir;
     $self->diag("Configuring $target ... ");
 
-    my $configure_state = $self->configure_this;
+    my $configure_state = $self->configure_this($meta->{name});
 
     $self->diag($configure_state->{configured_ok} ? "OK\n" : "N/A\n");
 
@@ -963,30 +963,51 @@ sub build_stuff {
 }
 
 sub configure_this {
-    my($self) = @_;
+    my($self, $name) = @_;
 
     my $state = {};
 
-    if (-e 'Makefile.PL') {
-        local $ENV{X_MYMETA} = 'YAML';
+    my $try_eumm = sub {
+        if (-e 'Makefile.PL') {
+            local $ENV{X_MYMETA} = 'YAML';
 
-        # NOTE: according to Devel::CheckLib, most XS modules exit
-        # with 0 even if header files are missing, to avoid receiving
-        # tons of FAIL reports in such cases. So exit code can't be
-        # trusted if it went well.
-        if ($self->configure([ $self->{perl}, "Makefile.PL" ])) {
-            $state->{configured_ok} = -e 'Makefile';
+            # NOTE: according to Devel::CheckLib, most XS modules exit
+            # with 0 even if header files are missing, to avoid receiving
+            # tons of FAIL reports in such cases. So exit code can't be
+            # trusted if it went well.
+            if ($self->configure([ $self->{perl}, "Makefile.PL" ])) {
+                $state->{configured_ok} = -e 'Makefile';
+            }
+            $state->{configured}++;
         }
-        $state->{configured}++;
+    };
+
+    my $try_mb = sub {
+        if (-e 'Build.PL') {
+            if ($self->configure([ $self->{perl}, "Build.PL" ])) {
+                $state->{configured_ok} = -e 'Build' && -f _;
+            }
+            $state->{use_module_build}++;
+            $state->{configured}++;
+        }
+    };
+
+    # Module::Build deps should use MakeMaker because that causes circular deps and fail
+    # Otherwise we should prefer Build.PL
+    my %should_use_mm = map { $_ => 1 } qw( version ExtUtils-ParseXS ExtUtils-Install );
+
+    my @try;
+    if ($name && $should_use_mm{$name}) {
+        @try = ($try_eumm, $try_mb);
+    } else {
+        @try = ($try_mb, $try_eumm);
     }
 
-    if ((!$self->{make} or !$state->{configured_ok}) and -e 'Build.PL') {
-        if ($self->configure([ $self->{perl}, "Build.PL" ])) {
-            $state->{configured_ok} = -e 'Build' && -f _;
-        }
-        $state->{use_module_build}++;
-        $state->{configured}++;
+    for my $try (@try) {
+        $try->();
+        last if $state->{configured_ok};
     }
+
     return $state;
 }
 
