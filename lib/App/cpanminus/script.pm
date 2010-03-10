@@ -996,7 +996,7 @@ sub configure_this {
 
     # Module::Build deps should use MakeMaker because that causes circular deps and fail
     # Otherwise we should prefer Build.PL
-    my %should_use_mm = map { $_ => 1 } qw( version ExtUtils-ParseXS ExtUtils-Install );
+    my %should_use_mm = map { $_ => 1 } qw( version ExtUtils-ParseXS ExtUtils-Install ExtUtils-Manifest );
 
     my @try;
     if ($name && $should_use_mm{$name}) {
