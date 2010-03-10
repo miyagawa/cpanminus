@@ -1,5 +1,14 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+0.9921 Wed Mar 10 23:59:49 JST 2010
+   [Bug Fixes]
+      - Fixed an occasional STDIN related errors in tests (lestrrat)
+      - Fixed a bug where cpanm /path/to/dir doesn't work
+
+   [Developer Fixes]
+      - Once bootstrap is done, return to the original current dir rather than work dir
+        so that `cpanm .` still looks at the (right) current directory
+
 0.99_20 Wed Mar 10 18:46:45 JST 2010
    [Developer Fixes]
       - Prefer Build.PL except some exceptions such as Module::Build dependencies

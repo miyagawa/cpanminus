@@ -104,7 +104,7 @@ sub init {
     if (@{$self->{bootstrap_deps} || []}) {
         $self->configure_mirrors;
         local $self->{force} = 1; # to force install EUMM
-        $self->install_deps($self->{base}, 0, @{$self->{bootstrap_deps}});
+        $self->install_deps(Cwd::cwd, 0, @{$self->{bootstrap_deps}});
     }
 }
 
@@ -494,6 +494,7 @@ sub run_exec {
             open my $logfh, ">>", $self->{log};
             open STDERR, '>&', $logfh;
             open STDOUT, '>&', $logfh;
+            close $logfh;
         }
         exec @$cmd;
     } else {
@@ -623,7 +624,7 @@ sub install_module {
         return;
     }
 
-    if ($self->{seen}{$dir}++) {
+    if ($module ne $dir && $self->{seen}{$dir}++) {
         $self->diag("Already built the distribution $dir. Skipping.\n");
         return;
     }
