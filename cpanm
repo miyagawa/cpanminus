@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 # DO NOT EDIT -- this is an auto generated file
 use strict;
-# App::cpanminus::script 0.9917 (auto embedded by script/build.PL)
+# App::cpanminus::script 0.9918 (auto embedded by script/build.PL)
 package App::cpanminus::script;
 use strict;
 use Config;
@@ -15,7 +15,7 @@ use Getopt::Long ();
 use constant WIN32 => $^O eq 'MSWin32';
 use constant PLUGIN_API_VERSION => 0.1;
 
-our $VERSION = "0.9917";
+our $VERSION = "0.9918";
 $VERSION = eval $VERSION;
 
 my $quote = WIN32 ? q/"/ : q/'/;
@@ -558,7 +558,7 @@ sub test {
 
 sub install {
     my($self, $cmd) = @_;
-    $cmd = "sudo $cmd" if $self->{sudo};
+    unshift @$cmd, "sudo" if $self->{sudo};
     $self->run($cmd);
 }
 
