@@ -22,7 +22,7 @@ hook find_deps => sub {
                 } elsif (/^=/) {
                     $in_contents = 0;
                 } elsif ($in_contents) {
-                    /^([\w:]+)\s/
+                    /^([\w:]+)/
                         and $args->{deps}->{$1} ||= 0;
                 }
             }
