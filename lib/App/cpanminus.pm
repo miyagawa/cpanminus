@@ -1,5 +1,5 @@
 package App::cpanminus;
-our $VERSION = "0.9921";
+our $VERSION = "0.9922";
 
 =head1 NAME
 
@@ -63,7 +63,7 @@ haven't tested).
 
 =item *
 
-'tar' executable (if GNU tar, version 1.22 or later) or Archive::Tar to unpack files.
+'tar' executable (bsdtar or GNU tar version 1.22 are rcommended) or Archive::Tar to unpack files.
 
 =item *
 

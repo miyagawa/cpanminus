@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 # DO NOT EDIT -- this is an auto generated file
 use strict;
-# App::cpanminus::script 0.9921 (auto embedded by script/build.PL)
+# App::cpanminus::script 0.9922 (auto embedded by script/build.PL)
 package App::cpanminus::script;
 use strict;
 use Config;
@@ -15,7 +15,7 @@ use Getopt::Long ();
 use constant WIN32 => $^O eq 'MSWin32';
 use constant PLUGIN_API_VERSION => 0.1;
 
-our $VERSION = "0.9921";
+our $VERSION = "0.9922";
 $VERSION = eval $VERSION;
 
 my $quote = WIN32 ? q/"/ : q/'/;
@@ -419,7 +419,8 @@ sub _try_local_lib {
     if ($bootstrap) {
         push @{$self->{bootstrap_deps}},
             'ExtUtils::MakeMaker' => 6.31,
-            'ExtUtils::Install'   => 1.43;
+            'ExtUtils::Install'   => 1.43,
+            'Module::Build'       => 0.28; # TODO: 0.36 or later for MYMETA.yml once we do --bootstrap command
     }
 }
 
@@ -1018,6 +1019,12 @@ sub configure_this {
     return $state;
 }
 
+sub safe_eval {
+    my($self, $code) = @_;
+    require Safe;
+    Safe->new->reval($code);
+}
+
 sub find_prereqs {
     my($self) = @_;
 
@@ -1025,10 +1032,11 @@ sub find_prereqs {
     if (-e 'MYMETA.yml') {
         $self->chat("Checking dependencies from MYMETA.yml ...\n");
         my $meta = $self->parse_meta('MYMETA.yml');
-        %deps = (%{$meta->{requires} || {}});
-        unless ($self->{notest}) {
-            %deps = (%deps, %{$meta->{build_requires} || {}}, %{$meta->{test_requires} || {}});
-        }
+        %deps = $self->extract_requires($meta);
+    } elsif (-e '_build/prereqs') {
+        $self->chat("Checking dependencies from _build/prereqs ...\n");
+        my $meta = do { open my $in, "_build/prereqs"; $self->safe_eval(join "", <$in>) };
+        %deps = $self->extract_requires($meta);
     }
 
     if (-e 'Makefile') {
@@ -1037,13 +1045,24 @@ sub find_prereqs {
         while (<$mf>) {
             if (/^\#\s+PREREQ_PM => ({.*?})/) {
                 no strict; # WTF bareword keys
-                my $prereq = eval "+$1";
+                my $prereq = $self->safe_eval("+$1");
                 %deps = (%deps, %$prereq) if $prereq;
                 last;
             }
         }
     }
+
     return %deps;
+}
+
+sub extract_requires {
+    my($self, $meta) = @_;
+
+    my @deps;
+    push @deps, %{$meta->{requires}} if $meta->{requires};
+    push @deps, %{$meta->{build_requires}} if $meta->{build_requires};
+
+    return @deps;
 }
 
 sub DESTROY {
@@ -1232,7 +1251,10 @@ sub init_tools {
         };
     }
 
-    if (my $tar = $self->which('tar')) {
+    my $tar = $self->which('tar');
+    my $maybe_bad_tar = sub { WIN32 || (`$tar --version` =~ /GNU.*1\.13/i) };
+
+    if ($tar && !$maybe_bad_tar->()) {
         $self->{_backends}{untar} = sub {
             my($self, $tarfile) = @_;
 
@@ -1246,6 +1268,27 @@ sub init_tools {
             $root =~ s{^(.+)/[^/]*$}{$1};
 
             system "$tar $xf$ar $tarfile";
+            return $root if -d $root;
+
+            $self->diag("! Bad archive: $tarfile\n");
+            return undef;
+        }
+    } elsif (    $tar
+             and my $gzip = $self->which('gzip')
+             and my $bzip2 = $self->which('bzip2')) {
+        $self->{_backends}{untar} = sub {
+            my($self, $tarfile) = @_;
+
+            my $x  = "x" . ($self->{verbose} ? 'v' : '');
+            my $ar = $tarfile =~ /bz2$/ ? $bzip2 : $gzip;
+
+            my($root, @others) = `$ar -dc $tarfile | $tar t`
+                or return undef;
+
+            chomp $root;
+            $root =~ s{^(.+)/[^/]*$}{$1};
+
+            system "$ar -dc $tarfile | $tar $x";
             return $root if -d $root;
 
             $self->diag("! Bad archive: $tarfile\n");
