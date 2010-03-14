@@ -1,11 +1,13 @@
 #!perl
 
 use strict;
-use Test::More tests => 2;
+use Test::More tests => 1;
 
 BEGIN{
     require_ok 'App::cpanminus';
-    require_ok 'App::cpanminus::script';
+
+    # in the future ...
+    # require_ok 'App::cpanminus::script'; 
 }
 
 diag("App::cpanminus/$App::cpanminus::VERSION");
