@@ -1,5 +1,5 @@
 name        'module_install_extensions';
-description 'Extrace Module::Install extension dependencies from Makefile.PL';
+description 'Extract Module::Install extension dependencies from Makefile.PL';
 author      'Tatsuhiko Miyagawa';
 
 api_version 0.1;
