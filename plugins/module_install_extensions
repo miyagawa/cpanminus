@@ -1,0 +1,130 @@
+name        'module_install_extensions';
+description 'Extrace Module::Install extension dependencies from Makefile.PL';
+author      'Tatsuhiko Miyagawa';
+
+api_version 0.1;
+
+# auto-generated using http://gist.github.com/333469
+my %provider = (
+  assertlibs                         => "Module::Install::CheckLib",
+  assertos                           => "Module::Install::AssertOS",
+  author_requires                    => "Module::Install::AuthorRequires",
+  author_tests                       => "Module::Install::AuthorTests",
+  auto_license                       => "Module::Install::AutoLicense",
+  auto_manifest                      => "Module::Install::AutoManifest",
+  auto_provides_class                => "Module::Install::ProvidesClass",
+  "auto_provides_from_compilation"   => "Module::Install::AutoProvidesFromCompilation",
+  auto_set_bugtracker                => "Module::Install::Bugtracker",
+  auto_set_homepage                  => "Module::Install::Homepage",
+  auto_set_repository                => "Module::Install::Repository",
+  auto_tester                        => "Module::Install::AutomatedTester",
+  bundle_local_lib                   => "Module::Install::Bundle::LocalLib",
+  bundle_platypus                    => "Module::Install::Bundle::Platypus",
+  catalyst                           => "Module::Install::Catalyst",
+  catalyst_files                     => "Module::Install::Catalyst",
+  catalyst_ignore                    => "Module::Install::Catalyst",
+  catalyst_ignore_all                => "Module::Install::Catalyst",
+  catalyst_par                       => "Module::Install::Catalyst",
+  catalyst_par_classes               => "Module::Install::Catalyst",
+  catalyst_par_core                  => "Module::Install::Catalyst",
+  catalyst_par_engine                => "Module::Install::Catalyst",
+  "catalyst_par_multiarch"           => "Module::Install::Catalyst",
+  catalyst_par_options               => "Module::Install::Catalyst",
+  catalyst_par_script                => "Module::Install::Catalyst",
+  catalyst_par_usage                 => "Module::Install::Catalyst",
+  cc_append_to_ccflags               => "Module::Install::XSUtil",
+  "cc_append_to_funclist"            => "Module::Install::XSUtil",
+  cc_append_to_inc                   => "Module::Install::XSUtil",
+  cc_append_to_libs                  => "Module::Install::XSUtil",
+  cc_available                       => "Module::Install::XSUtil",
+  cc_define                          => "Module::Install::XSUtil",
+  cc_include_paths                   => "Module::Install::XSUtil",
+  cc_src_paths                       => "Module::Install::XSUtil",
+  cc_warnings                        => "Module::Install::XSUtil",
+  check_conflicts                    => "Module::Install::CheckConflicts",
+  "check_custom_installation"        => "Module::Install::CustomInstallationPath",
+  checklibs                          => "Module::Install::CheckLib",
+  clib_header                        => "Module::Install::Clib",
+  clib_library                       => "Module::Install::Clib",
+  clib_setup                         => "Module::Install::Clib",
+  const_cccmd                        => "Module::Install::XSUtil",
+  cpan_tester                        => "Module::Install::AutomatedTester",
+  dbicx_autodoc                      => "Module::Install::DBICx::AutoDoc",
+  diffcheck                          => "Module::Install::DiffCheck",
+  dist_test                          => "Module::Install::ExtraTests",
+  dpkg_requires                      => "Module::Install::Debian",
+  env_for_c                          => "Module::Install::ForC",
+  extra_tests                        => "Module::Install::ExtraTests",
+  gen_dbicxautodoc                   => "Module::Install::DBICx::AutoDoc",
+  gen_loop_tests                     => "Module::Install::POE::Test::Loops",
+  get_bzip2_version                  => "Module::Install::GetProgramLocations",
+  get_gnu_version                    => "Module::Install::GetProgramLocations",
+  "get_program_locations"            => "Module::Install::GetProgramLocations",
+  githubmeta                         => "Module::Install::GithubMeta",
+  init_PM                            => "Module::Install::XSUtil",
+  install_headers                    => "Module::Install::XSUtil",
+  install_padre_plugin               => "Module::Install::PadrePlugin",
+  installdirs                        => "Module::Install::InstallDirs",
+  is_author                          => "Module::Install::Template",
+  is_linux                           => "Module::Install::ForC",
+  is_mac                             => "Module::Install::ForC",
+  is_padre_plugin                    => "Module::Install::PadrePlugin",
+  is_win32                           => "Module::Install::ForC",
+  jsonmeta                           => "Module::Install::JSONMETA",
+  make_padre_plugin                  => "Module::Install::PadrePlugin",
+  mk_makecmds                        => "Module::Install::DBICx::AutoDoc",
+  no_auto_test                       => "Module::Install::NoAutomatedTesting",
+  process_templates                  => "Module::Install::Template",
+  readme_from                        => "Module::Install::ReadmeFromPod",
+  readme_from_pod                    => "Module::Install::ReadmeMarkdownFromPod",
+  readme_markdown_from               => "Module::Install::ReadmeMarkdownFromPod",
+  "readme_markdown_from_pod"         => "Module::Install::ReadmeMarkdownFromPod",
+  readme_pod_from                    => "Module::Install::ReadmePodFromPod",
+  "recursive_author_tests"           => "Module::Install::AuthorTests",
+  reference_module                   => "Module::Install::ReadmeMarkdownFromPod",
+  render_mt                          => "Module::Install::MicroTemplate",
+  requires_any_moose                 => "Module::Install::Any::Moose",
+  requires_xs                        => "Module::Install::XSUtil",
+  rt_email                           => "Module::Install::Template",
+  substitute                         => "Module::Install::Substitute",
+  tag                                => "Module::Install::Template",
+  test                               => "Module::Install::TestVars",
+  test_vars                          => "Module::Install::TestVars",
+  test_via_harness                   => "Module::Install::ExtraTests",
+  use_ppport                         => "Module::Install::XSUtil",
+  use_ptar                           => "Module::Install::PerlTar",
+  use_standard_tests                 => "Module::Install::StandardTests",
+  "version_matches_range"            => "Module::Install::GetProgramLocations",
+  write_doap_changes                 => "Module::Install::DOAPChangeSets",
+  "write_doap_changes_xml"           => "Module::Install::DOAPChangeSets",
+  "write_standard_test_compile"      => "Module::Install::StandardTests",
+  "write_standard_test_perl_critic"  => "Module::Install::StandardTests",
+  "write_standard_test_pod"          => "Module::Install::StandardTests",
+  "write_standard_test_pod_coverage" => "Module::Install::StandardTests",
+  write_test_file                    => "Module::Install::StandardTests",
+  year_str                           => "Module::Install::Template",
+);
+
+hook pre_configure => sub {
+    my $args = shift;
+
+    if (-e "Makefile.PL" && !-e "inc") {
+        my @deps = scan_module_install_deps("Makefile.PL") or return;
+        push @{$args->{deps}}, map { $_ => 0 } @deps;
+    }
+};
+
+sub scan_module_install_deps {
+    my $file = shift;
+
+    my @deps;
+
+    open my $in, "<", $file or return;
+    while (<$in>) {
+        /^\s*use (Module::Install::\S+);/ and push @deps, $1;
+        /^\s*([a-z_]+)/ and $provider{$1} and push @deps, $provider{$1};
+    }
+
+    return @deps;
+}
+
