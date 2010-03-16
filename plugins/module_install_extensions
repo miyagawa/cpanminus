@@ -109,22 +109,22 @@ hook pre_configure => sub {
     my $args = shift;
 
     if (-e "Makefile.PL" && !-e "inc") {
-        my @deps = scan_module_install_deps("Makefile.PL") or return;
-        push @{$args->{deps}}, map { $_ => 0 } @deps;
+        my %deps = scan_module_install_deps("Makefile.PL") or return;
+        push @{$args->{deps}}, %deps;
     }
 };
 
 sub scan_module_install_deps {
     my $file = shift;
 
-    my @deps;
+    my %deps;
 
     open my $in, "<", $file or return;
     while (<$in>) {
-        /^\s*use (Module::Install::\S+);/ and push @deps, $1;
-        /^\s*([a-z_]+)/ and $provider{$1} and push @deps, $provider{$1};
+        /^\s*use (Module::Install::\S+);/ and $deps{$1} = 0;
+        /^\s*(\w+)/ and $provider{$1} and $deps{$provider{$1}} = 0;
     }
 
-    return @deps;
+    return %deps;
 }
 
