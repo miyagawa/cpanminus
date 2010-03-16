@@ -18,6 +18,5 @@ Ideas:
 * cpandoc - perldoc
 * gtk2notify - same as growl, uses Gtk2Notify
 * codesearch - Google code search lang:perl package:cpan.org
-* yaml11 - parse YAML 1.1 META.yml aka mlehmann's
 * needs_upgrade - port cpan-outdated
 * darkpan - makes it easy to work with DarkPAN indexes

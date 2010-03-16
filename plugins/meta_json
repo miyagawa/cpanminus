@@ -1,0 +1,23 @@
+name        'meta_json';
+description 'Support META.json';
+author      'Tatsuhiko Miyagawa';
+
+api_version 0.1;
+
+# This is a proof of concept and not really useful since most
+# distributions heavily use Dist::Zilla's feature to mangle docs,
+# auto-generate tests etc.
+
+hook pre_configure => sub {
+    my $args = shift;
+
+    if (-e "META.json") {
+        require JSON;
+        $args->{app}->chat("Parsing META.json");
+        my $json = do { open my $f, "<", "META.json"; join "", <$f> };
+        my $meta = JSON::decode_json($json);
+        %{$args->{meta}} = %$meta;
+        push @{$args->{deps}}, %{$meta->{configure_requires}};
+    }
+};
+
