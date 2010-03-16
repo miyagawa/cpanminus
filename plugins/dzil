@@ -7,7 +7,7 @@ api_version 0.1;
 hook pre_configure => sub {
     my $args = shift;
 
-    if (-e "dist.ini") {
+    if (-e "dist.ini" && !-e 'Makefile.PL' && !-e 'Build.PL') {
         $args->{app}->chat("Found dist.ini - build this distribution using dzil");
         push @{$args->{deps}}, 'Dist::Zilla', 0;
 
