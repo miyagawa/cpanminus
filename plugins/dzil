@@ -20,8 +20,12 @@ hook pre_configure => sub {
 
         for my $key (keys %$hash) {
             next if $key eq '_';
+            $key = (split m{\s*/\s*}, $key)[0];
+            $key =~ s/^\s*//;
             if ($key =~ s/^\@//) {
                 push @{$args->{deps}}, "Dist::Zilla::PluginBundle::$key", 0;
+            } elsif ($key =~ s/^=//) {
+                push @{$args->{deps}}, $key, 0;
             } else {
                 push @{$args->{deps}}, "Dist::Zilla::Plugin::$key", 0;
             }
