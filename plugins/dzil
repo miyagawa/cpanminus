@@ -35,7 +35,7 @@ hook build_dist => sub {
     if (-e "dist.ini" && !-e 'Makefile.PL' && !-e 'Build.PL') {
         $args->{app}->chat("Running dzil install");
         return sub {
-            exec "dzil", "install", "--install-command=$^X -S cpanm .";
+            system "dzil", "install", "--install-command=$^X -S cpanm .";
         };
     }
 
