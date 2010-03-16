@@ -4,10 +4,6 @@ author      'Tatsuhiko Miyagawa';
 
 api_version 0.1;
 
-# This is a proof of concept and not really useful since most
-# distributions heavily use Dist::Zilla's feature to mangle docs,
-# auto-generate tests etc.
-
 hook pre_configure => sub {
     my $args = shift;
 
