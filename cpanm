@@ -892,9 +892,13 @@ sub build_stuff {
         }
     }
 
+    # get more configure_requires
     $self->run_hooks(pre_configure => { meta => $meta, deps => \@config_deps });
-
     $self->install_deps($dir, $depth, @config_deps);
+
+    # Let plugins to take over the build process -- dzil for instance
+    my $builder = $self->run_hook(build_dist => { meta => $meta });
+    return $builder->() if $builder;
 
     my $target = $meta->{name} ? "$meta->{name}-$meta->{version}" : $dir;
     $self->diag("Configuring $target ... ");
