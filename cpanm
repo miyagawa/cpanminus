@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 # DO NOT EDIT -- this is an auto generated file
 use strict;
-# App::cpanminus::script 0.9922 (auto embedded by script/build.PL)
+# App::cpanminus::script 0.9923 (auto embedded by script/build.PL)
 package App::cpanminus::script;
 use strict;
 use Config;
@@ -15,7 +15,7 @@ use Getopt::Long ();
 use constant WIN32 => $^O eq 'MSWin32';
 use constant PLUGIN_API_VERSION => 0.1;
 
-our $VERSION = "0.9922";
+our $VERSION = "0.9923";
 $VERSION = eval $VERSION;
 
 my $quote = WIN32 ? q/"/ : q/'/;

@@ -1,5 +1,12 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+0.9923 Mon Mar 15 17:03:14 PDT 2010
+   [Improvements]
+      - Improved docs (chromatic)
+
+   [Developer Fixes]
+      - Added a dummy test to make CPAN testers happy (gfx)
+
 0.9922 Thu Mar 11 10:56:10 JST 2010
    [Improvements]
       - Possibly support bad tar (GNU tar 1.13 or 1.22 on Win32) (mattn)
