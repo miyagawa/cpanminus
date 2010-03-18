@@ -396,7 +396,7 @@ sub bootstrap {
 ! To turn off this warning, you have 4 options:
 !   - run me as a root or with --sudo option (to install to $Config{installsitelib} and $Config{installsitebin})
 |   - run me with --local-lib option e.g. cpanm --local-lib=~/perl5
-!   - Set PERL_CPANM_OPT="--local-lib=~/perl5" in your shell
+!   - Set PERL_CPANM_OPT="--local-lib=~/perl5" environment variable (in your shell rc file)
 !   - Configure local::lib in your shell to set PERL_MM_OPT etc.
 !
 DIAG
