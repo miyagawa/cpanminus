@@ -7,6 +7,9 @@ You can pretend to be an author by running it with:
 
   perl Makefile.PL --author
 
+You should install local::lib, Parse::CPAN::Meta and HTTP::Lite before
+doing so.
+
 Do not commit the changes to `cpanm` standalone executable. We only
 commit changes to this file whenever we tag a new CPAN release.
 

@@ -2,6 +2,7 @@ package App::cpanminus::script;
 use strict;
 use Config;
 use Cwd ();
+use ExtUtils::MakeMaker ();
 use File::Basename ();
 use File::Path ();
 use File::Spec ();
@@ -38,6 +39,7 @@ sub new {
         hooks => {},
         plugins => [],
         local_lib => undef,
+        self_contained => undef,
         configure_timeout => 60,
         try_lwp => 1,
         @_,
@@ -67,10 +69,11 @@ sub parse_options {
         'S|sudo!'   => \$self->{sudo},
         'v|verbose' => sub { $self->{verbose} = $self->{interactive} = 1 },
         'q|quiet'   => \$self->{quiet},
-        'h|help'    => sub { $self->{action} = 'help' },
-        'V|version' => sub { $self->{action} = 'version' },
+        'h|help'    => sub { $self->{action} = 'show_help' },
+        'V|version' => sub { $self->{action} = 'show_version' },
         'perl=s'    => \$self->{perl},
         'l|local-lib=s' => \$self->{local_lib},
+        'L|local-lib-contained=s' => sub { $self->{local_lib} = $_[1]; $self->{self_contained} = 1 },
         'recent'    => sub { $self->{action} = 'show_recent' },
         'list-plugins' => sub { $self->{action} = 'list_plugins' },
         'installdeps' => \$self->{installdeps},
@@ -116,7 +119,7 @@ sub doit {
         $self->$action() and return;
     }
 
-    $self->help(1) unless @{$self->{argv}};
+    $self->show_help(1) unless @{$self->{argv}};
 
     for my $module (@{$self->{argv}}) {
         $self->install_module($module, 0);
@@ -128,7 +131,7 @@ sub doit {
 sub should_init {
     my $self = shift;
     my $action = $self->{action} or return 1;
-    return (grep $action eq $_, qw(help version)) ? 0 : 1;
+    return (grep $action eq $_, qw(show_help show_version)) ? 0 : 1;
 }
 
 sub setup_home {
@@ -325,12 +328,12 @@ sub run_hooks {
     return $res;
 }
 
-sub version {
+sub show_version {
     print "cpanm (App::cpanminus) version $VERSION\n";
     return 1;
 }
 
-sub help {
+sub show_help {
     my $self = shift;
 
     if ($_[0]) {
@@ -379,7 +382,7 @@ sub bootstrap {
 
     # If -l is specified, use that.
     if ($self->{local_lib}) {
-        return $self->_try_local_lib($self->{local_lib});
+        return $self->_try_local_lib(Cwd::abs_path($self->{local_lib}));
     }
 
     # root, locally-installed perl or --sudo: don't care about install_base
@@ -410,14 +413,22 @@ sub _try_local_lib {
     eval    { require local::lib };
     if ($@) { $self->_bootstrap_local_lib; $bootstrap = 1 };
 
-    # TODO -L option should remove PERL5LIB here
-    { local $0 = 'cpanm'; local::lib->import($base || "~/perl5") };
+    {
+        local $0 = 'cpanm'; # so curl/wget | perl works
+        my @args = ($base || "~/perl5");
+        if ($self->{self_contained}) {
+            $ENV{PERL5LIB} = '';
+            unshift @args, '--self-contained';
+        }
+        local::lib->import(@args);
+    }
 
     if ($bootstrap) {
         push @{$self->{bootstrap_deps}},
             'ExtUtils::MakeMaker' => 6.31,
             'ExtUtils::Install'   => 1.43,
-            'Module::Build'       => 0.28; # TODO: 0.36 or later for MYMETA.yml once we do --bootstrap command
+            'Module::Build'       => 0.28, # TODO: 0.36 or later for MYMETA.yml once we do --bootstrap command
+            'version'             => 0.77; # TODO: remove this
     }
 }
 
@@ -805,32 +816,55 @@ sub search_module {
     return \@cbs;
 }
 
-sub check_module {
-    my($self, $mod, $ver) = @_;
+sub parse_version {
+    my($self, $path) = @_;
 
-    $ver = '' if $ver == 0;
-    my $test = `$self->{perl} -e ${quote}eval q{use $mod $ver (); print q{OK:}, $mod\::->VERSION};print \$\@ if \$\@${quote}`;
-    if ($test =~ s/^\s*OK://) {
-        $self->{local_versions}{$mod} = $test;
-        return 1, $test;
-    } elsif ($test =~ /^Can't locate|required--this is only version (\S+)/) {
-        $self->{local_versions}{$mod} = $1;
-        return 0, $1;
-    } else {
-        return 0, undef, $test;
+    local $SIG{__WARN__} = sub {
+        return if @_ && $_[0] =~ /^Could not eval/;
+        CORE::warn(@_);
+    };
+
+    my $version = MM->parse_version($path);
+    $version =~ s/\s+//;
+
+    return $version eq 'undef' ? '' : $version;
+}
+
+sub check_module {
+    my($self, $mod, $want_ver) = @_;
+
+    unless (defined &version::new) {
+        eval   q{ use version 0.77 };
+        die $@ if $@;
+        # This doesn't work
+        # if ($@) { $self->_require($_) for qw( version::vpp version ) }
     }
+
+    my $file = $mod . ".pm";
+    $file =~ s!::!/!g;
+
+    for my $dir (@INC) {
+        my $path = "$dir/$file";
+        next unless -f $path;
+
+        my $version = $self->parse_version($path);
+        $self->{local_versions}{$mod} = $version;
+
+        if (!$want_ver or version::->new($version) >= version::->new($want_ver)) {
+            return 1, $version;
+        } else {
+            return 0, $version;
+        }
+    }
+
+    return 0, undef;
 }
 
 sub should_install {
     my($self, $mod, $ver) = @_;
 
     $self->chat("Checking if you have $mod $ver ... ");
-    my($ok, $local, $err) = $self->check_module($mod, $ver);
-
-    if ($err) {
-        $self->chat("Unknown ($err)\n");
-        return;
-    }
+    my($ok, $local) = $self->check_module($mod, $ver);
 
     if ($ok)       { $self->chat("Yes ($local)\n") }
     elsif ($local) { $self->chat("No ($local < $ver)\n") }
@@ -882,7 +916,7 @@ sub build_stuff {
     # TODO yikes, $module doesn't always have to be CPAN module
     # TODO extract/fetch meta info earlier so you don't need to download tarballs
     if ($depth == 0 && $meta->{version} && $module =~ /^[a-zA-Z0-9_:]+$/) {
-        my($ok, $local, $err) = $self->check_module($module, $meta->{version});
+        my($ok, $local) = $self->check_module($module, $meta->{version});
         if ($self->{skip_installed} && $ok) {
             $self->diag("$module is up to date. ($local)\n");
             return;
