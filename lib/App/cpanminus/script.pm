@@ -455,6 +455,9 @@ sub _require {
     };
 
     eval $self->{_embed_cache}{$module};
+
+    (my $file = $module) =~ s!::!/!g;
+    $INC{"$file.pm"} = __FILE__;
 }
 
 sub diag {
@@ -816,48 +819,25 @@ sub search_module {
     return \@cbs;
 }
 
-sub parse_version {
-    my($self, $path) = @_;
-
-    local $SIG{__WARN__} = sub {
-        return if @_ && $_[0] =~ /^Could not eval/;
-        CORE::warn(@_);
-    };
-
-    my $version = MM->parse_version($path);
-    $version =~ s/\s+//;
-
-    return $version eq 'undef' ? '' : $version;
-}
-
 sub check_module {
     my($self, $mod, $want_ver) = @_;
 
-    unless (defined &version::new) {
-        eval   q{ use version 0.77 };
-        die $@ if $@;
-        # This doesn't work
-        # if ($@) { $self->_require($_) for qw( version::vpp version ) }
+    unless (defined &Module::Metadata::new_from_module) {
+        eval    { require Module::Metadata };
+        if ($@) { $self->_require("Module::Metadata::Version"); $self->_require("Module::Metadata") };
     }
 
-    my $file = $mod . ".pm";
-    $file =~ s!::!/!g;
+    my $meta = Module::Metadata->new_from_module($mod)
+        or return 0, undef;
 
-    for my $dir (@INC) {
-        my $path = "$dir/$file";
-        next unless -f $path;
+    my $version = $meta->version;
+    $self->{local_versions}{$mod} = $version;
 
-        my $version = $self->parse_version($path);
-        $self->{local_versions}{$mod} = $version;
-
-        if (!$want_ver or version::->new($version) >= version::->new($want_ver)) {
-            return 1, $version;
-        } else {
-            return 0, $version;
-        }
+    if (!$want_ver or $version >= Module::Metadata::Version->new($want_ver)) {
+        return 1, $version;
+    } else {
+        return 0, $version;
     }
-
-    return 0, undef;
 }
 
 sub should_install {

@@ -16,4 +16,5 @@ unless (caller) {
 __DATA__
 use local::lib; # embed lazy
 use HTTP::Lite; # embed lazy
-
+use Module::Metadata::Version; # embed lazy
+use Module::Metadata;          # embed lazy
