@@ -11,8 +11,6 @@
 
 =cut
 
-use lib "lib"; # to include the latest App/cpanminus/script.pm
-
 open my $in,  "<", "script/cpanm.PL" or die $!;
 open my $out, ">", "cpanm.tmp" or die $!;
 
@@ -21,39 +19,8 @@ print STDERR "Generating cpanm from script/cpanm.PL\n";
 while (<$in>) {
     next if /Auto-removed/;
     s/DEVELOPERS:.*/DO NOT EDIT -- this is an auto generated file/;
-    if (/^use (.*);.*# embed( lazy)?/) {
-        embed_module($out, $1, $2);
-    } else {
-        print $out $_;
-    }
-}
-
-sub embed_module {
-    my($out, $mod, $lazy) = @_;
-
-    (my $file = $mod) =~ s!::!/!g;
-    my $inc = do { eval "require '$file.pm'"; $INC{"$file.pm"} };
-    die $@ if $@;
-    open my $in, "<", $inc or die $!;
-    print STDERR "embedding $inc\n";
-    print $out "# $mod @{[ $mod->VERSION ]} (auto embedded by script/build.PL)\n";
-
-    if ($lazy) {
-        print $out "# CPANM_EMBED_BEGIN $mod\n";
-    }
-
-    my $in_pod;
-    while (<$in>) {
-        last if /__(?:END|DATA)__|^1;/;
-        if (/^=cut/)    { $in_pod = 0; next }
-        elsif (/^=\w+/) { $in_pod = 1; next }
-
-        print $out $_ unless $in_pod;
-    }
-
-    if ($lazy) {
-        print $out "# CPANM_EMBED_END $mod\n";
-    }
+    s/.*__FATPACK__/`$^X -e 'use App::FatPacker -run_script' file`/e;
+    print $out $_;
 }
 
 close $out;

@@ -408,10 +408,7 @@ DIAG
 sub _try_local_lib {
     my($self, $base) = @_;
 
-    my $bootstrap;
-    eval    { require local::lib };
-    if ($@) { $self->_bootstrap_local_lib; $bootstrap = 1 };
-
+    require local::lib;
     {
         local $0 = 'cpanm'; # so curl/wget | perl works
         my @args = ($base || "~/perl5");
@@ -422,40 +419,10 @@ sub _try_local_lib {
         local::lib->import(@args);
     }
 
-    if ($bootstrap) {
-        push @{$self->{bootstrap_deps}},
-            'ExtUtils::MakeMaker' => 6.31,
-            'ExtUtils::Install'   => 1.43,
-            'Module::Build'       => 0.28; # TODO: 0.36 or later for MYMETA.yml once we do --bootstrap command
-    }
-}
-
-# XXX Installing local::lib using cpanm causes CPAN.pm configuration
-# as of 1.4.9, so avoid that until it can be bypassed
-sub _bootstrap_local_lib {
-    my $self = shift;
-    $self->_require('local::lib');
-}
-
-sub _require {
-    my($self, $module) = @_;
-
-    $self->{_embed_cache} ||= do {
-        my($cache, $curr);
-        while (<::DATA>) {
-            if (/^# CPANM_EMBED_BEGIN (\S+)/)  { $curr = $1 }
-            elsif (/^# CPANM_EMBED_END (\S+)/) { $curr = undef }
-            elsif ($curr) {
-                $cache->{$curr} .= $_;
-            }
-        }
-        $cache || {};
-    };
-
-    eval $self->{_embed_cache}{$module};
-
-    (my $file = $module) =~ s!::!/!g;
-    $INC{"$file.pm"} = __FILE__;
+    push @{$self->{bootstrap_deps}},
+        'ExtUtils::MakeMaker' => 6.31,
+        'ExtUtils::Install'   => 1.43,
+        'Module::Build'       => 0.28; # TODO: 0.36 or later for MYMETA.yml once we do --bootstrap command
 }
 
 sub diag {
@@ -823,11 +790,7 @@ sub search_module {
 sub check_module {
     my($self, $mod, $want_ver) = @_;
 
-    unless (defined &Module::Metadata::new_from_module) {
-        eval    { require Module::Metadata };
-        if ($@) { $self->_require("Module::Metadata::Version"); $self->_require("Module::Metadata") };
-    }
-
+    require Module::Metadata;
     my $meta = Module::Metadata->new_from_module($mod)
         or return 0, undef;
 
@@ -1202,9 +1165,7 @@ sub init_tools {
             return;
         };
     } else {
-        eval    { require HTTP::Lite };
-        if ($@) { $self->_require('HTTP::Lite') }
-
+        require HTTP::Lite;
         my $http_cb = sub {
             my($uri, $redir, $cb_gen) = @_;
 

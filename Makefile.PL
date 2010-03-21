@@ -7,8 +7,14 @@ You can pretend to be an author by running it with:
 
   perl Makefile.PL --author
 
-You should install local::lib, Parse::CPAN::Meta and HTTP::Lite before
-doing so.
+You should install local::lib, Parse::CPAN::Meta, Module::Metadata,
+App::FatPacker and HTTP::Lite before doing so.
+
+Module::Metadata and App::FatPacker are not available on CPAN as of
+this writing, get them from:
+
+  git://git.shadowcat.co.uk/p5sagit/Module-Metadata.git
+  git://git.shadowcat.co.uk/p5sagit/App-FatPacker.git
 
 Do not commit the changes to `cpanm` standalone executable. We only
 commit changes to this file whenever we tag a new CPAN release.
@@ -21,7 +27,7 @@ print STDERR "Running as an author mode!\n" if $author;
 # Author: perl Makefile.PL packs 'script/cpanm.PL' -> 'cpanm'
 if ($author) {
     shift @ARGV;
-    system $^X, "-I", "xt/lib", "script/build.PL" and die $?;
+    system $^X, "script/build.PL" and die $?;
 }
 
 # perl Makefile.PL (from git repo) copies 'cpanm' -> 'bin/cpanm'
