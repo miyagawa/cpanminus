@@ -411,12 +411,15 @@ sub _try_local_lib {
     require local::lib;
     {
         local $0 = 'cpanm'; # so curl/wget | perl works
-        my @args = ($base || "~/perl5");
+        $base ||= "~/perl5";
         if ($self->{self_contained}) {
+            my @private = grep { ref eq 'CODE' || /fatlib$/ } @INC;
             $ENV{PERL5LIB} = '';
-            unshift @args, '--self-contained';
+            local::lib->import('--self-contained', $base);
+            unshift @INC, @private;
+        } else {
+            local::lib->import($base);
         }
-        local::lib->import(@args);
     }
 
     push @{$self->{bootstrap_deps}},

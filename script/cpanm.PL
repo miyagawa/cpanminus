@@ -2,7 +2,7 @@
 # DEVELOPERS: Read script/build.PL in the repo how to update this
 # __FATPACK__
 use strict;
-use lib "lib";              # For dev -- Auto-removed when packaging
+use lib "lib", "fatlib"; # For dev -- Auto-removed when packaging
 use App::cpanminus::script;
 use Parse::CPAN::Meta;
 
