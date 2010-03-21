@@ -280,6 +280,8 @@ The standalone executable contains the following modules embedded.
 
 =item L<HTTP::Lite> Copyright 2000-2002 Roy Hopper, 2009 Adam Kennedy
 
+=item L<Module::Metadata> Copyright 2001-2006 Ken Williams. 2010 Matt S Trout
+
 =back
 
 =head1 LICENSE
