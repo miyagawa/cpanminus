@@ -2,7 +2,6 @@ package App::cpanminus::script;
 use strict;
 use Config;
 use Cwd ();
-use ExtUtils::MakeMaker ();
 use File::Basename ();
 use File::Path ();
 use File::Spec ();
@@ -427,8 +426,7 @@ sub _try_local_lib {
         push @{$self->{bootstrap_deps}},
             'ExtUtils::MakeMaker' => 6.31,
             'ExtUtils::Install'   => 1.43,
-            'Module::Build'       => 0.28, # TODO: 0.36 or later for MYMETA.yml once we do --bootstrap command
-            'version'             => 0.77; # TODO: remove this
+            'Module::Build'       => 0.28; # TODO: 0.36 or later for MYMETA.yml once we do --bootstrap command
     }
 }
 
