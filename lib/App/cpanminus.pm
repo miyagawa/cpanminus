@@ -140,7 +140,7 @@ They provide very noisy output by default.
 
 =item *
 
-They fetches and rebuild their indexes almost every day, and this takes time.
+They fetch and rebuild their indexes almost every day, and this takes time.
 
 =item *
 
@@ -149,7 +149,7 @@ They fetches and rebuild their indexes almost every day, and this takes time.
 =back
 
 cpanminus is designed to be very quiet (but logs all output to
-C<~/.cpanm/build.log>) and to pick the sanest possibledefaults without asking
+C<~/.cpanm/build.log>) and to pick the sanest possible defaults without asking
 any questions -- to I<just work>.
 
 Note that most of these problems with existing tools are rare, or are just
@@ -303,7 +303,7 @@ and Ingy dot Net.
 Bug reports, suggestions and feedbacks were sent by, or general
 acknowledgement goes to:
 
-Jesse Vincent, David Golden, Andreak Koenig, Jos Boumans, Chris
+Jesse Vincent, David Golden, Andreas Koenig, Jos Boumans, Chris
 Williams, Adam Kennedy, Audrey Tang, J. Shirley, Chris Prather, Jesse
 Luehrs, Marcus Ramberg, Shawn M Moore, chocolateboy, Chirs Nehren,
 Jonathan Rockway, Leon Brocard, Simon Elliott, Ricardo Signes, AEvar
