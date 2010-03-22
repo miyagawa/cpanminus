@@ -1122,6 +1122,7 @@ sub init_tools {
                 parse_head => 0,
                 env_proxy => 1,
                 agent => "cpanminus/$VERSION",
+                timeout => 30,
                 @_,
             );
         };
