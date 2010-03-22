@@ -421,6 +421,7 @@ sub _try_local_lib {
         local $0 = 'cpanm'; # so curl/wget | perl works
         $base ||= "~/perl5";
         if ($self->{self_contained}) {
+            $self->init_tools; # init tools ealier to load LWP etc.
             my @private = grep { ref eq 'CODE' || /fatlib$/ } @INC;
             $ENV{PERL5LIB} = '';
             local::lib->import('--self-contained', $base);
@@ -1106,6 +1107,8 @@ sub file_mirror {
 
 sub init_tools {
     my $self = shift;
+
+    return if $self->{initialized}++;
 
     if ($self->{make} = $self->which($Config{make})) {
         $self->chat("You have make $self->{make}\n");
