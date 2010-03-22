@@ -2,6 +2,6 @@ bin/cpanm
 Changes
 Makefile.PL
 MANIFEST			This list of files
-README.md
+README
 lib/App/cpanminus.pm
 t/happy_cpantesters.t

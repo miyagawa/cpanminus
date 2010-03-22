@@ -1,5 +1,18 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+0.99_24 Sun Mar 21 21:57:59 PDT 2010
+   [Improvements]
+      - Improve the error message on bootstrapping
+      - Implemented experimental -L|--local-lib-contained option to install module
+        and its non-core dependencies into local::lib directory
+
+   [Developer Fixes]
+      - Use Module::Metadata and avoid calling another perl interpreter
+        to check the installed versions of the modules
+      - Also dump @INC into a file DumpedINC.pm when self-contained is enabled
+      - Set PERL5_CPANM_IS_RUNNING in configure
+      - Changed the way to pack modules into a file, now using App::FatPacker
+
 0.9923 Mon Mar 15 17:03:14 PDT 2010
    [Improvements]
       - Improved docs (chromatic)
