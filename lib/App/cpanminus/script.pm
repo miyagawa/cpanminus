@@ -964,7 +964,8 @@ sub build_stuff {
 sub configure_this {
     my($self, $name) = @_;
 
-    local $ENV{PERL5OPT} = "-I$self->{base} -MDumpedINC"
+    my @switches;
+    @switches = ("-I$self->{base}", "-MDumpedINC")
         if $self->{self_contained};
 
     my $state = {};
@@ -978,7 +979,7 @@ sub configure_this {
             # with 0 even if header files are missing, to avoid receiving
             # tons of FAIL reports in such cases. So exit code can't be
             # trusted if it went well.
-            if ($self->configure([ $self->{perl}, "Makefile.PL" ])) {
+            if ($self->configure([ $self->{perl}, @switches, "Makefile.PL" ])) {
                 $state->{configured_ok} = -e 'Makefile';
             }
             $state->{configured}++;
@@ -988,7 +989,7 @@ sub configure_this {
     my $try_mb = sub {
         if (-e 'Build.PL') {
             $self->chat("Running Build.PL");
-            if ($self->configure([ $self->{perl}, "Build.PL" ])) {
+            if ($self->configure([ $self->{perl}, @switches, "Build.PL" ])) {
                 $state->{configured_ok} = -e 'Build' && -f _;
             }
             $state->{use_module_build}++;
