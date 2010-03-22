@@ -95,8 +95,6 @@ sub init {
     $self->setup_home;
     $self->load_plugins;
     $self->bootstrap;
-
-    $self->{make} = $self->which($Config{make});
     $self->init_tools;
 
     if (@{$self->{bootstrap_deps} || []}) {
@@ -972,7 +970,7 @@ sub configure_this {
 
     my $try_eumm = sub {
         if (-e 'Makefile.PL') {
-            $self->chat("Running Makefile.PL");
+            $self->chat("Running Makefile.PL\n");
             local $ENV{X_MYMETA} = 'YAML';
 
             # NOTE: according to Devel::CheckLib, most XS modules exit
@@ -988,7 +986,7 @@ sub configure_this {
 
     my $try_mb = sub {
         if (-e 'Build.PL') {
-            $self->chat("Running Build.PL");
+            $self->chat("Running Build.PL\n");
             if ($self->configure([ $self->{perl}, @switches, "Build.PL" ])) {
                 $state->{configured_ok} = -e 'Build' && -f _;
             }
@@ -1109,8 +1107,13 @@ sub file_mirror {
 sub init_tools {
     my $self = shift;
 
+    if ($self->{make} = $self->which($Config{make})) {
+        $self->chat("You have make $self->{make}\n");
+    }
+
     # use --no-lwp if they have a broken LWP, to upgrade LWP
     if ($self->{try_lwp} && eval { require LWP::UserAgent; LWP::UserAgent->VERSION >= 5.802 }) {
+        $self->chat("You have LWP $LWP::VERSION\n");
         my $ua = sub {
             LWP::UserAgent->new(
                 parse_head => 0,
@@ -1137,6 +1140,7 @@ sub init_tools {
             return;
         };
     } elsif (my $wget = $self->which('wget')) {
+        $self->chat("You have $wget\n");
         $self->{_backends}{get} = sub {
             my($self, $uri) = @_;
             return $self->file_get($uri) if $uri =~ s!^file:/+!/!;
@@ -1160,6 +1164,7 @@ sub init_tools {
             return;
         };
     } elsif (my $curl = $self->which('curl')) {
+        $self->chat("You have $curl\n");
         $self->{_backends}{get} = sub {
             my($self, $uri) = @_;
             return $self->file_get($uri) if $uri =~ s!^file:/+!/!;
@@ -1184,6 +1189,7 @@ sub init_tools {
         };
     } else {
         require HTTP::Lite;
+        $self->chat("Falling back to HTTP::Lite $HTTP::Lite::VERSION\n");
         my $http_cb = sub {
             my($uri, $redir, $cb_gen) = @_;
 
@@ -1219,7 +1225,6 @@ sub init_tools {
             return ($http, $req);
         };
 
-
         $self->{_backends}{get} = sub {
             my($self, $uri) = @_;
             return $self->file_get($uri) if $uri =~ s!^file:/+!/!;
@@ -1247,9 +1252,12 @@ sub init_tools {
     }
 
     my $tar = $self->which('tar');
-    my $maybe_bad_tar = sub { WIN32 || (`$tar --version` =~ /GNU.*1\.13/i) };
+    my $tar_ver;
+    my $maybe_bad_tar = sub { WIN32 || (($tar_ver = `$tar --version`) =~ /GNU.*1\.13/i) };
 
     if ($tar && !$maybe_bad_tar->()) {
+        chomp $tar_ver;
+        $self->chat("You have $tar: $tar_ver\n");
         $self->{_backends}{untar} = sub {
             my($self, $tarfile) = @_;
 
@@ -1271,6 +1279,7 @@ sub init_tools {
     } elsif (    $tar
              and my $gzip = $self->which('gzip')
              and my $bzip2 = $self->which('bzip2')) {
+        $self->chat("You have $tar, $gzip and $bzip2\n");
         $self->{_backends}{untar} = sub {
             my($self, $tarfile) = @_;
 
@@ -1290,6 +1299,7 @@ sub init_tools {
             return undef;
         }
     } elsif (eval { require Archive::Tar }) { # uses too much memory!
+        $self->chat("Falling back to Archive::Tar $Archive::Tar::VERSION\n");
         $self->{_backends}{untar} = sub {
             my $self = shift;
             my $t = Archive::Tar->new($_[0]);
@@ -1304,6 +1314,7 @@ sub init_tools {
     }
 
     if (my $unzip = $self->which('unzip')) {
+        $self->chat("You have $unzip\n");
         $self->{_backends}{unzip} = sub {
             my($self, $zipfile) = @_;
 
@@ -1321,6 +1332,7 @@ sub init_tools {
             return undef;
         }
     } elsif (eval { require Archive::Zip }) {
+        $self->chat("You have Archive::Zip $Archive::Zip::VERSION\n");
         $self->{_backends}{unzip} = sub {
             my($self, $file) = @_;
             my $zip = Archive::Zip->new();
