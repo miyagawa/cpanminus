@@ -405,6 +405,16 @@ DIAG
     sleep 2;
 }
 
+sub _dump_inc {
+    my $self = shift;
+
+    my @inc = map { qq('$_') } (@INC, '.'); # . for inc/Module/Install.pm
+
+    open my $out, ">$self->{base}/DumpedINC.pm" or die $!;
+    local $" = ",";
+    print $out "BEGIN { \@INC = (@inc) }\n1;\n";
+}
+
 sub _try_local_lib {
     my($self, $base) = @_;
 
@@ -416,6 +426,7 @@ sub _try_local_lib {
             my @private = grep { ref eq 'CODE' || /fatlib$/ } @INC;
             $ENV{PERL5LIB} = '';
             local::lib->import('--self-contained', $base);
+            $self->_dump_inc;
             unshift @INC, @private;
         } else {
             local::lib->import($base);
@@ -952,6 +963,9 @@ sub build_stuff {
 
 sub configure_this {
     my($self, $name) = @_;
+
+    local $ENV{PERL5OPT} = "-I$self->{base} -MDumpedINC"
+        if $self->{self_contained};
 
     my $state = {};
 
