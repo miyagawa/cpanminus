@@ -1,5 +1,12 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+0.9927 Tue Mar 23 11:23:18 PDT 2010
+   [Improvements]
+      - Suppress warnings when initializing local::lib directory
+
+   [Developer Fixes]
+      - Fixes -L with local::lib enabled shell
+
 0.99_26 Mon Mar 22 20:22:10 PDT 2010
    [Developer Fixes]
       - Fixed the broken delay loaded LWP runtime in -L
