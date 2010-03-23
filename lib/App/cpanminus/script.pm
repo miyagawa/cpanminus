@@ -428,6 +428,7 @@ sub _try_local_lib {
         $base ||= "~/perl5";
         if ($self->{self_contained}) {
             my @inc = @INC;
+            local $ENV{PERL5LIB} = '';
             $self->_import_local_lib('--self-contained', $base);
             $self->_dump_inc;
             $self->{search_inc} = [ @INC ];
