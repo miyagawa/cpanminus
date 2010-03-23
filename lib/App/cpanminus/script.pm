@@ -413,6 +413,12 @@ sub _dump_inc {
     print $out "BEGIN { \@INC = (@inc) }\n1;\n";
 }
 
+sub _import_local_lib {
+    my($self, @args) = @_;
+    local $SIG{__WARN__} = sub { }; # catch 'Attempting to write ...'
+    local::lib->import(@args);
+}
+
 sub _try_local_lib {
     my($self, $base) = @_;
 
@@ -422,12 +428,12 @@ sub _try_local_lib {
         $base ||= "~/perl5";
         if ($self->{self_contained}) {
             my @inc = @INC;
-            local::lib->import('--self-contained', $base);
+            $self->_import_local_lib('--self-contained', $base);
             $self->_dump_inc;
             $self->{search_inc} = [ @INC ];
             @INC = @inc;
         } else {
-            local::lib->import($base);
+            $self->_import_local_lib($base);
         }
     }
 
