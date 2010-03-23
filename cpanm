@@ -758,6 +758,12 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       print $out "BEGIN { \@INC = (@inc) }\n1;\n";
   }
   
+  sub _import_local_lib {
+      my($self, @args) = @_;
+      local $SIG{__WARN__} = sub { }; # catch 'Attempting to write ...'
+      local::lib->import(@args);
+  }
+  
   sub _try_local_lib {
       my($self, $base) = @_;
   
@@ -767,13 +773,13 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           $base ||= "~/perl5";
           if ($self->{self_contained}) {
               my @inc = @INC;
-              $ENV{PERL5LIB} = '';
-              local::lib->import('--self-contained', $base);
+              local $ENV{PERL5LIB} = '';
+              $self->_import_local_lib('--self-contained', $base);
               $self->_dump_inc;
               $self->{search_inc} = [ @INC ];
               @INC = @inc;
           } else {
-              local::lib->import($base);
+              $self->_import_local_lib($base);
           }
       }
   
@@ -1309,8 +1315,8 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       my($self, $name) = @_;
   
       my @switches;
-      @switches = ("-I$self->{base}", "-MDumpedINC")
-          if $self->{self_contained};
+      @switches = ("-I$self->{base}", "-MDumpedINC") if $self->{self_contained};
+      local $ENV{PERL5LIB} = ''                      if $self->{self_contained};
   
       my $state = {};
   
