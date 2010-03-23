@@ -422,7 +422,6 @@ sub _try_local_lib {
         $base ||= "~/perl5";
         if ($self->{self_contained}) {
             my @inc = @INC;
-            $ENV{PERL5LIB} = '';
             local::lib->import('--self-contained', $base);
             $self->_dump_inc;
             $self->{search_inc} = [ @INC ];
@@ -964,8 +963,8 @@ sub configure_this {
     my($self, $name) = @_;
 
     my @switches;
-    @switches = ("-I$self->{base}", "-MDumpedINC")
-        if $self->{self_contained};
+    @switches = ("-I$self->{base}", "-MDumpedINC") if $self->{self_contained};
+    local $ENV{PERL5LIB} = ''                      if $self->{self_contained};
 
     my $state = {};
 
