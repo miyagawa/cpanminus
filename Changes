@@ -1,5 +1,14 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+0.99_25 Mon Mar 22 19:52:12 PDT 2010
+   [Improvements]
+      - Log version information of build tools in build.log
+   
+   [Developer Fixes]
+      - Fixed the way it passes DumpedINC
+      - Fixes tools initialization like LWP with -L
+      - Set PID in PERL5_CPAN*_IS_RUNNING rather than just 1
+
 0.99_24 Sun Mar 21 21:57:59 PDT 2010
    [Improvements]
       - Improve the error message on bootstrapping
