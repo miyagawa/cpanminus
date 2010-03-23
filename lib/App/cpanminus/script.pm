@@ -421,12 +421,12 @@ sub _try_local_lib {
         local $0 = 'cpanm'; # so curl/wget | perl works
         $base ||= "~/perl5";
         if ($self->{self_contained}) {
-            $self->init_tools; # init tools ealier to load LWP etc.
-            my @private = grep { ref eq 'CODE' || /fatlib$/ } @INC;
+            my @inc = @INC;
             $ENV{PERL5LIB} = '';
             local::lib->import('--self-contained', $base);
             $self->_dump_inc;
-            unshift @INC, @private;
+            $self->{search_inc} = [ @INC ];
+            @INC = @inc;
         } else {
             local::lib->import($base);
         }
@@ -804,7 +804,7 @@ sub check_module {
     my($self, $mod, $want_ver) = @_;
 
     require Module::Metadata;
-    my $meta = Module::Metadata->new_from_module($mod)
+    my $meta = Module::Metadata->new_from_module($mod, inc => $self->{search_inc})
         or return 0, undef;
 
     my $version = $meta->version;
