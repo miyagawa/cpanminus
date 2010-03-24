@@ -351,6 +351,7 @@ Options:
   -n,--notest        Do not run unit tests
   -S,--sudo          sudo to run install commands
   --installdeps      Only install dependencies
+  --skip-installed   Skip installation if you already have the latest version installed
   --disable-plugins  Disable plugin loading
 
 Commands:
