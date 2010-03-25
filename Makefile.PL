@@ -10,11 +10,10 @@ You can pretend to be an author by running it with:
 You should install local::lib, Parse::CPAN::Meta, Module::Metadata,
 App::FatPacker and HTTP::Lite before doing so.
 
-Module::Metadata and App::FatPacker are not available on CPAN as of
-this writing, get them from:
+Module::Metadata is not available on CPAN as of this writing, get it
+from:
 
   git://git.shadowcat.co.uk/p5sagit/Module-Metadata.git
-  git://git.shadowcat.co.uk/p5sagit/App-FatPacker.git
 
 Do not commit the changes to `cpanm` standalone executable. We only
 commit changes to this file whenever we tag a new CPAN release.
