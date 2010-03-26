@@ -380,7 +380,8 @@ sub bootstrap {
 
     # If -l is specified, use that.
     if ($self->{local_lib}) {
-        return $self->_try_local_lib(Cwd::abs_path($self->{local_lib}));
+        my $lib = $self->{local_lib} =~ /^~/ ? $self->{local_lib} : Cwd::abs_path($self->{local_lib});
+        return $self->_try_local_lib($lib);
     }
 
     # root, locally-installed perl or --sudo: don't care about install_base
