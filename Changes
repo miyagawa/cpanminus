@@ -1,5 +1,12 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+0.9928 Thu Mar 25 22:03:36 PDT 2010
+   [Bug Fixes]
+      - Make PERL_CPANM_OPT=~/perl work again (clkao)
+
+   [Developer Fixes]
+      - Document --skip-installed
+
 0.9927 Tue Mar 23 11:23:18 PDT 2010
    [Improvements]
       - Suppress warnings when initializing local::lib directory
