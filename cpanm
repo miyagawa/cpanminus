@@ -7,7 +7,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "0.9927";
+  our $VERSION = "0.9928";
   
   =head1 NAME
   
@@ -356,7 +356,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use constant WIN32 => $^O eq 'MSWin32';
   use constant PLUGIN_API_VERSION => 0.1;
   
-  our $VERSION = "0.9927";
+  our $VERSION = "0.9928";
   $VERSION = eval $VERSION;
   
   my $quote = WIN32 ? q/"/ : q/'/;
@@ -696,6 +696,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
     -n,--notest        Do not run unit tests
     -S,--sudo          sudo to run install commands
     --installdeps      Only install dependencies
+    --skip-installed   Skip installation if you already have the latest version installed
     --disable-plugins  Disable plugin loading
   
   Commands:
@@ -724,7 +725,8 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   
       # If -l is specified, use that.
       if ($self->{local_lib}) {
-          return $self->_try_local_lib(Cwd::abs_path($self->{local_lib}));
+          my $lib = $self->{local_lib} =~ /^~/ ? $self->{local_lib} : Cwd::abs_path($self->{local_lib});
+          return $self->_try_local_lib($lib);
       }
   
       # root, locally-installed perl or --sudo: don't care about install_base
