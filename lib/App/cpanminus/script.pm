@@ -1025,8 +1025,7 @@ sub configure_this {
 
 sub safe_eval {
     my($self, $code) = @_;
-    require Safe;
-    Safe->new->reval($code);
+    eval $code;
 }
 
 sub find_prereqs {
