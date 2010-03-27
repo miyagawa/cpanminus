@@ -903,7 +903,7 @@ sub build_stuff {
 
     $self->diag($configure_state->{configured_ok} ? "OK\n" : "N/A\n");
 
-    my %deps = $self->find_prereqs;
+    my %deps = $self->find_prereqs($meta);
 
     $self->run_hooks(find_deps => { deps => \%deps, module => $module, meta => $meta });
 
@@ -1030,17 +1030,18 @@ sub safe_eval {
 }
 
 sub find_prereqs {
-    my($self) = @_;
+    my($self, $meta) = @_;
 
     my %deps;
     if (-e 'MYMETA.yml') {
         $self->chat("Checking dependencies from MYMETA.yml ...\n");
-        my $meta = $self->parse_meta('MYMETA.yml');
-        %deps = $self->extract_requires($meta);
+        my $mymeta = $self->parse_meta('MYMETA.yml');
+        %deps = $self->extract_requires($mymeta);
+        $meta->{$_} = $mymeta->{$_} for keys %$mymeta; # merge
     } elsif (-e '_build/prereqs') {
         $self->chat("Checking dependencies from _build/prereqs ...\n");
-        my $meta = do { open my $in, "_build/prereqs"; $self->safe_eval(join "", <$in>) };
-        %deps = $self->extract_requires($meta);
+        my $mymeta = do { open my $in, "_build/prereqs"; $self->safe_eval(join "", <$in>) };
+        %deps = $self->extract_requires($mymeta);
     }
 
     if (-e 'Makefile') {
