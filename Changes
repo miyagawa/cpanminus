@@ -1,5 +1,12 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+0.9929 Fri Mar 26 21:35:23 PDT 2010
+   [Improvements]
+      - Make cpanm work with perl 5.10.0 with old version.pm
+
+   [Developer Fixes]
+      - Stopped using Safe.pm reval() to parse Makefile or _build/prereqs
+
 0.9928 Thu Mar 25 22:03:36 PDT 2010
    [Bug Fixes]
       - Make PERL_CPANM_OPT=~/perl work again (clkao)

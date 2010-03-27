@@ -356,7 +356,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use constant WIN32 => $^O eq 'MSWin32';
   use constant PLUGIN_API_VERSION => 0.1;
   
-  our $VERSION = "0.9928";
+  our $VERSION = "0.9929";
   $VERSION = eval $VERSION;
   
   my $quote = WIN32 ? q/"/ : q/'/;
@@ -1248,7 +1248,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   
       $self->diag($configure_state->{configured_ok} ? "OK\n" : "N/A\n");
   
-      my %deps = $self->find_prereqs;
+      my %deps = $self->find_prereqs($meta);
   
       $self->run_hooks(find_deps => { deps => \%deps, module => $module, meta => $meta });
   
@@ -1370,22 +1370,22 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   
   sub safe_eval {
       my($self, $code) = @_;
-      require Safe;
-      Safe->new->reval($code);
+      eval $code;
   }
   
   sub find_prereqs {
-      my($self) = @_;
+      my($self, $meta) = @_;
   
       my %deps;
       if (-e 'MYMETA.yml') {
           $self->chat("Checking dependencies from MYMETA.yml ...\n");
-          my $meta = $self->parse_meta('MYMETA.yml');
-          %deps = $self->extract_requires($meta);
+          my $mymeta = $self->parse_meta('MYMETA.yml');
+          %deps = $self->extract_requires($mymeta);
+          $meta->{$_} = $mymeta->{$_} for keys %$mymeta; # merge
       } elsif (-e '_build/prereqs') {
           $self->chat("Checking dependencies from _build/prereqs ...\n");
-          my $meta = do { open my $in, "_build/prereqs"; $self->safe_eval(join "", <$in>) };
-          %deps = $self->extract_requires($meta);
+          my $mymeta = do { open my $in, "_build/prereqs"; $self->safe_eval(join "", <$in>) };
+          %deps = $self->extract_requires($mymeta);
       }
   
       if (-e 'Makefile') {
@@ -1393,8 +1393,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           open my $mf, "Makefile";
           while (<$mf>) {
               if (/^\#\s+PREREQ_PM => ({.*?})/) {
-                  no strict; # WTF bareword keys
-                  my $prereq = $self->safe_eval("+$1");
+                  my $prereq = $self->safe_eval("no strict; +$1");
                   %deps = (%deps, %$prereq) if $prereq;
                   last;
               }
