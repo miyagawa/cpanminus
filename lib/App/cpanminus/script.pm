@@ -1048,8 +1048,7 @@ sub find_prereqs {
         open my $mf, "Makefile";
         while (<$mf>) {
             if (/^\#\s+PREREQ_PM => ({.*?})/) {
-                no strict; # WTF bareword keys
-                my $prereq = $self->safe_eval("+$1");
+                my $prereq = $self->safe_eval("no strict; +$1");
                 %deps = (%deps, %$prereq) if $prereq;
                 last;
             }
