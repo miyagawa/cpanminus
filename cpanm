@@ -354,6 +354,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use Getopt::Long ();
   
   use constant WIN32 => $^O eq 'MSWin32';
+  use constant SUNOS => $^O eq 'solaris';
   use constant PLUGIN_API_VERSION => 0.1;
   
   our $VERSION = "0.9929";
@@ -1467,7 +1468,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       }
   
       # use --no-lwp if they have a broken LWP, to upgrade LWP
-      if ($self->{try_lwp} && eval { require LWP::UserAgent; LWP::UserAgent->VERSION >= 5.802 }) {
+      if ($self->{try_lwp} && eval { require LWP::UserAgent; LWP::UserAgent->VERSION(5.802) }) {
           $self->chat("You have LWP $LWP::VERSION\n");
           my $ua = sub {
               LWP::UserAgent->new(
@@ -1609,7 +1610,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   
       my $tar = $self->which('tar');
       my $tar_ver;
-      my $maybe_bad_tar = sub { WIN32 || (($tar_ver = `$tar --version`) =~ /GNU.*1\.13/i) };
+      my $maybe_bad_tar = sub { WIN32 || SUNOS || (($tar_ver = `$tar --version`) =~ /GNU.*1\.13/i) };
   
       if ($tar && !$maybe_bad_tar->()) {
           chomp $tar_ver;
@@ -1639,10 +1640,10 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           $self->{_backends}{untar} = sub {
               my($self, $tarfile) = @_;
   
-              my $x  = "x" . ($self->{verbose} ? 'v' : '');
+              my $x  = "x" . ($self->{verbose} ? 'v' : '') . "f -";
               my $ar = $tarfile =~ /bz2$/ ? $bzip2 : $gzip;
   
-              my($root, @others) = `$ar -dc $tarfile | $tar t`
+              my($root, @others) = `$ar -dc $tarfile | $tar tf -`
                   or return undef;
   
               chomp $root;

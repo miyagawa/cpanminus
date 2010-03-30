@@ -9,6 +9,7 @@ use File::Copy ();
 use Getopt::Long ();
 
 use constant WIN32 => $^O eq 'MSWin32';
+use constant SUNOS => $^O eq 'solaris';
 use constant PLUGIN_API_VERSION => 0.1;
 
 our $VERSION = "0.9929";
@@ -1264,7 +1265,7 @@ sub init_tools {
 
     my $tar = $self->which('tar');
     my $tar_ver;
-    my $maybe_bad_tar = sub { WIN32 || (($tar_ver = `$tar --version`) =~ /GNU.*1\.13/i) };
+    my $maybe_bad_tar = sub { WIN32 || SUNOS || (($tar_ver = `$tar --version`) =~ /GNU.*1\.13/i) };
 
     if ($tar && !$maybe_bad_tar->()) {
         chomp $tar_ver;
@@ -1294,10 +1295,10 @@ sub init_tools {
         $self->{_backends}{untar} = sub {
             my($self, $tarfile) = @_;
 
-            my $x  = "x" . ($self->{verbose} ? 'v' : '');
+            my $x  = "x" . ($self->{verbose} ? 'v' : '') . "f -";
             my $ar = $tarfile =~ /bz2$/ ? $bzip2 : $gzip;
 
-            my($root, @others) = `$ar -dc $tarfile | $tar t`
+            my($root, @others) = `$ar -dc $tarfile | $tar tf -`
                 or return undef;
 
             chomp $root;
