@@ -474,7 +474,6 @@ sub run {
             waitpid $pid, 0;
             return !$?;
         } else {
-            close STDIN unless $self->{verbose};
             $self->run_exec($cmd);
         }
     } else {
@@ -556,6 +555,7 @@ sub build {
 sub test {
     my($self, $cmd) = @_;
     return 1 if $self->{notest};
+    local $ENV{AUTOMATED_TESTING} = 1;
     return $self->run_timeout($cmd,  $self->{test_timeout}) || $self->{force};
 }
 
