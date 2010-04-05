@@ -819,11 +819,34 @@ sub check_module {
     my $version = $meta->version;
     $self->{local_versions}{$mod} = $version;
 
-    if (!$want_ver or $version >= Module::Metadata::Version->new($want_ver)) {
+    if ($self->is_deprecated($meta)){
+        return 0, $version;
+    } elsif (!$want_ver or $version >= Module::Metadata::Version->new($want_ver)) {
         return 1, $version;
     } else {
         return 0, $version;
     }
+}
+
+sub is_deprecated {
+    my($self, $meta) = @_;
+
+    my $deprecated = eval {
+        require Module::CoreList;
+        Module::CoreList::is_deprecated($meta->{module});
+    };
+
+    return unless $deprecated;
+
+    require Config;
+    for my $dir (qw(archlibexp privlibexp)) {
+        my $confdir = $Config{$dir};
+        if ($confdir eq substr($meta->filename, 0, length($confdir))) {
+            return 1;
+        }
+    }
+
+    return;
 }
 
 sub should_install {
