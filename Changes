@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+0.9932 Mon Apr  5 16:27:12 PDT 2010
+   [Developer Fixes]
+      - Special case deprecated modules so they can be upgraded into site lib #34
+
 0.9931 Sun Apr  4 18:16:46 PDT 2010
    [Developer Fixes]
       - Doesn't close STDIN anymore when building modules. Instead set AUTOMATED_TESTING #36
