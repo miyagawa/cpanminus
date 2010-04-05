@@ -357,7 +357,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use constant SUNOS => $^O eq 'solaris';
   use constant PLUGIN_API_VERSION => 0.1;
   
-  our $VERSION = "0.9930";
+  our $VERSION = "0.9931";
   $VERSION = eval $VERSION;
   
   my $quote = WIN32 ? q/"/ : q/'/;
@@ -819,7 +819,6 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
               waitpid $pid, 0;
               return !$?;
           } else {
-              close STDIN unless $self->{verbose};
               $self->run_exec($cmd);
           }
       } else {
@@ -901,6 +900,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   sub test {
       my($self, $cmd) = @_;
       return 1 if $self->{notest};
+      local $ENV{AUTOMATED_TESTING} = 1;
       return $self->run_timeout($cmd,  $self->{test_timeout}) || $self->{force};
   }
   

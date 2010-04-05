@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+0.9931 Sun Apr  4 18:16:46 PDT 2010
+   [Developer Fixes]
+      - Doesn't close STDIN anymore when building modules. Instead set AUTOMATED_TESTING #36
+
 0.9930 Tue Mar 30 14:27:49 PDT 2010
    [Improvements]
       - untar now works with Solaris' stock bad tar (nnunley)
