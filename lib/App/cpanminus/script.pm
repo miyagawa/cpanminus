@@ -376,6 +376,20 @@ HELP
     return 1;
 }
 
+sub _writable {
+    my $dir = shift;
+    my @dir = File::Spec->splitdir($dir);
+    while (@dir) {
+        $dir = File::Spec->catdir(@dir);
+        if (-e $dir) {
+            return -w _;
+        }
+        pop @dir;
+    }
+
+    return;
+}
+
 sub bootstrap {
     my $self = shift;
 
@@ -386,7 +400,7 @@ sub bootstrap {
     }
 
     # root, locally-installed perl or --sudo: don't care about install_base
-    return if $self->{sudo} or (-w $Config{installsitelib} and -w $Config{installsitebin});
+    return if $self->{sudo} or (_writable($Config{installsitelib}) and _writable($Config{installsitebin}));
 
     # local::lib is configured in the shell -- yay
     return if $ENV{PERL_MM_OPT} and ($ENV{MODULEBUILDRC} or $ENV{PERL_MB_OPT});
