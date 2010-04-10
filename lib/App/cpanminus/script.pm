@@ -90,16 +90,12 @@ sub parse_options {
     $self->{argv} = \@ARGV;
 }
 
-sub init {
+sub check_libs {
     my $self = shift;
+    return if $self->{_checked}++;
 
-    $self->setup_home;
-    $self->load_plugins;
-    $self->bootstrap;
-    $self->init_tools;
-
+    $self->bootstrap_local_lib;
     if (@{$self->{bootstrap_deps} || []}) {
-        $self->configure_mirrors;
         local $self->{force} = 1; # to force install EUMM
         $self->install_deps(Cwd::cwd, 0, @{$self->{bootstrap_deps}});
     }
@@ -108,10 +104,9 @@ sub init {
 sub doit {
     my $self = shift;
 
-    if ($self->should_init) {
-        $self->init;
-        $self->configure_mirrors;
-    }
+    $self->setup_home;
+    $self->load_plugins;
+    $self->init_tools;
 
     if (my $action = $self->{action}) {
         $self->$action() and return;
@@ -119,17 +114,13 @@ sub doit {
 
     $self->show_help(1) unless @{$self->{argv}};
 
+    $self->configure_mirrors;
+
     for my $module (@{$self->{argv}}) {
         $self->install_module($module, 0);
     }
 
     $self->run_hooks(finalize => {});
-}
-
-sub should_init {
-    my $self = shift;
-    my $action = $self->{action} or return 1;
-    return (grep $action eq $_, qw(show_help show_version)) ? 0 : 1;
 }
 
 sub setup_home {
@@ -390,7 +381,7 @@ sub _writable {
     return;
 }
 
-sub bootstrap {
+sub bootstrap_local_lib {
     my $self = shift;
 
     # If -l is specified, use that.
@@ -665,6 +656,7 @@ sub install_module {
             $self->diag("! You don't seem to have a SHELL :/\n");
         }
     } else {
+        $self->check_libs;
         $self->build_stuff($module, $dir, $depth);
     }
 }
