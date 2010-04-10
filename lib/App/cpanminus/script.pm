@@ -396,7 +396,7 @@ sub bootstrap {
     # If -l is specified, use that.
     if ($self->{local_lib}) {
         my $lib = $self->{local_lib} =~ /^~/ ? $self->{local_lib} : Cwd::abs_path($self->{local_lib});
-        return $self->_try_local_lib($lib);
+        return $self->setup_local_lib($lib);
     }
 
     # root, locally-installed perl or --sudo: don't care about install_base
@@ -405,7 +405,7 @@ sub bootstrap {
     # local::lib is configured in the shell -- yay
     return if $ENV{PERL_MM_OPT} and ($ENV{MODULEBUILDRC} or $ENV{PERL_MB_OPT});
 
-    $self->_try_local_lib;
+    $self->setup_local_lib;
 
     $self->diag(<<DIAG);
 !
@@ -446,7 +446,7 @@ sub _import_local_lib {
     local::lib->import(@args);
 }
 
-sub _try_local_lib {
+sub setup_local_lib {
     my($self, $base) = @_;
 
     require local::lib;
