@@ -420,10 +420,20 @@ DIAG
     sleep 2;
 }
 
-sub _dump_inc {
-    my $self = shift;
+sub _core_only_inc {
+    my($self, $base) = @_;
+    require local::lib;
+    (
+        local::lib->install_base_perl_path($base),
+        local::lib->install_base_arch_path($base),
+        @Config{qw(privlibexp archlibexp)},
+    );
+}
 
-    my @inc = map { qq('$_') } (@INC, '.'); # . for inc/Module/Install.pm
+sub _dump_inc {
+    my($self, $inc) = @_;
+
+    my @inc = map { qq('$_') } (@$inc, '.'); # . for inc/Module/Install.pm
 
     open my $out, ">$self->{base}/DumpedINC.pm" or die $!;
     local $" = ",";
@@ -444,15 +454,11 @@ sub _try_local_lib {
         local $0 = 'cpanm'; # so curl/wget | perl works
         $base ||= "~/perl5";
         if ($self->{self_contained}) {
-            my @inc = @INC;
-            local $ENV{PERL5LIB} = '';
-            $self->_import_local_lib('--self-contained', $base);
-            $self->_dump_inc;
-            $self->{search_inc} = [ @INC ];
-            @INC = @inc;
-        } else {
-            $self->_import_local_lib($base);
+            my @inc = $self->_core_only_inc($base);
+            $self->_dump_inc(\@inc);
+            $self->{search_inc} = [ @inc ];
         }
+        $self->_import_local_lib($base);
     }
 
     push @{$self->{bootstrap_deps}},
