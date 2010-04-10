@@ -882,12 +882,13 @@ sub should_install {
 sub install_deps {
     my($self, $dir, $depth, @deps) = @_;
 
-    my %deps = @deps; # XXX
-
-    my @install;
-    while (my($mod, $ver) = each %deps) {
-        next if $mod eq 'perl' or $mod eq 'Config';
-        push @install, $self->should_install($mod, $ver);
+    my(@install, %seen);
+    while (my($mod, $ver) = splice @deps, 0, 2) {
+        next if $seen{$mod} or $mod eq 'perl' or $mod eq 'Config';
+        if ($self->should_install($mod, $ver)) {
+            push @install, $mod;
+            $seen{$mod} = 1;
+        }
     }
 
     if (@install) {
