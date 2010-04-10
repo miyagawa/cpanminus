@@ -1207,7 +1207,7 @@ sub init_tools {
             my($self, $uri, $path) = @_;
             return $self->file_mirror($uri, $path) if $uri =~ s!^file:/+!/!;
             my $q = $self->{verbose} ? '' : '-q';
-            system "$wget $uri $q -O $path";
+            system "$wget --retry-connrefused $uri $q -O $path";
         };
         $self->{_backends}{redirect} = sub {
             my($self, $uri) = @_;
