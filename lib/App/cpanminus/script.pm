@@ -1300,7 +1300,7 @@ sub init_tools {
 
     my $tar = $self->which('tar');
     my $tar_ver;
-    my $maybe_bad_tar = sub { WIN32 || SUNOS || (($tar_ver = `$tar --version`) =~ /GNU.*1\.13/i) };
+    my $maybe_bad_tar = sub { WIN32 || SUNOS || (($tar_ver = `$tar --version 2>/dev/null`) =~ /GNU.*1\.13/i) };
 
     if ($tar && !$maybe_bad_tar->()) {
         chomp $tar_ver;
