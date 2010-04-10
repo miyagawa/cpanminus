@@ -880,7 +880,9 @@ sub should_install {
 }
 
 sub install_deps {
-    my($self, $dir, $depth, %deps) = @_;
+    my($self, $dir, $depth, @deps) = @_;
+
+    my %deps = @deps; # XXX
 
     my @install;
     while (my($mod, $ver) = each %deps) {
@@ -943,11 +945,11 @@ sub build_stuff {
 
     $self->diag($configure_state->{configured_ok} ? "OK\n" : "N/A\n");
 
-    my %deps = $self->find_prereqs($meta);
+    my @deps = $self->find_prereqs($meta);
 
-    $self->run_hooks(find_deps => { deps => \%deps, module => $module, meta => $meta });
+    $self->run_hooks(find_deps => { deps => \@deps, module => $module, meta => $meta });
 
-    $self->install_deps($dir, $depth, %deps);
+    $self->install_deps($dir, $depth, @deps);
 
     if ($self->{installdeps} && $depth == 0) {
         $self->diag("<== Installed dependencies for $module. Finishing.\n");
@@ -1071,16 +1073,16 @@ sub safe_eval {
 sub find_prereqs {
     my($self, $meta) = @_;
 
-    my %deps;
+    my @deps;
     if (-e 'MYMETA.yml') {
         $self->chat("Checking dependencies from MYMETA.yml ...\n");
         my $mymeta = $self->parse_meta('MYMETA.yml');
-        %deps = $self->extract_requires($mymeta);
+        @deps = $self->extract_requires($mymeta);
         $meta->{$_} = $mymeta->{$_} for keys %$mymeta; # merge
     } elsif (-e '_build/prereqs') {
         $self->chat("Checking dependencies from _build/prereqs ...\n");
         my $mymeta = do { open my $in, "_build/prereqs"; $self->safe_eval(join "", <$in>) };
-        %deps = $self->extract_requires($mymeta);
+        @deps = $self->extract_requires($mymeta);
     }
 
     if (-e 'Makefile') {
@@ -1089,13 +1091,13 @@ sub find_prereqs {
         while (<$mf>) {
             if (/^\#\s+PREREQ_PM => ({.*?})/) {
                 my $prereq = $self->safe_eval("no strict; +$1");
-                %deps = (%deps, %$prereq) if $prereq;
+                push @deps, %$prereq if $prereq;
                 last;
             }
         }
     }
 
-    return %deps;
+    return @deps;
 }
 
 sub extract_requires {
