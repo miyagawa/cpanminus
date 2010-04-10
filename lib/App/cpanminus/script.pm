@@ -128,6 +128,10 @@ sub setup_home {
 
     $self->{home} = $self->env('HOME') if $self->env('HOME');
 
+    unless (_writable($self->{home})) {
+        die "Can't write to cpanm home '$self->{home}': You should fix it with chown/chmod first.\n";
+    }
+
     $self->{base} = "$self->{home}/work/" . time . ".$$";
     $self->{plugin_dir} = "$self->{home}/plugins";
     File::Path::mkpath([ $self->{base}, $self->{plugin_dir} ], 0, 0777);
