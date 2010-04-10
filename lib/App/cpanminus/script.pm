@@ -1380,9 +1380,10 @@ sub init_tools {
             $self->diag("! Bad archive: [$root] $zipfile\n");
             return undef;
         }
-    } elsif (eval { require Archive::Zip }) {
-        $self->chat("You have Archive::Zip $Archive::Zip::VERSION\n");
+    } else {
         $self->{_backends}{unzip} = sub {
+            eval { require Archive::Zip }
+                or  die "Failed to extract $_[1] - You need to have unzip or Archive::Zip installed.\n";
             my($self, $file) = @_;
             my $zip = Archive::Zip->new();
             my $status;
@@ -1399,10 +1400,6 @@ sub init_tools {
                 $self->diag("Extracting of file[$af] from zipfile[$file failed\n") if $status != Archive::Zip::AZ_OK();
             }
             return -d $root ? $root : undef;
-        };
-    } else {
-        $self->{_backends}{unzip} = sub {
-            die "Failed to extract $_[1] - You need to have unzip or Archive::Zip installed.\n";
         };
     }
 }
