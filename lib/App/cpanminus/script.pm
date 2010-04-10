@@ -568,10 +568,16 @@ sub build {
 }
 
 sub test {
-    my($self, $cmd) = @_;
+    my($self, $cmd, $force_cb) = @_;
     return 1 if $self->{notest};
     local $ENV{AUTOMATED_TESTING} = 1;
-    return $self->run_timeout($cmd,  $self->{test_timeout}) || $self->{force};
+
+    return 1 if $self->run_timeout($cmd,  $self->{test_timeout});
+    if ($self->{force}) {
+        $force_cb->() if $force_cb;
+        return 1;
+    }
+    return;
 }
 
 sub install {
@@ -957,17 +963,21 @@ sub build_stuff {
         return 1;
     }
 
+    my $testdiag = sub {
+        $self->diag("FAIL\n! Testing $module failed but installing it anyway.\n");
+    };
+
     my $installed;
     if ($configure_state->{use_module_build} && -e 'Build' && -f _) {
         $self->diag("Building ", ($self->{notest} ? "" : "and testing "), "$target for $module ... ");
         $self->build([ $self->{perl}, "./Build" ]) &&
-        $self->test([ $self->{perl}, "./Build", "test" ]) &&
+        $self->test([ $self->{perl}, "./Build", "test" ], $testdiag) &&
         $self->install([ $self->{perl}, "./Build", "install" ]) &&
         $installed++;
     } elsif ($self->{make} && -e 'Makefile') {
         $self->diag("Building ", ($self->{notest} ? "" : "and testing "), "$target for $module ... ");
         $self->build([ $self->{make} ]) &&
-        $self->test([ $self->{make}, "test" ]) &&
+        $self->test([ $self->{make}, "test" ], $testdiag) &&
         $self->install([ $self->{make}, "install" ]) &&
         $installed++;
     } else {
