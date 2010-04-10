@@ -396,7 +396,7 @@ sub bootstrap {
     $self->diag(<<DIAG);
 !
 ! Can't write to $Config{installsitelib} and $Config{installsitebin}: Installing modules to $ENV{HOME}/perl5
-! To turn off this warning, you have 4 options:
+! To turn off this warning, you have to do one of the following:
 !   - run me as a root or with --sudo option (to install to $Config{installsitelib} and $Config{installsitebin})
 |   - run me with --local-lib option e.g. cpanm --local-lib=~/perl5
 !   - Set PERL_CPANM_OPT="--local-lib=~/perl5" environment variable (in your shell rc file)
