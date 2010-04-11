@@ -42,6 +42,7 @@ sub new {
         self_contained => undef,
         configure_timeout => 60,
         try_lwp => 1,
+        uninstall_shadows => 1,
         @_,
     }, $class;
 }
@@ -84,6 +85,7 @@ sub parse_options {
         'info'      => sub { $self->{cmd} = 'info' },
         'self-upgrade' => sub { $self->{cmd} = 'install'; $self->{skip_installed} = 1; push @ARGV, 'App::cpanminus' },
         'disable-plugins!' => \$self->{disable_plugins},
+        'uninst-shadows!'  => \$self->{uninstall_shadows},
         'lwp!'    => \$self->{try_lwp},
     );
 
@@ -581,8 +583,16 @@ sub test {
 }
 
 sub install {
-    my($self, $cmd) = @_;
-    unshift @$cmd, "sudo" if $self->{sudo};
+    my($self, $cmd, $uninst_opts) = @_;
+
+    if ($self->{sudo}) {
+        unshift @$cmd, "sudo";
+    }
+
+    if ($self->{uninstall_shadows}) {
+        push @$cmd, @$uninst_opts;
+    }
+
     $self->run($cmd);
 }
 
@@ -972,13 +982,13 @@ sub build_stuff {
         $self->diag("Building ", ($self->{notest} ? "" : "and testing "), "$target for $module ... ");
         $self->build([ $self->{perl}, "./Build" ]) &&
         $self->test([ $self->{perl}, "./Build", "test" ], $testdiag) &&
-        $self->install([ $self->{perl}, "./Build", "install" ]) &&
+        $self->install([ $self->{perl}, "./Build", "install" ], [ "--uninst", 1 ]) &&
         $installed++;
     } elsif ($self->{make} && -e 'Makefile') {
         $self->diag("Building ", ($self->{notest} ? "" : "and testing "), "$target for $module ... ");
         $self->build([ $self->{make} ]) &&
         $self->test([ $self->{make}, "test" ], $testdiag) &&
-        $self->install([ $self->{make}, "install" ]) &&
+        $self->install([ $self->{make}, "install" ], [ "UNINST=1" ]) &&
         $installed++;
     } else {
         my $why;
