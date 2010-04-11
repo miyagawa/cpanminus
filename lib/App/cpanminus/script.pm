@@ -72,6 +72,7 @@ sub parse_options {
         'perl=s'    => \$self->{perl},
         'l|local-lib=s' => \$self->{local_lib},
         'L|local-lib-contained=s' => sub { $self->{local_lib} = $_[1]; $self->{self_contained} = 1 },
+        'mirror=s@' => $self->{mirrors},
         'installdeps' => \$self->{installdeps},
         'skip-installed!' => \$self->{skip_installed},
         'interactive!' => \$self->{interactive},
@@ -149,7 +150,7 @@ sub setup_home {
 sub fetch_meta {
     my($self, $dist) = @_;
 
-    my $meta_yml = $self->get("http://search.cpan.org/meta/$dist->{distvname}/META.yml");
+    my $meta_yml = $self->get("http://cpansearch.perl.org/src/$dist->{cpanid}/$dist->{distvname}/META.yml");
     return $self->parse_meta_string($meta_yml);
 }
 
@@ -212,18 +213,22 @@ USAGE
 Usage: cpanm [options] Module [...]
 
 Options:
-  -v,--verbose       Turns on chatty output
-  --interactive      Turns on interactive configure (required for Task:: modules)
-  -f,--force         force install
-  -n,--notest        Do not run unit tests
-  -S,--sudo          sudo to run install commands
-  --installdeps      Only install dependencies
-  --skip-installed   Skip installation if you already have the latest version installed
+  -v,--verbose              Turns on chatty output
+  --interactive             Turns on interactive configure (required for Task:: modules)
+  -f,--force                force install
+  -n,--notest               Do not run unit tests
+  -S,--sudo                 sudo to run install commands
+  --installdeps             Only install dependencies
+  --skip-installed          Skip installation if you already have the latest version installed
+  --mirror                  Specify the base URL for the mirror (e.g. http://cpan.cpantesters.org/)
+                            You can specify multiple URLs
+  -l,--local-lib            Specify the install base to install modules
+  -L,--local-lib-contained  Specify the install base to install all non-core modules
 
 Commands:
-  --self-upgrade     upgrades itself
-  --look             Download the tarball and open the directory with your shell
-  --info             Displays distribution info on CPAN
+  --self-upgrade            upgrades itself
+  --look                    Download the tarball and open the directory with your shell
+  --info                    Displays distribution info on CPAN
 
 Examples:
 
@@ -234,6 +239,10 @@ Examples:
   cpanm --interactive Task::Kensho                          # Configure interactively
   cpanm .                                                   # install from local directory
   cpanm --installdeps .                                     # install all the deps for the current directory
+  cpanm -L extlib Plack                                     # install Plack and all non-core deps into extlib
+  cpanm --mirror http://cpan.cpantesters.org/ DBI           # use the fast-syncing mirror
+
+You can also specify the default options in PERL_CPANM_OPT environment variables using the shell rc file.
 
 HELP
 
@@ -503,9 +512,12 @@ sub chdir {
 
 sub configure_mirrors {
     my $self = shift;
-
-    my @mirrors= ('http://search.cpan.org/CPAN');
-    $self->{mirrors} = \@mirrors;
+    unless (@{$self->{mirrors}}) {
+        $self->{mirrors} = [ 'http://search.cpan.org/CPAN' ];
+    }
+    for (@{$self->{mirrors}}) {
+        s!/$!!;
+    }
 }
 
 sub self_upgrade {
@@ -585,46 +597,49 @@ sub fetch_module {
     }
 
     $self->chdir($self->{base});
-    $self->diag_progress("Fetching $dist->{uri}");
 
-    # Ugh, $dist->{filename} can contain sub directory
-    my $name = File::Basename::basename($dist->{filename});
+    for my $uri (@{$dist->{uris}}) {
+        $self->diag_progress("Fetching $uri");
 
-    my $cancelled;
-    my $fetch = sub {
-        my $file;
-        eval {
-            local $SIG{INT} = sub { $cancelled = 1; die "SIGINT\n" };
-            $self->mirror($dist->{uri}, $name);
-            $file = $name if -e $name;
+        # Ugh, $dist->{filename} can contain sub directory
+        my $name = File::Basename::basename($dist->{filename});
+
+        my $cancelled;
+        my $fetch = sub {
+            my $file;
+            eval {
+                local $SIG{INT} = sub { $cancelled = 1; die "SIGINT\n" };
+                $self->mirror($uri, $name);
+                $file = $name if -e $name;
+            };
+            $self->chat("$@") if $@ && $@ ne "SIGINT\n";
+            return $file;
         };
-        $self->chat("$@") if $@ && $@ ne "SIGINT\n";
-        return $file;
-    };
 
-    my($try, $file);
-    while ($try++ < 3) {
-        $file = $fetch->();
-        last if $cancelled or $file;
-        $self->diag_fail("Download $dist->{uri} failed. Retrying ... ");
+        my($try, $file);
+        while ($try++ < 3) {
+            $file = $fetch->();
+            last if $cancelled or $file;
+            $self->diag_fail("Download $uri failed. Retrying ... ");
+        }
+
+        if ($cancelled) {
+            $self->diag_fail("Download cancelled.");
+            return;
+        }
+
+        unless ($file) {
+            $self->diag_fail("Failed to download $uri");
+            next;
+        }
+
+        $self->diag_ok;
+
+        my $dir = $self->unpack($file);
+        next unless $dir; # unpack failed
+
+        return $dist, $dir;
     }
-
-    if ($cancelled) {
-        $self->diag_fail("Download cancelled.");
-        return;
-    }
-
-    unless ($file) {
-        $self->diag_fail("Failed to download $dist->{uri}");
-        return;
-    }
-
-    $self->diag_ok;
-
-    my $dir = $self->unpack($file);
-    return unless $dir; # unpack failed
-
-    return $dist, $dir;
 }
 
 sub unpack {
@@ -696,20 +711,22 @@ sub cpan_dist {
     require CPAN::DistnameInfo;
     my $d = CPAN::DistnameInfo->new($dist);
 
-    unless ($url) {
+    if ($url) {
+        $url = [ $url ] unless ref $url eq 'ARRAY';
+    } else {
         my $id = $d->cpanid;
         my $fn = substr($id, 0, 1) . "/" . substr($id, 0, 2) . "/" . $id . "/" . $d->filename;
 
         my @mirrors = @{$self->{mirrors}};
         my @urls    = map "$_/authors/id/$fn", @mirrors;
 
-        $url = $urls[int(rand($#urls))];
+        $url = \@urls,
     }
 
     return {
         $d->properties,
         source  => 'cpan',
-        uri     => $url,
+        uris    => $url,
     };
 }
 
