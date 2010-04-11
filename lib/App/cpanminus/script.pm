@@ -146,6 +146,13 @@ sub setup_home {
     print $out "Work directory is $self->{base}\n";
 }
 
+sub fetch_meta {
+    my($self, $dist) = @_;
+
+    my $meta_yml = $self->get("http://search.cpan.org/meta/$dist->{distvname}/META.yml");
+    return $self->parse_meta_string($meta_yml);
+}
+
 sub search_module {
     my($self, $module) = @_;
 
@@ -154,7 +161,7 @@ sub search_module {
     my $yaml = $self->get($uri);
     my $meta = $self->parse_meta_string($yaml);
     if ($meta->{distfile}) {
-        return $self->cpan_uri($meta->{distfile});
+        return $self->cpan_module($module, $meta->{distfile});
     }
 
     $self->diag_fail("Finding $module on cpanmetadb failed.");
@@ -163,7 +170,7 @@ sub search_module {
     my $uri  = "http://search.cpan.org/perldoc?$module";
     my $html = $self->get($uri);
     $html =~ m!<a href="/CPAN/authors/id/(.*?\.(?:tar\.gz|tgz|tar\.bz2|zip))">!
-        and return $self->cpan_uri($1);
+        and return $self->cpan_module($module, $1);
 
     $self->diag_fail("Finding $module on search.cpan.org failed.");
 
@@ -515,72 +522,80 @@ sub install_module {
         return;
     }
 
-    # FIXME return richer data strture including version number here
-    # so --skip-installed option etc. can skip it
-    my $dir = $self->fetch_module($module);
-
-    return if $self->{cmd} eq 'info';
-
-    unless ($dir) {
+    my $dist = $self->resolve_name($module);
+    unless ($dist) {
         $self->diag_fail("Couldn't find module or a distribution $module");
         return;
     }
 
-    if ($module ne $dir && $self->{seen}{$dir}++) {
-        $self->diag("Already built the distribution $dir. Skipping.\n");
+    if ($dist->{distvfile} && $self->{seen}{$dist->{distvfile}}) {
+        $self->diag("Already tried $dist->{distvfile}. Skipping.\n");
         return;
     }
 
-    $self->chat("Entering $dir\n");
+    if ($dist->{source} eq 'cpan') {
+        $dist->{meta} = $self->fetch_meta($dist);
+    }
+
+    if ($self->{cmd} eq 'info') {
+        print $dist->{cpanid}, "/", $dist->{filename}, "\n";
+        return;
+    }
+
+    if ($dist->{module}) {
+        my($ok, $local) = $self->check_module($dist->{module}, $dist->{meta}{version});
+        if ($self->{skip_installed} && $ok) {
+            $self->diag("$dist->{module} is up to date. ($local)\n");
+            return;
+        }
+    }
+
+    $dist->{dir} ||= $self->fetch_module($dist);
+
+    unless ($dist->{dir}) {
+        $self->diag_fail("Failed to fetch distribution $dist->{distvfile}");
+        return;
+    }
+
+    $self->chat("Entering $dist->{dir}\n");
     $self->chdir($self->{base});
-    $self->chdir($dir);
+    $self->chdir($dist->{dir});
 
     if ($self->{cmd} eq 'look') {
         my $shell = $ENV{SHELL};
         $shell  ||= $ENV{COMSPEC} if WIN32;
         if ($shell) {
-            $self->diag("Entering $dir with $shell\n");
+            $self->diag("Entering $dist->{dir} with $shell\n");
             system $shell;
         } else {
             $self->diag_fail("You don't seem to have a SHELL :/");
         }
     } else {
         $self->check_libs;
-        $self->build_stuff($module, $dir, $depth);
+        $self->build_stuff($module, $dist, $depth);
     }
 }
 
 sub fetch_module {
-    my($self, $module) = @_;
+    my($self, $dist) = @_;
 
-    my($uri, $local_dir) = $self->locate_dist($module);
-
-    return $local_dir if $local_dir;
-    return unless $uri;
-
-    # Yikes this is dirty
-    if ($self->{cmd} eq 'info') {
-        $uri =~ s!.*authors/id/!!;
-        print $uri, "\n";
+    if ($dist->{dist} eq 'perl'){
+        $self->diag("skip $dist->{dist}\n");
         return;
     }
 
-    if ($uri =~ m{/perl-5}){
-        $self->diag("skip $uri\n");
-        next;
-    }
-
     $self->chdir($self->{base});
-    $self->diag_progress("Fetching $uri");
+    $self->diag_progress("Fetching $dist->{uri}");
 
-    my $name = File::Basename::basename $uri;
+    # Ugh, $dist->{filename} can contain sub directory
+    my $name = File::Basename::basename($dist->{filename});
 
     my $cancelled;
     my $fetch = sub {
         my $file;
         eval {
             local $SIG{INT} = sub { $cancelled = 1; die "SIGINT\n" };
-            $self->mirror($uri, $name);
+            $self->mirror($dist->{uri}, $name);
             $file = $name if -e $name;
         };
         $self->chat("$@") if $@ && $@ ne "SIGINT\n";
@@ -591,7 +606,7 @@ sub fetch_module {
     while ($try++ < 3) {
         $file = $fetch->();
         last if $cancelled or $file;
-        $self->diag_fail("Download $uri failed. Retrying ... ");
+        $self->diag_fail("Download $dist->{uri} failed. Retrying ... ");
     }
 
     if ($cancelled) {
@@ -600,7 +615,8 @@ sub fetch_module {
     }
 
     unless ($file) {
-        $self->diag_fail("Failed to download $uri");
+        $self->diag_fail("Failed to download $dist->{uri}");
+        return;
     }
 
     $self->diag_ok;
@@ -608,7 +624,7 @@ sub fetch_module {
     my $dir = $self->unpack($file);
     return unless $dir; # unpack failed
 
-    return $dir;
+    return $dist, $dir;
 }
 
 sub unpack {
@@ -621,38 +637,80 @@ sub unpack {
     return $dir;
 }
 
-sub locate_dist {
+sub resolve_name {
     my($self, $module) = @_;
 
     # URL
-    return $module if $module =~ /^(ftp|https?|file):/;
+    if ($module =~ /^(ftp|https?|file):/) {
+        if ($module =~ m!authors/id/!) {
+            return $self->cpan_dist($module, $module);
+        } else {
+            return { uri => $module };
+        }
+    }
 
     # Directory
-    return undef, Cwd::abs_path($module) if $module =~ m!^[\./]! && -d $module;
+    if ($module =~ m!^[\./]! && -d $module) {
+        return {
+            source => 'local',
+            dir => Cwd::abs_path($module),
+        };
+    }
 
     # File
-    return "file://" . Cwd::abs_path($module) if -f $module;
+    if (-f $module) {
+        return {
+            source => 'local',
+            uri => "file://" . Cwd::abs_path($module),
+        };
+    }
 
     # cpan URI
-    $module =~ s!^cpan:///distfile/!!;
+    if ($module =~ s!^cpan:///distfile/!!) {
+        return $self->cpan_dist($module);
+    }
 
     # PAUSEID/foo
-    $module =~ s!^([A-Z]{3,})/!substr($1, 0, 1)."/".substr($1, 0, 2) ."/" . $1 . "/"!e;
+    if ($module =~ m!([A-Z]{3,})/!) {
+        return $self->cpan_dist($module);
+    }
 
-    # CPAN tarball
-    return $self->cpan_uri($module) if $module =~ m!^[A-Z]/[A-Z]{2}/!;
-
-    # Module name -- search.cpan.org
+    # Module name
     return $self->search_module($module);
 }
 
-sub cpan_uri {
-    my($self, $dist) = @_;
+sub cpan_module {
+    my($self, $module, $dist) = @_;
 
-    my @mirrors = @{$self->{mirrors}};
-    my @urls    = map "$_/authors/id/$dist", @mirrors;
+    my $dist = $self->cpan_dist($dist);
+    $dist->{module} = $module;
 
-    return wantarray ? @urls : $urls[int(rand($#urls))];
+    return $dist;
+}
+
+sub cpan_dist {
+    my($self, $dist, $url) = @_;
+
+    $dist =~ s!^([A-Z]{3})!substr($1,0,1)."/".substr($1,0,2)."/".$1!e;
+
+    require CPAN::DistnameInfo;
+    my $d = CPAN::DistnameInfo->new($dist);
+
+    unless ($url) {
+        my $id = $d->cpanid;
+        my $fn = substr($id, 0, 1) . "/" . substr($id, 0, 2) . "/" . $id . "/" . $d->filename;
+
+        my @mirrors = @{$self->{mirrors}};
+        my @urls    = map "$_/authors/id/$fn", @mirrors;
+
+        $url = $urls[int(rand($#urls))];
+    }
+
+    return {
+        $d->properties,
+        source  => 'cpan',
+        uri     => $url,
+    };
 }
 
 sub check_module {
@@ -734,55 +792,48 @@ sub install_deps {
 }
 
 sub build_stuff {
-    my($self, $module, $dir, $depth) = @_;
+    my($self, $stuff, $dist, $depth) = @_;
 
-    my($meta, @config_deps);
-    if (-e 'META.yml') {
+    my @config_deps;
+    if (!$dist->{meta} && -e 'META.yml') {
         $self->chat("Checking configure dependencies from META.yml\n");
-        $meta = $self->parse_meta('META.yml');
-        push @config_deps, %{$meta->{configure_requires} || {}};
+        $dist->{meta} = $self->parse_meta('META.yml');
+        push @config_deps, %{$dist->{meta}{configure_requires} || {}};
     }
 
-    # TODO yikes, $module doesn't always have to be CPAN module
-    # TODO extract/fetch meta info earlier so you don't need to download tarballs
-    if ($depth == 0 && $meta->{version} && $module =~ /^[a-zA-Z0-9_:]+$/) {
-        my($ok, $local) = $self->check_module($module, $meta->{version});
-        if ($self->{skip_installed} && $ok) {
-            $self->diag("$module is up to date. ($local)\n");
-            return;
-        }
-    }
+    $self->install_deps($dist->{dir}, $depth, @config_deps);
 
-    $self->install_deps($dir, $depth, @config_deps);
-
-    my $target = $meta->{name} ? "$meta->{name}-$meta->{version}" : $dir;
+    my $target = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $dist->{dir};
     $self->diag_progress("Configuring $target");
 
-    my $configure_state = $self->configure_this($meta->{name});
+    my $configure_state = $self->configure_this($dist);
 
     $self->diag_ok($configure_state->{configured_ok} ? "OK" : "N/A");
 
-    my @deps = $self->find_prereqs($meta);
-    $self->install_deps($dir, $depth, @deps);
+    my @deps = $self->find_prereqs($dist->{meta});
+
+    my $distname = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $stuff;
+
+    $self->install_deps($dist->{dir}, $depth, @deps);
 
     if ($self->{installdeps} && $depth == 0) {
-        $self->diag("<== Installed dependencies for $module. Finishing.\n");
+        $self->diag("<== Installed dependencies for $stuff. Finishing.\n");
         return 1;
     }
 
     my $testdiag = sub {
-        $self->diag_fail("Testing $module failed but installing it anyway.");
+        $self->diag_fail("Testing $distname failed but installing it anyway.");
     };
 
     my $installed;
     if ($configure_state->{use_module_build} && -e 'Build' && -f _) {
-        $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . "$target for $module");
+        $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . "$distname for $stuff");
         $self->build([ $self->{perl}, "./Build" ]) &&
         $self->test([ $self->{perl}, "./Build", "test" ], $testdiag) &&
         $self->install([ $self->{perl}, "./Build", "install" ], [ "--uninst", 1 ]) &&
         $installed++;
     } elsif ($self->{make} && -e 'Makefile') {
-        $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . "$target for $module");
+        $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . "$distname for $stuff");
         $self->build([ $self->{make} ]) &&
         $self->test([ $self->{make}, "test" ], $testdiag) &&
         $self->install([ $self->{make}, "install" ], [ "UNINST=1" ]) &&
@@ -790,7 +841,7 @@ sub build_stuff {
     } else {
         my $why;
         my $configure_failed = $configure_state->{configured} && !$configure_state->{configured_ok};
-        if ($configure_failed) { $why = "Configure failed on $dir." }
+        if ($configure_failed) { $why = "Configure failed for $distname." }
         elsif ($self->{make})  { $why = "The distribution doesn't have a proper Makefile.PL/Build.PL" }
         else                   { $why = "Can't configure the distribution. You probably need to have 'make'." }
 
@@ -798,12 +849,9 @@ sub build_stuff {
         return;
     }
 
-    # TODO calculate this earlier and put it in the stash
-    my $distname = $meta->{name} ? "$meta->{name}-$meta->{version}" : $module;
-
     if ($installed) {
-        my $local = $self->{local_versions}{$module};
-        my $reinstall = $local && $local eq $meta->{version};
+        my $local = $self->{local_versions}{$dist->{module} || ''};
+        my $reinstall = $local && $local eq $dist->{meta}{version};
 
         my $how = $reinstall ? "reinstalled $distname"
                 : $local     ? "installed $distname (upgraded from $local)"
@@ -814,13 +862,13 @@ sub build_stuff {
         return 1;
     } else {
         my $msg = "Building $distname failed";
-        $self->diag_fail("Installing $module failed. See $self->{log} for details.");
+        $self->diag_fail("Installing $stuff failed. See $self->{log} for details.");
         return;
     }
 }
 
 sub configure_this {
-    my($self, $name) = @_;
+    my($self, $dist) = @_;
 
     my @switches;
     @switches = ("-I$self->{base}", "-MDumpedINC") if $self->{self_contained};
@@ -860,7 +908,7 @@ sub configure_this {
     my %should_use_mm = map { $_ => 1 } qw( version ExtUtils-ParseXS ExtUtils-Install ExtUtils-Manifest );
 
     my @try;
-    if ($name && $should_use_mm{$name}) {
+    if ($dist->{dist} && $should_use_mm{$dist->{dist}}) {
         @try = ($try_eumm, $try_mb);
     } else {
         @try = ($try_mb, $try_eumm);
