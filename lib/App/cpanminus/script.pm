@@ -171,7 +171,7 @@ sub register_core_hooks {
             if ($meta->{distfile}) {
                 return $self->cpan_uri($meta->{distfile});
             }
-            $self->diag("! Finding $module on cpanmetadb failed.\n");
+            $self->diag_fail("Finding $module on cpanmetadb failed.");
             return;
         };
     });
@@ -186,7 +186,7 @@ sub register_core_hooks {
             my $html = $self->get($uri);
             $html =~ m!<a href="/CPAN/authors/id/(.*?\.(?:tar\.gz|tgz|tar\.bz2|zip))">!
                 and return $self->cpan_uri($1);
-            $self->diag("! Finding $module on search.cpan.org failed.\n");
+            $self->diag_fail("Finding $module on search.cpan.org failed.");
             return;
         };
     });
@@ -268,10 +268,10 @@ sub load_plugin {
         "sub hook { push \@hooks, [\@_] };\n$code";
 
     if ($@ =~ /API_COMPAT: (\S+)/) {
-        $self->diag("! $plugin->{name} plugin API version is outdated ($1 < $api_version) and needs an update.\n");
+        $self->diag_fail("$plugin->{name} plugin API version is outdated ($1 < $api_version) and needs an update.");
         return;
     } elsif ($@) {
-        $self->diag("! Loading $name plugin failed. See $self->{log} for details.\n");
+        $self->diag_fail("Loading $name plugin failed. See $self->{log} for details.");
         $self->chat($@);
         return;
     }
@@ -464,10 +464,43 @@ sub setup_local_lib {
         'Module::Build'       => 0.28; # TODO: 0.36 or later for MYMETA.yml once we do --bootstrap command
 }
 
-sub diag {
+sub diag_ok {
+    my($self, $msg) = @_;
+    chomp $msg;
+    $msg ||= "OK";
+    $self->_diag("$msg\n");
+    $self->{in_progress} = 0;
+    $self->log("-> $msg\n");
+}
+
+sub diag_fail {
+    my($self, $msg) = @_;
+    chomp $msg;
+    if ($self->{in_progress}) {
+        $self->_diag("FAIL\n");
+        $self->{in_progress} = 0;
+    }
+    $self->_diag("! $msg\n");
+    $self->log("-> FAIL $msg\n");
+}
+
+sub diag_progress {
+    my($self, $msg) = @_;
+    chomp $msg;
+    $self->{in_progress} = 1;
+    $self->_diag("$msg ... ");
+    $self->log("$msg\n");
+}
+
+sub _diag {
     my $self = shift;
     print STDERR @_ if $self->{verbose} or !$self->{quiet};
-    $self->log(@_);
+}
+
+sub diag {
+    my($self, $msg) = @_;
+    $self->_diag($msg);
+    $self->log($msg);
 }
 
 sub chat {
@@ -533,7 +566,7 @@ sub run_timeout {
             alarm 0;
         };
         if ($@ && $@ eq "alarm\n") {
-            $self->diag("Timed out (> ${timeout}s). Use --verbose to retry. ");
+            $self->diag_fail("Timed out (> ${timeout}s). Use --verbose to retry.");
             local $SIG{TERM} = 'IGNORE';
             kill TERM => 0;
             waitpid $pid, 0;
@@ -653,7 +686,7 @@ sub install_module {
     return if $self->{cmd} eq 'info';
 
     unless ($dir) {
-        $self->diag("! Couldn't find module or a distribution $module\n");
+        $self->diag_fail("Couldn't find module or a distribution $module");
         return;
     }
 
@@ -673,7 +706,7 @@ sub install_module {
             $self->diag("Entering $dir with $shell\n");
             system $shell;
         } else {
-            $self->diag("! You don't seem to have a SHELL :/\n");
+            $self->diag_fail("You don't seem to have a SHELL :/");
         }
     } else {
         $self->check_libs;
@@ -731,7 +764,7 @@ sub fetch_module {
         }
 
         $self->chdir($self->{base});
-        $self->diag("Fetching $uri ... ");
+        $self->diag_progress("Fetching $uri");
 
         my $name = File::Basename::basename $uri;
 
@@ -751,27 +784,27 @@ sub fetch_module {
         while ($try++ < 3) {
             $file = $fetch->();
             last if $cancelled or $file;
-            $self->diag("FAIL\nDownload $uri failed. Retrying ... ");
+            $self->diag_fail("Download $uri failed. Retrying ... ");
         }
 
         if ($cancelled) {
-            $self->diag("\n! Download cancelled.\n");
+            $self->diag_fail("Download cancelled.");
             return;
         }
 
         unless ($file) {
-            $self->diag("FAIL\n! Failed to download $uri\n");
+            $self->diag_fail("Failed to download $uri");
             next;
         }
 
-        $self->diag("OK\n");
+        $self->diag_ok;
 
         # TODO add more metadata so plugins can tell how to verify and pass through
         my $args = { file => $file, uri => $uri, fail => 0 };
         $self->run_hooks(verify_archive => $args);
 
         if ($args->{fail} && !$self->{force}) {
-            $self->diag("! Verifying the archive $file failed. Skipping. (use --force to install)\n");
+            $self->diag_fail("Verifying the archive $file failed. Skipping. (use --force to install)");
             next;
         }
 
@@ -788,7 +821,7 @@ sub unpack {
     $self->chat("Unpacking $file\n");
     my $dir = $file =~ /\.zip/i ? $self->unzip($file) : $self->untar($file);
     unless ($dir) {
-        $self->diag("! Failed to unpack $file: no directory\n");
+        $self->diag_fail("Failed to unpack $file: no directory");
     }
     return $dir;
 }
@@ -908,7 +941,7 @@ sub install_deps {
     }
 
     if (@install) {
-        $self->diag("==> Found dependencies: ", join(", ", @install), "\n");
+        $self->diag("==> Found dependencies: " . join(", ", @install) . "\n");
     }
 
     for my $mod (@install) {
@@ -926,13 +959,13 @@ sub build_stuff {
     $self->run_hooks(verify_dist => $args);
 
     if ($args->{fail} && !$self->{force}) {
-        $self->diag("! Verifying the module $module failed. Skipping. (use --force to install)\n");
+        $self->diag_fail("Verifying the module $module failed. Skipping. (use --force to install)");
         return;
     }
 
     my($meta, @config_deps);
     if (-e 'META.yml') {
-        $self->chat("Checking configure dependencies from META.yml ...\n");
+        $self->chat("Checking configure dependencies from META.yml\n");
         $meta = $self->parse_meta('META.yml');
         push @config_deps, %{$meta->{configure_requires} || {}};
     }
@@ -956,11 +989,11 @@ sub build_stuff {
     return $builder->() if $builder;
 
     my $target = $meta->{name} ? "$meta->{name}-$meta->{version}" : $dir;
-    $self->diag("Configuring $target ... ");
+    $self->diag_progress("Configuring $target");
 
     my $configure_state = $self->configure_this($meta->{name});
 
-    $self->diag($configure_state->{configured_ok} ? "OK\n" : "N/A\n");
+    $self->diag_ok($configure_state->{configured_ok} ? "OK" : "N/A");
 
     my @deps = $self->find_prereqs($meta);
 
@@ -974,18 +1007,18 @@ sub build_stuff {
     }
 
     my $testdiag = sub {
-        $self->diag("FAIL\n! Testing $module failed but installing it anyway.\n");
+        $self->diag_fail("Testing $module failed but installing it anyway.");
     };
 
     my $installed;
     if ($configure_state->{use_module_build} && -e 'Build' && -f _) {
-        $self->diag("Building ", ($self->{notest} ? "" : "and testing "), "$target for $module ... ");
+        $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . "$target for $module");
         $self->build([ $self->{perl}, "./Build" ]) &&
         $self->test([ $self->{perl}, "./Build", "test" ], $testdiag) &&
         $self->install([ $self->{perl}, "./Build", "install" ], [ "--uninst", 1 ]) &&
         $installed++;
     } elsif ($self->{make} && -e 'Makefile') {
-        $self->diag("Building ", ($self->{notest} ? "" : "and testing "), "$target for $module ... ");
+        $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . "$target for $module");
         $self->build([ $self->{make} ]) &&
         $self->test([ $self->{make}, "test" ], $testdiag) &&
         $self->install([ $self->{make}, "install" ], [ "UNINST=1" ]) &&
@@ -997,7 +1030,7 @@ sub build_stuff {
         elsif ($self->{make})  { $why = "The distribution doesn't have a proper Makefile.PL/Build.PL" }
         else                   { $why = "Can't configure the distribution. You probably need to have 'make'." }
 
-        $self->diag("! $why See $self->{log} for details.\n");
+        $self->diag_fail("$why See $self->{log} for details.");
         $self->run_hooks(configure_failure => { module => $module, build_dir => $dir, meta => $meta });
         return;
     }
@@ -1013,7 +1046,8 @@ sub build_stuff {
                 : $local     ? "installed $distname (upgraded from $local)"
                              : "installed $distname" ;
         my $msg = "Successfully $how";
-        $self->diag("OK\n$msg\n");
+        $self->diag_ok;
+        $self->diag("$msg\n");
         $self->run_hooks(install_success => {
             module => $module, build_dir => $dir, meta => $meta,
             local => $local, reinstall => $reinstall, depth => $depth,
@@ -1022,7 +1056,7 @@ sub build_stuff {
         return 1;
     } else {
         my $msg = "Building $distname failed";
-        $self->diag("FAIL\n! Installing $module failed. See $self->{log} for details.\n");
+        $self->diag_fail("Installing $module failed. See $self->{log} for details.");
         $self->run_hooks(build_failure => {
             module => $module, build_dir => $dir, meta => $meta,
             message => $msg, dist => $distname,
@@ -1350,7 +1384,7 @@ sub init_tools {
             system "$tar $xf$ar $tarfile";
             return $root if -d $root;
 
-            $self->diag("! Bad archive: $tarfile\n");
+            $self->diag_fail("Bad archive: $tarfile");
             return undef;
         }
     } elsif (    $tar
@@ -1372,7 +1406,7 @@ sub init_tools {
             system "$ar -dc $tarfile | $tar $x";
             return $root if -d $root;
 
-            $self->diag("! Bad archive: $tarfile\n");
+            $self->diag_fail("Bad archive: $tarfile");
             return undef;
         }
     } elsif (eval { require Archive::Tar }) { # uses too much memory!
@@ -1405,7 +1439,7 @@ sub init_tools {
             system "$unzip $opt $zipfile";
             return $root if -d $root;
 
-            $self->diag("! Bad archive: [$root] $zipfile\n");
+            $self->diag_fail("Bad archive: [$root] $zipfile");
             return undef;
         }
     } else {
@@ -1416,7 +1450,7 @@ sub init_tools {
             my $zip = Archive::Zip->new();
             my $status;
             $status = $zip->read($file);
-            $self->diag("Read of file[$file] failed\n")
+            $self->diag_fail("Read of file[$file] failed")
                 if $status != Archive::Zip::AZ_OK();
             my @members = $zip->members();
             my $root;
@@ -1425,7 +1459,8 @@ sub init_tools {
                 next if ($af =~ m!^(/|\.\./)!);
                 $root = $af unless $root;
                 $status = $member->extractToFileNamed( $af );
-                $self->diag("Extracting of file[$af] from zipfile[$file failed\n") if $status != Archive::Zip::AZ_OK();
+                $self->diag_fail("Extracting of file[$af] from zipfile[$file failed")
+                    if $status != Archive::Zip::AZ_OK();
             }
             return -d $root ? $root : undef;
         };
