@@ -1,5 +1,21 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+0.99_33 Sun Apr 11 09:44:16 CEST 2010
+   [Improvements]
+      - Delay load Archive::Zip #38 (Tim Bunce)
+      - Made wget download more fault torelant #15
+
+   [Bug Fixes]
+      - Work around the situation where installsitelib doesn't exist yet #2
+
+   [Developer Fixes]
+      - Upgrade local::lib #33
+      - Delay local::lib configuration as late as possible #35 (doy) 
+      - Redirect tar's stderr (stoned)
+      - Shows an error message when CPANM home is not writable #37 (avar)
+      - Fixed how to handle duplicated dependencies #6, #32
+      - Indicate test failures with --force #22 (rafl)
+
 0.9932 Mon Apr  5 16:27:12 PDT 2010
    [Developer Fixes]
       - Special case deprecated modules so they can be upgraded into site lib #34

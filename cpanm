@@ -7,7 +7,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "0.9932";
+  our $VERSION = "0.99_33";
   
   =head1 NAME
   
@@ -357,7 +357,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use constant SUNOS => $^O eq 'solaris';
   use constant PLUGIN_API_VERSION => 0.1;
   
-  our $VERSION = "0.9932";
+  our $VERSION = "0.99_33";
   $VERSION = eval $VERSION;
   
   my $quote = WIN32 ? q/"/ : q/'/;
@@ -435,16 +435,12 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       $self->{argv} = \@ARGV;
   }
   
-  sub init {
+  sub check_libs {
       my $self = shift;
+      return if $self->{_checked}++;
   
-      $self->setup_home;
-      $self->load_plugins;
-      $self->bootstrap;
-      $self->init_tools;
-  
+      $self->bootstrap_local_lib;
       if (@{$self->{bootstrap_deps} || []}) {
-          $self->configure_mirrors;
           local $self->{force} = 1; # to force install EUMM
           $self->install_deps(Cwd::cwd, 0, @{$self->{bootstrap_deps}});
       }
@@ -453,16 +449,17 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   sub doit {
       my $self = shift;
   
-      if ($self->should_init) {
-          $self->init;
-          $self->configure_mirrors;
-      }
+      $self->setup_home;
+      $self->load_plugins;
+      $self->init_tools;
   
       if (my $action = $self->{action}) {
           $self->$action() and return;
       }
   
       $self->show_help(1) unless @{$self->{argv}};
+  
+      $self->configure_mirrors;
   
       for my $module (@{$self->{argv}}) {
           $self->install_module($module, 0);
@@ -471,16 +468,14 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       $self->run_hooks(finalize => {});
   }
   
-  sub should_init {
-      my $self = shift;
-      my $action = $self->{action} or return 1;
-      return (grep $action eq $_, qw(show_help show_version)) ? 0 : 1;
-  }
-  
   sub setup_home {
       my $self = shift;
   
       $self->{home} = $self->env('HOME') if $self->env('HOME');
+  
+      unless (_writable($self->{home})) {
+          die "Can't write to cpanm home '$self->{home}': You should fix it with chown/chmod first.\n";
+      }
   
       $self->{base} = "$self->{home}/work/" . time . ".$$";
       $self->{plugin_dir} = "$self->{home}/plugins";
@@ -721,27 +716,41 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       return 1;
   }
   
-  sub bootstrap {
+  sub _writable {
+      my $dir = shift;
+      my @dir = File::Spec->splitdir($dir);
+      while (@dir) {
+          $dir = File::Spec->catdir(@dir);
+          if (-e $dir) {
+              return -w _;
+          }
+          pop @dir;
+      }
+  
+      return;
+  }
+  
+  sub bootstrap_local_lib {
       my $self = shift;
   
       # If -l is specified, use that.
       if ($self->{local_lib}) {
           my $lib = $self->{local_lib} =~ /^~/ ? $self->{local_lib} : Cwd::abs_path($self->{local_lib});
-          return $self->_try_local_lib($lib);
+          return $self->setup_local_lib($lib);
       }
   
       # root, locally-installed perl or --sudo: don't care about install_base
-      return if $self->{sudo} or (-w $Config{installsitelib} and -w $Config{installsitebin});
+      return if $self->{sudo} or (_writable($Config{installsitelib}) and _writable($Config{installsitebin}));
   
       # local::lib is configured in the shell -- yay
       return if $ENV{PERL_MM_OPT} and ($ENV{MODULEBUILDRC} or $ENV{PERL_MB_OPT});
   
-      $self->_try_local_lib;
+      $self->setup_local_lib;
   
       $self->diag(<<DIAG);
   !
   ! Can't write to $Config{installsitelib} and $Config{installsitebin}: Installing modules to $ENV{HOME}/perl5
-  ! To turn off this warning, you have 4 options:
+  ! To turn off this warning, you have to do one of the following:
   !   - run me as a root or with --sudo option (to install to $Config{installsitelib} and $Config{installsitebin})
   |   - run me with --local-lib option e.g. cpanm --local-lib=~/perl5
   !   - Set PERL_CPANM_OPT="--local-lib=~/perl5" environment variable (in your shell rc file)
@@ -751,10 +760,20 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       sleep 2;
   }
   
-  sub _dump_inc {
-      my $self = shift;
+  sub _core_only_inc {
+      my($self, $base) = @_;
+      require local::lib;
+      (
+          local::lib->install_base_perl_path($base),
+          local::lib->install_base_arch_path($base),
+          @Config{qw(privlibexp archlibexp)},
+      );
+  }
   
-      my @inc = map { qq('$_') } (@INC, '.'); # . for inc/Module/Install.pm
+  sub _dump_inc {
+      my($self, $inc) = @_;
+  
+      my @inc = map { qq('$_') } (@$inc, '.'); # . for inc/Module/Install.pm
   
       open my $out, ">$self->{base}/DumpedINC.pm" or die $!;
       local $" = ",";
@@ -767,7 +786,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       local::lib->import(@args);
   }
   
-  sub _try_local_lib {
+  sub setup_local_lib {
       my($self, $base) = @_;
   
       require local::lib;
@@ -775,15 +794,11 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           local $0 = 'cpanm'; # so curl/wget | perl works
           $base ||= "~/perl5";
           if ($self->{self_contained}) {
-              my @inc = @INC;
-              local $ENV{PERL5LIB} = '';
-              $self->_import_local_lib('--self-contained', $base);
-              $self->_dump_inc;
-              $self->{search_inc} = [ @INC ];
-              @INC = @inc;
-          } else {
-              $self->_import_local_lib($base);
+              my @inc = $self->_core_only_inc($base);
+              $self->_dump_inc(\@inc);
+              $self->{search_inc} = [ @inc ];
           }
+          $self->_import_local_lib($base);
       }
   
       push @{$self->{bootstrap_deps}},
@@ -898,10 +913,16 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   }
   
   sub test {
-      my($self, $cmd) = @_;
+      my($self, $cmd, $force_cb) = @_;
       return 1 if $self->{notest};
       local $ENV{AUTOMATED_TESTING} = 1;
-      return $self->run_timeout($cmd,  $self->{test_timeout}) || $self->{force};
+  
+      return 1 if $self->run_timeout($cmd,  $self->{test_timeout});
+      if ($self->{force}) {
+          $force_cb->() if $force_cb;
+          return 1;
+      }
+      return;
   }
   
   sub install {
@@ -990,6 +1011,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
               $self->diag("! You don't seem to have a SHELL :/\n");
           }
       } else {
+          $self->check_libs;
           $self->build_stuff($module, $dir, $depth);
       }
   }
@@ -1209,12 +1231,15 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   }
   
   sub install_deps {
-      my($self, $dir, $depth, %deps) = @_;
+      my($self, $dir, $depth, @deps) = @_;
   
-      my @install;
-      while (my($mod, $ver) = each %deps) {
-          next if $mod eq 'perl' or $mod eq 'Config';
-          push @install, $self->should_install($mod, $ver);
+      my(@install, %seen);
+      while (my($mod, $ver) = splice @deps, 0, 2) {
+          next if $seen{$mod} or $mod eq 'perl' or $mod eq 'Config';
+          if ($self->should_install($mod, $ver)) {
+              push @install, $mod;
+              $seen{$mod} = 1;
+          }
       }
   
       if (@install) {
@@ -1272,28 +1297,32 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   
       $self->diag($configure_state->{configured_ok} ? "OK\n" : "N/A\n");
   
-      my %deps = $self->find_prereqs($meta);
+      my @deps = $self->find_prereqs($meta);
   
-      $self->run_hooks(find_deps => { deps => \%deps, module => $module, meta => $meta });
+      $self->run_hooks(find_deps => { deps => \@deps, module => $module, meta => $meta });
   
-      $self->install_deps($dir, $depth, %deps);
+      $self->install_deps($dir, $depth, @deps);
   
       if ($self->{installdeps} && $depth == 0) {
           $self->diag("<== Installed dependencies for $module. Finishing.\n");
           return 1;
       }
   
+      my $testdiag = sub {
+          $self->diag("FAIL\n! Testing $module failed but installing it anyway.\n");
+      };
+  
       my $installed;
       if ($configure_state->{use_module_build} && -e 'Build' && -f _) {
           $self->diag("Building ", ($self->{notest} ? "" : "and testing "), "$target for $module ... ");
           $self->build([ $self->{perl}, "./Build" ]) &&
-          $self->test([ $self->{perl}, "./Build", "test" ]) &&
+          $self->test([ $self->{perl}, "./Build", "test" ], $testdiag) &&
           $self->install([ $self->{perl}, "./Build", "install" ]) &&
           $installed++;
       } elsif ($self->{make} && -e 'Makefile') {
           $self->diag("Building ", ($self->{notest} ? "" : "and testing "), "$target for $module ... ");
           $self->build([ $self->{make} ]) &&
-          $self->test([ $self->{make}, "test" ]) &&
+          $self->test([ $self->{make}, "test" ], $testdiag) &&
           $self->install([ $self->{make}, "install" ]) &&
           $installed++;
       } else {
@@ -1400,16 +1429,16 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   sub find_prereqs {
       my($self, $meta) = @_;
   
-      my %deps;
+      my @deps;
       if (-e 'MYMETA.yml') {
           $self->chat("Checking dependencies from MYMETA.yml ...\n");
           my $mymeta = $self->parse_meta('MYMETA.yml');
-          %deps = $self->extract_requires($mymeta);
+          @deps = $self->extract_requires($mymeta);
           $meta->{$_} = $mymeta->{$_} for keys %$mymeta; # merge
       } elsif (-e '_build/prereqs') {
           $self->chat("Checking dependencies from _build/prereqs ...\n");
           my $mymeta = do { open my $in, "_build/prereqs"; $self->safe_eval(join "", <$in>) };
-          %deps = $self->extract_requires($mymeta);
+          @deps = $self->extract_requires($mymeta);
       }
   
       if (-e 'Makefile') {
@@ -1418,13 +1447,13 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           while (<$mf>) {
               if (/^\#\s+PREREQ_PM => ({.*?})/) {
                   my $prereq = $self->safe_eval("no strict; +$1");
-                  %deps = (%deps, %$prereq) if $prereq;
+                  push @deps, %$prereq if $prereq;
                   last;
               }
           }
       }
   
-      return %deps;
+      return @deps;
   }
   
   sub extract_requires {
@@ -1533,7 +1562,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
               my($self, $uri, $path) = @_;
               return $self->file_mirror($uri, $path) if $uri =~ s!^file:/+!/!;
               my $q = $self->{verbose} ? '' : '-q';
-              system "$wget $uri $q -O $path";
+              system "$wget --retry-connrefused $uri $q -O $path";
           };
           $self->{_backends}{redirect} = sub {
               my($self, $uri) = @_;
@@ -1633,7 +1662,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   
       my $tar = $self->which('tar');
       my $tar_ver;
-      my $maybe_bad_tar = sub { WIN32 || SUNOS || (($tar_ver = `$tar --version`) =~ /GNU.*1\.13/i) };
+      my $maybe_bad_tar = sub { WIN32 || SUNOS || (($tar_ver = `$tar --version 2>/dev/null`) =~ /GNU.*1\.13/i) };
   
       if ($tar && !$maybe_bad_tar->()) {
           chomp $tar_ver;
@@ -1711,9 +1740,10 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
               $self->diag("! Bad archive: [$root] $zipfile\n");
               return undef;
           }
-      } elsif (eval { require Archive::Zip }) {
-          $self->chat("You have Archive::Zip $Archive::Zip::VERSION\n");
+      } else {
           $self->{_backends}{unzip} = sub {
+              eval { require Archive::Zip }
+                  or  die "Failed to extract $_[1] - You need to have unzip or Archive::Zip installed.\n";
               my($self, $file) = @_;
               my $zip = Archive::Zip->new();
               my $status;
@@ -1730,10 +1760,6 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
                   $self->diag("Extracting of file[$af] from zipfile[$file failed\n") if $status != Archive::Zip::AZ_OK();
               }
               return -d $root ? $root : undef;
-          };
-      } else {
-          $self->{_backends}{unzip} = sub {
-              die "Failed to extract $_[1] - You need to have unzip or Archive::Zip installed.\n";
           };
       }
   }
@@ -4656,14 +4682,12 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
   use Carp ();
   use Config;
   
-  our $VERSION = '1.004009'; # 1.4.9
-  my @KNOWN_FLAGS = (qw/--self-contained/);
+  our $VERSION = '1.006000'; # 1.6.0
+  
+  our @KNOWN_FLAGS = qw(--self-contained);
   
   sub import {
     my ($class, @args) = @_;
-    @args <= 1 + @KNOWN_FLAGS or die <<'DEATH';
-  Please see `perldoc local::lib` for directions on using this module.
-  DEATH
   
     # Remember what PERL5LIB was when we started
     my $perl5lib = $ENV{PERL5LIB} || '';
@@ -4695,21 +4719,7 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
     }
   
     if($arg_store{'self-contained'}) {
-      # The only directories that remain are those that we just defined and those
-      # where core modules are stored.  We put PERL5LIB first, so it'll be favored
-      # over privlibexp and archlibexp
-  
-      @INC = _uniq(
-        $class->install_base_arch_path($arg_store{path}),
-        $class->install_base_perl_path($arg_store{path}),
-        split( $Config{path_sep}, $perl5lib ),
-        $Config::Config{archlibexp},
-        $Config::Config{privlibexp},
-      );
-  
-      # We explicitly set PERL5LIB here to the above de-duped list to prevent
-      # @INC from growing with each invocation
-      $ENV{PERL5LIB} = join( $Config{path_sep}, @INC );
+      die "FATAL: The local::lib --self-contained flag has never worked reliably and the original author, Mark Stosberg, was unable or unwilling to maintain it. As such, this flag has been removed from the local::lib codebase in order to prevent misunderstandings and potentially broken builds. The local::lib authors recommend that you look at the lib::core::only module shipped with this distribution in order to create a more robust environment that is equivalent to what --self-contained provided (although quite possibly not what you originally thought it provided due to the poor quality of the documentation, for which we apologise).\n";
     }
   
     $arg_store{path} = $class->resolve_path($arg_store{path});
@@ -4995,7 +5005,7 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
       PERL5LIB => join($Config{path_sep},
                     $class->install_base_perl_path($path),
                     $class->install_base_arch_path($path),
-                    ($ENV{PERL5LIB} ?
+                    (($ENV{PERL5LIB}||()) ?
                       ($interpolate == INTERPOLATE_ENV
                         ? ($ENV{PERL5LIB})
                         : (($^O ne 'MSWin32') ? '$PERL5LIB' : '%PERL5LIB%' ))
@@ -5004,7 +5014,7 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
       PATH => join($Config{path_sep},
                 $class->install_base_bin_path($path),
                 ($interpolate == INTERPOLATE_ENV
-                  ? $ENV{PATH}
+                  ? ($ENV{PATH}||())
                   : (($^O ne 'MSWin32') ? '$PATH' : '%PATH%' ))
                ),
     )
@@ -5042,11 +5052,8 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
   
   From the shell -
   
-    # Install LWP and it's missing dependencies to the 'my_lwp' directory
-    perl -MCPAN -Mlocal::lib=my_lwp -e 'CPAN::install(LWP)'
-  
-    # Install LWP and *all non-core* dependencies to the 'my_lwp' directory 
-    perl -MCPAN -Mlocal::lib=--self-contained,my_lwp -e 'CPAN::install(LWP)'
+    # Install LWP and its missing dependencies to the '~/perl5' directory
+    perl -MCPAN -Mlocal::lib -e 'CPAN::install(LWP)'
   
     # Just print out useful shell commands
     $ perl -Mlocal::lib
@@ -5098,27 +5105,9 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
     echo 'eval $(perl -I$HOME/foo/lib/perl5 -Mlocal::lib=$HOME/foo)' >>~/.bashrc
   
   After writing your shell configuration file, be sure to re-read it to get the
-  changed settings into your current shell's environment.
-  
-    . ~/.bashrc
-  
-  If you are using C shell, you can do this as follows:
-  
-    /bin/csh
-    echo $SHELL
-    /bin/csh
-    perl -I$HOME/perl5/lib/perl5 -Mlocal::lib >> ~/.cshrc
-  
-    source ~/.cshrc
-  
-  You can also pass --bootstrap=~/foo to get a different location -
-  
-    perl Makefile.PL --bootstrap=~/foo
-    make test && make install
-  
-    echo 'eval $(perl -I$HOME/foo/lib/perl5 -Mlocal::lib=$HOME/foo)' >> ~/.bashrc
-  
-    . ~/.bashrc
+  changed settings into your current shell's environment. Bourne shells use C<.
+  ~/.bashrc> for this, whereas C shells use C<source ~/.cshrc>. Replace .bashrc or
+  .cshrc with the name of the file you wrote above with the echo command.
   
   If you're on a slower machine, or are operating under draconian disk space
   limitations, you can disable the automatic generation of manpages from POD when
@@ -5126,7 +5115,7 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
   
     perl Makefile.PL --bootstrap --no-manpages
   
-  If you want to install multiple Perl module environments, say for application evelopment, 
+  If you want to install multiple Perl module environments, say for application development, 
   install local::lib globally and then:
   
     cd ~/mydir1
@@ -5229,6 +5218,12 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
   =back
   
   These values are then available for reference by any code after import.
+  
+  =head1 CREATING A SELF-CONTAINED SET OF MODULES
+  
+  See L<lib::core::only|lib::core::only> for one way to do this - but note that
+  there are a number of caveats, and the best approach is always to perform a
+  build against a clean perl (i.e. site and vendor as close to empty as possible).
   
   =head1 METHODS
   
@@ -5430,17 +5425,8 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
   
   =head1 CONTRIBUTORS
   
-  Chris Nehren <apeiron@cpan.org> now oversees maintenance of local::lib, in
-  addition to providing doc patches and bootstrap fixes to prevent users from
-  shooting themselves in the foot (it's more likely than you think).
-  
   Patches to correctly output commands for csh style shells, as well as some
   documentation additions, contributed by Christopher Nehren <apeiron@cpan.org>.
-  
-  '--self-contained' feature contributed by Mark Stosberg <mark@summersault.com>.
-  
-  Ability to pass '--self-contained' without a directory inspired by frew on
-  irc.perl.org/#catalyst.
   
   Doc patches for a custom local::lib directory contributed by Torsten Raudssus
   <torsten@raudssus.de>.
@@ -5456,11 +5442,11 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
   
   Patch to add Win32 support contributed by Curtis Jewell <csjewell@cpan.org>.
   
-  kgish/#perl-help@irc.perl.org suggested revamping the section on sourcing the
-  shell file to make it clearer to those quickly reading the POD.
+  Warnings for missing PATH/PERL5LIB (as when not running interactively) silenced
+  by a patch from Marco Emilio Poleggi.
   
-  t0m and chrisa on #local-lib@irc.perl.org pointed out a PERL5LIB ordering issue
-  with C<--self-contained>.
+  Mark Stosberg <mark@summersault.com> provided the code for the now deleted
+  '--self-contained' option.
   
   =head1 COPYRIGHT
   
