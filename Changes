@@ -1,5 +1,10 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+0.9934 Sun Apr 11 13:53:07 CEST 2010
+   [Developer Fixes]
+      - Unlink MYMETA.yml after the configuration to avoid failing Module::Signature tests
+      - Always run make install UNINST=1. You can disable it with --no-uninst-shadows #26
+
 0.99_33 Sun Apr 11 09:44:16 CEST 2010
    [Improvements]
       - Delay load Archive::Zip #38 (Tim Bunce)

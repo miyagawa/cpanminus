@@ -12,7 +12,7 @@ use constant WIN32 => $^O eq 'MSWin32';
 use constant SUNOS => $^O eq 'solaris';
 use constant PLUGIN_API_VERSION => 0.1;
 
-our $VERSION = "0.99_33";
+our $VERSION = "0.9934";
 $VERSION = eval $VERSION;
 
 my $quote = WIN32 ? q/"/ : q/'/;
