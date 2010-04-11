@@ -528,8 +528,8 @@ sub install_module {
         return;
     }
 
-    if ($dist->{distvfile} && $self->{seen}{$dist->{distvfile}}) {
-        $self->diag("Already tried $dist->{distvfile}. Skipping.\n");
+    if ($dist->{distvname} && $self->{seen}{$dist->{distvname}}++) {
+        $self->diag("Already tried $dist->{distvname}. Skipping.\n");
         return;
     }
 
@@ -553,7 +553,7 @@ sub install_module {
     $dist->{dir} ||= $self->fetch_module($dist);
 
     unless ($dist->{dir}) {
-        $self->diag_fail("Failed to fetch distribution $dist->{distvfile}");
+        $self->diag_fail("Failed to fetch distribution $dist->{distvname}");
         return;
     }
 
