@@ -242,7 +242,9 @@ Examples:
   cpanm -L extlib Plack                                     # install Plack and all non-core deps into extlib
   cpanm --mirror http://cpan.cpantesters.org/ DBI           # use the fast-syncing mirror
 
-You can also specify the default options in PERL_CPANM_OPT environment variables using the shell rc file.
+You can also specify the default options in PERL_CPANM_OPT environment variables in the shell rc:
+
+  export PERL_CPANM_OPT="--skip-installed -l ~/perl --mirror http://cpan.cpantesters.org"
 
 HELP
 
