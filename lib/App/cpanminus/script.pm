@@ -37,7 +37,7 @@ sub new {
         argv => [],
         local_lib => undef,
         self_contained => undef,
-        prompt_timeout => 10,
+        prompt_timeout => 0,
         prompt => undef,
         configure_timeout => 60,
         try_lwp => 1,
@@ -370,7 +370,7 @@ sub prompt {
     eval {
         local $SIG{ALRM} = sub { undef $ans; die "alarm\n" };
         print STDOUT "$mess $dispdef";
-        alarm $self->{prompt_timeout};
+        alarm $self->{prompt_timeout} if $self->{prompt_timeout};
         $ans = <STDIN>;
         alarm 0;
     };
@@ -850,17 +850,32 @@ sub install_deps {
         $self->diag("==> Found dependencies: " . join(", ", @install) . "\n");
     }
 
-    my @pass;
+    my @fail;
     for my $mod (@install) {
-        if ($self->install_module($mod, $depth + 1)) {
-            push @pass, $mod;
+        unless ($self->install_module($mod, $depth + 1)) {
+            push @fail, $mod;
         }
     }
 
     $self->chdir($self->{base});
     $self->chdir($dir) if $dir;
 
-    return @pass == @install;
+    return @fail;
+}
+
+sub install_deps_bailout {
+    my($self, $target, $dir, $depth, @deps) = @_;
+
+    my @fail = $self->install_deps($dir, $depth, @deps);
+    if (@fail) {
+        unless ($self->prompt_bool("Installing the following dependencies failed:\n==> " .
+                                   join(", ", @fail) . "\nDo you want to  continue building $target anyway?", "n")) {
+            $self->diag_fail("Bailing out the installation for $target. Retry with --prompt or --force.");
+            return;
+        }
+    }
+
+    return 1;
 }
 
 sub build_stuff {
@@ -875,15 +890,8 @@ sub build_stuff {
 
     my $target = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $dist->{dir};
 
-    my $bailout = sub {
-        $self->diag_fail("Bailing out the installation for $target. Retry with --prompt or --force.");
-        return;
-    };
-
-    unless ($self->install_deps($dist->{dir}, $depth, @config_deps)) {
-        $self->prompt_bool("Installing configuration dependencies failed. Proceed?", "n")
-            or return $bailout->();
-    }
+    $self->install_deps_bailout($target, $dist->{dir}, $depth, @config_deps)
+        or return;
 
     $self->diag_progress("Configuring $target");
 
@@ -895,10 +903,8 @@ sub build_stuff {
 
     my $distname = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $stuff;
 
-    unless ($self->install_deps($dist->{dir}, $depth, @deps)) {
-        $self->prompt_bool("Installing build dependencies failed. Proceed?", "n")
-            or return $bailout->();
-    }
+    $self->install_deps_bailout($distname, $dist->{dir}, $depth, @deps)
+        or return;
 
     if ($self->{installdeps} && $depth == 0) {
         $self->diag("<== Installed dependencies for $stuff. Finishing.\n");
