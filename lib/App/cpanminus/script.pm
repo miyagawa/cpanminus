@@ -518,7 +518,7 @@ sub install_module {
     my($self, $module, $depth) = @_;
 
     if ($self->{seen}{$module}++) {
-        $self->diag("Already tried $module. Skipping.\n");
+        $self->chat("Already tried $module. Skipping.\n");
         return;
     }
 
@@ -529,7 +529,7 @@ sub install_module {
     }
 
     if ($dist->{distvname} && $self->{seen}{$dist->{distvname}}++) {
-        $self->diag("Already tried $dist->{distvname}. Skipping.\n");
+        $self->chat("Already tried $dist->{distvname}. Skipping.\n");
         return;
     }
 
