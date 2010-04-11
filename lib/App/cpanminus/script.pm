@@ -10,7 +10,6 @@ use Getopt::Long ();
 
 use constant WIN32 => $^O eq 'MSWin32';
 use constant SUNOS => $^O eq 'solaris';
-use constant PLUGIN_API_VERSION => 0.1;
 
 our $VERSION = "0.9934";
 $VERSION = eval $VERSION;
@@ -36,8 +35,6 @@ sub new {
         mirrors => [],
         perl => $^X,
         argv => [],
-        hooks => {},
-        plugins => [],
         local_lib => undef,
         self_contained => undef,
         configure_timeout => 60,
@@ -75,8 +72,6 @@ sub parse_options {
         'perl=s'    => \$self->{perl},
         'l|local-lib=s' => \$self->{local_lib},
         'L|local-lib-contained=s' => sub { $self->{local_lib} = $_[1]; $self->{self_contained} = 1 },
-        'recent'    => sub { $self->{action} = 'show_recent' },
-        'list-plugins' => sub { $self->{action} = 'list_plugins' },
         'installdeps' => \$self->{installdeps},
         'skip-installed!' => \$self->{skip_installed},
         'interactive!' => \$self->{interactive},
@@ -84,7 +79,6 @@ sub parse_options {
         'look'      => sub { $self->{cmd} = 'look' },
         'info'      => sub { $self->{cmd} = 'info' },
         'self-upgrade' => sub { $self->{cmd} = 'install'; $self->{skip_installed} = 1; push @ARGV, 'App::cpanminus' },
-        'disable-plugins!' => \$self->{disable_plugins},
         'uninst-shadows!'  => \$self->{uninstall_shadows},
         'lwp!'    => \$self->{try_lwp},
     );
@@ -107,7 +101,6 @@ sub doit {
     my $self = shift;
 
     $self->setup_home;
-    $self->load_plugins;
     $self->init_tools;
 
     if (my $action = $self->{action}) {
@@ -121,8 +114,6 @@ sub doit {
     for my $module (@{$self->{argv}}) {
         $self->install_module($module, 0);
     }
-
-    $self->run_hooks(finalize => {});
 }
 
 sub setup_home {
@@ -135,8 +126,7 @@ sub setup_home {
     }
 
     $self->{base} = "$self->{home}/work/" . time . ".$$";
-    $self->{plugin_dir} = "$self->{home}/plugins";
-    File::Path::mkpath([ $self->{base}, $self->{plugin_dir} ], 0, 0777);
+    File::Path::mkpath([ $self->{base} ], 0, 0777);
 
     my $link = "$self->{home}/latest-build";
     eval { unlink $link; symlink $self->{base}, $link };
@@ -156,131 +146,28 @@ sub setup_home {
     print $out "Work directory is $self->{base}\n";
 }
 
-sub register_core_hooks {
-    my $self = shift;
+sub search_module {
+    my($self, $module) = @_;
 
-    $self->hook('core', search_module => sub {
-        my $args = shift;
-        my $self   = $args->{app};
-        my $module = $args->{module};
-        push @{$args->{uris}}, sub {
-            $self->chat("Searching $module on cpanmetadb ...\n");
-            my $uri  = "http://cpanmetadb.appspot.com/v1.0/package/$module";
-            my $yaml = $self->get($uri);
-            my $meta = $self->parse_meta_string($yaml);
-            if ($meta->{distfile}) {
-                return $self->cpan_uri($meta->{distfile});
-            }
-            $self->diag_fail("Finding $module on cpanmetadb failed.");
-            return;
-        };
-    });
-
-    $self->hook('core', search_module => sub {
-        my $args = shift;
-        my $self   = $args->{app};
-        my $module = $args->{module};
-        push @{$args->{uris}}, sub {
-            $self->chat("Searching $module on search.cpan.org ...\n");
-            my $uri  = "http://search.cpan.org/perldoc?$module";
-            my $html = $self->get($uri);
-            $html =~ m!<a href="/CPAN/authors/id/(.*?\.(?:tar\.gz|tgz|tar\.bz2|zip))">!
-                and return $self->cpan_uri($1);
-            $self->diag_fail("Finding $module on search.cpan.org failed.");
-            return;
-        };
-    });
-
-    $self->hook('core', show_recent => sub {
-        my $args = shift;
-        my $self = $args->{app};
-
-        $self->chat("Fetching recent feed from search.cpan.org ...\n");
-        my $feed = $self->get("http://search.cpan.org/uploads.rdf");
-
-        my @dists;
-        while ($feed =~ m!<link>http://search\.cpan\.org/~([a-z_\-0-9]+)/(.*?)/</link>!g) {
-            my($pause_id, $dist) = (uc $1, $2);
-            # FIXME Yes, it doesn't always have to be 'tar.gz'
-            push @dists, substr($pause_id, 0, 1) . "/" . substr($pause_id, 0, 2) . "/" . $pause_id . "/$dist.tar.gz";
-            last if @dists >= 50;
-        }
-
-        return \@dists;
-    });
-}
-
-sub load_plugins {
-    my $self = shift;
-
-    $self->_load_plugins;
-    $self->register_core_hooks;
-
-    for my $hook (keys %{$self->{hooks}}) {
-        $self->{hooks}->{$hook} = [ sort { $a->[0] <=> $b->[0] } @{$self->{hooks}->{$hook}} ];
+    $self->chat("Searching $module on cpanmetadb ...\n");
+    my $uri  = "http://cpanmetadb.appspot.com/v1.0/package/$module";
+    my $yaml = $self->get($uri);
+    my $meta = $self->parse_meta_string($yaml);
+    if ($meta->{distfile}) {
+        return $self->cpan_uri($meta->{distfile});
     }
 
-    $self->run_hooks(init => {});
-}
+    $self->diag_fail("Finding $module on cpanmetadb failed.");
 
-sub _load_plugins {
-    my $self = shift;
-    return if $self->{disable_plugins};
-    return unless $self->{plugin_dir} && -e $self->{plugin_dir};
+    $self->chat("Searching $module on search.cpan.org ...\n");
+    my $uri  = "http://search.cpan.org/perldoc?$module";
+    my $html = $self->get($uri);
+    $html =~ m!<a href="/CPAN/authors/id/(.*?\.(?:tar\.gz|tgz|tar\.bz2|zip))">!
+        and return $self->cpan_uri($1);
 
-    opendir my $dh, $self->{plugin_dir} or return;
-    my @plugins;
-    while (my $e = readdir $dh) {
-        my $f = "$self->{plugin_dir}/$e";
-        next unless -f $f && $e =~ /^[A-Za-z0-9_]+$/ && $e ne 'README';
-        push @plugins, [ $f, $e ];
-    }
+    $self->diag_fail("Finding $module on search.cpan.org failed.");
 
-    for my $plugin (sort { $a->[1] <=> $b->[1] } @plugins) {
-        $self->load_plugin(@$plugin);
-    }
-}
-
-sub load_plugin {
-    my($self, $file, $name) = @_;
-
-    # TODO remove this once plugin API is official
-    unless ($self->env('DEV')) {
-        $self->chat("! Found plugin $file but PERL_CPANM_DEV is not set. Skipping.\n");
-        return;
-    }
-
-    $self->chat("Loading plugin $file\n");
-
-    my $plugin = { name => $name, file => $file };
-    my @attr   = qw( name description author version synopsis );
-    my $dsl    = join "\n", map "sub $_ { \$plugin->{$_} = shift }", @attr;
-
-    (my $package = $file) =~ s/[^a-zA-Z0-9_]/_/g;
-    my $code = do { open my $io, "<$file"; local $/; <$io> };
-
-    my $api_version = PLUGIN_API_VERSION;
-
-    my @hooks;
-    eval "package App::cpanplus::plugin::$package;\n".
-        "use strict;\n$dsl\n" .
-        'sub api_version { die "API_COMPAT: $_[0]" if $_[0] < $api_version }' . "\n" .
-        "sub hook { push \@hooks, [\@_] };\n$code";
-
-    if ($@ =~ /API_COMPAT: (\S+)/) {
-        $self->diag_fail("$plugin->{name} plugin API version is outdated ($1 < $api_version) and needs an update.");
-        return;
-    } elsif ($@) {
-        $self->diag_fail("Loading $name plugin failed. See $self->{log} for details.");
-        $self->chat($@);
-        return;
-    }
-
-    for my $hook (@hooks) {
-        $self->hook($plugin->{name}, @$hook);
-    }
-
-    push @{$self->{plugins}}, $plugin;
+    return;
 }
 
 sub load_argv_from_fh {
@@ -296,31 +183,6 @@ sub load_argv_from_fh {
         push @argv, split ' ', $line if $line;
     }
     return @argv;
-}
-
-sub hook {
-    my $cb = pop;
-    my($self, $name, $hook, $order) = @_;
-    $order = 50 unless defined $order;
-    push @{$self->{hooks}->{$hook}}, [ $order, $cb, $name ];
-}
-
-sub run_hook {
-    my($self, $hook, $args) = @_;
-    $self->run_hooks($hook, $args, 1);
-}
-
-sub run_hooks {
-    my($self, $hook, $args, $first) = @_;
-    $args->{app} = $self;
-    my $res;
-    for my $plugin (@{$self->{hooks}->{$hook} || []}) {
-        $res = eval { $plugin->[1]->($args) };
-        $self->chat("Running hook '$plugin->[2]' error: $@") if $@;
-        last if $res && $first;
-    }
-
-    return $res;
 }
 
 sub show_version {
@@ -350,13 +212,11 @@ Options:
   -S,--sudo          sudo to run install commands
   --installdeps      Only install dependencies
   --skip-installed   Skip installation if you already have the latest version installed
-  --disable-plugins  Disable plugin loading
 
 Commands:
   --self-upgrade     upgrades itself
   --look             Download the tarball and open the directory with your shell
   --info             Displays distribution info on CPAN
-  --recent           Show recently updated modules
 
 Examples:
 
@@ -637,32 +497,8 @@ sub chdir {
 sub configure_mirrors {
     my $self = shift;
 
-    my @mirrors;
-    $self->run_hook(configure_mirrors => { mirrors => \@mirrors });
-
-    @mirrors = ('http://search.cpan.org/CPAN') unless @mirrors;
+    my @mirrors= ('http://search.cpan.org/CPAN');
     $self->{mirrors} = \@mirrors;
-}
-
-sub show_recent {
-    my $self = shift;
-
-    my $dists = $self->run_hook(show_recent => {});
-    for my $dist (@$dists) {
-        print $dist, "\n";
-    }
-
-    return 1;
-}
-
-sub list_plugins {
-    my $self = shift;
-
-    for my $plugin (@{$self->{plugins}}) {
-        print "$plugin->{name} - $plugin->{description}\n";
-    }
-
-    return 1;
 }
 
 sub self_upgrade {
@@ -714,106 +550,65 @@ sub install_module {
     }
 }
 
-sub generator_cb {
-    my($self, $ref) = @_;
-
-    $ref = [ $ref ] unless ref $ref eq 'ARRAY';
-
-    my @stack;
-    return sub {
-        if (@stack) {
-            return shift @stack;
-        }
-
-        return -1 unless @$ref;
-        my $curr = (shift @$ref)->();
-        if (ref $curr eq 'ARRAY') {
-            @stack = @$curr;
-            return shift @stack;
-        } else {
-            return $curr;
-        }
-    };
-}
-
 sub fetch_module {
     my($self, $module) = @_;
 
-    my($uris, $local_dir) = $self->locate_dist($module);
+    my($uri, $local_dir) = $self->locate_dist($module);
 
     return $local_dir if $local_dir;
-    return unless $uris;
+    return unless $uri;
 
-    my $iter = $self->generator_cb($uris);
-
-    while (1) {
-        my $uri = $iter->();
-        last if $uri == -1;
-        next unless $uri;
-
-        # Yikes this is dirty
-        if ($self->{cmd} eq 'info') {
-            $uri =~ s!.*authors/id/!!;
-            print $uri, "\n";
-            return;
-        }
-
-        if ($uri =~ m{/perl-5}){
-            $self->diag("skip $uri\n");
-            next;
-        }
-
-        $self->chdir($self->{base});
-        $self->diag_progress("Fetching $uri");
-
-        my $name = File::Basename::basename $uri;
-
-        my $cancelled;
-        my $fetch = sub {
-            my $file;
-            eval {
-                local $SIG{INT} = sub { $cancelled = 1; die "SIGINT\n" };
-                $self->mirror($uri, $name);
-                $file = $name if -e $name;
-            };
-            $self->chat("$@") if $@ && $@ ne "SIGINT\n";
-            return $file;
-        };
-
-        my($try, $file);
-        while ($try++ < 3) {
-            $file = $fetch->();
-            last if $cancelled or $file;
-            $self->diag_fail("Download $uri failed. Retrying ... ");
-        }
-
-        if ($cancelled) {
-            $self->diag_fail("Download cancelled.");
-            return;
-        }
-
-        unless ($file) {
-            $self->diag_fail("Failed to download $uri");
-            next;
-        }
-
-        $self->diag_ok;
-
-        # TODO add more metadata so plugins can tell how to verify and pass through
-        my $args = { file => $file, uri => $uri, fail => 0 };
-        $self->run_hooks(verify_archive => $args);
-
-        if ($args->{fail} && !$self->{force}) {
-            $self->diag_fail("Verifying the archive $file failed. Skipping. (use --force to install)");
-            next;
-        }
-
-        my $dir = $self->unpack($file);
-
-        next unless $dir; # unpack failed
-
-        return $dir;
+    # Yikes this is dirty
+    if ($self->{cmd} eq 'info') {
+        $uri =~ s!.*authors/id/!!;
+        print $uri, "\n";
+        return;
     }
+
+    if ($uri =~ m{/perl-5}){
+        $self->diag("skip $uri\n");
+        next;
+    }
+
+    $self->chdir($self->{base});
+    $self->diag_progress("Fetching $uri");
+
+    my $name = File::Basename::basename $uri;
+
+    my $cancelled;
+    my $fetch = sub {
+        my $file;
+        eval {
+            local $SIG{INT} = sub { $cancelled = 1; die "SIGINT\n" };
+            $self->mirror($uri, $name);
+            $file = $name if -e $name;
+        };
+        $self->chat("$@") if $@ && $@ ne "SIGINT\n";
+        return $file;
+    };
+
+    my($try, $file);
+    while ($try++ < 3) {
+        $file = $fetch->();
+        last if $cancelled or $file;
+        $self->diag_fail("Download $uri failed. Retrying ... ");
+    }
+
+    if ($cancelled) {
+        $self->diag_fail("Download cancelled.");
+        return;
+    }
+
+    unless ($file) {
+        $self->diag_fail("Failed to download $uri");
+    }
+
+    $self->diag_ok;
+
+    my $dir = $self->unpack($file);
+    return unless $dir; # unpack failed
+
+    return $dir;
 }
 
 sub unpack {
@@ -829,19 +624,14 @@ sub unpack {
 sub locate_dist {
     my($self, $module) = @_;
 
-    if (my $located = $self->run_hook(locate_dist => { module => $module })) {
-        return ref $located eq 'ARRAY' ? @$located :
-               ref $located eq 'CODE'  ? $located  : sub { $located };
-    }
-
     # URL
-    return sub { $module } if $module =~ /^(ftp|https?|file):/;
+    return $module if $module =~ /^(ftp|https?|file):/;
 
     # Directory
     return undef, Cwd::abs_path($module) if $module =~ m!^[\./]! && -d $module;
 
     # File
-    return sub { "file://" . Cwd::abs_path($module) } if -f $module;
+    return "file://" . Cwd::abs_path($module) if -f $module;
 
     # cpan URI
     $module =~ s!^cpan:///distfile/!!;
@@ -850,7 +640,7 @@ sub locate_dist {
     $module =~ s!^([A-Z]{3,})/!substr($1, 0, 1)."/".substr($1, 0, 2) ."/" . $1 . "/"!e;
 
     # CPAN tarball
-    return sub { $self->cpan_uri($module) } if $module =~ m!^[A-Z]/[A-Z]{2}/!;
+    return $self->cpan_uri($module) if $module =~ m!^[A-Z]/[A-Z]{2}/!;
 
     # Module name -- search.cpan.org
     return $self->search_module($module);
@@ -863,15 +653,6 @@ sub cpan_uri {
     my @urls    = map "$_/authors/id/$dist", @mirrors;
 
     return wantarray ? @urls : $urls[int(rand($#urls))];
-}
-
-sub search_module {
-    my($self, $module) = @_;
-
-    my @cbs;
-    $self->run_hooks(search_module => { module => $module, uris => \@cbs });
-
-    return \@cbs;
 }
 
 sub check_module {
@@ -955,14 +736,6 @@ sub install_deps {
 sub build_stuff {
     my($self, $module, $dir, $depth) = @_;
 
-    my $args = { module => $module, dir => $dir };
-    $self->run_hooks(verify_dist => $args);
-
-    if ($args->{fail} && !$self->{force}) {
-        $self->diag_fail("Verifying the module $module failed. Skipping. (use --force to install)");
-        return;
-    }
-
     my($meta, @config_deps);
     if (-e 'META.yml') {
         $self->chat("Checking configure dependencies from META.yml\n");
@@ -980,13 +753,7 @@ sub build_stuff {
         }
     }
 
-    # get more configure_requires
-    $self->run_hooks(pre_configure => { meta => $meta, deps => \@config_deps });
     $self->install_deps($dir, $depth, @config_deps);
-
-    # Let plugins to take over the build process -- dzil for instance
-    my $builder = $self->run_hook(build_dist => { meta => $meta });
-    return $builder->() if $builder;
 
     my $target = $meta->{name} ? "$meta->{name}-$meta->{version}" : $dir;
     $self->diag_progress("Configuring $target");
@@ -996,9 +763,6 @@ sub build_stuff {
     $self->diag_ok($configure_state->{configured_ok} ? "OK" : "N/A");
 
     my @deps = $self->find_prereqs($meta);
-
-    $self->run_hooks(find_deps => { deps => \@deps, module => $module, meta => $meta });
-
     $self->install_deps($dir, $depth, @deps);
 
     if ($self->{installdeps} && $depth == 0) {
@@ -1031,7 +795,6 @@ sub build_stuff {
         else                   { $why = "Can't configure the distribution. You probably need to have 'make'." }
 
         $self->diag_fail("$why See $self->{log} for details.");
-        $self->run_hooks(configure_failure => { module => $module, build_dir => $dir, meta => $meta });
         return;
     }
 
@@ -1048,19 +811,10 @@ sub build_stuff {
         my $msg = "Successfully $how";
         $self->diag_ok;
         $self->diag("$msg\n");
-        $self->run_hooks(install_success => {
-            module => $module, build_dir => $dir, meta => $meta,
-            local => $local, reinstall => $reinstall, depth => $depth,
-            message => $msg, dist => $distname
-        });
         return 1;
     } else {
         my $msg = "Building $distname failed";
         $self->diag_fail("Installing $module failed. See $self->{log} for details.");
-        $self->run_hooks(build_failure => {
-            module => $module, build_dir => $dir, meta => $meta,
-            message => $msg, dist => $distname,
-        });
         return;
     }
 }
