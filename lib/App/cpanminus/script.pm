@@ -37,6 +37,8 @@ sub new {
         argv => [],
         local_lib => undef,
         self_contained => undef,
+        prompt_timeout => 10,
+        prompt => undef,
         configure_timeout => 60,
         try_lwp => 1,
         uninstall_shadows => 1,
@@ -73,6 +75,7 @@ sub parse_options {
         'l|local-lib=s' => \$self->{local_lib},
         'L|local-lib-contained=s' => sub { $self->{local_lib} = $_[1]; $self->{self_contained} = 1 },
         'mirror=s@' => $self->{mirrors},
+        'prompt!'   => \$self->{prompt},
         'installdeps' => \$self->{installdeps},
         'skip-installed!' => \$self->{skip_installed},
         'interactive!' => \$self->{interactive},
@@ -222,6 +225,7 @@ Options:
   --skip-installed          Skip installation if you already have the latest version installed
   --mirror                  Specify the base URL for the mirror (e.g. http://cpan.cpantesters.org/)
                             You can specify multiple URLs
+  --prompt                  Prompt when build/test fails
   -l,--local-lib            Specify the install base to install modules
   -L,--local-lib-contained  Specify the install base to install all non-core modules
 
@@ -242,9 +246,9 @@ Examples:
   cpanm -L extlib Plack                                     # install Plack and all non-core deps into extlib
   cpanm --mirror http://cpan.cpantesters.org/ DBI           # use the fast-syncing mirror
 
-You can also specify the default options in PERL_CPANM_OPT environment variables in the shell rc:
+You can also specify the default options in PERL_CPANM_OPT environment variable in the shell rc:
 
-  export PERL_CPANM_OPT="--skip-installed -l ~/perl --mirror http://cpan.cpantesters.org"
+  export PERL_CPANM_OPT="--prompt --skip-installed -l ~/perl --mirror http://cpan.cpantesters.org"
 
 HELP
 
@@ -342,6 +346,43 @@ sub setup_local_lib {
         'Module::Build'       => 0.28; # TODO: 0.36 or later for MYMETA.yml once we do --bootstrap command
 }
 
+sub prompt_bool {
+    my($self, $mess, $def) = @_;
+
+    my $val = $self->prompt($mess, $def);
+    return lc $val eq 'y';
+}
+
+sub prompt {
+    my($self, $mess, $def) = @_;
+
+    my $isa_tty = -t STDIN && (-t STDOUT || !(-f STDOUT || -c STDOUT)) ;
+    my $dispdef = defined $def ? "[$def] " : " ";
+    $def = defined $def ? $def : "";
+
+    if ($self->{quiet} || !$self->{prompt} || (!$isa_tty && eof STDIN)) {
+        return $def;
+    }
+
+    local $|=1;
+    local $\;
+    my $ans;
+    eval {
+        local $SIG{ALRM} = sub { undef $ans; die "alarm\n" };
+        print STDOUT "$mess $dispdef";
+        alarm $self->{prompt_timeout};
+        $ans = <STDIN>;
+        alarm 0;
+    };
+    if ( defined $ans ) {
+        chomp $ans;
+    } else { # user hit ctrl-D or alarm timeout
+        print STDOUT "\n";
+    }
+
+    return (!defined $ans || $ans eq '') ? $def : $ans;
+}
+
 sub diag_ok {
     my($self, $msg) = @_;
     chomp $msg;
@@ -360,8 +401,11 @@ sub diag_fail {
         $self->_diag("FAIL\n");
         $self->{in_progress} = 0;
     }
-    $self->_diag("! $msg\n");
-    $self->log("-> FAIL $msg\n");
+
+    if ($msg) {
+        $self->_diag("! $msg\n");
+        $self->log("-> FAIL $msg\n");
+    }
 }
 
 sub diag_progress {
@@ -483,16 +527,18 @@ sub build {
 }
 
 sub test {
-    my($self, $cmd, $force_cb) = @_;
+    my($self, $cmd, $distname) = @_;
     return 1 if $self->{notest};
     local $ENV{AUTOMATED_TESTING} = 1;
 
-    return 1 if $self->run_timeout($cmd,  $self->{test_timeout});
+    return 1 if $self->run_timeout($cmd, $self->{test_timeout});
     if ($self->{force}) {
-        $force_cb->() if $force_cb;
+        $self->diag_fail("Testing $distname failed but installing it anyway.");
         return 1;
+    } else {
+        $self->diag_fail;
+        return $self->prompt_bool("Testing $distname failed. Force install?", "n");
     }
-    return;
 }
 
 sub install {
@@ -535,7 +581,7 @@ sub install_module {
 
     if ($self->{seen}{$module}++) {
         $self->chat("Already tried $module. Skipping.\n");
-        return;
+        return 1;
     }
 
     my $dist = $self->resolve_name($module);
@@ -546,7 +592,7 @@ sub install_module {
 
     if ($dist->{distvname} && $self->{seen}{$dist->{distvname}}++) {
         $self->chat("Already tried $dist->{distvname}. Skipping.\n");
-        return;
+        return 1;
     }
 
     if ($dist->{source} eq 'cpan') {
@@ -555,14 +601,14 @@ sub install_module {
 
     if ($self->{cmd} eq 'info') {
         print $dist->{cpanid}, "/", $dist->{filename}, "\n";
-        return;
+        return 1;
     }
 
     if ($dist->{module}) {
         my($ok, $local) = $self->check_module($dist->{module}, $dist->{meta}{version});
         if ($self->{skip_installed} && $ok) {
             $self->diag("$dist->{module} is up to date. ($local)\n");
-            return;
+            return 1;
         }
     }
 
@@ -588,7 +634,7 @@ sub install_module {
         }
     } else {
         $self->check_libs;
-        $self->build_stuff($module, $dist, $depth);
+        return $self->build_stuff($module, $dist, $depth);
     }
 }
 
@@ -804,27 +850,41 @@ sub install_deps {
         $self->diag("==> Found dependencies: " . join(", ", @install) . "\n");
     }
 
+    my @pass;
     for my $mod (@install) {
-        $self->install_module($mod, $depth + 1);
+        if ($self->install_module($mod, $depth + 1)) {
+            push @pass, $mod;
+        }
     }
 
     $self->chdir($self->{base});
     $self->chdir($dir) if $dir;
+
+    return @pass == @install;
 }
 
 sub build_stuff {
     my($self, $stuff, $dist, $depth) = @_;
 
     my @config_deps;
-    if (!%{$dist->{meta}} && -e 'META.yml') {
+    if (!%{$dist->{meta} || {}} && -e 'META.yml') {
         $self->chat("Checking configure dependencies from META.yml\n");
         $dist->{meta} = $self->parse_meta('META.yml');
         push @config_deps, %{$dist->{meta}{configure_requires} || {}};
     }
 
-    $self->install_deps($dist->{dir}, $depth, @config_deps);
-
     my $target = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $dist->{dir};
+
+    my $bailout = sub {
+        $self->diag_fail("Bailing out the installation for $target. Retry with --prompt or --force.");
+        return;
+    };
+
+    unless ($self->install_deps($dist->{dir}, $depth, @config_deps)) {
+        $self->prompt_bool("Installing configuration dependencies failed. Proceed?", "n")
+            or return $bailout->();
+    }
+
     $self->diag_progress("Configuring $target");
 
     my $configure_state = $self->configure_this($dist);
@@ -835,28 +895,27 @@ sub build_stuff {
 
     my $distname = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $stuff;
 
-    $self->install_deps($dist->{dir}, $depth, @deps);
+    unless ($self->install_deps($dist->{dir}, $depth, @deps)) {
+        $self->prompt_bool("Installing build dependencies failed. Proceed?", "n")
+            or return $bailout->();
+    }
 
     if ($self->{installdeps} && $depth == 0) {
         $self->diag("<== Installed dependencies for $stuff. Finishing.\n");
         return 1;
     }
 
-    my $testdiag = sub {
-        $self->diag_fail("Testing $distname failed but installing it anyway.");
-    };
-
     my $installed;
     if ($configure_state->{use_module_build} && -e 'Build' && -f _) {
         $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . "$distname for $stuff");
         $self->build([ $self->{perl}, "./Build" ]) &&
-        $self->test([ $self->{perl}, "./Build", "test" ], $testdiag) &&
+        $self->test([ $self->{perl}, "./Build", "test" ], $distname) &&
         $self->install([ $self->{perl}, "./Build", "install" ], [ "--uninst", 1 ]) &&
         $installed++;
     } elsif ($self->{make} && -e 'Makefile') {
         $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . "$distname for $stuff");
         $self->build([ $self->{make} ]) &&
-        $self->test([ $self->{make}, "test" ], $testdiag) &&
+        $self->test([ $self->{make}, "test" ], $distname) &&
         $self->install([ $self->{make}, "install" ], [ "UNINST=1" ]) &&
         $installed++;
     } else {
