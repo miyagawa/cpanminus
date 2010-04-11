@@ -1108,6 +1108,9 @@ sub find_prereqs {
         }
     }
 
+    # No need to remove, but this gets in the way of signature testing :/
+    unlink 'MYMETA.yml';
+
     return @deps;
 }
 
