@@ -346,8 +346,10 @@ sub diag_ok {
     my($self, $msg) = @_;
     chomp $msg;
     $msg ||= "OK";
-    $self->_diag("$msg\n");
-    $self->{in_progress} = 0;
+    if ($self->{in_progress}) {
+        $self->_diag("$msg\n");
+        $self->{in_progress} = 0;
+    }
     $self->log("-> $msg\n");
 }
 
