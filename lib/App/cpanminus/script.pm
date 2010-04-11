@@ -814,7 +814,7 @@ sub build_stuff {
     my($self, $stuff, $dist, $depth) = @_;
 
     my @config_deps;
-    if (!$dist->{meta} && -e 'META.yml') {
+    if (!%{$dist->{meta}} && -e 'META.yml') {
         $self->chat("Checking configure dependencies from META.yml\n");
         $dist->{meta} = $self->parse_meta('META.yml');
         push @config_deps, %{$dist->{meta}{configure_requires} || {}};
