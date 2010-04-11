@@ -80,7 +80,6 @@ sub parse_options {
         'skip-installed!' => \$self->{skip_installed},
         'interactive!' => \$self->{interactive},
         'i|install' => sub { $self->{cmd} = 'install' },
-        'look'      => sub { $self->{cmd} = 'look' },
         'info'      => sub { $self->{cmd} = 'info' },
         'self-upgrade' => sub { $self->{cmd} = 'install'; $self->{skip_installed} = 1; push @ARGV, 'App::cpanminus' },
         'uninst-shadows!'  => \$self->{uninstall_shadows},
@@ -231,7 +230,6 @@ Options:
 
 Commands:
   --self-upgrade            upgrades itself
-  --look                    Download the tarball and open the directory with your shell
   --info                    Displays distribution info on CPAN
 
 Examples:
@@ -537,7 +535,13 @@ sub test {
         return 1;
     } else {
         $self->diag_fail;
-        return $self->prompt_bool("Testing $distname failed. Force install?", "n");
+        while (1) {
+            my $ans = lc $self->prompt("Testing $distname failed.\nYou can [a]bort, [r]etry, [f]orce install or [l]ook ?", "a");
+            return                              if $ans eq 'a';
+            return $self->test($cmd, $distname) if $ans eq 'r';
+            return 1                            if $ans eq 'f';
+            $self->look                         if $ans eq 'l';
+        }
     }
 }
 
@@ -553,6 +557,20 @@ sub install {
     }
 
     $self->run($cmd);
+}
+
+sub look {
+    my $self = shift;
+
+    my $shell = $ENV{SHELL};
+    $shell  ||= $ENV{COMSPEC} if WIN32;
+    if ($shell) {
+        my $cwd = Cwd::cwd;
+        $self->diag("Entering $cwd with $shell\n");
+        system $shell;
+    } else {
+        $self->diag_fail("You don't seem to have a SHELL :/");
+    }
 }
 
 sub chdir {
@@ -623,19 +641,8 @@ sub install_module {
     $self->chdir($self->{base});
     $self->chdir($dist->{dir});
 
-    if ($self->{cmd} eq 'look') {
-        my $shell = $ENV{SHELL};
-        $shell  ||= $ENV{COMSPEC} if WIN32;
-        if ($shell) {
-            $self->diag("Entering $dist->{dir} with $shell\n");
-            system $shell;
-        } else {
-            $self->diag_fail("You don't seem to have a SHELL :/");
-        }
-    } else {
-        $self->check_libs;
-        return $self->build_stuff($module, $dist, $depth);
-    }
+    $self->check_libs;
+    return $self->build_stuff($module, $dist, $depth);
 }
 
 sub fetch_module {
@@ -852,9 +859,8 @@ sub install_deps {
 
     my @fail;
     for my $mod (@install) {
-        unless ($self->install_module($mod, $depth + 1)) {
-            push @fail, $mod;
-        }
+        $self->install_module($mod, $depth + 1)
+            or push @fail, $mod;
     }
 
     $self->chdir($self->{base});
