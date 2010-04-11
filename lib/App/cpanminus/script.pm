@@ -49,7 +49,7 @@ sub new {
 
 sub env {
     my($self, $key) = @_;
-    $ENV{"PERL_CPANM_" . $key} || $ENV{"CPANMINUS_" . $key};
+    $ENV{"PERL_CPANM_" . $key};
 }
 
 sub parse_options {
