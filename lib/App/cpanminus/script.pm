@@ -107,16 +107,20 @@ sub doit {
     $self->init_tools;
 
     if (my $action = $self->{action}) {
-        $self->$action() and return;
+        $self->$action() and return 1;
     }
 
     $self->show_help(1) unless @{$self->{argv}};
 
     $self->configure_mirrors;
 
+    my @fail;
     for my $module (@{$self->{argv}}) {
-        $self->install_module($module, 0);
+        $self->install_module($module, 0)
+            or push @fail, $module;
     }
+
+    return !@fail;
 }
 
 sub setup_home {

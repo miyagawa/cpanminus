@@ -10,5 +10,5 @@ use Parse::CPAN::Meta;
 unless (caller) {
     my $app = App::cpanminus::script->new;
     $app->parse_options(@ARGV);
-    $app->doit;
+    $app->doit or exit(1);
 }
