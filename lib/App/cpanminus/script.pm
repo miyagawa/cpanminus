@@ -536,8 +536,8 @@ sub test {
     } else {
         $self->diag_fail;
         while (1) {
-            my $ans = lc $self->prompt("Testing $distname failed.\nYou can [a]bort, [r]etry, [f]orce install or [l]ook ?", "a");
-            return                              if $ans eq 'a';
+            my $ans = lc $self->prompt("Testing $distname failed.\nYou can s)kip, r)etry, f)orce install or l)ook ?", "s");
+            return                              if $ans eq 's';
             return $self->test($cmd, $distname) if $ans eq 'r';
             return 1                            if $ans eq 'f';
             $self->look                         if $ans eq 'l';
