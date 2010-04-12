@@ -81,6 +81,7 @@ sub parse_options {
         'interactive!' => \$self->{interactive},
         'i|install' => sub { $self->{cmd} = 'install' },
         'info'      => sub { $self->{cmd} = 'info' },
+        'look'      => sub { $self->{cmd} = 'look' },
         'self-upgrade' => sub { $self->{cmd} = 'install'; $self->{skip_installed} = 1; push @ARGV, 'App::cpanminus' },
         'uninst-shadows!'  => \$self->{uninstall_shadows},
         'lwp!'    => \$self->{try_lwp},
@@ -234,6 +235,7 @@ Options:
 Commands:
   --self-upgrade            upgrades itself
   --info                    Displays distribution info on CPAN
+  --look                    Opens the distribution with your SHELL
 
 Examples:
 
@@ -645,6 +647,11 @@ sub install_module {
     $self->chat("Entering $dist->{dir}\n");
     $self->chdir($self->{base});
     $self->chdir($dist->{dir});
+
+    if ($self->{cmd} eq 'look') {
+        $self->look;
+        return 1;
+    }
 
     $self->check_libs;
     return $self->build_stuff($module, $dist, $depth);

@@ -59,6 +59,12 @@ controlled repository such as git.
 
   cpanm --installdeps .
 
+=item --look
+
+Download and unpack the distribution and then open the directory with
+your shell. Handy to poke around the source code or do the manual
+testing.
+
 =item -h, --help
 
 Displays the help message.
