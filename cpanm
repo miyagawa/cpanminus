@@ -5660,13 +5660,13 @@ Displays the help message.
 =item -V, --version
 
 Displays the version number.
-    
+
 =back
-    
+
 =head1 OPTIONS
 
 You can specify the default options in C<PERL_CPANM_OPT> environment variable.
-    
+
 =over 4
 
 =item -f, --force
