@@ -168,7 +168,7 @@ sub search_module {
     my $yaml = $self->get($uri);
     my $meta = $self->parse_meta_string($yaml);
     if ($meta->{distfile}) {
-        return $self->cpan_module($module, $meta->{distfile});
+        return $self->cpan_module($module, $meta->{distfile}, $meta->{version});
     }
 
     $self->diag_fail("Finding $module on cpanmetadb failed.");
@@ -628,7 +628,7 @@ sub install_module {
     }
 
     if ($dist->{module}) {
-        my($ok, $local) = $self->check_module($dist->{module}, $dist->{meta}{version});
+        my($ok, $local) = $self->check_module($dist->{module}, $dist->{module_version} || 0);
         if ($self->{skip_installed} && $ok) {
             $self->diag("$dist->{module} is up to date. ($local)\n");
             return 1;
@@ -757,10 +757,11 @@ sub resolve_name {
 }
 
 sub cpan_module {
-    my($self, $module, $dist) = @_;
+    my($self, $module, $dist, $version) = @_;
 
     my $dist = $self->cpan_dist($dist);
     $dist->{module} = $module;
+    $dist->{module_version} = $version if $version && $version ne 'undef';
 
     return $dist;
 }
