@@ -11,7 +11,7 @@ use Getopt::Long ();
 use constant WIN32 => $^O eq 'MSWin32';
 use constant SUNOS => $^O eq 'solaris';
 
-our $VERSION = "0.9934";
+our $VERSION = "0.999_01";
 $VERSION = eval $VERSION;
 
 my $quote = WIN32 ? q/"/ : q/'/;
@@ -211,7 +211,7 @@ sub show_help {
         die <<USAGE;
 Usage: cpanm [options] Module [...]
 
-Try `cpanm --help` for more options.
+Try `cpanm --help` or `man cpanm` for more options.
 USAGE
     }
 
@@ -227,7 +227,6 @@ Options:
   --installdeps             Only install dependencies
   --skip-installed          Skip installation if you already have the latest version installed
   --mirror                  Specify the base URL for the mirror (e.g. http://cpan.cpantesters.org/)
-                            You can specify multiple URLs
   --prompt                  Prompt when build/test fails
   -l,--local-lib            Specify the install base to install modules
   -L,--local-lib-contained  Specify the install base to install all non-core modules
@@ -251,6 +250,8 @@ Examples:
 You can also specify the default options in PERL_CPANM_OPT environment variable in the shell rc:
 
   export PERL_CPANM_OPT="--prompt --skip-installed -l ~/perl --mirror http://cpan.cpantesters.org"
+
+Type `man cpanm` or `perldoc cpanm` for the more detailed explanation of the options.
 
 HELP
 

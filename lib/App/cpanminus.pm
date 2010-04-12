@@ -1,5 +1,5 @@
 package App::cpanminus;
-our $VERSION = "0.9934";
+our $VERSION = "0.999_01";
 
 =head1 NAME
 
@@ -8,11 +8,6 @@ App::cpanminus - get, unpack, build and install modules from CPAN
 =head1 SYNOPSIS
 
     cpanm Module
-    cpanm MIYAGAWA/Plack-1.0000.tar.gz
-    cpanm ~/mydists/MyCompany-Framework-1.0.tar.gz
-    cpanm http://example.com/MyModule-0.1.tar.gz
-    cpanm http://github.com/miyagawa/Tatsumaki/tarball/master
-    cpanm --interactive Task::Kensho
 
 Run C<cpanm -h> for more options.
 

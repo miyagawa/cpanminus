@@ -1,5 +1,27 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+0.999_01 Mon Apr 12 12:24:57 CEST 2010
+   This is the first release candidate for 1.00
+
+   [INCOMPATIBLE CHANGES]
+      - Do not support (undocumented) CPANMINUS_* environment variable anymore. Use PERL_CPANM_* instead
+      - Plugins are not supported anymore. They will be available as part of a new client!
+      - Deleted --look command
+      - Deleted --recent command
+
+   [Improvements]
+      - Get metadata from search.cpan.org before fetching tarballs, which makes commands like
+        --info or --skip-installed much faster. #3, #8, #9
+      - Added --mirror option where you can specify the mirror base URL
+      - Added --prompt option that asks users to skip, force install, retry or look when test fails #23
+      - When one of the dependencies fail to install, cpanm bails out the installation of source dist
+        by default. --prompt will ask if you want to install anyway
+      - Added a man page for cpanm
+
+   [Developer Fixes]
+      - Do not display 'Already tried...' message by default
+      - Set non-zero exit code if one or more modules failed to build
+
 0.9934 Sun Apr 11 13:53:07 CEST 2010
    [Developer Fixes]
       - Unlink MYMETA.yml after the configuration to avoid failing Module::Signature tests
