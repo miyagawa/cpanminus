@@ -182,7 +182,7 @@ cpanminus at a boot time checks whether you have configured local::lib, or have
 the permission to install modules to the sitelib directory.  If neither, it
 automatically sets up local::lib compatible installation path in a C<perl5>
 directory under your home directory. To avoid this, run the script as the root
-user or with C<--sudo> option.
+user, with C<--sudo> option or with C<--local-lib> option.
 
 This L<local::lib> automatic integration is still considered alpha and
 in the work -- more bootstrapping is under development. Stay tuned.
@@ -215,14 +215,6 @@ the configuration interactive.
 
 Distributions that do not shipped with C<META.yml> file but do require
 some specific version of toolchain for configuration.
-
-=item *
-
-Distributions that test a SIGNATURE in the C<*.t> unit tests and has
-C<MANIFEST.SKIP> file in the distribution at the same time. The intent of
-signature testing is to provide some degree of security, but running it in unit
-tests is too late as it occurs I<after> running C<Makefile.PL>.  cpanminus has
-a C<verify_signature> plugin to verify the dist before configurations.
 
 =item *
 
