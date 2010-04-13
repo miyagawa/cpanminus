@@ -19,7 +19,7 @@ print STDERR "Generating cpanm from script/cpanm.PL\n";
 while (<$in>) {
     next if /Auto-removed/;
     s/DEVELOPERS:.*/DO NOT EDIT -- this is an auto generated file/;
-    s/.*__FATPACK__/`$^X -e 'use App::FatPacker -run_script' file`/e;
+    s/.*__FATPACK__/`$^X -e "use App::FatPacker -run_script" file`/e;
     print $out $_;
 }
 
