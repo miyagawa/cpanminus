@@ -904,8 +904,9 @@ sub build_stuff {
     if (!%{$dist->{meta} || {}} && -e 'META.yml') {
         $self->chat("Checking configure dependencies from META.yml\n");
         $dist->{meta} = $self->parse_meta('META.yml');
-        push @config_deps, %{$dist->{meta}{configure_requires} || {}};
     }
+
+    push @config_deps, %{$dist->{meta}{configure_requires} || {}};
 
     my $target = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $dist->{dir};
 
