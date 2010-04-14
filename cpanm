@@ -7,7 +7,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "0.999_01";
+  our $VERSION = "0.999_03";
   
   =head1 NAME
   
@@ -190,7 +190,7 @@ $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   the permission to install modules to the sitelib directory.  If neither, it
   automatically sets up local::lib compatible installation path in a C<perl5>
   directory under your home directory. To avoid this, run the script as the root
-  user or with C<--sudo> option.
+  user, with C<--sudo> option or with C<--local-lib> option.
   
   This L<local::lib> automatic integration is still considered alpha and
   in the work -- more bootstrapping is under development. Stay tuned.
@@ -223,14 +223,6 @@ $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   
   Distributions that do not shipped with C<META.yml> file but do require
   some specific version of toolchain for configuration.
-  
-  =item *
-  
-  Distributions that test a SIGNATURE in the C<*.t> unit tests and has
-  C<MANIFEST.SKIP> file in the distribution at the same time. The intent of
-  signature testing is to provide some degree of security, but running it in unit
-  tests is too late as it occurs I<after> running C<Makefile.PL>.  cpanminus has
-  a C<verify_signature> plugin to verify the dist before configurations.
   
   =item *
   
@@ -334,7 +326,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use constant WIN32 => $^O eq 'MSWin32';
   use constant SUNOS => $^O eq 'solaris';
   
-  our $VERSION = "0.999_01";
+  our $VERSION = "0.999_02";
   $VERSION = eval $VERSION;
   
   my $quote = WIN32 ? q/"/ : q/'/;
@@ -404,6 +396,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           'interactive!' => \$self->{interactive},
           'i|install' => sub { $self->{cmd} = 'install' },
           'info'      => sub { $self->{cmd} = 'info' },
+          'look'      => sub { $self->{cmd} = 'look' },
           'self-upgrade' => sub { $self->{cmd} = 'install'; $self->{skip_installed} = 1; push @ARGV, 'App::cpanminus' },
           'uninst-shadows!'  => \$self->{uninstall_shadows},
           'lwp!'    => \$self->{try_lwp},
@@ -491,7 +484,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       my $yaml = $self->get($uri);
       my $meta = $self->parse_meta_string($yaml);
       if ($meta->{distfile}) {
-          return $self->cpan_module($module, $meta->{distfile});
+          return $self->cpan_module($module, $meta->{distfile}, $meta->{version});
       }
   
       $self->diag_fail("Finding $module on cpanmetadb failed.");
@@ -557,6 +550,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   Commands:
     --self-upgrade            upgrades itself
     --info                    Displays distribution info on CPAN
+    --look                    Opens the distribution with your SHELL
   
   Examples:
   
@@ -608,7 +602,10 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       return if $self->{sudo} or (_writable($Config{installsitelib}) and _writable($Config{installsitebin}));
   
       # local::lib is configured in the shell -- yay
-      return if $ENV{PERL_MM_OPT} and ($ENV{MODULEBUILDRC} or $ENV{PERL_MB_OPT});
+      if ($ENV{PERL_MM_OPT} and ($ENV{MODULEBUILDRC} or $ENV{PERL_MB_OPT})) {
+          $self->bootstrap_local_lib_deps;
+          return;
+      }
   
       $self->setup_local_lib;
   
@@ -666,9 +663,14 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           $self->_import_local_lib($base);
       }
   
+      $self->bootstrap_local_lib_deps;
+  }
+  
+  sub bootstrap_local_lib_deps {
+      my $self = shift;
       push @{$self->{bootstrap_deps}},
           'ExtUtils::MakeMaker' => 6.31,
-          'ExtUtils::Install'   => 1.43,
+          'ExtUtils::Install'   => 1.46,
           'Module::Build'       => 0.28; # TODO: 0.36 or later for MYMETA.yml once we do --bootstrap command
   }
   
@@ -951,7 +953,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       }
   
       if ($dist->{module}) {
-          my($ok, $local) = $self->check_module($dist->{module}, $dist->{meta}{version});
+          my($ok, $local) = $self->check_module($dist->{module}, $dist->{module_version} || 0);
           if ($self->{skip_installed} && $ok) {
               $self->diag("$dist->{module} is up to date. ($local)\n");
               return 1;
@@ -968,6 +970,11 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       $self->chat("Entering $dist->{dir}\n");
       $self->chdir($self->{base});
       $self->chdir($dist->{dir});
+  
+      if ($self->{cmd} eq 'look') {
+          $self->look;
+          return 1;
+      }
   
       $self->check_libs;
       return $self->build_stuff($module, $dist, $depth);
@@ -1080,10 +1087,11 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   }
   
   sub cpan_module {
-      my($self, $module, $dist) = @_;
+      my($self, $module, $dist, $version) = @_;
   
       my $dist = $self->cpan_dist($dist);
       $dist->{module} = $module;
+      $dist->{module_version} = $version if $version && $version ne 'undef';
   
       return $dist;
   }
@@ -1219,8 +1227,9 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       if (!%{$dist->{meta} || {}} && -e 'META.yml') {
           $self->chat("Checking configure dependencies from META.yml\n");
           $dist->{meta} = $self->parse_meta('META.yml');
-          push @config_deps, %{$dist->{meta}{configure_requires} || {}};
       }
+  
+      push @config_deps, %{$dist->{meta}{configure_requires} || {}};
   
       my $target = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $dist->{dir};
   
@@ -5652,6 +5661,12 @@ itself. Handy if you want to try the application from a version
 controlled repository such as git.
 
   cpanm --installdeps .
+
+=item --look
+
+Download and unpack the distribution and then open the directory with
+your shell. Handy to poke around the source code or do the manual
+testing.
 
 =item -h, --help
 

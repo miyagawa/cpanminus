@@ -1,5 +1,10 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+0.999_03 Wed Apr 14 02:26:28 PDT 2010
+   [Improvements]
+      - Fixed a problem when uninstalling shadows fail with an old ExtUtils::Install
+        by bootstrapping it to require 1.46
+
 0.999_02 Tue Apr 13 09:08:00 CEST 2010
    [Improvements]
       - Improved --skip-installed so sub packages version in a distribution can be
