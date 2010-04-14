@@ -7,7 +7,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "0.99_33";
+  our $VERSION = "0.9935";
   
   =head1 NAME
   
@@ -357,7 +357,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use constant SUNOS => $^O eq 'solaris';
   use constant PLUGIN_API_VERSION => 0.1;
   
-  our $VERSION = "0.99_33";
+  our $VERSION = "0.9935";
   $VERSION = eval $VERSION;
   
   my $quote = WIN32 ? q/"/ : q/'/;
@@ -745,7 +745,10 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       return if $self->{sudo} or (_writable($Config{installsitelib}) and _writable($Config{installsitebin}));
   
       # local::lib is configured in the shell -- yay
-      return if $ENV{PERL_MM_OPT} and ($ENV{MODULEBUILDRC} or $ENV{PERL_MB_OPT});
+      if ($ENV{PERL_MM_OPT} and ($ENV{MODULEBUILDRC} or $ENV{PERL_MB_OPT})) {
+          $self->bootstrap_local_lib_deps;
+          return;
+      }
   
       $self->setup_local_lib;
   
@@ -803,9 +806,14 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           $self->_import_local_lib($base);
       }
   
+      $self->bootstrap_local_lib_deps;
+  }
+  
+  sub bootstrap_local_lib_deps {
+      my $self = shift;
       push @{$self->{bootstrap_deps}},
           'ExtUtils::MakeMaker' => 6.31,
-          'ExtUtils::Install'   => 1.43,
+          'ExtUtils::Install'   => 1.46,
           'Module::Build'       => 0.28; # TODO: 0.36 or later for MYMETA.yml once we do --bootstrap command
   }
   
