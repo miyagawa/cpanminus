@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+0.9935 Wed Apr 14 02:26:28 PDT 2010
+   [Improvements]
+      - Fixed UNINST=1 dying on older ExtUtils::Install with local::lib (omega)
+
 0.9934 Sun Apr 11 13:53:07 CEST 2010
    [Developer Fixes]
       - Unlink MYMETA.yml after the configuration to avoid failing Module::Signature tests
