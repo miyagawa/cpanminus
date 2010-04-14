@@ -287,7 +287,10 @@ sub bootstrap_local_lib {
     return if $self->{sudo} or (_writable($Config{installsitelib}) and _writable($Config{installsitebin}));
 
     # local::lib is configured in the shell -- yay
-    return if $ENV{PERL_MM_OPT} and ($ENV{MODULEBUILDRC} or $ENV{PERL_MB_OPT});
+    if ($ENV{PERL_MM_OPT} and ($ENV{MODULEBUILDRC} or $ENV{PERL_MB_OPT})) {
+        $self->bootstrap_local_lib_deps;
+        return;
+    }
 
     $self->setup_local_lib;
 
@@ -345,9 +348,14 @@ sub setup_local_lib {
         $self->_import_local_lib($base);
     }
 
+    $self->bootstrap_local_lib_deps;
+}
+
+sub bootstrap_local_lib_deps {
+    my $self = shift;
     push @{$self->{bootstrap_deps}},
         'ExtUtils::MakeMaker' => 6.31,
-        'ExtUtils::Install'   => 1.43,
+        'ExtUtils::Install'   => 1.46,
         'Module::Build'       => 0.28; # TODO: 0.36 or later for MYMETA.yml once we do --bootstrap command
 }
 

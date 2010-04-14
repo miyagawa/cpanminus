@@ -48,7 +48,7 @@ WriteMakefile(
     PREREQ_PM => {
         'Module::Build' => 0.36,
         'ExtUtils::MakeMaker' => 6.31,
-        'ExtUtils::Install' => 1.43,
+        'ExtUtils::Install' => 1.46,
         ($ENV{PERL5_CPAN_IS_RUNNING} || $ENV{PERL5_CPANPLUS_IS_RUNNING}) ? (LWP => 5.828) : (),
     },
     LICENSE => 'perl',
