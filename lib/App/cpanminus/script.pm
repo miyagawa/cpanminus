@@ -221,6 +221,7 @@ Usage: cpanm [options] Module [...]
 
 Options:
   -v,--verbose              Turns on chatty output
+  -q,--quiet                Turns off all outpu
   --interactive             Turns on interactive configure (required for Task:: modules)
   -f,--force                force install
   -n,--notest               Do not run unit tests
@@ -236,6 +237,7 @@ Commands:
   --self-upgrade            upgrades itself
   --info                    Displays distribution info on CPAN
   --look                    Opens the distribution with your SHELL
+  -V,--version              Displays software version
 
 Examples:
 
