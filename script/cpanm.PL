@@ -113,7 +113,7 @@ configuration. (See --interactive)
 =item -q, --quiet
 
 Makes the output even more quiet than the default. It doesn't print
-anything to the STDOUT.
+anything to the STDERR.
 
 =item -l, --local-lib
 
