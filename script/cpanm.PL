@@ -40,7 +40,7 @@ cpanm - get, unpack build and install modules from CPAN
 Installs the modules. This is a default behavior and this is just a
 compatibility option to make it work like L<cpan> or L<cpanp>.
 
-=item --self-ugprade
+=item --self-upgrade
 
 Upgrades itself. It's just an alias for:
 
