@@ -681,7 +681,8 @@ sub fetch_module {
         $self->diag_progress("Fetching $uri");
 
         # Ugh, $dist->{filename} can contain sub directory
-        my $name = File::Basename::basename($dist->{filename});
+        my $filename = $dist->{filename} || $uri;
+        my $name = File::Basename::basename($filename);
 
         my $cancelled;
         my $fetch = sub {
@@ -739,7 +740,7 @@ sub resolve_name {
         if ($module =~ m!authors/id/!) {
             return $self->cpan_dist($module, $module);
         } else {
-            return { uri => $module };
+            return { uris => [ $module ] };
         }
     }
 
@@ -755,7 +756,7 @@ sub resolve_name {
     if (-f $module) {
         return {
             source => 'local',
-            uri => "file://" . Cwd::abs_path($module),
+            uris => [ "file://" . Cwd::abs_path($module) ],
         };
     }
 
