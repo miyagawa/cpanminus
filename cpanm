@@ -7,7 +7,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "0.999_03";
+  our $VERSION = "0.999_04";
   
   =head1 NAME
   
@@ -326,7 +326,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use constant WIN32 => $^O eq 'MSWin32';
   use constant SUNOS => $^O eq 'solaris';
   
-  our $VERSION = "0.999_02";
+  our $VERSION = "0.999_04";
   $VERSION = eval $VERSION;
   
   my $quote = WIN32 ? q/"/ : q/'/;
@@ -536,6 +536,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   
   Options:
     -v,--verbose              Turns on chatty output
+    -q,--quiet                Turns off all outpu
     --interactive             Turns on interactive configure (required for Task:: modules)
     -f,--force                force install
     -n,--notest               Do not run unit tests
@@ -551,6 +552,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
     --self-upgrade            upgrades itself
     --info                    Displays distribution info on CPAN
     --look                    Opens the distribution with your SHELL
+    -V,--version              Displays software version
   
   Examples:
   
@@ -994,7 +996,8 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           $self->diag_progress("Fetching $uri");
   
           # Ugh, $dist->{filename} can contain sub directory
-          my $name = File::Basename::basename($dist->{filename});
+          my $filename = $dist->{filename} || $uri;
+          my $name = File::Basename::basename($filename);
   
           my $cancelled;
           my $fetch = sub {
@@ -1052,7 +1055,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           if ($module =~ m!authors/id/!) {
               return $self->cpan_dist($module, $module);
           } else {
-              return { uri => $module };
+              return { uris => [ $module ] };
           }
       }
   
@@ -1068,7 +1071,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       if (-f $module) {
           return {
               source => 'local',
-              uri => "file://" . Cwd::abs_path($module),
+              uris => [ "file://" . Cwd::abs_path($module) ],
           };
       }
   
@@ -5643,7 +5646,7 @@ cpanm - get, unpack build and install modules from CPAN
 Installs the modules. This is a default behavior and this is just a
 compatibility option to make it work like L<cpan> or L<cpanp>.
 
-=item --self-ugprade
+=item --self-upgrade
 
 Upgrades itself. It's just an alias for:
 
@@ -5716,7 +5719,7 @@ configuration. (See --interactive)
 =item -q, --quiet
 
 Makes the output even more quiet than the default. It doesn't print
-anything to the STDOUT.
+anything to the STDERR.
 
 =item -l, --local-lib
 
