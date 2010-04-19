@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+0.999_04 Mon Apr 19 15:21:01 JST 2010
+   [Bug Fixes]
+      - Fixed installationg from arbitrary URLs or file paths
+
 0.999_03 Wed Apr 14 02:26:28 PDT 2010
    [Improvements]
       - Fixed a problem when uninstalling shadows fail with an old ExtUtils::Install
