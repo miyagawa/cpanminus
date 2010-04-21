@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+0.9936 Wed Apr 21 20:52:39 JST 2010
+   [Bug Fixes]
+      - Fixed -l and -L abstract path (backported from 0.999)
+
 0.9935 Wed Apr 14 02:26:28 PDT 2010
    [Improvements]
       - Fixed UNINST=1 dying on older ExtUtils::Install with local::lib (omega)
