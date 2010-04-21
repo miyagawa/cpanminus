@@ -387,8 +387,8 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           'h|help'    => sub { $self->{action} = 'show_help' },
           'V|version' => sub { $self->{action} = 'show_version' },
           'perl=s'    => \$self->{perl},
-          'l|local-lib=s' => \$self->{local_lib},
-          'L|local-lib-contained=s' => sub { $self->{local_lib} = $_[1]; $self->{self_contained} = 1 },
+          'l|local-lib=s' => sub { $self->{local_lib} = $self->maybe_abs($_[1]) },
+          'L|local-lib-contained=s' => sub { $self->{local_lib} = $self->maybe_abs($_[1]); $self->{self_contained} = 1 },
           'mirror=s@' => $self->{mirrors},
           'prompt!'   => \$self->{prompt},
           'installdeps' => \$self->{installdeps},
@@ -591,13 +591,17 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       return;
   }
   
+  sub maybe_abs {
+      my($self, $lib) = @_;
+      $lib =~ /^~/ ? $lib : Cwd::abs_path($lib);
+  }
+  
   sub bootstrap_local_lib {
       my $self = shift;
   
       # If -l is specified, use that.
       if ($self->{local_lib}) {
-          my $lib = $self->{local_lib} =~ /^~/ ? $self->{local_lib} : Cwd::abs_path($self->{local_lib});
-          return $self->setup_local_lib($lib);
+          return $self->setup_local_lib($self->{local_lib});
       }
   
       # root, locally-installed perl or --sudo: don't care about install_base

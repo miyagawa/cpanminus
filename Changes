@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+0.999_05 Wed Apr 21 20:37:25 JST 2010
+   [Bug Fixes]
+      - Fixed the timing to make -l and -L an abstract path (ash)
+
 0.999_04 Mon Apr 19 15:21:01 JST 2010
    [Bug Fixes]
       - Fixed installationg from arbitrary URLs or file paths
