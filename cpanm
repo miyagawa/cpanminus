@@ -7,7 +7,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "0.9935";
+  our $VERSION = "0.9936";
   
   =head1 NAME
   
@@ -357,7 +357,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use constant SUNOS => $^O eq 'solaris';
   use constant PLUGIN_API_VERSION => 0.1;
   
-  our $VERSION = "0.9935";
+  our $VERSION = "0.9936";
   $VERSION = eval $VERSION;
   
   my $quote = WIN32 ? q/"/ : q/'/;
