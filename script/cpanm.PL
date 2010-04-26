@@ -44,7 +44,7 @@ compatibility option to make it work like L<cpan> or L<cpanp>.
 
 Upgrades itself. It's just an alias for:
 
-  cpanm --skip-install App::cpanminus
+  cpanm --skip-installed App::cpanminus
 
 =item --info
 
