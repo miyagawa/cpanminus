@@ -972,8 +972,9 @@ sub build_stuff {
     }
 
     if ($installed) {
-        my $local = $self->{local_versions}{$dist->{module} || ''};
-        my $reinstall = $local && $local eq $dist->{meta}{version};
+        my $local   = $self->{local_versions}{$dist->{module} || ''};
+        my $version = $dist->{meta}{version} || $dist->{version};
+        my $reinstall = $local && ($local eq $version);
 
         my $how = $reinstall ? "reinstalled $distname"
                 : $local     ? "installed $distname (upgraded from $local)"
