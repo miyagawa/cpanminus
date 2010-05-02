@@ -7,7 +7,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.0001";
+  our $VERSION = "1.0002";
   
   =head1 NAME
   
@@ -322,11 +322,12 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use File::Spec ();
   use File::Copy ();
   use Getopt::Long ();
+  use Parse::CPAN::Meta;
   
   use constant WIN32 => $^O eq 'MSWin32';
   use constant SUNOS => $^O eq 'solaris';
   
-  our $VERSION = "1.0001";
+  our $VERSION = "1.0002";
   $VERSION = eval $VERSION;
   
   my $quote = WIN32 ? q/"/ : q/'/;
@@ -556,8 +557,8 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   
   Examples:
   
-    cpanm CGI                                                 # install CGI
-    cpanm MIYAGAWA/Plack-0.99_05.tar.gz                       # full distribution name
+    cpanm Test::More                                          # install Test::More
+    cpanm MIYAGAWA/Plack-0.99_05.tar.gz                       # full distribution path
     cpanm http://example.org/LDS/CGI.pm-3.20.tar.gz           # install from URL
     cpanm ~/dists/MyCompany-Enterprise-1.00.tar.gz            # install from a local file
     cpanm --interactive Task::Kensho                          # Configure interactively
@@ -1286,8 +1287,9 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       }
   
       if ($installed) {
-          my $local = $self->{local_versions}{$dist->{module} || ''};
-          my $reinstall = $local && $local eq $dist->{meta}{version};
+          my $local   = $self->{local_versions}{$dist->{module} || ''};
+          my $version = $dist->{meta}{version} || $dist->{version};
+          my $reinstall = $local && ($local eq $version);
   
           my $how = $reinstall ? "reinstalled $distname"
                   : $local     ? "installed $distname (upgraded from $local)"
@@ -5615,7 +5617,6 @@ unshift @INC, sub {
 
 use strict;
 use App::cpanminus::script;
-use Parse::CPAN::Meta;
 
 unless (caller) {
     my $app = App::cpanminus::script->new;
@@ -5631,8 +5632,8 @@ cpanm - get, unpack build and install modules from CPAN
 
 =head1 SYNOPSIS
 
-  cpanm CGI                                                 # install CGI
-  cpanm MIYAGAWA/Plack-0.99_05.tar.gz                       # full distribution name
+  cpanm Test::More                                          # install Test::More
+  cpanm MIYAGAWA/Plack-0.99_05.tar.gz                       # full distribution path
   cpanm http://example.org/LDS/CGI.pm-3.20.tar.gz           # install from URL
   cpanm ~/dists/MyCompany-Enterprise-1.00.tar.gz            # install from a local file
   cpanm --interactive Task::Kensho                          # Configure interactively
@@ -5654,7 +5655,7 @@ compatibility option to make it work like L<cpan> or L<cpanp>.
 
 Upgrades itself. It's just an alias for:
 
-  cpanm --skip-install App::cpanminus
+  cpanm --skip-installed App::cpanminus
 
 =item --info
 

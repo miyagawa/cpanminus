@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.0002  Sat May  1 20:49:39 PDT 2010
+   - Fixed docs
+   - Fallback to the version of the distribution filename when META.yml is not parsable
+
 1.0001  Sat Apr 24 16:20:56 CST 2010
    - Make this 1.0!
 
