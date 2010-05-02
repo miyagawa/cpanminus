@@ -20,8 +20,8 @@ cpanm - get, unpack build and install modules from CPAN
 
 =head1 SYNOPSIS
 
-  cpanm CGI                                                 # install CGI
-  cpanm MIYAGAWA/Plack-0.99_05.tar.gz                       # full distribution name
+  cpanm Test::More                                          # install Test::More
+  cpanm MIYAGAWA/Plack-0.99_05.tar.gz                       # full distribution path
   cpanm http://example.org/LDS/CGI.pm-3.20.tar.gz           # install from URL
   cpanm ~/dists/MyCompany-Enterprise-1.00.tar.gz            # install from a local file
   cpanm --interactive Task::Kensho                          # Configure interactively
