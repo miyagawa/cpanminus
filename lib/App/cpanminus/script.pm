@@ -462,6 +462,10 @@ sub log {
 sub run {
     my($self, $cmd) = @_;
 
+    if (WIN32 && ref $cmd eq 'ARRAY') {
+        $cmd = join q{ }, map { $self->shell_quote($_) } @$cmd;
+    }
+
     if (ref $cmd eq 'ARRAY') {
         my $pid = fork;
         if ($pid) {
