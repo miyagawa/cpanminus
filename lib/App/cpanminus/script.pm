@@ -279,7 +279,7 @@ sub _writable {
 
 sub maybe_abs {
     my($self, $lib) = @_;
-    $lib =~ /^~/ ? $lib : Cwd::abs_path($lib);
+    $lib =~ /^[~\/]/ ? $lib : Cwd::abs_path($lib);
 }
 
 sub bootstrap_local_lib {
