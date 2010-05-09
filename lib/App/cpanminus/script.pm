@@ -656,6 +656,11 @@ sub install_module {
         }
     }
 
+    if ($dist->{dist} eq 'perl'){
+        $self->diag("skipping $dist->{pathname}\n");
+        return 1;
+    }
+
     $dist->{dir} ||= $self->fetch_module($dist);
 
     unless ($dist->{dir}) {
@@ -678,11 +683,6 @@ sub install_module {
 
 sub fetch_module {
     my($self, $dist) = @_;
-
-    if ($dist->{dist} eq 'perl'){
-        $self->diag("skip $dist->{dist}\n");
-        return;
-    }
 
     $self->chdir($self->{base});
 
