@@ -1081,7 +1081,7 @@ sub find_prereqs {
                     push @all, [ $pkg, $v ];
                 }
                 my $list = join ", ", map { "'$_->[0]' => $_->[1]" } @all;
-                my $prereq = $self->safe_eval("no strict; { $list }");
+                my $prereq = $self->safe_eval("no strict; +{ $list }");
                 push @deps, %$prereq if $prereq;
                 last;
             }
