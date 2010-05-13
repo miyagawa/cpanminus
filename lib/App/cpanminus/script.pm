@@ -1073,8 +1073,15 @@ sub find_prereqs {
         $self->chat("Finding PREREQ from Makefile ...\n");
         open my $mf, "Makefile";
         while (<$mf>) {
-            if (/^\#\s+PREREQ_PM => ({.*?})/) {
-                my $prereq = $self->safe_eval("no strict; +$1");
+            if (/^\#\s+PREREQ_PM => {(.*?)}/) {
+                my @all;
+                my @pairs = split ', ', $1;
+                for (@pairs) {
+                    my ($pkg, $v) = split '=>', $_;
+                    push @all, [ $pkg, $v ];
+                }
+                my $list = join ", ", map { "'$_->[0]' => $_->[1]" } @all;
+                my $prereq = $self->safe_eval("no strict; { $list }");
                 push @deps, %$prereq if $prereq;
                 last;
             }
