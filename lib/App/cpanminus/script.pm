@@ -82,7 +82,7 @@ sub parse_options {
         'interactive!' => \$self->{interactive},
         'i|install' => sub { $self->{cmd} = 'install' },
         'info'      => sub { $self->{cmd} = 'info' },
-        'look'      => sub { $self->{cmd} = 'look' },
+        'look'      => sub { $self->{cmd} = 'look'; $self->{skip_installed} = 0 },
         'self-upgrade' => sub { $self->{cmd} = 'install'; $self->{skip_installed} = 1; push @ARGV, 'App::cpanminus' },
         'uninst-shadows!'  => \$self->{uninstall_shadows},
         'lwp!'    => \$self->{try_lwp},
