@@ -1,5 +1,11 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.0004  Fri May 14 16:08:23 PDT 2010
+   - Do not use Cwd::abs_path if the -l path begins with / (rafl)
+   - Skipping perl should now be considered as success, not failure (rafl)
+   - Fixed PREREQ_PM scanner for dists that conflict with core functions such as UNIVERSAL::isa (yannk)
+   - --look should now imply --no-skip-installed (doy) #45
+
 1.0003  Tue May  4 16:12:53 PDT 2010
    - Worked around win32 fork and stdout dup issue (xaicron, charsbar)
 

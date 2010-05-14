@@ -7,7 +7,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.0003";
+  our $VERSION = "1.0004";
   
   =head1 NAME
   
@@ -327,7 +327,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use constant WIN32 => $^O eq 'MSWin32';
   use constant SUNOS => $^O eq 'solaris';
   
-  our $VERSION = "1.0003";
+  our $VERSION = "1.0004";
   $VERSION = eval $VERSION;
   
   my $quote = WIN32 ? q/"/ : q/'/;
@@ -397,7 +397,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           'interactive!' => \$self->{interactive},
           'i|install' => sub { $self->{cmd} = 'install' },
           'info'      => sub { $self->{cmd} = 'info' },
-          'look'      => sub { $self->{cmd} = 'look' },
+          'look'      => sub { $self->{cmd} = 'look'; $self->{skip_installed} = 0 },
           'self-upgrade' => sub { $self->{cmd} = 'install'; $self->{skip_installed} = 1; push @ARGV, 'App::cpanminus' },
           'uninst-shadows!'  => \$self->{uninstall_shadows},
           'lwp!'    => \$self->{try_lwp},
@@ -594,7 +594,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   
   sub maybe_abs {
       my($self, $lib) = @_;
-      $lib =~ /^~/ ? $lib : Cwd::abs_path($lib);
+      $lib =~ /^[~\/]/ ? $lib : Cwd::abs_path($lib);
   }
   
   sub bootstrap_local_lib {
@@ -971,6 +971,11 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           }
       }
   
+      if ($dist->{dist} eq 'perl'){
+          $self->diag("skipping $dist->{pathname}\n");
+          return 1;
+      }
+  
       $dist->{dir} ||= $self->fetch_module($dist);
   
       unless ($dist->{dir}) {
@@ -993,11 +998,6 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   
   sub fetch_module {
       my($self, $dist) = @_;
-  
-      if ($dist->{dist} eq 'perl'){
-          $self->diag("skip $dist->{dist}\n");
-          return;
-      }
   
       $self->chdir($self->{base});
   
@@ -1388,8 +1388,15 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           $self->chat("Finding PREREQ from Makefile ...\n");
           open my $mf, "Makefile";
           while (<$mf>) {
-              if (/^\#\s+PREREQ_PM => ({.*?})/) {
-                  my $prereq = $self->safe_eval("no strict; +$1");
+              if (/^\#\s+PREREQ_PM => {\s*(.*?)\s*}/) {
+                  my @all;
+                  my @pairs = split ', ', $1;
+                  for (@pairs) {
+                      my ($pkg, $v) = split '=>', $_;
+                      push @all, [ $pkg, $v ];
+                  }
+                  my $list = join ", ", map { "'$_->[0]' => $_->[1]" } @all;
+                  my $prereq = $self->safe_eval("no strict; +{ $list }");
                   push @deps, %$prereq if $prereq;
                   last;
               }
