@@ -1073,7 +1073,7 @@ sub find_prereqs {
         $self->chat("Finding PREREQ from Makefile ...\n");
         open my $mf, "Makefile";
         while (<$mf>) {
-            if (/^\#\s+PREREQ_PM => {(.*?)}/) {
+            if (/^\#\s+PREREQ_PM => {\s*(.*?)\s*}/) {
                 my @all;
                 my @pairs = split ', ', $1;
                 for (@pairs) {
