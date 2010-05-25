@@ -50,8 +50,7 @@ upgrade (C<--self-upgrade> might not work).
 
 =head1 DEPENDENCIES
 
-perl 5.8 or later (Actually I believe it works with pre 5.8 too but
-I haven't tested this).
+perl 5.8 or later.
 
 =over 4
 
