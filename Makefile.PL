@@ -1,4 +1,3 @@
-use 5.008;
 =for developers
 
 If you're a developer, Makefile.PL will pack `cpanm` from
