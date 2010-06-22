@@ -230,7 +230,7 @@ Options:
   --installdeps             Only install dependencies
   --skip-installed          Skip installation if you already have the latest version installed
   --mirror                  Specify the base URL for the mirror (e.g. http://cpan.cpantesters.org/)
-  --prompt                  Prompt when build/test fails
+  --prompt                  Prompt when configure/build/test fails
   -l,--local-lib            Specify the install base to install modules
   -L,--local-lib-contained  Specify the install base to install all non-core modules
 
@@ -546,8 +546,15 @@ sub configure {
 }
 
 sub build {
-    my($self, $cmd) = @_;
-    $self->run_timeout($cmd, $self->{build_timeout});
+    my($self, $cmd, $distname) = @_;
+
+    return 1 if $self->run_timeout($cmd, $self->{build_timeout});
+    while (1) {
+        my $ans = lc $self->prompt("Building $distname failed.\nYou can s)kip, r)etry or l)ook ?", "s");
+        return                               if $ans eq 's';
+        return $self->build($cmd, $distname) if $ans eq 'r';
+        $self->look                          if $ans eq 'l';
+    }
 }
 
 sub test {
@@ -954,13 +961,13 @@ sub build_stuff {
     my $installed;
     if ($configure_state->{use_module_build} && -e 'Build' && -f _) {
         $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . "$distname for $stuff");
-        $self->build([ $self->{perl}, "./Build" ]) &&
+        $self->build([ $self->{perl}, "./Build" ], $distname) &&
         $self->test([ $self->{perl}, "./Build", "test" ], $distname) &&
         $self->install([ $self->{perl}, "./Build", "install" ], [ "--uninst", 1 ]) &&
         $installed++;
     } elsif ($self->{make} && -e 'Makefile') {
         $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . "$distname for $stuff");
-        $self->build([ $self->{make} ]) &&
+        $self->build([ $self->{make} ], $distname) &&
         $self->test([ $self->{make}, "test" ], $distname) &&
         $self->install([ $self->{make}, "install" ], [ "UNINST=1" ]) &&
         $installed++;
@@ -1044,6 +1051,15 @@ sub configure_this {
     for my $try (@try) {
         $try->();
         last if $state->{configured_ok};
+    }
+
+    unless ($state->{configured_ok}) {
+        while (1) {
+            my $ans = lc $self->prompt("Configuring $dist->{dist} failed.\nYou can s)kip, r)etry or l)ook ?", "s");
+            last                                if $ans eq 's';
+            return $self->configure_this($dist) if $ans eq 'r';
+            $self->look                         if $ans eq 'l';
+        }
     }
 
     return $state;
