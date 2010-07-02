@@ -222,7 +222,7 @@ Usage: cpanm [options] Module [...]
 
 Options:
   -v,--verbose              Turns on chatty output
-  -q,--quiet                Turns off all outpu
+  -q,--quiet                Turns off all output
   --interactive             Turns on interactive configure (required for Task:: modules)
   -f,--force                force install
   -n,--notest               Do not run unit tests
