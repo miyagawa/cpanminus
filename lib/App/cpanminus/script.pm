@@ -585,7 +585,7 @@ sub install {
         unshift @$cmd, "sudo";
     }
 
-    if ($self->{uninstall_shadows}) {
+    if ($self->{uninstall_shadows} && !$ENV{PERL_MM_OPT}) {
         push @$cmd, @$uninst_opts;
     }
 
