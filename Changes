@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.0006  Fri Jul  2 16:52:06 PDT 2010
+   - Use module's version number instead of distribution when to display whether
+     this is an upgrade or reinstall (doy) #43
+
 1.0005  Fri Jul  2 16:36:55 PDT 2010
    - Clarified that the minimal perl version supported is 5.8 (chocolateboy)
    - Now being able to look when configure and build fails

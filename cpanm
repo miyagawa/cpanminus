@@ -7,7 +7,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.0005";
+  our $VERSION = "1.0006";
   
   =head1 NAME
   
@@ -326,7 +326,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use constant WIN32 => $^O eq 'MSWin32';
   use constant SUNOS => $^O eq 'solaris';
   
-  our $VERSION = "1.0005";
+  our $VERSION = "1.0006";
   $VERSION = eval $VERSION;
   
   my $quote = WIN32 ? q/"/ : q/'/;
@@ -1298,7 +1298,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   
       if ($installed) {
           my $local   = $self->{local_versions}{$dist->{module} || ''};
-          my $version = $dist->{meta}{version} || $dist->{version};
+          my $version = $dist->{module_version} || $dist->{meta}{version} || $dist->{version};
           my $reinstall = $local && ($local eq $version);
   
           my $how = $reinstall ? "reinstalled $distname"
