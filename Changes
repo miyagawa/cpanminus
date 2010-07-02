@@ -1,5 +1,11 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.0005  Fri Jul  2 16:36:55 PDT 2010
+   - Clarified that the minimal perl version supported is 5.8 (chocolateboy)
+   - Now being able to look when configure and build fails
+   - Automatically disable uninstall_shadows when local::lib is used. This bug was causing
+     cpanm to remove modules in @INC with perl 5.10 or older (kazeburo, sugyan)
+
 1.0004  Fri May 14 16:08:23 PDT 2010
    - Do not use Cwd::abs_path if the -l path begins with / (rafl)
    - Skipping perl should now be considered as success, not failure (rafl)
