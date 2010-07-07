@@ -26,17 +26,16 @@ search for cpanminus and use the appropriate command to install. This makes it
 easy to install C<cpanm> to your system without thinking about where to
 install, and later upgrade.
 
-If you want to build the latest from source,
+You can also use the latest cpanminus to install cpanminus itself (aka bootstrap):
 
-    git clone git://github.com/miyagawa/cpanminus.git
-    cd cpanminus
-    perl Makefile.PL
-    make install # or sudo make install if you're non root
+    curl -L http://cpanmin.us | perl - --sudo App::cpanminus
 
 This will install C<cpanm> to your bin directory like
 C</usr/local/bin> (unless you configured C<INSTALL_BASE> with
-L<local::lib>), so you might need to sudo. Later you can say C<cpanm
---self-upgrade --sudo> to upgrade to the latest version.
+L<local::lib>), so you might need the C<--sudo> option.
+
+Later you can say C<cpanm --self-upgrade --sudo> to upgrade to the
+latest version.
 
 Otherwise,
 
