@@ -356,6 +356,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           configure_timeout => 60,
           try_lwp => 1,
           uninstall_shadows => 1,
+          skip_installed => 1,
           @_,
       }, $class;
   }
@@ -392,6 +393,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           'prompt!'   => \$self->{prompt},
           'installdeps' => \$self->{installdeps},
           'skip-installed!' => \$self->{skip_installed},
+          'reinstall'    => sub { $self->{skip_installed} = 0 },
           'interactive!' => \$self->{interactive},
           'i|install' => sub { $self->{cmd} = 'install' },
           'info'      => sub { $self->{cmd} = 'info' },
@@ -541,7 +543,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
     -n,--notest               Do not run unit tests
     -S,--sudo                 sudo to run install commands
     --installdeps             Only install dependencies
-    --skip-installed          Skip installation if you already have the latest version installed
+    --reinstall               Reinstall the distribution even if you already have the latest version installed
     --mirror                  Specify the base URL for the mirror (e.g. http://cpan.cpantesters.org/)
     --prompt                  Prompt when configure/build/test fails
     -l,--local-lib            Specify the install base to install modules
@@ -567,7 +569,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   
   You can also specify the default options in PERL_CPANM_OPT environment variable in the shell rc:
   
-    export PERL_CPANM_OPT="--prompt --skip-installed -l ~/perl --mirror http://cpan.cpantesters.org"
+    export PERL_CPANM_OPT="--prompt --reinstall -l ~/perl --mirror http://cpan.cpantesters.org"
   
   Type `man cpanm` or `perldoc cpanm` for the more detailed explanation of the options.
   
@@ -5680,7 +5682,7 @@ compatibility option to make it work like L<cpan> or L<cpanp>.
 
 Upgrades itself. It's just an alias for:
 
-  cpanm --skip-installed App::cpanminus
+  cpanm App::cpanminus
 
 =item --info
 
@@ -5792,14 +5794,19 @@ one of the dependency failed if you want to proceed the installation.
 Defaults to false, and you can say C<--no-prompt> to override if it's
 set in the default options in C<PERL_CPANM_OPT>.
 
-=item --skip-installed
+=item --reinstall
 
-cpanm by default reinstalls the given module even if the latest
-version is already installed. This option makes it check the installed
-version first and skips if it's already the latest.
+cpanm, when given a module name in the command line (i.e. C<cpanm
+Plack>), checks the locally installed version first and skips if it is
+already installed. This option makes it skip the check, so:
 
-Defaults to false, and you can say C<--no-skip-installed> to override
-when it's set in the default options in C<PERL_CPANM_OPT>.
+  cpanm --reinstall Plack
+
+would reinstall L<Plack> even if your locally installed version is
+latest, or even newer (which would happen if you install a developer
+release from version control repositories).
+
+Defaults to false.
 
 =item --interactive
 
