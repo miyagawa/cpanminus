@@ -43,7 +43,7 @@ compatibility option to make it work like L<cpan> or L<cpanp>.
 
 Upgrades itself. It's just an alias for:
 
-  cpanm --skip-installed App::cpanminus
+  cpanm App::cpanminus
 
 =item --info
 
@@ -155,14 +155,19 @@ one of the dependency failed if you want to proceed the installation.
 Defaults to false, and you can say C<--no-prompt> to override if it's
 set in the default options in C<PERL_CPANM_OPT>.
 
-=item --skip-installed
+=item --reinstall
 
-cpanm by default reinstalls the given module even if the latest
-version is already installed. This option makes it check the installed
-version first and skips if it's already the latest.
+cpanm, when given a module name in the command line (i.e. C<cpanm
+Plack>), checks the locally installed version first and skips if it is
+already installed. This option makes it skip the check, so:
 
-Defaults to false, and you can say C<--no-skip-installed> to override
-when it's set in the default options in C<PERL_CPANM_OPT>.
+  cpanm --reinstall Plack
+
+would reinstall L<Plack> even if your locally installed version is
+latest, or even newer (which would happen if you install a developer
+release from version control repositories).
+
+Defaults to false.
 
 =item --interactive
 

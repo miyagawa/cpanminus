@@ -43,6 +43,7 @@ sub new {
         configure_timeout => 60,
         try_lwp => 1,
         uninstall_shadows => 1,
+        skip_installed => 1,
         @_,
     }, $class;
 }
@@ -79,6 +80,7 @@ sub parse_options {
         'prompt!'   => \$self->{prompt},
         'installdeps' => \$self->{installdeps},
         'skip-installed!' => \$self->{skip_installed},
+        'reinstall'    => sub { $self->{skip_installed} = 0 },
         'interactive!' => \$self->{interactive},
         'i|install' => sub { $self->{cmd} = 'install' },
         'info'      => sub { $self->{cmd} = 'info' },
@@ -228,7 +230,7 @@ Options:
   -n,--notest               Do not run unit tests
   -S,--sudo                 sudo to run install commands
   --installdeps             Only install dependencies
-  --skip-installed          Skip installation if you already have the latest version installed
+  --reinstall               Reinstall the distribution even if you already have the latest version installed
   --mirror                  Specify the base URL for the mirror (e.g. http://cpan.cpantesters.org/)
   --prompt                  Prompt when configure/build/test fails
   -l,--local-lib            Specify the install base to install modules
@@ -254,7 +256,7 @@ Examples:
 
 You can also specify the default options in PERL_CPANM_OPT environment variable in the shell rc:
 
-  export PERL_CPANM_OPT="--prompt --skip-installed -l ~/perl --mirror http://cpan.cpantesters.org"
+  export PERL_CPANM_OPT="--prompt --reinstall -l ~/perl --mirror http://cpan.cpantesters.org"
 
 Type `man cpanm` or `perldoc cpanm` for the more detailed explanation of the options.
 
