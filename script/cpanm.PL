@@ -1,4 +1,15 @@
 #!/usr/bin/env perl
+#
+# You want to install cpanminus? Run the following command and it will
+# install itself for you. You might want to run it as a root with sudo
+# if you want to install to places like /usr/local/bin.
+#
+#   % curl -L http://cpanmin.us | perl - --self-upgrade
+#
+# If you don't have curl but wget, replace `curl -L` with `wget -O -`.
+#
+# For more details about this program, visit http://search.cpan.org/dist/App-cpanminus
+#
 # DEVELOPERS: Read script/build.PL in the repo how to update this
 # __FATPACK__
 use strict;
