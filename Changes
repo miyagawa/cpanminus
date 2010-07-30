@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.0010  Fri Jul 30 12:54:03 PDT 2010
+   - Make --skip-installed as default
+   - Revised documentations
+
 1.0006  Fri Jul  2 16:52:06 PDT 2010
    - Use module's version number instead of distribution when to display whether
      this is an upgrade or reinstall (doy) #43
