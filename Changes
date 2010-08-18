@@ -1,5 +1,8 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.0011  Wed Aug 18 16:38:24 PDT 2010
+   - -f now implies --reinstall (perigrin)
+
 1.0010  Fri Jul 30 12:54:03 PDT 2010
    - Make --skip-installed as default
    - Revised documentations

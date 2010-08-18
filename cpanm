@@ -18,7 +18,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.0010";
+  our $VERSION = "1.0011";
   
   =head1 NAME
   
@@ -336,7 +336,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use constant WIN32 => $^O eq 'MSWin32';
   use constant SUNOS => $^O eq 'solaris';
   
-  our $VERSION = "1.0010";
+  our $VERSION = "1.0011";
   $VERSION = eval $VERSION;
   
   my $quote = WIN32 ? q/"/ : q/'/;
@@ -390,7 +390,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   
       Getopt::Long::Configure("bundling");
       Getopt::Long::GetOptions(
-          'f|force!'  => \$self->{force},
+          'f|force'   => sub { $self->{skip_installed} = 0; $self->{force} = 1 },
           'n|notest!' => \$self->{notest},
           'S|sudo!'   => \$self->{sudo},
           'v|verbose' => sub { $self->{verbose} = $self->{interactive} = 1 },
@@ -5733,9 +5733,6 @@ You can specify the default options in C<PERL_CPANM_OPT> environment variable.
 =item -f, --force
 
 Force install modules even when testing failed.
-
-Defaults to false, and you can say C<--no-force> to override when it
-is set in the default options in C<PERL_CPANM_OPT>.
 
 =item -n, --notest
 
