@@ -66,7 +66,7 @@ sub parse_options {
 
     Getopt::Long::Configure("bundling");
     Getopt::Long::GetOptions(
-        'f|force!'  => \$self->{force},
+        'f|force'   => sub { $self->{skip_installed} = 0; $self->{force} = 1 },
         'n|notest!' => \$self->{notest},
         'S|sudo!'   => \$self->{sudo},
         'v|verbose' => sub { $self->{verbose} = $self->{interactive} = 1 },

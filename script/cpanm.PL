@@ -95,9 +95,6 @@ You can specify the default options in C<PERL_CPANM_OPT> environment variable.
 
 Force install modules even when testing failed.
 
-Defaults to false, and you can say C<--no-force> to override when it
-is set in the default options in C<PERL_CPANM_OPT>.
-
 =item -n, --notest
 
 Skip the testing of modules. Use this only when you just want to save
