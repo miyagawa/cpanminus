@@ -18,7 +18,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.0011";
+  our $VERSION = "1.0012";
   
   =head1 NAME
   
@@ -336,7 +336,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use constant WIN32 => $^O eq 'MSWin32';
   use constant SUNOS => $^O eq 'solaris';
   
-  our $VERSION = "1.0011";
+  our $VERSION = "1.0012";
   $VERSION = eval $VERSION;
   
   my $quote = WIN32 ? q/"/ : q/'/;
@@ -981,6 +981,8 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           return 1;
       }
   
+      $self->check_libs;
+  
       if ($dist->{module}) {
           my($ok, $local) = $self->check_module($dist->{module}, $dist->{module_version} || 0);
           if ($self->{skip_installed} && $ok) {
@@ -1010,7 +1012,6 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           return 1;
       }
   
-      $self->check_libs;
       return $self->build_stuff($module, $dist, $depth);
   }
   
