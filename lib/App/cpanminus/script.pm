@@ -42,6 +42,8 @@ sub new {
         prompt => undef,
         configure_timeout => 60,
         try_lwp => 1,
+        try_wget => 1,
+        try_curl => 1,
         uninstall_shadows => 1,
         skip_installed => 1,
         @_,
@@ -88,6 +90,8 @@ sub parse_options {
         'self-upgrade' => sub { $self->{cmd} = 'install'; $self->{skip_installed} = 1; push @ARGV, 'App::cpanminus' },
         'uninst-shadows!'  => \$self->{uninstall_shadows},
         'lwp!'    => \$self->{try_lwp},
+        'wget!'   => \$self->{try_wget},
+        'curl!'   => \$self->{try_curl},
     );
 
     $self->{argv} = \@ARGV;
@@ -1205,7 +1209,7 @@ sub init_tools {
             return $res->header('Location') if $res->is_redirect;
             return;
         };
-    } elsif (my $wget = $self->which('wget')) {
+    } elsif ($self->{try_wget} and my $wget = $self->which('wget')) {
         $self->chat("You have $wget\n");
         $self->{_backends}{get} = sub {
             my($self, $uri) = @_;
@@ -1229,7 +1233,7 @@ sub init_tools {
             }
             return;
         };
-    } elsif (my $curl = $self->which('curl')) {
+    } elsif ($self->{try_curl} and my $curl = $self->which('curl')) {
         $self->chat("You have $curl\n");
         $self->{_backends}{get} = sub {
             my($self, $uri) = @_;

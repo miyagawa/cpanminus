@@ -208,6 +208,21 @@ Uses L<LWP> module to download stuff over HTTP. Defaults to true, and
 you can say C<--no-lwp> to disable using LWP, when you want to upgrade
 LWP from CPAN on some broken perl systems.
 
+=item --wget
+
+Uses GNU Wget (if available) to download stuff. Defaults to true, and
+you can say C<--no-wget> to disable using Wget (versions of Wget older
+than 1.9 don't support the C<--retry-connrefused> option used by cpanm).
+
+=item --curl
+
+Uses cURL (if available) to download stuff. Defaults to true, and
+you can say C<--no-curl> to disable using cURL.
+
+Normally with C<--lwp>, C<--wget> and C<--curl> options set to true
+(which is the default) cpanm tries L<LWP>, Wget, cURL and L<HTTP::Lite>
+(in that order) and uses the first one available.
+
 =back
 
 =head1 SEE ALSO
