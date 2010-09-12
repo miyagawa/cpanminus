@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.0013  Sun Sep 12 12:46:36 PDT 2010
+   - Added --no-wget and --no-curl to bootstrap LWP in an environment with old
+     versions of wget/curl (rsp)
+
 1.0012  Fri Aug 20 12:46:34 PDT 2010
    - version check with -L and -l was failing with --skip-installed default. Now fixed (reported by leedo) #55
    - Fixed the code to find root of tarballs (perlpilot)
