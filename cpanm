@@ -18,7 +18,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.0012";
+  our $VERSION = "1.0013";
   
   =head1 NAME
   
@@ -366,6 +366,8 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           prompt => undef,
           configure_timeout => 60,
           try_lwp => 1,
+          try_wget => 1,
+          try_curl => 1,
           uninstall_shadows => 1,
           skip_installed => 1,
           @_,
@@ -412,6 +414,8 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           'self-upgrade' => sub { $self->{cmd} = 'install'; $self->{skip_installed} = 1; push @ARGV, 'App::cpanminus' },
           'uninst-shadows!'  => \$self->{uninstall_shadows},
           'lwp!'    => \$self->{try_lwp},
+          'wget!'   => \$self->{try_wget},
+          'curl!'   => \$self->{try_curl},
       );
   
       $self->{argv} = \@ARGV;
@@ -996,6 +1000,8 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           return 1;
       }
   
+      $self->diag("--> Working on $dist->{distvname} (for $module)\n");
+  
       $dist->{dir} ||= $self->fetch_module($dist);
   
       unless ($dist->{dir}) {
@@ -1287,13 +1293,13 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   
       my $installed;
       if ($configure_state->{use_module_build} && -e 'Build' && -f _) {
-          $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . "$distname for $stuff");
+          $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . $distname);
           $self->build([ $self->{perl}, "./Build" ], $distname) &&
           $self->test([ $self->{perl}, "./Build", "test" ], $distname) &&
           $self->install([ $self->{perl}, "./Build", "install" ], [ "--uninst", 1 ]) &&
           $installed++;
       } elsif ($self->{make} && -e 'Makefile') {
-          $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . "$distname for $stuff");
+          $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . $distname);
           $self->build([ $self->{make} ], $distname) &&
           $self->test([ $self->{make}, "test" ], $distname) &&
           $self->install([ $self->{make}, "install" ], [ "UNINST=1" ]) &&
@@ -1529,7 +1535,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
               return $res->header('Location') if $res->is_redirect;
               return;
           };
-      } elsif (my $wget = $self->which('wget')) {
+      } elsif ($self->{try_wget} and my $wget = $self->which('wget')) {
           $self->chat("You have $wget\n");
           $self->{_backends}{get} = sub {
               my($self, $uri) = @_;
@@ -1553,7 +1559,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
               }
               return;
           };
-      } elsif (my $curl = $self->which('curl')) {
+      } elsif ($self->{try_curl} and my $curl = $self->which('curl')) {
           $self->chat("You have $curl\n");
           $self->{_backends}{get} = sub {
               my($self, $uri) = @_;
@@ -5848,6 +5854,21 @@ C<--no-uninst-shadows>.
 Uses L<LWP> module to download stuff over HTTP. Defaults to true, and
 you can say C<--no-lwp> to disable using LWP, when you want to upgrade
 LWP from CPAN on some broken perl systems.
+
+=item --wget
+
+Uses GNU Wget (if available) to download stuff. Defaults to true, and
+you can say C<--no-wget> to disable using Wget (versions of Wget older
+than 1.9 don't support the C<--retry-connrefused> option used by cpanm).
+
+=item --curl
+
+Uses cURL (if available) to download stuff. Defaults to true, and
+you can say C<--no-curl> to disable using cURL.
+
+Normally with C<--lwp>, C<--wget> and C<--curl> options set to true
+(which is the default) cpanm tries L<LWP>, Wget, cURL and L<HTTP::Lite>
+(in that order) and uses the first one available.
 
 =back
 
