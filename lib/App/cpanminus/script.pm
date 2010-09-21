@@ -676,6 +676,8 @@ sub install_module {
         return 1;
     }
 
+    $self->diag("--> Working on $dist->{distvname} (for $module)\n");
+
     $dist->{dir} ||= $self->fetch_module($dist);
 
     unless ($dist->{dir}) {
@@ -967,13 +969,13 @@ sub build_stuff {
 
     my $installed;
     if ($configure_state->{use_module_build} && -e 'Build' && -f _) {
-        $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . "$distname for $stuff");
+        $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . $distname);
         $self->build([ $self->{perl}, "./Build" ], $distname) &&
         $self->test([ $self->{perl}, "./Build", "test" ], $distname) &&
         $self->install([ $self->{perl}, "./Build", "install" ], [ "--uninst", 1 ]) &&
         $installed++;
     } elsif ($self->{make} && -e 'Makefile') {
-        $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . "$distname for $stuff");
+        $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . $distname);
         $self->build([ $self->{make} ], $distname) &&
         $self->test([ $self->{make}, "test" ], $distname) &&
         $self->install([ $self->{make}, "install" ], [ "UNINST=1" ]) &&
