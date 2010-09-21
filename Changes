@@ -1,5 +1,8 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.0014  Tue Sep 21 12:42:28 PDT 2010
+   - Added "--> Working on ..." output for a better understanding of overall build process
+
 1.0013  Sun Sep 12 12:46:36 PDT 2010
    - Added --no-wget and --no-curl to bootstrap LWP in an environment with old
      versions of wget/curl (rsp)
