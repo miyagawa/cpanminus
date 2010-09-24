@@ -676,7 +676,7 @@ sub install_module {
         return 1;
     }
 
-    $self->diag("--> Working on $dist->{distvname} (for $module)\n");
+    $self->diag("--> Working on $module\n");
 
     $dist->{dir} ||= $self->fetch_module($dist);
 
