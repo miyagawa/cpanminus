@@ -1,5 +1,8 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.0015  Fri Sep 24 16:51:49 PDT 2010
+   - Fixed the output introcuced in the previous release
+
 1.0014  Tue Sep 21 12:42:28 PDT 2010
    - Added "--> Working on ..." output for a better understanding of overall build process
 
