@@ -34,6 +34,7 @@ sub new {
         interactive => undef,
         log => undef,
         mirrors => [],
+        mirror_only => undef,
         perl => $^X,
         argv => [],
         local_lib => undef,
@@ -79,6 +80,7 @@ sub parse_options {
         'l|local-lib=s' => sub { $self->{local_lib} = $self->maybe_abs($_[1]) },
         'L|local-lib-contained=s' => sub { $self->{local_lib} = $self->maybe_abs($_[1]); $self->{self_contained} = 1 },
         'mirror=s@' => $self->{mirrors},
+        'mirror-only!' => \$self->{mirror_only},
         'prompt!'   => \$self->{prompt},
         'installdeps' => \$self->{installdeps},
         'skip-installed!' => \$self->{skip_installed},
@@ -164,30 +166,69 @@ sub setup_home {
 sub fetch_meta {
     my($self, $dist) = @_;
 
-    my $meta_yml = $self->get("http://cpansearch.perl.org/src/$dist->{cpanid}/$dist->{distvname}/META.yml");
-    return $self->parse_meta_string($meta_yml);
+    unless ($self->{mirror_only}) {
+        my $meta_yml = $self->get("http://cpansearch.perl.org/src/$dist->{cpanid}/$dist->{distvname}/META.yml");
+        return $self->parse_meta_string($meta_yml);
+    }
+    
+    return undef;
 }
 
 sub search_module {
     my($self, $module) = @_;
 
-    $self->chat("Searching $module on cpanmetadb ...\n");
-    my $uri  = "http://cpanmetadb.appspot.com/v1.0/package/$module";
-    my $yaml = $self->get($uri);
-    my $meta = $self->parse_meta_string($yaml);
-    if ($meta->{distfile}) {
-        return $self->cpan_module($module, $meta->{distfile}, $meta->{version});
+    unless ($self->{mirror_only}) {
+        $self->chat("Searching $module on cpanmetadb ...\n");
+        my $uri  = "http://cpanmetadb.appspot.com/v1.0/package/$module";
+        my $yaml = $self->get($uri);
+        my $meta = $self->parse_meta_string($yaml);
+        if ($meta->{distfile}) {
+            return $self->cpan_module($module, $meta->{distfile}, $meta->{version});
+        }
+    
+        $self->diag_fail("Finding $module on cpanmetadb failed.");
+    
+        $self->chat("Searching $module on search.cpan.org ...\n");
+        my $uri  = "http://search.cpan.org/perldoc?$module";
+        my $html = $self->get($uri);
+        $html =~ m!<a href="/CPAN/authors/id/(.*?\.(?:tar\.gz|tgz|tar\.bz2|zip))">!
+            and return $self->cpan_module($module, $1);
+    
+        $self->diag_fail("Finding $module on search.cpan.org failed.");
     }
-
-    $self->diag_fail("Finding $module on cpanmetadb failed.");
-
-    $self->chat("Searching $module on search.cpan.org ...\n");
-    my $uri  = "http://search.cpan.org/perldoc?$module";
-    my $html = $self->get($uri);
-    $html =~ m!<a href="/CPAN/authors/id/(.*?\.(?:tar\.gz|tgz|tar\.bz2|zip))">!
-        and return $self->cpan_module($module, $1);
-
-    $self->diag_fail("Finding $module on search.cpan.org failed.");
+    
+    for my $mirror (@{ $self->{mirrors} }) {
+        $self->chat("Searching $module on mirror $mirror ...\n");
+        my $name = '02packages.details.txt.gz';
+        my $uri  = "$mirror/modules/$name";
+        my $file = $self->{base}."/$name";
+        
+        unless ($self->{pkgs}{$uri}) {
+            $self->chat("Downloading index file $uri ...\n");
+            $self->mirror($uri,$file);
+            
+            local $/ = undef;
+            open my $fh,'<',$file;
+            $self->{pkgs}{$uri} = <$fh>;
+    
+            if (substr($self->{pkgs}{$uri},0,2) eq chr(0x1f).chr(0x8b)) {
+                $self->chat("Uncompressing index file ...\n");
+                
+                if (eval {require Compress::Zlib}) {
+                    open my $fh,'<',$file;
+                    $self->{pkgs}{$uri} = Compress::Zlib::memGunzip(<$fh>);
+                } else {
+                    open my $fh, "gunzip -c $file |" or die "Cannot uncompress - please install gunzip or Compress::Zlib";
+                    $self->{pkgs}{$uri} = <$fh>;
+                }
+            }
+        }
+                
+        $self->{pkgs}{$uri} =~ m!^\Q$module\E\s+[\w\.]+\s+(.*)!m
+            and return $self->cpan_module($module, $1);
+        
+        $self->diag_fail("Finding $module on mirror $mirror failed.");
+    }
 
     return;
 }
@@ -236,6 +277,7 @@ Options:
   --installdeps             Only install dependencies
   --reinstall               Reinstall the distribution even if you already have the latest version installed
   --mirror                  Specify the base URL for the mirror (e.g. http://cpan.cpantesters.org/)
+  --only-mirror             Use the mirror's index file instead of the CPAN Meta DB
   --prompt                  Prompt when configure/build/test fails
   -l,--local-lib            Specify the install base to install modules
   -L,--local-lib-contained  Specify the install base to install all non-core modules

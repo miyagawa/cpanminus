@@ -154,6 +154,14 @@ can specify multiple mirror URLs by repeating the command line option.
 Defaults to C<http://search.cpan.org/CPAN> which is a geo location
 aware redirector.
 
+=item --mirror-only
+
+Download the mirror's 02packages.details.txt.gz index file instead of querying
+the CPAN Meta DB.
+
+Select this option if you are using a local mirror of CPAN (i.e. without
+internet access).
+
 =item --prompt
 
 Prompts when a test fails so that you can skip, force install, retry
