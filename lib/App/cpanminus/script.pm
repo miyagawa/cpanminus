@@ -760,6 +760,18 @@ sub unpack {
 sub resolve_name {
     my($self, $module) = @_;
 
+    # github
+    # translate
+    #   git://github.com/USERNAME/MODULENAME.git
+    #   http://github.com/USERNAME/MODULENAME.git
+    #   https://USERNAME@github.com/USERNAME/MODULENAME.git
+    # into
+    #   http://github.com/USERNAME/MODULENAME/tarball/master
+    if ($module =~ m{^(?:git|https?)://[^/]*github\.com/(.+?)\.git$}) {
+        my $branch = 'master';
+        return { uris => [ "http://github.com/$1/tarball/$branch" ] }
+    }
+
     # URL
     if ($module =~ /^(ftp|https?|file):/) {
         if ($module =~ m!authors/id/!) {
