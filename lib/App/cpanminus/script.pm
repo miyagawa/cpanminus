@@ -136,6 +136,8 @@ sub setup_home {
 
     $self->{home} = $self->env('HOME') if $self->env('HOME');
 
+    $self->{home} = 'c:' . $self->{home} if !$self->env('HOME') && WIN32;
+
     unless (_writable($self->{home})) {
         die "Can't write to cpanm home '$self->{home}': You should fix it with chown/chmod first.\n";
     }
