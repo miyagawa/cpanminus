@@ -170,7 +170,7 @@ sub fetch_meta {
         my $meta_yml = $self->get("http://cpansearch.perl.org/src/$dist->{cpanid}/$dist->{distvname}/META.yml");
         return $self->parse_meta_string($meta_yml);
     }
-    
+
     return undef;
 }
 
@@ -185,35 +185,35 @@ sub search_module {
         if ($meta->{distfile}) {
             return $self->cpan_module($module, $meta->{distfile}, $meta->{version});
         }
-    
+
         $self->diag_fail("Finding $module on cpanmetadb failed.");
-    
+
         $self->chat("Searching $module on search.cpan.org ...\n");
         my $uri  = "http://search.cpan.org/perldoc?$module";
         my $html = $self->get($uri);
         $html =~ m!<a href="/CPAN/authors/id/(.*?\.(?:tar\.gz|tgz|tar\.bz2|zip))">!
             and return $self->cpan_module($module, $1);
-    
+
         $self->diag_fail("Finding $module on search.cpan.org failed.");
     }
-    
+
     for my $mirror (@{ $self->{mirrors} }) {
         $self->chat("Searching $module on mirror $mirror ...\n");
         my $name = '02packages.details.txt.gz';
         my $uri  = "$mirror/modules/$name";
         my $file = $self->{base}."/$name";
-        
+
         unless ($self->{pkgs}{$uri}) {
             $self->chat("Downloading index file $uri ...\n");
             $self->mirror($uri,$file);
-            
+
             local $/ = undef;
             open my $fh,'<',$file;
             $self->{pkgs}{$uri} = <$fh>;
-    
+
             if (substr($self->{pkgs}{$uri},0,2) eq chr(0x1f).chr(0x8b)) {
                 $self->chat("Uncompressing index file ...\n");
-                
+
                 if (eval {require Compress::Zlib}) {
                     open my $fh,'<',$file;
                     $self->{pkgs}{$uri} = Compress::Zlib::memGunzip(<$fh>);
@@ -223,10 +223,10 @@ sub search_module {
                 }
             }
         }
-                
+
         $self->{pkgs}{$uri} =~ m!^\Q$module\E\s+[\w\.]+\s+(.*)!m
             and return $self->cpan_module($module, $1);
-        
+
         $self->diag_fail("Finding $module on mirror $mirror failed.");
     }
 
