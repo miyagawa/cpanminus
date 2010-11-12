@@ -174,6 +174,54 @@ sub fetch_meta {
     return undef;
 }
 
+sub package_index_for {
+  my ($self, $mirror) = @_;
+  return $self->source_for($mirror) . "/02packages.details.txt";
+}
+
+sub generate_mirror_index {
+  my ($self, $mirror) = @_;
+  my $file = $self->package_index_for($mirror);
+  my $gz_file = $file . '.gz';
+
+  unless (-e $file && (stat $file)[9] >= (stat $gz_file)[9]) {
+    $self->chat("Uncompressing index file...\n");
+    if (eval {require Compress::Zlib}) {
+      my $gz = Compress::Zlib::gzopen($gz_file, "rb")
+        or do { $self->diag_fail("$Compress::Zlib::gzerrno opening compressed index"); return};
+      open my $fh, '>', $file
+        or do { $self->diag_fail("$! opening uncompressed index for write"); return };
+      my $buffer;
+      while (my $status = $gz->gzread($buffer)) {
+        if ($status < 0) {
+          $self->diag_fail($gz->gzerror . " reading compressed index");
+          return;
+        }
+        print $fh $buffer;
+      }
+    } else {
+      unless (system("gunzip -c $gz_file > $file")) {
+        $self->diag_fail("Cannot uncompress -- please install gunzip or Compress::Zlib");
+        return;
+      }
+    }
+  }
+  return 1;
+}
+
+sub search_mirror_index {
+  my ($self, $mirror, $module) = @_;
+
+  open my $fh, '<', $self->package_index_for($mirror) or return;
+  while (<$fh>) {
+    if (m!^\Q$module\E\s+[\w\.]+\s+(.*)!m) {
+      return $self->cpan_module($module, $1);
+    }
+  }
+
+  return;
+}
+
 sub search_module {
     my($self, $module) = @_;
 
@@ -197,35 +245,21 @@ sub search_module {
         $self->diag_fail("Finding $module on search.cpan.org failed.");
     }
 
-    for my $mirror (@{ $self->{mirrors} }) {
+    MIRROR: for my $mirror (@{ $self->{mirrors} }) {
         $self->chat("Searching $module on mirror $mirror ...\n");
         my $name = '02packages.details.txt.gz';
         my $uri  = "$mirror/modules/$name";
-        my $file = $self->source_for($mirror) . "/$name";
+        my $gz_file = $self->package_index_for($mirror) . '.gz';
 
         unless ($self->{pkgs}{$uri}) {
             $self->chat("Downloading index file $uri ...\n");
-            $self->mirror($uri, $file);
-
-            local $/ = undef;
-            open my $fh,'<',$file;
-            $self->{pkgs}{$uri} = <$fh>;
-
-            if (substr($self->{pkgs}{$uri},0,2) eq chr(0x1f).chr(0x8b)) {
-                $self->chat("Uncompressing index file ...\n");
-
-                if (eval {require Compress::Zlib}) {
-                    open my $fh,'<',$file;
-                    $self->{pkgs}{$uri} = Compress::Zlib::memGunzip(<$fh>);
-                } else {
-                    open my $fh, "gunzip -c $file |" or die "Cannot uncompress - please install gunzip or Compress::Zlib";
-                    $self->{pkgs}{$uri} = <$fh>;
-                }
-            }
+            $self->mirror($uri, $gz_file);
+            $self->generate_mirror_index($mirror) or next MIRROR;
+            $self->{pkgs}{$uri} = "!!retrieved!!";
         }
 
-        $self->{pkgs}{$uri} =~ m!^\Q$module\E\s+[\w\.]+\s+(.*)!m
-            and return $self->cpan_module($module, $1);
+        my $pkg = $self->search_mirror_index($mirror, $module);
+        return $pkg if $pkg;
 
         $self->diag_fail("Finding $module on mirror $mirror failed.");
     }
