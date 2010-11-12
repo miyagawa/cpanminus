@@ -1,5 +1,8 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.1000
+   - Added --mirror-only to support minicpan and DarkPAN (jonallen, xdg, tokuhirom)
+
 1.0015  Fri Sep 24 16:51:49 PDT 2010
    - Fixed the output introcuced in the previous release
 

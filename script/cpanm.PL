@@ -156,12 +156,18 @@ aware redirector.
 
 =item --mirror-only
 
-Download the mirror's 02packages.details.txt.gz index file instead of querying
-the CPAN Meta DB.
+Download the mirror's 02packages.details.txt.gz index file instead of
+querying the CPAN Meta DB.
 
-Select this option if you are using a local mirror of CPAN (i.e. without
-internet access).
+Select this option if you are using a local mirror of CPAN, such as
+minicpan when you're offline, or your own CPAN index (a.k.a darkpan).
 
+B<Tip:> It might be useful if you name these mirror options with your
+shell aliases, like:
+
+  alias minicpanm='cpanm --mirror ~/minicpan --mirror-only'
+  alias darkpan='canm --mirror http://mycompany.example.com/DPAN --mirror-only'
+    
 =item --prompt
 
 Prompts when a test fails so that you can skip, force install, retry
