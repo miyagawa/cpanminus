@@ -675,6 +675,7 @@ sub configure_mirrors {
         $self->{mirrors} = [ 'http://search.cpan.org/CPAN' ];
     }
     for (@{$self->{mirrors}}) {
+        s!^/!file:///!;
         s!/$!!;
     }
 }
