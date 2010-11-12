@@ -1,5 +1,10 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.1001  Fri Nov 12 12:37:31 PST 2010
+   - Fixed the mirror index scanning code to uncompress on-disk and scan line-by-line
+     to be less RAM hoggy (hobbs)
+   - Fixed docs
+
 1.1000  Thu Nov 11 23:56:46 PST 2010
    - Added --mirror-only to support minicpan and DarkPAN (jonallen, xdg, tokuhirom)
 
