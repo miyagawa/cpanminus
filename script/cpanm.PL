@@ -167,7 +167,7 @@ shell aliases, like:
 
   alias minicpanm='cpanm --mirror ~/minicpan --mirror-only'
   alias darkpan='canm --mirror http://mycompany.example.com/DPAN --mirror-only'
-    
+
 =item --prompt
 
 Prompts when a test fails so that you can skip, force install, retry

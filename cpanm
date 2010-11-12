@@ -18,7 +18,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.0015";
+  our $VERSION = "1.1000";
   
   =head1 NAME
   
@@ -336,7 +336,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use constant WIN32 => $^O eq 'MSWin32';
   use constant SUNOS => $^O eq 'solaris';
   
-  our $VERSION = "1.0015";
+  our $VERSION = "1.1000";
   $VERSION = eval $VERSION;
   
   my $quote = WIN32 ? q/"/ : q/'/;
@@ -494,7 +494,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           my $meta_yml = $self->get("http://cpansearch.perl.org/src/$dist->{cpanid}/$dist->{distvname}/META.yml");
           return $self->parse_meta_string($meta_yml);
       }
-      
+  
       return undef;
   }
   
@@ -509,35 +509,35 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           if ($meta->{distfile}) {
               return $self->cpan_module($module, $meta->{distfile}, $meta->{version});
           }
-      
+  
           $self->diag_fail("Finding $module on cpanmetadb failed.");
-      
+  
           $self->chat("Searching $module on search.cpan.org ...\n");
           my $uri  = "http://search.cpan.org/perldoc?$module";
           my $html = $self->get($uri);
           $html =~ m!<a href="/CPAN/authors/id/(.*?\.(?:tar\.gz|tgz|tar\.bz2|zip))">!
               and return $self->cpan_module($module, $1);
-      
+  
           $self->diag_fail("Finding $module on search.cpan.org failed.");
       }
-      
+  
       for my $mirror (@{ $self->{mirrors} }) {
           $self->chat("Searching $module on mirror $mirror ...\n");
           my $name = '02packages.details.txt.gz';
           my $uri  = "$mirror/modules/$name";
-          my $file = $self->{base}."/$name";
-          
+          my $file = $self->source_for($mirror) . "/$name";
+  
           unless ($self->{pkgs}{$uri}) {
               $self->chat("Downloading index file $uri ...\n");
-              $self->mirror($uri,$file);
-              
+              $self->mirror($uri, $file);
+  
               local $/ = undef;
               open my $fh,'<',$file;
               $self->{pkgs}{$uri} = <$fh>;
-      
+  
               if (substr($self->{pkgs}{$uri},0,2) eq chr(0x1f).chr(0x8b)) {
                   $self->chat("Uncompressing index file ...\n");
-                  
+  
                   if (eval {require Compress::Zlib}) {
                       open my $fh,'<',$file;
                       $self->{pkgs}{$uri} = Compress::Zlib::memGunzip(<$fh>);
@@ -547,14 +547,24 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
                   }
               }
           }
-                  
+  
           $self->{pkgs}{$uri} =~ m!^\Q$module\E\s+[\w\.]+\s+(.*)!m
               and return $self->cpan_module($module, $1);
-          
+  
           $self->diag_fail("Finding $module on mirror $mirror failed.");
       }
   
       return;
+  }
+  
+  sub source_for {
+      my($self, $mirror) = @_;
+      $mirror =~ s/[^\w\.\-]+/%/g;
+  
+      my $dir = "$self->{home}/sources/$mirror";
+      File::Path::mkpath([ $dir ], 0, 0777);
+  
+      return $dir;
   }
   
   sub load_argv_from_fh {
@@ -989,6 +999,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           $self->{mirrors} = [ 'http://search.cpan.org/CPAN' ];
       }
       for (@{$self->{mirrors}}) {
+          s!^/!file:///!;
           s!/$!!;
       }
   }
@@ -5845,11 +5856,17 @@ aware redirector.
 
 =item --mirror-only
 
-Download the mirror's 02packages.details.txt.gz index file instead of querying
-the CPAN Meta DB.
+Download the mirror's 02packages.details.txt.gz index file instead of
+querying the CPAN Meta DB.
 
-Select this option if you are using a local mirror of CPAN (i.e. without
-internet access).
+Select this option if you are using a local mirror of CPAN, such as
+minicpan when you're offline, or your own CPAN index (a.k.a darkpan).
+
+B<Tip:> It might be useful if you name these mirror options with your
+shell aliases, like:
+
+  alias minicpanm='cpanm --mirror ~/minicpan --mirror-only'
+  alias darkpan='canm --mirror http://mycompany.example.com/DPAN --mirror-only'
 
 =item --prompt
 
