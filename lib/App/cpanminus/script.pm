@@ -287,7 +287,7 @@ Options:
   --installdeps             Only install dependencies
   --reinstall               Reinstall the distribution even if you already have the latest version installed
   --mirror                  Specify the base URL for the mirror (e.g. http://cpan.cpantesters.org/)
-  --only-mirror             Use the mirror's index file instead of the CPAN Meta DB
+  --mirror-only             Use the mirror's index file instead of the CPAN Meta DB
   --prompt                  Prompt when configure/build/test fails
   -l,--local-lib            Specify the install base to install modules
   -L,--local-lib-contained  Specify the install base to install all non-core modules
