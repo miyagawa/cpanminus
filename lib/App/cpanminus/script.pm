@@ -201,11 +201,11 @@ sub search_module {
         $self->chat("Searching $module on mirror $mirror ...\n");
         my $name = '02packages.details.txt.gz';
         my $uri  = "$mirror/modules/$name";
-        my $file = $self->{base}."/$name";
+        my $file = $self->source_for($mirror) . "/$name";
 
         unless ($self->{pkgs}{$uri}) {
             $self->chat("Downloading index file $uri ...\n");
-            $self->mirror($uri,$file);
+            $self->mirror($uri, $file);
 
             local $/ = undef;
             open my $fh,'<',$file;
@@ -231,6 +231,16 @@ sub search_module {
     }
 
     return;
+}
+
+sub source_for {
+    my($self, $mirror) = @_;
+    $mirror =~ s/[^\w\.\-]+/%/g;
+
+    my $dir = "$self->{home}/sources/$mirror";
+    File::Path::mkpath([ $dir ], 0, 0777);
+
+    return $dir;
 }
 
 sub load_argv_from_fh {
