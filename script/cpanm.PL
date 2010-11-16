@@ -166,7 +166,7 @@ B<Tip:> It might be useful if you name these mirror options with your
 shell aliases, like:
 
   alias minicpanm='cpanm --mirror ~/minicpan --mirror-only'
-  alias darkpan='canm --mirror http://mycompany.example.com/DPAN --mirror-only'
+  alias darkpan='cpanm --mirror http://mycompany.example.com/DPAN --mirror-only'
 
 =item --prompt
 
