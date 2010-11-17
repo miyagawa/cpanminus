@@ -216,6 +216,15 @@ include path.
 Defaults to true, and you can disable that with
 C<--no-uninst-shadows>.
 
+=item --auto-cleanup
+
+Specifies the number of days in whcih cpanm's work directories
+expire. Defaults to 7, which means old work directories will be
+cleaned up in one week.
+
+You can set the value to C<0> to make cpan never cleanup those
+directories.
+
 =item --lwp
 
 Uses L<LWP> module to download stuff over HTTP. Defaults to true, and

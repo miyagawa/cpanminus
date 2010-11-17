@@ -47,6 +47,7 @@ sub new {
         try_curl => 1,
         uninstall_shadows => 1,
         skip_installed => 1,
+        auto_cleanup => 7, # days
         @_,
     }, $class;
 }
@@ -94,6 +95,7 @@ sub parse_options {
         'lwp!'    => \$self->{try_lwp},
         'wget!'   => \$self->{try_wget},
         'curl!'   => \$self->{try_curl},
+        'auto-cleanup=s' => \$self->{auto_cleanup},
     );
 
     $self->{argv} = \@ARGV;
@@ -128,6 +130,10 @@ sub doit {
     for my $module (@{$self->{argv}}) {
         $self->install_module($module, 0)
             or push @fail, $module;
+    }
+
+    if ($self->{base} && $self->{auto_cleanup}) {
+        $self->cleanup_workdirs;
     }
 
     return !@fail;
@@ -325,6 +331,7 @@ Options:
   --prompt                  Prompt when configure/build/test fails
   -l,--local-lib            Specify the install base to install modules
   -L,--local-lib-contained  Specify the install base to install all non-core modules
+  --auto-cleanup            Number of days that cpanm's work directories expire in. Defaults to 7
 
 Commands:
   --self-upgrade            upgrades itself
@@ -1214,6 +1221,27 @@ sub extract_requires {
     push @deps, %{$meta->{build_requires}} if $meta->{build_requires};
 
     return @deps;
+}
+
+sub cleanup_workdirs {
+    my $self = shift;
+
+    my $expire = time - 24 * 60 * 60 * $self->{auto_cleanup};
+    my @targets;
+
+    opendir my $dh, "$self->{home}/work";
+    while (my $e = readdir $dh) {
+        next if $e !~ /^(\d+)\.\d+$/; # {UNIX time}.{PID}
+        my $time = $1;
+        if ($time < $expire) {
+            push @targets, "$self->{home}/work/$e";
+        }
+    }
+
+    if (@targets) {
+        $self->chat("Expiring ", scalar(@targets), " work directories.\n");
+        File::Path::rmtree(\@targets, 0, 0); # safe = 0, since blib usually doesn't have write bits
+    }
 }
 
 sub DESTROY {
