@@ -18,7 +18,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.1001";
+  our $VERSION = "1.1002";
   
   =head1 NAME
   
@@ -336,7 +336,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use constant WIN32 => $^O eq 'MSWin32';
   use constant SUNOS => $^O eq 'solaris';
   
-  our $VERSION = "1.1001";
+  our $VERSION = "1.1002";
   $VERSION = eval $VERSION;
   
   my $quote = WIN32 ? q/"/ : q/'/;
@@ -371,6 +371,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           try_curl => 1,
           uninstall_shadows => 1,
           skip_installed => 1,
+          auto_cleanup => 7, # days
           @_,
       }, $class;
   }
@@ -418,6 +419,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           'lwp!'    => \$self->{try_lwp},
           'wget!'   => \$self->{try_wget},
           'curl!'   => \$self->{try_curl},
+          'auto-cleanup=s' => \$self->{auto_cleanup},
       );
   
       $self->{argv} = \@ARGV;
@@ -452,6 +454,10 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       for my $module (@{$self->{argv}}) {
           $self->install_module($module, 0)
               or push @fail, $module;
+      }
+  
+      if ($self->{base} && $self->{auto_cleanup}) {
+          $self->cleanup_workdirs;
       }
   
       return !@fail;
@@ -649,6 +655,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
     --prompt                  Prompt when configure/build/test fails
     -l,--local-lib            Specify the install base to install modules
     -L,--local-lib-contained  Specify the install base to install all non-core modules
+    --auto-cleanup            Number of days that cpanm's work directories expire in. Defaults to 7
   
   Commands:
     --self-upgrade            upgrades itself
@@ -1538,6 +1545,27 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       push @deps, %{$meta->{build_requires}} if $meta->{build_requires};
   
       return @deps;
+  }
+  
+  sub cleanup_workdirs {
+      my $self = shift;
+  
+      my $expire = time - 24 * 60 * 60 * $self->{auto_cleanup};
+      my @targets;
+  
+      opendir my $dh, "$self->{home}/work";
+      while (my $e = readdir $dh) {
+          next if $e !~ /^(\d+)\.\d+$/; # {UNIX time}.{PID}
+          my $time = $1;
+          if ($time < $expire) {
+              push @targets, "$self->{home}/work/$e";
+          }
+      }
+  
+      if (@targets) {
+          $self->chat("Expiring ", scalar(@targets), " work directories.\n");
+          File::Path::rmtree(\@targets, 0, 0); # safe = 0, since blib usually doesn't have write bits
+      }
   }
   
   sub DESTROY {
@@ -5900,7 +5928,7 @@ B<Tip:> It might be useful if you name these mirror options with your
 shell aliases, like:
 
   alias minicpanm='cpanm --mirror ~/minicpan --mirror-only'
-  alias darkpan='canm --mirror http://mycompany.example.com/DPAN --mirror-only'
+  alias darkpan='cpanm --mirror http://mycompany.example.com/DPAN --mirror-only'
 
 =item --prompt
 
@@ -5949,6 +5977,15 @@ include path.
 
 Defaults to true, and you can disable that with
 C<--no-uninst-shadows>.
+
+=item --auto-cleanup
+
+Specifies the number of days in whcih cpanm's work directories
+expire. Defaults to 7, which means old work directories will be
+cleaned up in one week.
+
+You can set the value to C<0> to make cpan never cleanup those
+directories.
 
 =item --lwp
 
