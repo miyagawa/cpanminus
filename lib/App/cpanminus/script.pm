@@ -6,6 +6,7 @@ use File::Basename ();
 use File::Path ();
 use File::Spec ();
 use File::Copy ();
+use File::Find ('find');
 use Getopt::Long ();
 use Parse::CPAN::Meta;
 
@@ -16,6 +17,7 @@ our $VERSION = "1.1002";
 $VERSION = eval $VERSION;
 
 my $quote = WIN32 ? q/"/ : q/'/;
+my $module_dir;
 
 sub new {
     my $class = shift;
@@ -96,6 +98,7 @@ sub parse_options {
         'wget!'   => \$self->{try_wget},
         'curl!'   => \$self->{try_curl},
         'auto-cleanup=s' => \$self->{auto_cleanup},
+        'list'    => sub { $self->{action} = 'get_installed_mods' },
     );
 
     $self->{argv} = \@ARGV;
@@ -332,6 +335,7 @@ Options:
   -l,--local-lib            Specify the install base to install modules
   -L,--local-lib-contained  Specify the install base to install all non-core modules
   --auto-cleanup            Number of days that cpanm's work directories expire in. Defaults to 7
+  --list                    List all installed perl modules
 
 Commands:
   --self-upgrade            upgrades itself
@@ -1552,6 +1556,33 @@ sub parse_meta {
 sub parse_meta_string {
     my($self, $yaml) = @_;
     return eval { (Parse::CPAN::Meta::Load($yaml))[0] } || {};
+}
+
+sub get_installed_mods {
+    my $self = shift;
+    for my $startdir (@INC) {
+        $module_dir = $startdir;
+        find(\&parse_tree_wanted, $startdir);
+    }
+    return 1;
+}
+
+sub parse_tree_wanted {
+
+    if (-d && /^[a-z]/) {
+    # this is so we don't go down site_perl etc too early
+        $File::Find::prune = 1;
+        return;
+    }
+    return unless /\.pm$/;
+    local $_ = $File::Find::name;
+    (my $tmpname = $_) =~ s{^$module_dir/}{};
+
+    s{^$module_dir/}{};
+    s/\.pm$//;
+    s{/}{::}g;
+
+    print $_, "\n";
 }
 
 1;
