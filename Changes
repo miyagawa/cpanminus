@@ -1,5 +1,8 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.1003  2010-11-19T10:13:56
+   - added the --list command
+
 1.1002  Tue Nov 16 18:27:19 PST 2010
    - Implemented --auto-cleanup and set that to 7 (days) by default
 
