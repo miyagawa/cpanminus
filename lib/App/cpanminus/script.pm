@@ -1575,14 +1575,19 @@ sub parse_tree_wanted {
         return;
     }
     return unless /\.pm$/;
-    local $_ = $File::Find::name;
-    (my $tmpname = $_) =~ s{^$module_dir/}{};
+    my $mod = $_;
+    $mod = $File::Find::name;
+    (my $tmpname = $mod) =~ s{^$module_dir/}{};
 
-    s{^$module_dir/}{};
-    s/\.pm$//;
-    s{/}{::}g;
+    $mod =~ s{^$module_dir/}{};
+    $mod =~ s/\.pm$//;
+    $mod =~ s{/}{::}g;
 
-    print $_, "\n";
+    require Module::Metadata;
+    my $meta = Module::Metadata->new_from_module($mod, inc => [ $module_dir ]);
+
+    return unless $meta->version;
+    print "$mod (".$meta->version.")\n";
 }
 
 1;
