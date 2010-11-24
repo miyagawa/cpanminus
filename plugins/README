@@ -1,21 +1,3 @@
-Copy (or symlink) the plugins to ~/.cpanm/plugins
-
-Ideas:
-* backpan - get a specific version from BackPAN
-* nearest_mirror - automatically pick the nearest mirror (and cache it)
-* test_reporter - report test success/failures
-* via_git, via_svn, via_ssh - install via git:// URL (and svn:// and such)
-  http://blogs.perl.org/users/brian_d_foy/2010/02/who-can-make-lwp-understand-svn.html
-* clone_repo - Clones (checks out) repository using META.yml repository info
-* changes - Gets and displays the changelog
-  http://bulknews.typepad.com/blog/2009/11/wanted-cpan-changelog-diff-service.html
-* fetch - just fetch the tarball to the current dir
-* distroprefs - distribution blacklisting
-* ratings - get/post CPAN cpanratings info
-* rt - get/send RT tickets
-* testers - get testers info
-* cpandoc - perldoc
-* gtk2notify - same as growl, uses Gtk2Notify
-* codesearch - Google code search lang:perl package:cpan.org
-* needs_upgrade - port cpan-outdated
-* darkpan - makes it easy to work with DarkPAN indexes
+plugin architecture was removed from cpanminus when version 1.0 was
+released, to avoid confusions. We still have an idea to integrate
+these plugins to a new tool that's built around cpanminus.
