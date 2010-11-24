@@ -758,7 +758,7 @@ sub install_module {
     $self->check_libs;
 
     if ($dist->{module}) {
-        my($ok, $local) = $self->check_module($dist->{module}, $dist->{module_version} || 0);
+        my($ok, $local) = $self->check_module($dist->{module}, $dist->{version} || 0);
         if ($self->{skip_installed} && $ok) {
             $self->diag("$dist->{module} is up to date. ($local)\n");
             return 1;
