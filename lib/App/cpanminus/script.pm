@@ -181,51 +181,51 @@ sub fetch_meta {
 }
 
 sub package_index_for {
-  my ($self, $mirror) = @_;
-  return $self->source_for($mirror) . "/02packages.details.txt";
+    my ($self, $mirror) = @_;
+    return $self->source_for($mirror) . "/02packages.details.txt";
 }
 
 sub generate_mirror_index {
-  my ($self, $mirror) = @_;
-  my $file = $self->package_index_for($mirror);
-  my $gz_file = $file . '.gz';
+    my ($self, $mirror) = @_;
+    my $file = $self->package_index_for($mirror);
+    my $gz_file = $file . '.gz';
 
-  unless (-e $file && (stat $file)[9] >= (stat $gz_file)[9]) {
-    $self->chat("Uncompressing index file...\n");
-    if (eval {require Compress::Zlib}) {
-      my $gz = Compress::Zlib::gzopen($gz_file, "rb")
-        or do { $self->diag_fail("$Compress::Zlib::gzerrno opening compressed index"); return};
-      open my $fh, '>', $file
-        or do { $self->diag_fail("$! opening uncompressed index for write"); return };
-      my $buffer;
-      while (my $status = $gz->gzread($buffer)) {
-        if ($status < 0) {
-          $self->diag_fail($gz->gzerror . " reading compressed index");
-          return;
+    unless (-e $file && (stat $file)[9] >= (stat $gz_file)[9]) {
+        $self->chat("Uncompressing index file...\n");
+        if (eval {require Compress::Zlib}) {
+            my $gz = Compress::Zlib::gzopen($gz_file, "rb")
+                or do { $self->diag_fail("$Compress::Zlib::gzerrno opening compressed index"); return};
+            open my $fh, '>', $file
+                or do { $self->diag_fail("$! opening uncompressed index for write"); return };
+            my $buffer;
+            while (my $status = $gz->gzread($buffer)) {
+                if ($status < 0) {
+                    $self->diag_fail($gz->gzerror . " reading compressed index");
+                    return;
+                }
+                print $fh $buffer;
+            }
+        } else {
+            unless (system("gunzip -c $gz_file > $file")) {
+                $self->diag_fail("Cannot uncompress -- please install gunzip or Compress::Zlib");
+                return;
+            }
         }
-        print $fh $buffer;
-      }
-    } else {
-      unless (system("gunzip -c $gz_file > $file")) {
-        $self->diag_fail("Cannot uncompress -- please install gunzip or Compress::Zlib");
-        return;
-      }
     }
-  }
-  return 1;
+    return 1;
 }
 
 sub search_mirror_index {
-  my ($self, $mirror, $module) = @_;
+    my ($self, $mirror, $module) = @_;
 
-  open my $fh, '<', $self->package_index_for($mirror) or return;
-  while (<$fh>) {
-    if (m!^\Q$module\E\s+[\w\.]+\s+(.*)!m) {
-      return $self->cpan_module($module, $1);
+    open my $fh, '<', $self->package_index_for($mirror) or return;
+    while (<$fh>) {
+        if (m!^\Q$module\E\s+[\w\.]+\s+(.*)!m) {
+            return $self->cpan_module($module, $1);
+        }
     }
-  }
 
-  return;
+    return;
 }
 
 sub search_module {
