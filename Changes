@@ -1,5 +1,8 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.1003  Thu Nov 25 01:17:28 PST 2010
+   - Fixed a bug where --mirror-only doesn't detect module version updates (reported by sukria)
+
 1.1002  Tue Nov 16 18:27:19 PST 2010
    - Implemented --auto-cleanup and set that to 7 (days) by default
 
