@@ -220,8 +220,8 @@ sub search_mirror_index {
 
     open my $fh, '<', $self->package_index_for($mirror) or return;
     while (<$fh>) {
-        if (m!^\Q$module\E\s+[\w\.]+\s+(.*)!m) {
-            return $self->cpan_module($module, $1);
+        if (m!^\Q$module\E\s+([\w\.]+)\s+(.*)!m) {
+            return $self->cpan_module($module, $2, $1);
         }
     }
 
