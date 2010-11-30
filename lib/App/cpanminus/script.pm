@@ -189,8 +189,9 @@ sub generate_mirror_index {
     my ($self, $mirror) = @_;
     my $file = $self->package_index_for($mirror);
     my $gz_file = $file . '.gz';
+    my $index_mtime = (stat $gz_file)[9];
 
-    unless (-e $file && (stat $file)[9] >= (stat $gz_file)[9]) {
+    unless (-e $file && (stat $file)[9] >= $index_mtime) {
         $self->chat("Uncompressing index file...\n");
         if (eval {require Compress::Zlib}) {
             my $gz = Compress::Zlib::gzopen($gz_file, "rb")
@@ -211,6 +212,7 @@ sub generate_mirror_index {
                 return;
             }
         }
+        utime $index_mtime, $index_mtime, $file;
     }
     return 1;
 }
