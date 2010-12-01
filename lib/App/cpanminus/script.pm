@@ -25,6 +25,7 @@ sub new {
         cmd  => 'install',
         seen => {},
         notest => undef,
+        nodeps => undef,
         installdeps => undef,
         force => undef,
         sudo => undef,
@@ -83,6 +84,7 @@ sub parse_options {
         'mirror=s@' => $self->{mirrors},
         'mirror-only!' => \$self->{mirror_only},
         'prompt!'   => \$self->{prompt},
+        'nodeps' => \$self->{nodeps},
         'installdeps' => \$self->{installdeps},
         'skip-installed!' => \$self->{skip_installed},
         'reinstall'    => sub { $self->{skip_installed} = 0 },
@@ -327,6 +329,7 @@ Options:
   -n,--notest               Do not run unit tests
   -S,--sudo                 sudo to run install commands
   --installdeps             Only install dependencies
+  --nodeps                  Do not install any depencies
   --reinstall               Reinstall the distribution even if you already have the latest version installed
   --mirror                  Specify the base URL for the mirror (e.g. http://cpan.cpantesters.org/)
   --mirror-only             Use the mirror's index file instead of the CPAN Meta DB
@@ -989,6 +992,8 @@ sub should_install {
 sub install_deps {
     my($self, $dir, $depth, @deps) = @_;
 
+    return if $self->{nodeps};
+
     my(@install, %seen);
     while (my($mod, $ver) = splice @deps, 0, 2) {
         next if $seen{$mod} or $mod eq 'perl' or $mod eq 'Config';
@@ -1177,6 +1182,8 @@ sub safe_eval {
 
 sub find_prereqs {
     my($self, $meta) = @_;
+
+    return if $self->{nodeps};
 
     my @deps;
     if (-e 'MYMETA.yml') {
