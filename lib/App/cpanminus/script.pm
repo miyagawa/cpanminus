@@ -128,6 +128,10 @@ sub doit {
 
     my @fail;
     for my $module (@{$self->{argv}}) {
+        if ($module =~ s/\.pm$//i) {
+            my ($volume, $dirs, $file) = File::Spec->splitpath($module);
+            $module = join '::', grep { $_ } File::Spec->splitdir($dirs), $file;
+        }
         $self->install_module($module, 0)
             or push @fail, $module;
     }
