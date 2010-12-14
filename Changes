@@ -1,5 +1,8 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.1005  Tue Dec 14 15:07:31 PST 2010
+   - Accept Foo/Bar/Baz.pm style invocation in args (requested by larryl and many others)
+
 1.1004  Tue Nov 30 10:03:01 PST 2010
    - Fixed a bug where uncompressed and compressed index timestamps are out of sync which causes
      issues when the local and mirror server's clocks are out of sync (reported by sukria)
