@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.1006  Thu Dec 16 11:27:29 PST 2010
+   - Fixed docs to use curl instead of wget because of its cert bug
+   - Fixed the usage of local() where PERL5_CPANPLUS_IS_RUNING was leaking (dg) #75
+
 1.1005  Tue Dec 14 15:07:31 PST 2010
    - Accept Foo/Bar/Baz.pm style invocation in args (requested by larryl and many others)
 
