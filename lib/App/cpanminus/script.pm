@@ -1259,7 +1259,7 @@ sub DESTROY {
 
 sub shell_quote {
     my($self, $stuff) = @_;
-    $quote . $stuff . $quote;
+    $stuff =~ /^${quote}.+${quote}$/ ? $stuff : $quote . $stuff . $quote;
 }
 
 sub which {

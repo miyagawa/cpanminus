@@ -18,7 +18,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.1005";
+  our $VERSION = "1.1006";
   
   =head1 NAME
   
@@ -220,7 +220,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use constant WIN32 => $^O eq 'MSWin32';
   use constant SUNOS => $^O eq 'solaris';
   
-  our $VERSION = "1.1005";
+  our $VERSION = "1.1006";
   $VERSION = eval $VERSION;
   
   my $quote = WIN32 ? q/"/ : q/'/;
@@ -846,7 +846,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       my($self, $cmd) = @_;
   
       # trick AutoInstall
-      local $ENV{PERL5_CPAN_IS_RUNNING} = $ENV{PERL5_CPANPLUS_IS_RUNNING} = $$;
+      local $ENV{PERL5_CPAN_IS_RUNNING} = local $ENV{PERL5_CPANPLUS_IS_RUNNING} = $$;
   
       # e.g. skip CPAN configuration on local::lib
       local $ENV{PERL5_CPANM_IS_RUNNING} = $$;
@@ -1467,7 +1467,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   
   sub shell_quote {
       my($self, $stuff) = @_;
-      $quote . $stuff . $quote;
+      $stuff =~ /^${quote}.+${quote}$/ ? $stuff : $quote . $stuff . $quote;
   }
   
   sub which {
