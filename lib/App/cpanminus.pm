@@ -40,7 +40,7 @@ latest version.
 Otherwise,
 
     cd ~/bin
-    curl -O http://xrl.us/cpanm
+    curl -LO http://xrl.us/cpanm
     chmod +x cpanm
     # edit shebang if you don't have /usr/bin/env
 
