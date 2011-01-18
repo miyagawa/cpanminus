@@ -665,7 +665,8 @@ sub build {
 sub test {
     my($self, $cmd, $distname) = @_;
     return 1 if $self->{notest};
-    local $ENV{AUTOMATED_TESTING} = 1;
+    local $ENV{AUTOMATED_TESTING} = 1
+        unless $self->env('NO_AUTOMATED_TESTING');
 
     return 1 if $self->run_timeout($cmd, $self->{test_timeout});
     if ($self->{force}) {
