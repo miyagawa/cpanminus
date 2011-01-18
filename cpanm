@@ -676,7 +676,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       push @{$self->{bootstrap_deps}},
           'ExtUtils::MakeMaker' => 6.31,
           'ExtUtils::Install'   => 1.46,
-          'Module::Build'       => 0.28; # TODO: 0.36 or later for MYMETA.yml once we do --bootstrap command
+          'Module::Build'       => 0.36;
   }
   
   sub prompt_bool {
@@ -873,6 +873,8 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   sub test {
       my($self, $cmd, $distname) = @_;
       return 1 if $self->{notest};
+  
+      # http://www.nntp.perl.org/group/perl.perl5.porters/2009/10/msg152656.html
       local $ENV{AUTOMATED_TESTING} = 1
           unless $self->env('NO_AUTOMATED_TESTING');
   
@@ -1776,7 +1778,7 @@ $fatpacked{"CPAN/DistnameInfo.pm"} = <<'CPAN_DISTNAMEINFO';
   
   package CPAN::DistnameInfo;
   
-  $VERSION = "0.10";
+  $VERSION = "0.11";
   use strict;
   
   sub distname_info {
@@ -1795,6 +1797,9 @@ $fatpacked{"CPAN/DistnameInfo.pm"} = <<'CPAN_DISTNAMEINFO';
     if ($dist =~ /-undef\z/ and ! length $version) {
       $dist =~ s/-undef\z//;
     }
+  
+    # Remove potential -withoutworldwriteables suffix
+    $version =~ s/-withoutworldwriteables$//;
   
     if ($version =~ /^(-[Vv].*)-(\d.*)/) {
      
@@ -1980,7 +1985,7 @@ $fatpacked{"HTTP/Lite.pm"} = <<'HTTP_LITE';
   
   use vars qw($VERSION);
   BEGIN {
-  	$VERSION = "2.2";
+  	$VERSION = "2.3";
   }
   
   my $BLOCKSIZE = 65536;
@@ -2738,7 +2743,7 @@ $fatpacked{"HTTP/Lite.pm"} = <<'HTTP_LITE';
   =head1 SYNOPSIS
   
       use HTTP::Lite;
-      $http = new HTTP::Lite;
+      $http = HTTP::Lite->new;
       $req = $http->request("http://www.cpan.org/") 
           or die "Unable to get document: $!";
       print $http->body();
@@ -2822,7 +2827,7 @@ $fatpacked{"HTTP/Lite.pm"} = <<'HTTP_LITE';
     }
   
     $url = "$testpath/bigbinary.dat";
-    open OUT, ">bigbinary.dat";
+    open OUT, '>','bigbinary.dat';
     $res = $http->request($url, \&savetofile, OUT);
     close OUT;
   
@@ -2840,18 +2845,18 @@ $fatpacked{"HTTP/Lite.pm"} = <<'HTTP_LITE';
   
     connect - connection has been established and headers are being
               transmitted.
-              
+  
     content-length - return value is used as the content-length.  If undef,
               and prepare_post() was used, the content length is
               calculated.
-                     
+  
     done-headers - all headers have been sent
-    
+  
     content - return value is used as content and is sent to client.  Return
               undef to use the internal content defined by prepare_post().
-              
+  
     content-done - content has been successfuly transmitted.
-    
+  
     data - A block of data has been received.  The data is referenced by
               $dataref.  The return value is dereferenced and replaces the
               content passed in.  Return undef to avoid using memory for large
@@ -2886,7 +2891,7 @@ $fatpacked{"HTTP/Lite.pm"} = <<'HTTP_LITE';
   
       use HTTP::Lite;
       use MIME::Base64;
-      $http = new HTTP::Lite;
+      $http = HTTP::Lite->new;
       $encoded = encode_base64('username:password');
       $http->add_req_header("Authorization", $encoded);
   
@@ -2948,7 +2953,7 @@ $fatpacked{"HTTP/Lite.pm"} = <<'HTTP_LITE';
   
   =item local_port ( $port )
   
-  Explicity select the local port.  0 (default and reccomended) lets the
+  Explicity select the local port.  0 (default and recommended) lets the
   system choose.
   
   =item method ( $method )
@@ -2962,7 +2967,7 @@ $fatpacked{"HTTP/Lite.pm"} = <<'HTTP_LITE';
   
       # Get and print out the headers and body of the CPAN homepage
       use HTTP::Lite;
-      $http = new HTTP::Lite;
+      $http = HTTP::Lite->new;
       $req = $http->request("http://www.cpan.org/")
           or die "Unable to get document: $!";
       die "Request failed ($req): ".$http->status_message()
@@ -2978,7 +2983,7 @@ $fatpacked{"HTTP/Lite.pm"} = <<'HTTP_LITE';
   
       # POST a query to the dejanews USENET search engine
       use HTTP::Lite;
-      $http = new HTTP::Lite;
+      $http = HTTP::Lite->new;
       %vars = (
                "QRY" => "perl",
                "ST" => "MS",
@@ -3000,7 +3005,7 @@ $fatpacked{"HTTP/Lite.pm"} = <<'HTTP_LITE';
       - Redirects (Location) are not automatically followed
       - multipart/form-data POSTs are not directly supported (necessary
         for File uploads).
-      
+  
   =head1 BUGS
   
       Some broken HTTP/1.1 servers send incorrect chunk sizes
@@ -3020,7 +3025,7 @@ $fatpacked{"HTTP/Lite.pm"} = <<'HTTP_LITE';
   
   Copyright (c) 2000-2002 Roy Hooper.  All rights reserved.
   
-  Some parts copyright 2009 Adam Kennedy.
+  Some parts copyright 2009 - 2010 Adam Kennedy.
   
   This program is free software; you can redistribute it and/or modify it
   under the same terms as Perl itself.
@@ -3033,8 +3038,8 @@ $fatpacked{"Module/Metadata.pm"} = <<'MODULE_METADATA';
   # vim:ts=8:sw=2:et:sta:sts=2
   package Module::Metadata;
   
-  # stolen from Module::Build::Version and ::Base - this is perl licensed code,
-  # copyright them.
+  # Adapted from Perl-licensed code originally distributed with
+  # Module-Build by Ken Williams
   
   # This module provides routines to gather information about
   # perl modules (assuming this may be expanded in the distant
@@ -3042,12 +3047,12 @@ $fatpacked{"Module/Metadata.pm"} = <<'MODULE_METADATA';
   
   use strict;
   use vars qw($VERSION);
-  $VERSION = '0.36_04';
+  $VERSION = '1.000003';
   $VERSION = eval $VERSION;
   
   use File::Spec;
   use IO::File;
-  use Module::Metadata::Version;
+  use version 0.87;
   BEGIN {
     if ($INC{'Log/Contextual.pm'}) {
       Log::Contextual->import('log_info');
@@ -3115,8 +3120,8 @@ $fatpacked{"Module/Metadata.pm"} = <<'MODULE_METADATA';
     
     my $compare_versions = sub {
       my ($v1, $op, $v2) = @_;
-      $v1 = Module::Metadata::Version->new($v1)
-        unless UNIVERSAL::isa($v1,'Module::Metadata::Version');
+      $v1 = version->new($v1)
+        unless UNIVERSAL::isa($v1,'version');
     
       my $eval_str = "\$v1 $op \$v2";
       my $result   = eval $eval_str;
@@ -3130,8 +3135,7 @@ $fatpacked{"Module/Metadata.pm"} = <<'MODULE_METADATA';
       if ( $version =~ /[=<>!,]/ ) { # logic, not just version
         # take as is without modification
       }
-      elsif ( ref $version eq 'version' ||
-              ref $version eq 'Module::Metadata::Version' ) { # version objects
+      elsif ( ref $version eq 'version' ) { # version objects
         $version = $version->is_qv ? $version->normal : $version->stringify;
       }
       elsif ( $version =~ /^[^v][^.]*\.[^.]+\./ ) { # no leading v, multiple dots
@@ -3546,7 +3550,7 @@ $fatpacked{"Module/Metadata.pm"} = <<'MODULE_METADATA';
     $pn++; # everybody gets their own package
     my $eval = qq{BEGIN { q#  Hide from _packages_inside()
       #; package Module::Metadata::_version::p$pn;
-      use Module::Metadata::Version;
+      use version;
       no strict;
   
       local $sigil$var;
@@ -3574,24 +3578,72 @@ $fatpacked{"Module/Metadata.pm"} = <<'MODULE_METADATA';
     die "Could not get version from $self->{filename} by executing:\n$eval\n\nThe fatal error was: $@\n"
       if $@;
   
-    # Activestate apparently creates custom versions like '1.23_45_01', which
-    # cause M::B::Version to think it's an invalid alpha.  So check for that
-    # and strip them
-    my $num_dots = () = $result =~ m{\.}g;
-    my $num_unders = () = $result =~ m{_}g;
-    if ( substr($result,0,1) ne 'v' && $num_dots < 2 && $num_unders > 1 ) {
-      $result =~ s{_}{}g;
-    }
+    # Upgrade it into a version object
+    my $version = eval { _dwim_version($result) };
   
-    # Bless it into our own version class
-    eval { $result = Module::Metadata::Version->new($result) };
     die "Version '$result' from $self->{filename} does not appear to be valid:\n$eval\n\nThe fatal error was: $@\n"
-      if $@;
+      unless defined $version; # "0" is OK!
   
-    return $result;
+    return $version;
   }
   }
   
+  # Try to DWIM when things fail the lax version test in obvious ways
+  {
+    my @version_prep = (
+      # Best case, it just works
+      sub { return shift },
+  
+      # If we still don't have a version, try stripping any
+      # trailing junk that is prohibited by lax rules
+      sub {
+        my $v = shift;
+        $v =~ s{([0-9])[a-z-].*$}{$1}i; # 1.23-alpha or 1.23b
+        return $v;
+      },
+  
+      # Activestate apparently creates custom versions like '1.23_45_01', which
+      # cause version.pm to think it's an invalid alpha.  So check for that
+      # and strip them
+      sub {
+        my $v = shift;
+        my $num_dots = () = $v =~ m{(\.)}g;
+        my $num_unders = () = $v =~ m{(_)}g;
+        my $leading_v = substr($v,0,1) eq 'v';
+        if ( ! $leading_v && $num_dots < 2 && $num_unders > 1 ) {
+          $v =~ s{_}{}g;
+          $num_unders = () = $v =~ m{(_)}g;
+        }
+        return $v;
+      },
+  
+      # Worst case, try numifying it like we would have before version objects
+      sub {
+        my $v = shift;
+        no warnings 'numeric';
+        return 0 + $v;
+      },
+  
+    );
+  
+    sub _dwim_version {
+      my ($result) = shift;
+  
+      return $result if ref($result) eq 'version';
+  
+      my ($version, $error);
+      for my $f (@version_prep) {
+        $result = $f->($result);
+        $version = eval { version->new($result) };
+        $error ||= $@ if $@; # capture first failure
+        last if defined $version;
+      }
+  
+      die $error unless defined $version;
+  
+      return $version;
+    }
+  }
   
   ############################################################
   
@@ -3628,14 +3680,9 @@ $fatpacked{"Module/Metadata.pm"} = <<'MODULE_METADATA';
   
   1;
   
-  __END__
-  
-  =for :stopwords ModuleInfo
-  
   =head1 NAME
   
-  ModuleInfo - Gather package and POD information from a perl module file
-  
+  Module::Metadata - Gather package and POD information from perl module files
   
   =head1 DESCRIPTION
   
@@ -3706,25 +3753,40 @@ $fatpacked{"Module/Metadata.pm"} = <<'MODULE_METADATA';
   
   Can be called as either an object or a class method.
   
-  =back
+  =item package_versions_from_directory($dir, \@files?)
   
+  Scans C<$dir> for .pm files (unless C<@files> is given, in which case looks
+  for those files in C<$dir> - and reads each file for packages and versions,
+  returning a hashref of the form:
+  
+    {
+      'Package::Name' => {
+        version => '0.123',
+        file => 'Package/Name.pm'
+      },
+      'OtherPackage::Name' => ...
+    }
+  
+  =item log_info (internal)
+  
+  Used internally to perform logging; imported from Log::Contextual if
+  Log::Contextual has already been loaded, otherwise simply calls warn.
+  
+  =back
   
   =head1 AUTHOR
   
   Ken Williams <kwilliams@cpan.org>, Randy W. Sims <RandyS@ThePierianSpring.org>
   
+  Released as Module::Metadata by Matt S Trout (mst) <mst@shadowcat.co.uk> with
+  assistance from David Golden (xdg) <dagolden@cpan.org>
   
   =head1 COPYRIGHT
   
-  Copyright (c) 2001-2006 Ken Williams.  All rights reserved.
+  Copyright (c) 2001-2011 Ken Williams.  All rights reserved.
   
   This library is free software; you can redistribute it and/or
   modify it under the same terms as Perl itself.
-  
-  
-  =head1 SEE ALSO
-  
-  perl(1), L<Module::Metadata>(3)
   
   =cut
   
@@ -3775,6 +3837,38 @@ $fatpacked{"Module/Metadata/Version.pm"} = <<'MODULE_METADATA_VERSION';
   @ISA = qw(version);
   
   1;
+  
+  =head1 NAME
+  
+  Module::Metadata::Version - inlined version.pm fallback for Module::Metadata
+  
+  =head1 DESCRIPTION
+  
+  This module either loads version.pm if available, or if not slurps its own
+  private copy of version::vpp into memory as a fallback, then makes itself
+  a subclass of whichever it found.
+  
+  This is a horrible hack. But so is version.pm.
+  
+  =head1 AUTHOR
+  
+  Ken Williams <kwilliams@cpan.org>, Randy W. Sims <RandyS@ThePierianSpring.org>
+  
+  Documented by Matt S Trout (mst) <mst@shadowcat.co.uk>
+  
+  =head1 COPYRIGHT
+  
+  Copyright (c) 2001-2006 Ken Williams.  All rights reserved.
+  
+  This library is free software; you can redistribute it and/or
+  modify it under the same terms as Perl itself.
+  
+  =head1 SEE ALSO
+  
+  perl(1), L<Module::Build::ModuleInfo>(3)
+  
+  =cut
+  
   __DATA__
   # stub version module to make everything else happy
   package version;
@@ -4860,6 +4954,104 @@ $fatpacked{"Parse/CPAN/Meta.pm"} = <<'PARSE_CPAN_META';
   =cut
 PARSE_CPAN_META
 
+$fatpacked{"lib/core/only.pm"} = <<'LIB_CORE_ONLY';
+  package lib::core::only;
+  
+  use strict;
+  use warnings FATAL => 'all';
+  use Config;
+  
+  sub import {
+    @INC = @Config{qw(privlibexp archlibexp)};
+    return
+  }
+  
+  =head1 NAME
+  
+  lib::core::only - Remove all non-core paths from @INC to avoid site/vendor dirs
+  
+  =head1 SYNOPSIS
+  
+    use lib::core::only; # now @INC contains only the two core directories
+  
+  To get only the core directories plus the ones for the local::lib in scope:
+  
+    $ perl -Mlib::core::only -Mlocal::lib=~/perl5 myscript.pl
+  
+  To attempt to do a self-contained build (but note this will not reliably
+  propagate into subprocesses, see the CAVEATS below):
+  
+    $ PERL5OPT='-Mlib::core::only -Mlocal::lib=~/perl5' cpan
+  
+  =head1 DESCRIPTION
+  
+  lib::core::only is simply a shortcut to say "please reduce my @INC to only
+  the core lib and archlib (architecture-specific lib) directories of this perl".
+  
+  You might want to do this to ensure a local::lib contains only the code you
+  need, or to test an L<App::FatPacker|App::FatPacker> tree, or to avoid known
+  bad vendor packages.
+  
+  You might want to use this to try and install a self-contained tree of perl
+  modules. Be warned that that probably won't work (see L</CAVEATS>).
+  
+  This module was extracted from L<local::lib|local::lib>'s --self-contained
+  feature, and contains the only part that ever worked. I apologise to anybody
+  who thought anything else did.
+  
+  =head1 CAVEATS
+  
+  This does B<not> propagate properly across perl invocations like local::lib's
+  stuff does. It can't. It's only a module import, so it B<only affects the
+  specific perl VM instance in which you load and import() it>.
+  
+  If you want to cascade it across invocations, you can set the PERL5OPT
+  environment variable to '-Mlib::core::only' and it'll sort of work. But be
+  aware that taint mode ignores this, so some modules' build and test code
+  probably will as well.
+  
+  You also need to be aware that perl's command line options are not processed
+  in order - -I options take effect before -M options, so
+  
+    perl -Mlib::core::only -Ilib
+  
+  is unlike to do what you want - it's exactly equivalent to:
+  
+    perl -Mlib::core::only
+  
+  If you want to combine a core-only @INC with additional paths, you need to
+  add the additional paths using -M options and the L<lib|lib> module:
+  
+    perl -Mlib::core::only -Mlib=lib
+  
+    # or if you're trying to test compiled code:
+  
+    perl -Mlib::core::only -Mblib
+  
+  For more information on the impossibility of sanely propagating this across
+  module builds without help from the build program, see
+  L<http://www.shadowcat.co.uk/blog/matt-s-trout/tainted-love> - and for ways
+  to achieve the old --self-contained feature's results, look at
+  L<App::FatPacker|App::FatPacker>'s tree function, and at
+  L<App::cpanminus|cpanm>'s --local-lib-contained feature.
+  
+  =head1 AUTHOR
+  
+  Matt S. Trout <mst@shadowcat.co.uk>
+  
+  =head1 LICENSE
+  
+  This library is free software under the same terms as perl itself.
+  
+  =head1 COPYRIGHT
+  
+  (c) 2010 the lib::core::only L</AUTHOR> as specified above.
+  
+  =cut
+  
+  1;
+LIB_CORE_ONLY
+
 $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
   use strict;
   use warnings;
@@ -4874,7 +5066,7 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
   use Carp ();
   use Config;
   
-  our $VERSION = '1.006000'; # 1.6.0
+  our $VERSION = '1.008001'; # 1.8.1
   
   our @KNOWN_FLAGS = qw(--self-contained);
   
@@ -5062,11 +5254,6 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
     }
   }
   
-  sub modulebuildrc_path {
-    my ($class, $path) = @_;
-    File::Spec->catfile($path, '.modulebuildrc');
-  }
-  
   sub install_base_bin_path {
     my ($class, $path) = @_;
     File::Spec->catdir($path, 'bin');
@@ -5091,20 +5278,6 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
     # Need to have the path exist to make a short name for it, so
     # converting to a short name here.
     $path = Win32::GetShortPathName($path) if $^O eq 'MSWin32';
-    my $modulebuildrc_path = $class->modulebuildrc_path($path);
-    if (-e $modulebuildrc_path) {
-      unless (-f _) {
-        Carp::croak("${modulebuildrc_path} exists but is not a plain file");
-      }
-    } else {
-      warn "Attempting to create file ${modulebuildrc_path}\n";
-      open MODULEBUILDRC, '>', $modulebuildrc_path
-        || Carp::croak("Couldn't open ${modulebuildrc_path} for writing: $!");
-      print MODULEBUILDRC qq{install  --install_base  ${path}\n}
-        || Carp::croak("Couldn't write line to ${modulebuildrc_path}: $!");
-      close MODULEBUILDRC
-        || Carp::croak("Couldn't close file ${modulebuildrc_path}: $@");
-    }
   
     return $path;
   }
@@ -5112,16 +5285,7 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
   sub INTERPOLATE_ENV () { 1 }
   sub LITERAL_ENV     () { 0 }
   
-  sub print_environment_vars_for {
-    my ($class, $path) = @_;
-    my @envs = $class->build_environment_vars_for($path, LITERAL_ENV);
-    my $out = '';
-  
-    # rather basic csh detection, goes on the assumption that something won't
-    # call itself csh unless it really is. also, default to bourne in the
-    # pathological situation where a user doesn't have $ENV{SHELL} defined.
-    # note also that shells with funny names, like zoid, are assumed to be
-    # bourne.
+  sub guess_shelltype {
     my $shellbin = 'sh';
     if(defined $ENV{'SHELL'}) {
         my @shell_bin_path_parts = File::Spec->splitpath($ENV{'SHELL'});
@@ -5153,13 +5317,33 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
                    }
            };
     }
+    return $shelltype;
+  }
+  
+  sub print_environment_vars_for {
+    my ($class, $path) = @_;
+    print $class->environment_vars_string_for($path);
+  }
+  
+  sub environment_vars_string_for {
+    my ($class, $path) = @_;
+    my @envs = $class->build_environment_vars_for($path, LITERAL_ENV);
+    my $out = '';
+  
+    # rather basic csh detection, goes on the assumption that something won't
+    # call itself csh unless it really is. also, default to bourne in the
+    # pathological situation where a user doesn't have $ENV{SHELL} defined.
+    # note also that shells with funny names, like zoid, are assumed to be
+    # bourne.
+  
+    my $shelltype = $class->guess_shelltype;
   
     while (@envs) {
       my ($name, $value) = (shift(@envs), shift(@envs));
       $value =~ s/(\\")/\\$1/g;
       $out .= $class->${\"build_${shelltype}_env_declaration"}($name, $value);
     }
-    print $out;
+    return $out;
   }
   
   # simple routines that take two arguments: an %ENV key and a value. return
@@ -5192,11 +5376,12 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
   sub build_environment_vars_for {
     my ($class, $path, $interpolate) = @_;
     return (
-      MODULEBUILDRC => $class->modulebuildrc_path($path),
+      PERL_LOCAL_LIB_ROOT => $path,
+      PERL_MB_OPT => "--install_base ${path}",
       PERL_MM_OPT => "INSTALL_BASE=${path}",
       PERL5LIB => join($Config{path_sep},
-                    $class->install_base_perl_path($path),
                     $class->install_base_arch_path($path),
+                    $class->install_base_perl_path($path),
                     (($ENV{PERL5LIB}||()) ?
                       ($interpolate == INTERPOLATE_ENV
                         ? ($ENV{PERL5LIB})
@@ -5222,9 +5407,9 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
   
   ok(-d 't/var/splat');
   
-  ok(-f 't/var/splat/.modulebuildrc');
-  
   =end testing
+  
+  =encoding utf8
   
   =head1 NAME
   
@@ -5249,17 +5434,26 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
   
     # Just print out useful shell commands
     $ perl -Mlocal::lib
-    export MODULEBUILDRC=/home/username/perl/.modulebuildrc
-    export PERL_MM_OPT='INSTALL_BASE=/home/username/perl'
-    export PERL5LIB='/home/username/perl/lib/perl5:/home/username/perl/lib/perl5/i386-linux'
-    export PATH="/home/username/perl/bin:$PATH"
+    export PERL_MB_OPT='--install_base /home/username/perl5'
+    export PERL_MM_OPT='INSTALL_BASE=/home/username/perl5'
+    export PERL5LIB='/home/username/perl5/lib/perl5/i386-linux:/home/username/perl5/lib/perl5'
+    export PATH="/home/username/perl5/bin:$PATH"
   
   =head2 The bootstrapping technique
   
   A typical way to install local::lib is using what is known as the
   "bootstrapping" technique.  You would do this if your system administrator
   hasn't already installed local::lib.  In this case, you'll need to install
-  local::lib in your home directory.
+  local::lib in your home directory. 
+  
+  If you do have administrative privileges, you will still want to set up your 
+  environment variables, as discussed in step 4. Without this, you would still
+  install the modules into the system CPAN installation and also your Perl scripts
+  will not use the lib/ path you bootstrapped with local::lib.
+  
+  By default local::lib installs itself and the CPAN modules into ~/perl5.
+  
+  Windows users must also see L</Differences when using this module under Win32>.
   
   1. Download and unpack the local::lib tarball from CPAN (search for "Download"
   on the CPAN page about local::lib).  Do this as an ordinary user, not as root
@@ -5273,12 +5467,19 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
   If the system asks you whether it should automatically configure as much
   as possible, you would typically answer yes.
   
-  3. Run this:
+  In order to install local::lib into a directory other than the default, you need
+  to specify the name of the directory when you call bootstrap, as follows:
+  
+    perl Makefile.PL --bootstrap=~/foo
+  
+  3. Run this: (local::lib assumes you have make installed on your system)
   
     make test && make install
   
-  4. Arrange for Perl to use your own packages instead of the system
-  packages.  If you are using bash, you can do this as follows:
+  4. Now we need to setup the appropriate environment variables, so that Perl 
+  starts using our newly generated lib/ directory. If you are using bash or
+  any other Bourne shells, you can add this to your shell startup script this
+  way:
   
     echo 'eval $(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib)' >>~/.bashrc
   
@@ -5289,17 +5490,14 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
     /bin/csh
     perl -I$HOME/perl5/lib/perl5 -Mlocal::lib >> ~/.cshrc
   
-  You can also pass --bootstrap=~/foo to get a different location -
-  
-    perl Makefile.PL --bootstrap=~/foo
-    make test && make install
+  If you passed to bootstrap a directory other than default, you also need to give that as 
+  import parameter to the call of the local::lib module like this way:
   
     echo 'eval $(perl -I$HOME/foo/lib/perl5 -Mlocal::lib=$HOME/foo)' >>~/.bashrc
   
   After writing your shell configuration file, be sure to re-read it to get the
-  changed settings into your current shell's environment. Bourne shells use C<.
-  ~/.bashrc> for this, whereas C shells use C<source ~/.cshrc>. Replace .bashrc or
-  .cshrc with the name of the file you wrote above with the echo command.
+  changed settings into your current shell's environment. Bourne shells use 
+  C<. ~/.bashrc> for this, whereas C shells use C<source ~/.cshrc>.
   
   If you're on a slower machine, or are operating under draconian disk space
   limitations, you can disable the automatic generation of manpages from POD when
@@ -5307,13 +5505,15 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
   
     perl Makefile.PL --bootstrap --no-manpages
   
-  If you want to install multiple Perl module environments, say for application development, 
-  install local::lib globally and then:
+  To avoid doing several bootstrap for several Perl module environments on the 
+  same account, for example if you use it for several different deployed 
+  applications independently, you can use one bootstrapped local::lib 
+  installation to install modules in different directories directly this way:
   
     cd ~/mydir1
     perl -Mlocal::lib=./
     eval $(perl -Mlocal::lib=./)  ### To set the environment for this shell alone
-    printenv  ### You will see that ~/mydir1 is in the PERL5LIB
+    printenv                      ### You will see that ~/mydir1 is in the PERL5LIB
     perl -MCPAN -e install ...    ### whatever modules you want
     cd ../mydir2
     ... REPEAT ...
@@ -5336,22 +5536,25 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
   
   =head2 Differences when using this module under Win32
   
+  To set up the proper environment variables for your current session of
+  C<CMD.exe>, you can use this:
+  
     C:\>perl -Mlocal::lib
-    set MODULEBUILDRC=C:\DOCUME~1\ADMINI~1\perl5\.modulebuildrc
+    set PERL_MB_OPT=--install_base C:\DOCUME~1\ADMINI~1\perl5
     set PERL_MM_OPT=INSTALL_BASE=C:\DOCUME~1\ADMINI~1\perl5
     set PERL5LIB=C:\DOCUME~1\ADMINI~1\perl5\lib\perl5;C:\DOCUME~1\ADMINI~1\perl5\lib\perl5\MSWin32-x86-multi-thread
     set PATH=C:\DOCUME~1\ADMINI~1\perl5\bin;%PATH%
     
-      ### To set the environment for this shell alone
+    ### To set the environment for this shell alone
     C:\>perl -Mlocal::lib > %TEMP%\tmp.bat && %TEMP%\tmp.bat && del %TEMP%\temp.bat
     ### instead of $(perl -Mlocal::lib=./)
   
   If you want the environment entries to persist, you'll need to add then to the
-  Control Panel's System applet yourself at the moment.
+  Control Panel's System applet yourself or use L<App::local::lib::Win32Helper>.
   
   The "~" is translated to the user's profile directory (the directory named for
   the user under "Documents and Settings" (Windows XP or earlier) or "Users"
-  (Windows Vista or later) unless $ENV{HOME} exists. After that, the home
+  (Windows Vista or later)) unless $ENV{HOME} exists. After that, the home
   directory is translated to a short name (which means the directory must exist)
   and the subdirectories are created.
   
@@ -5397,7 +5600,7 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
   
   =over 4
   
-  =item MODULEBUILDRC
+  =item PERL_MB_OPT
   
   =item PERL_MM_OPT
   
@@ -5413,17 +5616,19 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
   
   =head1 CREATING A SELF-CONTAINED SET OF MODULES
   
-  See L<lib::core::only|lib::core::only> for one way to do this - but note that
+  See L<lib::core::only> for one way to do this - but note that
   there are a number of caveats, and the best approach is always to perform a
   build against a clean perl (i.e. site and vendor as close to empty as possible).
   
   =head1 METHODS
   
-  =head2 ensure_directory_structure_for
+  =head2 ensure_dir_structure_for
   
   =over 4
   
-  =item Arguments: path
+  =item Arguments: $path
+  
+  =item Return value: None
   
   =back
   
@@ -5434,29 +5639,48 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
   
   =over 4
   
-  =item Arguments: path
+  =item Arguments: $path
+  
+  =item Return value: None
   
   =back
   
   Prints to standard output the variables listed above, properly set to use the
   given path as the base directory.
   
+  =head2 build_environment_vars_for
+  
+  =over 4
+  
+  =item Arguments: $path, $interpolate
+  
+  =item Return value: \%environment_vars
+  
+  =back
+  
+  Returns a hash with the variables listed above, properly set to use the
+  given path as the base directory.
+  
   =head2 setup_env_hash_for
   
   =over 4
   
-  =item Arguments: path
+  =item Arguments: $path
+  
+  =item Return value: None
   
   =back
   
   Constructs the C<%ENV> keys for the given path, by calling
-  C<build_environment_vars_for>.
+  L</build_environment_vars_for>.
   
   =head2 install_base_perl_path
   
   =over 4
   
-  =item Arguments: path
+  =item Arguments: $path
+  
+  =item Return value: $install_base_perl_path
   
   =back
   
@@ -5468,7 +5692,9 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
   
   =over 4
   
-  =item Arguments: path
+  =item Arguments: $path
+  
+  =item Return value: $install_base_arch_path
   
   =back
   
@@ -5481,7 +5707,9 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
   
   =over 4
   
-  =item Arguments: path
+  =item Arguments: $path
+  
+  =item Return value: $install_base_bin_path
   
   =back
   
@@ -5489,22 +5717,13 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
   local library installation. Based on the L</install_base_perl_path> method's
   return value, and appends the directory C<bin>.
   
-  =head2 modulebuildrc_path
-  
-  =over 4
-  
-  =item Arguments: path
-  
-  =back
-  
-  Returns a path describing where to install the C<.modulebuildrc> file, based on
-  the given path.
-  
   =head2 resolve_empty_path
   
   =over 4
   
-  =item Arguments: path
+  =item Arguments: $path
+  
+  =item Return value: $base_path
   
   =back
   
@@ -5515,7 +5734,9 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
   
   =over 4
   
-  =item Arguments: path
+  =item Arguments: $path
+  
+  =item Return value: $home_path
   
   =back
   
@@ -5526,7 +5747,9 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
   
   =over 4
   
-  =item Arguments: path
+  =item Arguments: $path
+  
+  =item Return value: $absolute_path
   
   =back
   
@@ -5536,7 +5759,9 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
   
   =over 4
   
-  =item Arguments: path
+  =item Arguments: $path
+  
+  =item Return value: $absolute_path
   
   =back
   
@@ -5561,6 +5786,12 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
   
   =head1 LIMITATIONS
   
+  The perl toolchain is unable to handle directory names with spaces in it,
+  so you cant put your local::lib bootstrap into a directory with spaces. What
+  you can do is moving your local::lib to a directory with spaces B<after> you
+  installed all modules inside your local::lib bootstrap. But be aware that you
+  cant update or install CPAN modules after the move.
+  
   Rather basic shell detection. Right now anything with csh in its name is
   assumed to be a C shell or something compatible, and everything else is assumed
   to be Bourne, except on Win32 systems. If the C<SHELL> environment variable is
@@ -5569,7 +5800,7 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
   Bootstrap is a hack and will use CPAN.pm for ExtUtils::MakeMaker even if you
   have CPANPLUS installed.
   
-  Kills any existing PERL5LIB, PERL_MM_OPT or MODULEBUILDRC.
+  Kills any existing PERL5LIB, PERL_MM_OPT or PERL_MB_OPT.
   
   Should probably auto-fixup CPAN config if not already done.
   
@@ -5609,6 +5840,12 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
   
   =back
   
+  =head1 SUPPORT
+  
+  IRC:
+  
+      Join #local-lib on irc.perl.org.
+  
   =head1 AUTHOR
   
   Matt S Trout <mst@shadowcat.co.uk> http://www.shadowcat.co.uk/
@@ -5620,7 +5857,8 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
   Patches to correctly output commands for csh style shells, as well as some
   documentation additions, contributed by Christopher Nehren <apeiron@cpan.org>.
   
-  Doc patches for a custom local::lib directory contributed by Torsten Raudssus
+  Doc patches for a custom local::lib directory, more cleanups in the english
+  documentation and a L<german documentation|POD2::DE::local::lib> contributed by Torsten Raudssus
   <torsten@raudssus.de>.
   
   Hans Dieter Pearcey <hdp@cpan.org> sent in some additional tests for ensuring
@@ -5640,9 +5878,15 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
   Mark Stosberg <mark@summersault.com> provided the code for the now deleted
   '--self-contained' option.
   
+  Documentation patches to make win32 usage clearer by
+  David Mertens <dcmertens.perl@gmail.com> (run4flat).
+  
+  Brazilian L<portuguese translation|POD2::PT_BR::local::lib> and minor doc patches contributed by Breno
+  G. de Oliveira <garu@cpan.org>.
+  
   =head1 COPYRIGHT
   
-  Copyright (c) 2007 - 2009 the local::lib L</AUTHOR> and L</CONTRIBUTORS> as
+  Copyright (c) 2007 - 2010 the local::lib L</AUTHOR> and L</CONTRIBUTORS> as
   listed above.
   
   =head1 LICENSE
