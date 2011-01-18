@@ -8,7 +8,7 @@ use Errno qw(EAGAIN);
 
 use vars qw($VERSION);
 BEGIN {
-	$VERSION = "2.2";
+	$VERSION = "2.3";
 }
 
 my $BLOCKSIZE = 65536;
@@ -766,7 +766,7 @@ HTTP::Lite - Lightweight HTTP implementation
 =head1 SYNOPSIS
 
     use HTTP::Lite;
-    $http = new HTTP::Lite;
+    $http = HTTP::Lite->new;
     $req = $http->request("http://www.cpan.org/") 
         or die "Unable to get document: $!";
     print $http->body();
@@ -850,7 +850,7 @@ An example use to save a document to file is:
   }
 
   $url = "$testpath/bigbinary.dat";
-  open OUT, ">bigbinary.dat";
+  open OUT, '>','bigbinary.dat';
   $res = $http->request($url, \&savetofile, OUT);
   close OUT;
 
@@ -868,18 +868,18 @@ The current phases are:
 
   connect - connection has been established and headers are being
             transmitted.
-            
+
   content-length - return value is used as the content-length.  If undef,
             and prepare_post() was used, the content length is
             calculated.
-                   
+
   done-headers - all headers have been sent
-  
+
   content - return value is used as content and is sent to client.  Return
             undef to use the internal content defined by prepare_post().
-            
+
   content-done - content has been successfuly transmitted.
-  
+
   data - A block of data has been received.  The data is referenced by
             $dataref.  The return value is dereferenced and replaces the
             content passed in.  Return undef to avoid using memory for large
@@ -914,7 +914,7 @@ To provide (proxy) authentication or authorization, you would use:
 
     use HTTP::Lite;
     use MIME::Base64;
-    $http = new HTTP::Lite;
+    $http = HTTP::Lite->new;
     $encoded = encode_base64('username:password');
     $http->add_req_header("Authorization", $encoded);
 
@@ -976,7 +976,7 @@ choose.
 
 =item local_port ( $port )
 
-Explicity select the local port.  0 (default and reccomended) lets the
+Explicity select the local port.  0 (default and recommended) lets the
 system choose.
 
 =item method ( $method )
@@ -990,7 +990,7 @@ setting.  Usual choices are GET, POST, PUT, HEAD
 
     # Get and print out the headers and body of the CPAN homepage
     use HTTP::Lite;
-    $http = new HTTP::Lite;
+    $http = HTTP::Lite->new;
     $req = $http->request("http://www.cpan.org/")
         or die "Unable to get document: $!";
     die "Request failed ($req): ".$http->status_message()
@@ -1006,7 +1006,7 @@ setting.  Usual choices are GET, POST, PUT, HEAD
 
     # POST a query to the dejanews USENET search engine
     use HTTP::Lite;
-    $http = new HTTP::Lite;
+    $http = HTTP::Lite->new;
     %vars = (
              "QRY" => "perl",
              "ST" => "MS",
@@ -1028,7 +1028,7 @@ setting.  Usual choices are GET, POST, PUT, HEAD
     - Redirects (Location) are not automatically followed
     - multipart/form-data POSTs are not directly supported (necessary
       for File uploads).
-    
+
 =head1 BUGS
 
     Some broken HTTP/1.1 servers send incorrect chunk sizes
@@ -1048,7 +1048,7 @@ RFC 2068 - HTTP/1.1 -http://www.w3.org/
 
 Copyright (c) 2000-2002 Roy Hooper.  All rights reserved.
 
-Some parts copyright 2009 Adam Kennedy.
+Some parts copyright 2009 - 2010 Adam Kennedy.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

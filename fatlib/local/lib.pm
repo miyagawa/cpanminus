@@ -11,7 +11,7 @@ use File::Path ();
 use Carp ();
 use Config;
 
-our $VERSION = '1.006000'; # 1.6.0
+our $VERSION = '1.008001'; # 1.8.1
 
 our @KNOWN_FLAGS = qw(--self-contained);
 
@@ -199,11 +199,6 @@ sub setup_local_lib_for {
   }
 }
 
-sub modulebuildrc_path {
-  my ($class, $path) = @_;
-  File::Spec->catfile($path, '.modulebuildrc');
-}
-
 sub install_base_bin_path {
   my ($class, $path) = @_;
   File::Spec->catdir($path, 'bin');
@@ -228,20 +223,6 @@ sub ensure_dir_structure_for {
   # Need to have the path exist to make a short name for it, so
   # converting to a short name here.
   $path = Win32::GetShortPathName($path) if $^O eq 'MSWin32';
-  my $modulebuildrc_path = $class->modulebuildrc_path($path);
-  if (-e $modulebuildrc_path) {
-    unless (-f _) {
-      Carp::croak("${modulebuildrc_path} exists but is not a plain file");
-    }
-  } else {
-    warn "Attempting to create file ${modulebuildrc_path}\n";
-    open MODULEBUILDRC, '>', $modulebuildrc_path
-      || Carp::croak("Couldn't open ${modulebuildrc_path} for writing: $!");
-    print MODULEBUILDRC qq{install  --install_base  ${path}\n}
-      || Carp::croak("Couldn't write line to ${modulebuildrc_path}: $!");
-    close MODULEBUILDRC
-      || Carp::croak("Couldn't close file ${modulebuildrc_path}: $@");
-  }
 
   return $path;
 }
@@ -249,16 +230,7 @@ sub ensure_dir_structure_for {
 sub INTERPOLATE_ENV () { 1 }
 sub LITERAL_ENV     () { 0 }
 
-sub print_environment_vars_for {
-  my ($class, $path) = @_;
-  my @envs = $class->build_environment_vars_for($path, LITERAL_ENV);
-  my $out = '';
-
-  # rather basic csh detection, goes on the assumption that something won't
-  # call itself csh unless it really is. also, default to bourne in the
-  # pathological situation where a user doesn't have $ENV{SHELL} defined.
-  # note also that shells with funny names, like zoid, are assumed to be
-  # bourne.
+sub guess_shelltype {
   my $shellbin = 'sh';
   if(defined $ENV{'SHELL'}) {
       my @shell_bin_path_parts = File::Spec->splitpath($ENV{'SHELL'});
@@ -290,13 +262,33 @@ sub print_environment_vars_for {
                  }
          };
   }
+  return $shelltype;
+}
+
+sub print_environment_vars_for {
+  my ($class, $path) = @_;
+  print $class->environment_vars_string_for($path);
+}
+
+sub environment_vars_string_for {
+  my ($class, $path) = @_;
+  my @envs = $class->build_environment_vars_for($path, LITERAL_ENV);
+  my $out = '';
+
+  # rather basic csh detection, goes on the assumption that something won't
+  # call itself csh unless it really is. also, default to bourne in the
+  # pathological situation where a user doesn't have $ENV{SHELL} defined.
+  # note also that shells with funny names, like zoid, are assumed to be
+  # bourne.
+
+  my $shelltype = $class->guess_shelltype;
 
   while (@envs) {
     my ($name, $value) = (shift(@envs), shift(@envs));
     $value =~ s/(\\")/\\$1/g;
     $out .= $class->${\"build_${shelltype}_env_declaration"}($name, $value);
   }
-  print $out;
+  return $out;
 }
 
 # simple routines that take two arguments: an %ENV key and a value. return
@@ -329,11 +321,12 @@ sub setup_env_hash_for {
 sub build_environment_vars_for {
   my ($class, $path, $interpolate) = @_;
   return (
-    MODULEBUILDRC => $class->modulebuildrc_path($path),
+    PERL_LOCAL_LIB_ROOT => $path,
+    PERL_MB_OPT => "--install_base ${path}",
     PERL_MM_OPT => "INSTALL_BASE=${path}",
     PERL5LIB => join($Config{path_sep},
-                  $class->install_base_perl_path($path),
                   $class->install_base_arch_path($path),
+                  $class->install_base_perl_path($path),
                   (($ENV{PERL5LIB}||()) ?
                     ($interpolate == INTERPOLATE_ENV
                       ? ($ENV{PERL5LIB})
@@ -359,9 +352,9 @@ $c->ensure_dir_structure_for('t/var/splat');
 
 ok(-d 't/var/splat');
 
-ok(-f 't/var/splat/.modulebuildrc');
-
 =end testing
+
+=encoding utf8
 
 =head1 NAME
 
@@ -386,17 +379,26 @@ From the shell -
 
   # Just print out useful shell commands
   $ perl -Mlocal::lib
-  export MODULEBUILDRC=/home/username/perl/.modulebuildrc
-  export PERL_MM_OPT='INSTALL_BASE=/home/username/perl'
-  export PERL5LIB='/home/username/perl/lib/perl5:/home/username/perl/lib/perl5/i386-linux'
-  export PATH="/home/username/perl/bin:$PATH"
+  export PERL_MB_OPT='--install_base /home/username/perl5'
+  export PERL_MM_OPT='INSTALL_BASE=/home/username/perl5'
+  export PERL5LIB='/home/username/perl5/lib/perl5/i386-linux:/home/username/perl5/lib/perl5'
+  export PATH="/home/username/perl5/bin:$PATH"
 
 =head2 The bootstrapping technique
 
 A typical way to install local::lib is using what is known as the
 "bootstrapping" technique.  You would do this if your system administrator
 hasn't already installed local::lib.  In this case, you'll need to install
-local::lib in your home directory.
+local::lib in your home directory. 
+
+If you do have administrative privileges, you will still want to set up your 
+environment variables, as discussed in step 4. Without this, you would still
+install the modules into the system CPAN installation and also your Perl scripts
+will not use the lib/ path you bootstrapped with local::lib.
+
+By default local::lib installs itself and the CPAN modules into ~/perl5.
+
+Windows users must also see L</Differences when using this module under Win32>.
 
 1. Download and unpack the local::lib tarball from CPAN (search for "Download"
 on the CPAN page about local::lib).  Do this as an ordinary user, not as root
@@ -410,12 +412,19 @@ convenient location.
 If the system asks you whether it should automatically configure as much
 as possible, you would typically answer yes.
 
-3. Run this:
+In order to install local::lib into a directory other than the default, you need
+to specify the name of the directory when you call bootstrap, as follows:
+
+  perl Makefile.PL --bootstrap=~/foo
+
+3. Run this: (local::lib assumes you have make installed on your system)
 
   make test && make install
 
-4. Arrange for Perl to use your own packages instead of the system
-packages.  If you are using bash, you can do this as follows:
+4. Now we need to setup the appropriate environment variables, so that Perl 
+starts using our newly generated lib/ directory. If you are using bash or
+any other Bourne shells, you can add this to your shell startup script this
+way:
 
   echo 'eval $(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib)' >>~/.bashrc
 
@@ -426,17 +435,14 @@ If you are using C shell, you can do this as follows:
   /bin/csh
   perl -I$HOME/perl5/lib/perl5 -Mlocal::lib >> ~/.cshrc
 
-You can also pass --bootstrap=~/foo to get a different location -
-
-  perl Makefile.PL --bootstrap=~/foo
-  make test && make install
+If you passed to bootstrap a directory other than default, you also need to give that as 
+import parameter to the call of the local::lib module like this way:
 
   echo 'eval $(perl -I$HOME/foo/lib/perl5 -Mlocal::lib=$HOME/foo)' >>~/.bashrc
 
 After writing your shell configuration file, be sure to re-read it to get the
-changed settings into your current shell's environment. Bourne shells use C<.
-~/.bashrc> for this, whereas C shells use C<source ~/.cshrc>. Replace .bashrc or
-.cshrc with the name of the file you wrote above with the echo command.
+changed settings into your current shell's environment. Bourne shells use 
+C<. ~/.bashrc> for this, whereas C shells use C<source ~/.cshrc>.
 
 If you're on a slower machine, or are operating under draconian disk space
 limitations, you can disable the automatic generation of manpages from POD when
@@ -444,13 +450,15 @@ installing modules by using the C<--no-manpages> argument when bootstrapping:
 
   perl Makefile.PL --bootstrap --no-manpages
 
-If you want to install multiple Perl module environments, say for application development, 
-install local::lib globally and then:
+To avoid doing several bootstrap for several Perl module environments on the 
+same account, for example if you use it for several different deployed 
+applications independently, you can use one bootstrapped local::lib 
+installation to install modules in different directories directly this way:
 
   cd ~/mydir1
   perl -Mlocal::lib=./
   eval $(perl -Mlocal::lib=./)  ### To set the environment for this shell alone
-  printenv  ### You will see that ~/mydir1 is in the PERL5LIB
+  printenv                      ### You will see that ~/mydir1 is in the PERL5LIB
   perl -MCPAN -e install ...    ### whatever modules you want
   cd ../mydir2
   ... REPEAT ...
@@ -473,22 +481,25 @@ Put this before any BEGIN { ... } blocks that require the modules you installed.
 
 =head2 Differences when using this module under Win32
 
+To set up the proper environment variables for your current session of
+C<CMD.exe>, you can use this:
+
   C:\>perl -Mlocal::lib
-  set MODULEBUILDRC=C:\DOCUME~1\ADMINI~1\perl5\.modulebuildrc
+  set PERL_MB_OPT=--install_base C:\DOCUME~1\ADMINI~1\perl5
   set PERL_MM_OPT=INSTALL_BASE=C:\DOCUME~1\ADMINI~1\perl5
   set PERL5LIB=C:\DOCUME~1\ADMINI~1\perl5\lib\perl5;C:\DOCUME~1\ADMINI~1\perl5\lib\perl5\MSWin32-x86-multi-thread
   set PATH=C:\DOCUME~1\ADMINI~1\perl5\bin;%PATH%
   
-    ### To set the environment for this shell alone
+  ### To set the environment for this shell alone
   C:\>perl -Mlocal::lib > %TEMP%\tmp.bat && %TEMP%\tmp.bat && del %TEMP%\temp.bat
   ### instead of $(perl -Mlocal::lib=./)
 
 If you want the environment entries to persist, you'll need to add then to the
-Control Panel's System applet yourself at the moment.
+Control Panel's System applet yourself or use L<App::local::lib::Win32Helper>.
 
 The "~" is translated to the user's profile directory (the directory named for
 the user under "Documents and Settings" (Windows XP or earlier) or "Users"
-(Windows Vista or later) unless $ENV{HOME} exists. After that, the home
+(Windows Vista or later)) unless $ENV{HOME} exists. After that, the home
 directory is translated to a short name (which means the directory must exist)
 and the subdirectories are created.
 
@@ -534,7 +545,7 @@ values:
 
 =over 4
 
-=item MODULEBUILDRC
+=item PERL_MB_OPT
 
 =item PERL_MM_OPT
 
@@ -550,17 +561,19 @@ These values are then available for reference by any code after import.
 
 =head1 CREATING A SELF-CONTAINED SET OF MODULES
 
-See L<lib::core::only|lib::core::only> for one way to do this - but note that
+See L<lib::core::only> for one way to do this - but note that
 there are a number of caveats, and the best approach is always to perform a
 build against a clean perl (i.e. site and vendor as close to empty as possible).
 
 =head1 METHODS
 
-=head2 ensure_directory_structure_for
+=head2 ensure_dir_structure_for
 
 =over 4
 
-=item Arguments: path
+=item Arguments: $path
+
+=item Return value: None
 
 =back
 
@@ -571,29 +584,48 @@ an exception on failure.
 
 =over 4
 
-=item Arguments: path
+=item Arguments: $path
+
+=item Return value: None
 
 =back
 
 Prints to standard output the variables listed above, properly set to use the
 given path as the base directory.
 
+=head2 build_environment_vars_for
+
+=over 4
+
+=item Arguments: $path, $interpolate
+
+=item Return value: \%environment_vars
+
+=back
+
+Returns a hash with the variables listed above, properly set to use the
+given path as the base directory.
+
 =head2 setup_env_hash_for
 
 =over 4
 
-=item Arguments: path
+=item Arguments: $path
+
+=item Return value: None
 
 =back
 
 Constructs the C<%ENV> keys for the given path, by calling
-C<build_environment_vars_for>.
+L</build_environment_vars_for>.
 
 =head2 install_base_perl_path
 
 =over 4
 
-=item Arguments: path
+=item Arguments: $path
+
+=item Return value: $install_base_perl_path
 
 =back
 
@@ -605,7 +637,9 @@ path.
 
 =over 4
 
-=item Arguments: path
+=item Arguments: $path
+
+=item Return value: $install_base_arch_path
 
 =back
 
@@ -618,7 +652,9 @@ C<$Config{archname}>.
 
 =over 4
 
-=item Arguments: path
+=item Arguments: $path
+
+=item Return value: $install_base_bin_path
 
 =back
 
@@ -626,22 +662,13 @@ Returns a path describing where to install the executable programs for this
 local library installation. Based on the L</install_base_perl_path> method's
 return value, and appends the directory C<bin>.
 
-=head2 modulebuildrc_path
-
-=over 4
-
-=item Arguments: path
-
-=back
-
-Returns a path describing where to install the C<.modulebuildrc> file, based on
-the given path.
-
 =head2 resolve_empty_path
 
 =over 4
 
-=item Arguments: path
+=item Arguments: $path
+
+=item Return value: $base_path
 
 =back
 
@@ -652,7 +679,9 @@ installation. Defaults to C<~/perl5>.
 
 =over 4
 
-=item Arguments: path
+=item Arguments: $path
+
+=item Return value: $home_path
 
 =back
 
@@ -663,7 +692,9 @@ for this purpose. If no definite answer is available, throws an exception.
 
 =over 4
 
-=item Arguments: path
+=item Arguments: $path
+
+=item Return value: $absolute_path
 
 =back
 
@@ -673,7 +704,9 @@ Translates the given path into an absolute path.
 
 =over 4
 
-=item Arguments: path
+=item Arguments: $path
+
+=item Return value: $absolute_path
 
 =back
 
@@ -698,6 +731,12 @@ install UNINST=1" and local::lib if you understand these possible consequences.
 
 =head1 LIMITATIONS
 
+The perl toolchain is unable to handle directory names with spaces in it,
+so you cant put your local::lib bootstrap into a directory with spaces. What
+you can do is moving your local::lib to a directory with spaces B<after> you
+installed all modules inside your local::lib bootstrap. But be aware that you
+cant update or install CPAN modules after the move.
+
 Rather basic shell detection. Right now anything with csh in its name is
 assumed to be a C shell or something compatible, and everything else is assumed
 to be Bourne, except on Win32 systems. If the C<SHELL> environment variable is
@@ -706,7 +745,7 @@ not set, a Bourne-compatible shell is assumed.
 Bootstrap is a hack and will use CPAN.pm for ExtUtils::MakeMaker even if you
 have CPANPLUS installed.
 
-Kills any existing PERL5LIB, PERL_MM_OPT or MODULEBUILDRC.
+Kills any existing PERL5LIB, PERL_MM_OPT or PERL_MB_OPT.
 
 Should probably auto-fixup CPAN config if not already done.
 
@@ -746,6 +785,12 @@ On Win32 systems, C<COMSPEC> is also examined.
 
 =back
 
+=head1 SUPPORT
+
+IRC:
+
+    Join #local-lib on irc.perl.org.
+
 =head1 AUTHOR
 
 Matt S Trout <mst@shadowcat.co.uk> http://www.shadowcat.co.uk/
@@ -757,7 +802,8 @@ auto_install fixes kindly sponsored by http://www.takkle.com/
 Patches to correctly output commands for csh style shells, as well as some
 documentation additions, contributed by Christopher Nehren <apeiron@cpan.org>.
 
-Doc patches for a custom local::lib directory contributed by Torsten Raudssus
+Doc patches for a custom local::lib directory, more cleanups in the english
+documentation and a L<german documentation|POD2::DE::local::lib> contributed by Torsten Raudssus
 <torsten@raudssus.de>.
 
 Hans Dieter Pearcey <hdp@cpan.org> sent in some additional tests for ensuring
@@ -777,9 +823,15 @@ by a patch from Marco Emilio Poleggi.
 Mark Stosberg <mark@summersault.com> provided the code for the now deleted
 '--self-contained' option.
 
+Documentation patches to make win32 usage clearer by
+David Mertens <dcmertens.perl@gmail.com> (run4flat).
+
+Brazilian L<portuguese translation|POD2::PT_BR::local::lib> and minor doc patches contributed by Breno
+G. de Oliveira <garu@cpan.org>.
+
 =head1 COPYRIGHT
 
-Copyright (c) 2007 - 2009 the local::lib L</AUTHOR> and L</CONTRIBUTORS> as
+Copyright (c) 2007 - 2010 the local::lib L</AUTHOR> and L</CONTRIBUTORS> as
 listed above.
 
 =head1 LICENSE

@@ -1,7 +1,7 @@
 
 package CPAN::DistnameInfo;
 
-$VERSION = "0.10";
+$VERSION = "0.11";
 use strict;
 
 sub distname_info {
@@ -20,6 +20,9 @@ sub distname_info {
   if ($dist =~ /-undef\z/ and ! length $version) {
     $dist =~ s/-undef\z//;
   }
+
+  # Remove potential -withoutworldwriteables suffix
+  $version =~ s/-withoutworldwriteables$//;
 
   if ($version =~ /^(-[Vv].*)-(\d.*)/) {
    

@@ -42,6 +42,38 @@ use vars qw(@ISA);
 @ISA = qw(version);
 
 1;
+
+=head1 NAME
+
+Module::Metadata::Version - inlined version.pm fallback for Module::Metadata
+
+=head1 DESCRIPTION
+
+This module either loads version.pm if available, or if not slurps its own
+private copy of version::vpp into memory as a fallback, then makes itself
+a subclass of whichever it found.
+
+This is a horrible hack. But so is version.pm.
+
+=head1 AUTHOR
+
+Ken Williams <kwilliams@cpan.org>, Randy W. Sims <RandyS@ThePierianSpring.org>
+
+Documented by Matt S Trout (mst) <mst@shadowcat.co.uk>
+
+=head1 COPYRIGHT
+
+Copyright (c) 2001-2006 Ken Williams.  All rights reserved.
+
+This library is free software; you can redistribute it and/or
+modify it under the same terms as Perl itself.
+
+=head1 SEE ALSO
+
+perl(1), L<Module::Build::ModuleInfo>(3)
+
+=cut
+
 __DATA__
 # stub version module to make everything else happy
 package version;
