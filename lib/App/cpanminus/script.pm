@@ -1283,7 +1283,6 @@ sub which {
 
 sub get      { $_[0]->{_backends}{get}->(@_) };
 sub mirror   { $_[0]->{_backends}{mirror}->(@_) };
-sub redirect { $_[0]->{_backends}{redirect}->(@_) };
 sub untar    { $_[0]->{_backends}{untar}->(@_) };
 sub unzip    { $_[0]->{_backends}{unzip}->(@_) };
 
@@ -1330,12 +1329,6 @@ sub init_tools {
             my $res = $ua->()->mirror(@_);
             $res->code;
         };
-        $self->{_backends}{redirect} = sub {
-            my $self = shift;
-            my $res  = $ua->(max_redirect => 1)->simple_request(HTTP::Request->new(GET => $_[0]));
-            return $res->header('Location') if $res->is_redirect;
-            return;
-        };
     } elsif ($self->{try_wget} and my $wget = $self->which('wget')) {
         $self->chat("You have $wget\n");
         $self->{_backends}{get} = sub {
@@ -1351,14 +1344,6 @@ sub init_tools {
             return $self->file_mirror($uri, $path) if $uri =~ s!^file:/+!/!;
             my $q = $self->{verbose} ? '' : '-q';
             system "$wget --retry-connrefused $uri $q -O $path";
-        };
-        $self->{_backends}{redirect} = sub {
-            my($self, $uri) = @_;
-            my $out = `$wget --max-redirect=0 $uri 2>&1`;
-            if ($out =~ /^Location: (\S+)/m) {
-                return $1;
-            }
-            return;
         };
     } elsif ($self->{try_curl} and my $curl = $self->which('curl')) {
         $self->chat("You have $curl\n");
@@ -1376,75 +1361,20 @@ sub init_tools {
             my $q = $self->{verbose} ? '' : '-s';
             system "$curl -L $uri $q -# -o $path";
         };
-        $self->{_backends}{redirect} = sub {
-            my($self, $uri) = @_;
-            my $out = `$curl -I -s $uri 2>&1`;
-            if ($out =~ /^Location: (\S+)/m) {
-                return $1;
-            }
-            return;
-        };
     } else {
-        require HTTP::Lite;
-        $self->chat("Falling back to HTTP::Lite $HTTP::Lite::VERSION\n");
-        my $http_cb = sub {
-            my($uri, $redir, $cb_gen) = @_;
-
-            my $http = HTTP::Lite->new;
-
-            my($data_cb, $done_cb) = $cb_gen ? $cb_gen->() : ();
-            my $req = $http->request($uri, $data_cb);
-            $done_cb->($req) if $done_cb;
-
-            my $redir_count;
-            while ($req == 302 or $req == 301)  {
-                last if $redir_count++ > 5;
-                my $loc;
-                for ($http->headers_array) {
-                    /Location: (\S+)/ and $loc = $1, last;
-                }
-                $loc or last;
-                if ($loc =~ m!^/!) {
-                    $uri =~ s!^(\w+?://[^/]+)/.*$!$1!;
-                    $uri .= $loc;
-                } else {
-                    $uri = $loc;
-                }
-
-                return $uri if $redir;
-
-                my($data_cb, $done_cb) = $cb_gen ? $cb_gen->() : ();
-                $req = $http->request($uri, $data_cb);
-                $done_cb->($req) if $done_cb;
-            }
-
-            return if $redir;
-            return ($http, $req);
-        };
+        require HTTP::Tiny;
+        $self->chat("Falling back to HTTP::Tiny $HTTP::Tiny::VERSION\n");
 
         $self->{_backends}{get} = sub {
-            my($self, $uri) = @_;
-            return $self->file_get($uri) if $uri =~ s!^file:/+!/!;
-            my($http, $req) = $http_cb->($uri);
-            return $http->body;
+            my $self = shift;
+            my $res = HTTP::Tiny->new->get($_[0]);
+            return unless $res->{success};
+            return $res->{content};
         };
-
         $self->{_backends}{mirror} = sub {
-            my($self, $uri, $path) = @_;
-            return $self->file_mirror($uri, $path) if $uri =~ s!^file:/+!/!;
-
-            my($http, $req) = $http_cb->($uri, undef, sub {
-                open my $out, ">$path" or die "$path: $!";
-                binmode $out;
-                sub { print $out ${$_[1]} }, sub { close $out };
-            });
-
-            return $req;
-        };
-
-        $self->{_backends}{redirect} = sub {
-            my($self, $uri) = @_;
-            return $http_cb->($uri, 1);
+            my $self = shift;
+            my $res = HTTP::Tiny->new->mirror(@_);
+            return $res->{status};
         };
     }
 
