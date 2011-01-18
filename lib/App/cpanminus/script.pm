@@ -943,6 +943,7 @@ sub check_module {
     my($self, $mod, $want_ver) = @_;
 
     require Module::Metadata;
+    require Module::Metadata::Version;
     my $meta = Module::Metadata->new_from_module($mod, inc => $self->{search_inc})
         or return 0, undef;
 
