@@ -665,6 +665,8 @@ sub build {
 sub test {
     my($self, $cmd, $distname) = @_;
     return 1 if $self->{notest};
+
+    # http://www.nntp.perl.org/group/perl.perl5.porters/2009/10/msg152656.html
     local $ENV{AUTOMATED_TESTING} = 1
         unless $self->env('NO_AUTOMATED_TESTING');
 
