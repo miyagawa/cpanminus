@@ -1,5 +1,10 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.19_02 Tue Jan 18 14:11:23 PST 2011
+   - Module::Metadata now requires version.pm 0.87. This makes cpanm unable to boostrap when version.pm is
+     older than that. For now, include the pure perl version/vpp.pm and version.pm in the fatlib and then
+     fatpacked in cpanm executable #78
+
 1.19_01 Tue Jan 18 12:48:47 PST 2011
    - Upgraded bundled modules, notably Module::Metadata and local::lib
    - Switched the pure perl fallback to HTTP::Tiny
