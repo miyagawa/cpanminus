@@ -468,7 +468,7 @@ sub bootstrap_local_lib_deps {
     push @{$self->{bootstrap_deps}},
         'ExtUtils::MakeMaker' => 6.31,
         'ExtUtils::Install'   => 1.46,
-        'Module::Build'       => 0.28; # TODO: 0.36 or later for MYMETA.yml once we do --bootstrap command
+        'Module::Build'       => 0.36;
 }
 
 sub prompt_bool {
