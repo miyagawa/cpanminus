@@ -1,0 +1,481 @@
+=encoding utf8
+
+=head1 NAME
+
+local::lib~[de] - Erschaffen und benutzen von Perl Modulen in einem lokalen lib/ Verzeichnis mit PERL5LIB
+
+=head1 SYNOPSIS
+
+Im Code -
+
+  use local::lib; # Benutzt das Verzeichnis ~/perl5 zum anlegen des lokalen lib/ Verzeichnisses
+
+  use local::lib '~/foo'; # das selbe, aber mit ~/foo
+
+  # Oder...
+  use FindBin;
+  use local::lib "$FindBin::Bin/../support";  # Applikationsspezifische Sammlung von Modulen
+
+Von der Shell -
+
+  # Installiert LWP und alle notwendigen Abhängigkeiten in das '~/perl5' Verzeichnis
+  perl -MCPAN -Mlocal::lib -e 'CPAN::install(LWP)'
+
+  # Gibt die Shell Kommandos aus um die Umgebung vorzubereiten
+  $ perl -Mlocal::lib
+  export PERL_MB_OPT='--install_base /home/username/perl5'
+  export PERL_MM_OPT='INSTALL_BASE=/home/username/perl5'
+  export PERL5LIB='/home/username/perl5/lib/perl5/i386-linux:/home/username/perl5/lib/perl5'
+  export PATH="/home/username/perl5/bin:$PATH"
+
+=head2 Die Bootstrapping Methode
+
+Ein typischer Weg um local::lib zu benutzen ist die sogenannte "Bootstrapping" Methode.
+Diese Methode wird benutzt wenn noch kein local::lib auf dem System installiert ist.
+In diesem Fall kannst du einfach local::lib direkt in deinem Home-Verzeichnis installieren.
+
+Selbst wenn du administrative Rechte hast, ist es wichtig das die Umgebungsvariablen von
+Schritt 4 in deinem Shell Startup Skript gesetzt werden. Ohne diesen Schritt werden die
+Module von CPAN weiterhin im System installiert und auch Perl Skripte die du startest
+würden das von local::lib erstellte lib/ Verzeichnis nicht nutzen.
+
+Standardmäßig installiert sich local::lib in ~/perl5.
+
+Windows Benutzern müssen ausserdem dies hier lesen: 
+L</Unterschiede bei Benutzung dieses Module mit Win32>.
+
+1. Lade das Tar-Archiv von CPAN runter (Suche nach "Download" auf der CPAN Seite von
+local::lib) und entpacke es in einem beliebigem Verzeichnis. Um das obige Problem zu
+vermeiden, sollte man dies als normaler User tun und nicht als root oder Administrator.
+
+2. Starte in dem entstandenen Verzeichnis folgenden Befehl:
+
+  perl Makefile.PL --bootstrap
+
+Wenn das System dir vorschlägt gewisse Dinge eigenständig zu konfigurieren ist es in
+fast allen Fällen vollkommen in Ordnung einfach "yes" zu antworten.
+
+Falls du local::lib nicht in das Standard Verzeichnis installieren willst, musst du
+dieses Verzeichnis als Parameter angeben:
+
+  perl Makefile.PL --bootstrap=~/foo
+
+3. Danach folgenden Befehl starten: (local::lib erwartet make auf dem System)
+
+  make test && make install
+
+4. Nun müssen wir die benötigten Umgebungsvariablen, damit Perl unser neu generiertes
+lib/ Verzeichnis benutzt. Wenn du bash oder eine andere Bourne Shell benutzt, kannst 
+du es über diesen Weg zu deinem Shell Startup Skript hinzufügen:
+
+  echo 'eval $(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib)' >>~/.bashrc
+
+Wenn du C Shell benutzt, du kannst das gleiche hiermit erreichen:
+
+  /bin/csh
+  echo $SHELL
+  /bin/csh
+  perl -I$HOME/perl5/lib/perl5 -Mlocal::lib >> ~/.cshrc
+
+Wenn du beim bootstrappen ein anderes Verzeichnis benutzt als das Standardverzeichnis,
+dann musst du dieses Verzeichnis als Parameter beim Laden des Modules local::lib angeben:
+
+  echo 'eval $(perl -I$HOME/foo/lib/perl5 -Mlocal::lib=$HOME/foo)' >>~/.bashrc
+
+Nachdem diese Änderungen in deinem Shell Startup Skript gemacht wurden, ist es nun wichtig
+das diese Umgebungsvariablen auch gesetzt sind in deiner aktuellen Umgebung. In Bourne
+Shells macht man dies z.B. mit C<. ~/.bashrc>, und in C Shell würde man es mit: 
+C<source ~/.cshrc> mit.
+
+Wenn du eine sehr langsames System hast, oder du unter drakonischen Regulierungen des
+Plattenplatz leben musst, kann man die automatische Generierung der manpages vom POD
+bei der Installation des Moduls deaktivieren beim bootstrapping mit dem C<--no-manpages>
+Parameter:
+
+  perl Makefile.PL --bootstrap --no-manpages
+
+Um zu vermeiden das man mehrere bootstraps macht um z.B. für verschiedene Applikationen
+eigene local::lib Installationen zu nutzen, kann man eine dieser Umgebungen benutzen
+um einfach in beliebigen anderen Verzeichnis Module zu installieren und somit weitere
+eigenständige lib/ Umgebungen zu bekommen:
+
+  cd ~/mydir1
+  perl -Mlocal::lib=./
+  eval $(perl -Mlocal::lib=./)  ### Um die Umgebungsvariablen für die
+                                ### aktuelle Shell zusetzen
+
+  printenv                      ### Hier kannst du sehen das ~/mydir1
+                                ### in der PERL5LIB Umgebungsvariable
+                                ### steht
+
+  perl -MCPAN -e install ...    ### welche Module auch immer ...
+  cd ../mydir2
+
+  ... WIEDERHOLEN ...
+
+Für mehrere Umgebungen in dieser Form brauch man eine Modifikation in der
+Benutzung von C<< use FindBin >> in dem "Im Code" Beispiel oben.
+Wenn du sowas machst, und du hast damit z.B. Perl Module nach C<<
+~/mydir1/lib >> installiert und du hast ein Script in C<< 
+~/mydir1/scripts/myscript.pl >>, du musst dort angeben das die Module
+die es braucht im Verzeichnis C<< ~/mydir1/lib >> liegen.
+
+In C<< ~/mydir1/scripts/myscript.pl >> steht dann:
+
+  use strict;
+  use warnings;
+  use local::lib "$FindBin::Bin/..";  ### zeigt auf ~/mydir1 und local::lib 
+                                      ### findet dort lib
+  use lib "$FindBin::Bin/../lib";     ### zeigt auf ~/mydir1/lib
+
+Setze das vor jeden BEGIN { ... } Block der die Module braucht die du
+installiert hast.
+
+=head2 Unterschiede bei Benutzung dieses Module mit Win32
+
+Um die nötigen Umgebungsvariablen für diese Variablen in der derzeitigen
+Sitzung mit C<CMD.EXE> zu setzen, kann man folgendes kommando nutzen:
+
+  C:\>perl -Mlocal::lib
+  set PERL_MB_OPT=--install_base C:\DOCUME~1\ADMINI~1\perl5
+  set PERL_MM_OPT=INSTALL_BASE=C:\DOCUME~1\ADMINI~1\perl5
+  set PERL5LIB=C:\DOCUME~1\ADMINI~1\perl5\lib\perl5;C:\DOCUME~1\ADMINI~1\perl5\lib\perl5\MSWin32-x86-multi-thread
+  set PATH=C:\DOCUME~1\ADMINI~1\perl5\bin;%PATH%
+  
+  ### Um die Umgebungsvariablen für diese Shell alleine zu setzen
+  C:\>perl -Mlocal::lib > %TEMP%\tmp.bat && %TEMP%\tmp.bat && del %TEMP%\temp.bat
+  ### anstelle von $(perl -Mlocal::lib=./) in bash.
+
+Wenn du willst das die Umgebungsvariablen dauerhaft gesetzt sind, musst du diese
+in Systemsteuerung / System dauerhaft selber eintragen oder 
+L<App::local::lib::Win32Helper> benutzen.
+
+Die "~" wird übersetzt zu dem Benutzer Profil Verzeichnis (das Verzeichnis was
+beim User als "Dokumente und Einstellungen" bekannt ist unter Windows XP und
+vorher oder das "Benutzer" Verzeichnis bei Windows Vista und später), solange
+$ENV{HOME} nicht gesetzt ist. Das Verzeichnis wird hierbei zu dem korrekten
+Kurznamen umgewandelt, und muss daher definitiv existieren, und wird um die
+nötigen Unterverzeichnise erweitert.
+
+=head1 GRUNDPRINZIP
+
+Die Version von den Perl Paketen die man benötigt für spezifische Aufgaben sind
+sehr häufig nicht die richtigen oder korrekten Versionen auf dem System
+vorinstalliert. Ein Updaten von diesen Modulen ist in vielen Fällen einfach
+nicht möglich weil die nötigen Rechte fehlen. Ausserdem ist es generell nicht
+gut eigenständig die Versionen der Module auf dem System auszutauschen, weil
+natürlich der Rest des Systems genau die Version erwartet die von der
+Systemverwaltung auch installiert wurde.
+
+local::lib löst dieses Problem, es erlaubt dir dein komplett eigenes Verzeichnis
+für deine CPAN Module zu haben und bist so nicht genötigt die Module vom
+System zu nutzen oder andersrum andere User nicht mit individuellen 
+Modulwünschen zu Überarbeitung ihres Codes zu zwingen, weil bestimmte Module
+zentral für alle auf neuere Version upgedatet werden. Die Installation findet
+hierbei dann z.B. im Home Verzeichnis statt. Es werden nur Umgebungsvariablen
+gesetzt die das installierte Perl dazu bewegen die im Homeverzeichnis 
+installierten Module zu benutzen, zusätzlich und vorgezogen zu denen auf dem
+System.
+
+Daher muss man sich wenn man ein Paket System benutzt, wie z.b. Debian, garnicht
+mehr Sorgen machen, irgendwas auf dem System zu verletzten nur durch die
+Installation von Perl Modulen.
+
+=head1 BESCHREIBUNG
+
+Dieses Modul bietet eine schnelle und legitime Art und Weise ein sogenanntes
+bootstrapping zu machen um in einem User Homeverzeichnis eine Sammlung von
+Modulen zu installieren. Es erstellt auch die nötigen Umgebungsvariablen
+die benötigt werden um diese Module zu nutzen, passend zu der Shell die der
+User in der Umgebungsvariable C<SHELL> angegeben hat, um dann direkt passend
+in die entsprechenden Konfigurationsdateien der Shell einfügt zu werden.
+
+Weitergehend ist local::lib in der Lage Module zu nutzen die nicht im
+standardmäßigen C<@INC> Pfad von Perl enthalten sind. Das macht es einfacher
+für bestimmte Applikationen ein bestimmtes Set von Modulen zu installieren
+ohne die anderen Module auf dem System in irgendeiner Art anzufassen.
+Damit es z.B. auch sicherer Module zu installieren die vom Maintainer noch
+nicht als Release verfügbar sind.
+
+Beim Import setzt local::lib die folgenden Umgebungsvariablen zu den
+nötigen Werten:
+
+=over 4
+
+=item PERL_MB_OPT
+
+=item PERL_MM_OPT
+
+=item PERL5LIB
+
+=item PATH
+
+Am PATH wird natürlich angehangen, und nicht ersetzt.
+
+=back
+
+Diese Werte sind dann verfügbar für jeden Code der danach importiert wurde.
+
+=head1 ERSTELLEN EINES EIGENSTÄNDIGE SAMMLUNG VON MODULEN
+
+Mit L<lib::core::only> besteht eine Möglichkeit dieses zutun, aber beachte das
+hier eine Menge von Fallstricken und Problemen existieren, und man sollte
+immer darauf achten das man auf einem Perl aufbaut was sowenig wie möglich
+verändert wurde (d.h. site und vendor Verzeichnis so leer wie möglich).
+
+=head1 METHODEN
+
+=head2 ensure_dir_structure_for
+
+=over 4
+
+=item Parameter: $path
+
+=item Rückgabewert: Keiner
+
+=back
+
+Versucht den angegebenen Pfad anzulegen, mit allen nötigen drüberliegenden
+Verzeichnissen. Im Fehlerfall wird eine Exception geworfen.
+
+=head2 print_environment_vars_for
+
+=over 4
+
+=item Parameter: $pfad
+
+=item Rückgabewert: Keiner
+
+=back
+
+Gibt die Umgebungsvariablen aus, die benötigt werden um den angegebenen Pfad
+als Basis Verzeichnis zu nutzen.
+
+=head2 build_environment_vars_for
+
+=over 4
+
+=item Parameter: $pfad, $interpolate
+
+=item Rückgabewert: \%umgebungs_variablen
+
+=back
+
+Gibt ein Hash zurück mit den Variablen die nötig sind in den Umgebungsvariablen
+um eine Installation in dem gegebenen Pfad zu benutzen.
+
+=head2 setup_env_hash_for
+
+=over 4
+
+=item Parameter: $pfad
+
+=item Rückgabewert: Keiner
+
+=back
+
+Setzt die C<%ENV> Einträge basierend auf dem Aufruf von
+L</build_environment_vars_for>.
+
+=head2 install_base_perl_path
+
+=over 4
+
+=item Parameter: $pfad
+
+=item Rückgabewert: $module_installations_pfad
+
+=back
+
+Gibt den Pfad zurück der benutzt wird um Perl Module zu installieren bei
+dem gegebenen Pfad als Basis. Prinzipiell wird nur C<lib> und C<perl5> als
+Pfadelemente angehangen.
+
+=head2 install_base_arch_path
+
+=over 4
+
+=item Parameter: $pfad
+
+=item Rückgabewert: $architektur_module_installations_pfad
+
+=back
+
+Gibt den Pfad zurück der benutzt wird um die Architektur-abhängigen Perl
+Module zu installieren basirend auf dem angegebenen Pfad als Basis. Basierend
+auf dem was L</install_base_perl_path> zurückgibt, and appends the value of
+C<$Config{archname}>.asis.
+
+=head2 install_base_bin_path
+
+=over 4
+
+=item Parameter: $pfad
+
+=item Rückgabewert: $ausfuehrbare_programme_installations_pfad
+
+=back
+
+Gibt den Pfad zurück, wo ausführbare Programme installiert werden, basierend
+auf der Basis des angegebenen Pfad. Basierend auf L</install_base_perl_path>
+Rückgabewert, hängt diese Methode noch C<bin> an.
+
+=head2 resolve_empty_path
+
+=over 4
+
+=item Parameter: $pfad
+
+=item Rückgabewert: $basis_pfad
+
+=back
+
+Erstellt und gibt zurück den Pfad der benutzt wird als Basis zur Installation
+der Module. Standardmäßig dies ist C<~/perl5>.
+
+=head2 resolve_home_path( $path )
+
+=over 4
+
+=item Parameter: $pfad
+
+=item Rückgabewert: $home
+
+=back
+
+Versucht das Home Verzeichnis vom aktullen User zu finden. Wenn C<File::HomeDir>
+installiert ist, für dieses benutzt dafür. Es wird eine Exception geworfen, wenn
+kein Home Verzeichnis ermittelt werden konnte.
+
+=head2 resolve_relative_path
+
+=over 4
+
+=item Parameter: $pfad
+
+=item Rückgabewert: $absoluter_pfad
+
+=back
+
+Macht aus dem angegebenen Pfad einen absoluten Pfad.
+
+=head2 resolve_path
+
+=over 4
+
+=item Parameter: $pfad
+
+=item Rückgabewert: $absoluter_pfad
+
+=back
+
+Hierbei wird der Pfad durch die folgende Methoden gegeben, wobei der Rückgabewert
+der ersten an die nächste weitergeben wird, um die Umgebung zu konfigurieren
+für die lokale Bibliotheks Installation: L</resolve_empty_path>, 
+L</resolve_home_path>, L</resolve_relative_path>. 
+Der daraus resultierende Pfad wird zu L</resolve_empty_path> übergeben, dessen
+Resultat dann weitergegeben wird an L</resolve_home_path>, wessen Resultat dann
+weitergegeben wird an L</resolve_relative_path>. Dieses Resultat wird dann final 
+an L</resolve_path> übergeben, welches dann den Rückgabewert stellt.
+
+=head1 EINE WARNUNG VOR UNINST=1
+
+Wenn man local::lib in Kombination mit "make install UNINST=1" benutzt, muss
+man vorsichtig sein über die Tatsache das der Prozess über die Neuinstallation
+eine nicht ausreichende Sicherheit hat bezüglich wo er nun installieren muss.
+Hierdurch mann es passieren das beim deinstallieren eines Modul u.U. das
+globale Modul deinstalliert wird (wenn die Rechte vorhanden sind) aber die
+neue Version nur in der lokalen Version installiert ist. Es ist hier also sehr
+wichtig das man "make install UNINST=1" und local::lib nur gleichzeitig
+benutzt wenn man sehr sicher darüber ist welche Konsequenzen einem
+entgegenkommen.
+
+=head1 EINSCHRÄNKUNGEN
+
+Die Werkzeuge von perl, die benutzt werden um die Pakete zu installieren
+(die sogenannte toolchain), sind leider nicht in der Lage sauber mit 
+Verzeichnissen umzugehen die Leerzeichen enthalten und können daher local::lib
+nicht direkt in ein solches Verzeichnis installieren. Was du machen kannst
+ist B<nach> der Installation von local::lib und der Module die du in deiner
+local::lib haben willst, das gesamte Verzeichnis dahin zu bewegen. local::lib
+kann mit dem Verzeichnis mit Leerzeichen umgehen. Bitte aufpassen das natürlich
+eine weitere Installation oder ein Erneuern von Paketen mit dem CPAN Programm
+nicht mehr möglich ist.
+
+Die Shell Erkennung ist sehr primitiv. Derzeit ist es so das alles was "csh"
+im Namen hat auch als C Shell eingeordnet wird, und alles andere wird als
+Bourne Shell betrachet, ausser auf Win32 Systemen. Wenn die C<SHELL> Variable
+nicht gesetzt ist, eine Bourne Shell wird angenommen.
+
+Bootstrap ist leider ein Hack, und wird auf jedenfall CPAN.pm benutzen für
+ExtUtils::MakeMaker, auch wenn CPANPLUS installiert ist.
+
+Es setzt definitiv PERL5LIB, PERL_MM_OPT und PERL_MB_OPT neu und vernichtet
+jeden Wert der vorher gesetzt war.
+
+Es sollte vielleicht eine automatische Korrektur der CPAN Config machen, wenn
+das nicht schon gemacht wurde.
+
+"Patches Welcome" - Patches sind immer willkommen beim Autor oder den anderen
+Mitwirkenden.
+
+Auf Win32 Systemen werden die Umgebungsvariablen nicht direkt in die Registrierung
+geschrieben damit sie auch nach dem Neustarten erhalten bleiben.
+
+=head1 FEHLERANALYSE
+
+Wenn du local::lib konfiguriert hast CPAN Module in deinem Home Verzeichnis
+zu installieren, und du danach versuchst mit C<cpan -i Foo::Bar> ein Modul
+zu installieren, und dabei einen Fehler bekommst, wie: C<Warning: You do not 
+have permissions to install into /usr/lib64/perl5/site_perl/5.8.8/x86_64-linux at
+/usr/lib64/perl5/5.8.8/Foo/Bar.pm> und in der installationsausgabe steht
+irgendwo ein Fehler der sagt C<'INSTALL_BASE' is not a known MakeMaker parameter 
+name>, dann hast du aus irgendeinem Grund dein neue Version von ExtUtils::MakeMaker
+verloren.
+
+Um dies zu korrigieren, einfach nochmal die bootstrapping Methode laufen lassen,
+wie oben beschrieben.
+
+Dann starte C<rm -r ~/.cpan/build/Foo-Bar*>
+
+Abschliessend dann nochmal mit C<cpan -i Foo::Bar> installieren und die Probleme
+sollten verschwunden sein.
+
+=head1 UMGEBUNGSVARIABLEN
+
+=over 4
+
+=item SHELL
+
+=item COMSPEC
+
+local::lib schaut in die C<SHELL> Umgebungsvariable um die korrekten Kommandos
+zu der Shell Konfiguration hinzuzufügen.
+
+Auf Win32 Systemen, C<COMSPEC> wird auch analysiert.
+
+=back
+
+=head1 SUPPORT
+
+IRC:
+
+    Wir sind im Channel #local-lib auf dem Server irc.perl.org.
+
+=head1 AUTOR DER ÜBERSETZUNG
+
+Torsten Raudssus <torsten@raudssus.de> http://www.raudssus.de/
+
+=head1 URHEBERRECHT
+
+Copyright (c) 2007 - 2010 von den local::lib L<local::lib/"AUTHOR">
+und L<local::lib/"CONTRIBUTORS"> aufgelistet in L<local::lib|local::lib>.
+
+=head1 LIZENZ
+
+Diese Sammlung ist freie Software und kann unter der selben Lizenz verbreitet
+werden wie Perl selber.
+
+=cut
+
+1;
