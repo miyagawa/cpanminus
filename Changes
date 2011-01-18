@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.19_01 Tue Jan 18 12:48:47 PST 2011
+   - Upgraded bundled modules, notably Module::Metadata and local::lib
+   - Switched the pure perl fallback to HTTP::Tiny
+
 1.1007  Tue Jan 18 09:39:05 PST 2011
    - Fixed installation documents
    - Added PERL_CPANM_NO_AUTOMATED_TESTING to unset AUTOMATED_TESTING to find which modules break (mst)
