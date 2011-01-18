@@ -943,7 +943,6 @@ sub check_module {
     my($self, $mod, $want_ver) = @_;
 
     require Module::Metadata;
-    require Module::Metadata::Version;
     my $meta = Module::Metadata->new_from_module($mod, inc => $self->{search_inc})
         or return 0, undef;
 
@@ -952,7 +951,7 @@ sub check_module {
 
     if ($self->is_deprecated($meta)){
         return 0, $version;
-    } elsif (!$want_ver or $version >= Module::Metadata::Version->new($want_ver)) {
+    } elsif (!$want_ver or $version >= version->new($want_ver)) {
         return 1, $version;
     } else {
         return 0, $version;
