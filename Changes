@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.1007  Tue Jan 18 09:39:05 PST 2011
+   - Fixed installation documents
+   - Added PERL_CPANM_NO_AUTOMATED_TESTING to unset AUTOMATED_TESTING to find which modules break (mst)
+
 1.1006  Thu Dec 16 11:27:29 PST 2010
    - Fixed docs to use curl instead of wget because of its cert bug
    - Fixed the usage of local() where PERL5_CPANPLUS_IS_RUNING was leaking (dg) #75

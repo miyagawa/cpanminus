@@ -18,7 +18,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.1006";
+  our $VERSION = "1.1007";
   
   =head1 NAME
   
@@ -220,7 +220,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use constant WIN32 => $^O eq 'MSWin32';
   use constant SUNOS => $^O eq 'solaris';
   
-  our $VERSION = "1.1006";
+  our $VERSION = "1.1007";
   $VERSION = eval $VERSION;
   
   my $quote = WIN32 ? q/"/ : q/'/;
@@ -873,7 +873,8 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   sub test {
       my($self, $cmd, $distname) = @_;
       return 1 if $self->{notest};
-      local $ENV{AUTOMATED_TESTING} = 1;
+      local $ENV{AUTOMATED_TESTING} = 1
+          unless $self->env('NO_AUTOMATED_TESTING');
   
       return 1 if $self->run_timeout($cmd, $self->{test_timeout});
       if ($self->{force}) {
@@ -5658,7 +5659,8 @@ s/^  //mg for values %fatpacked;
 
 unshift @INC, sub {
   if (my $fat = $fatpacked{$_[1]}) {
-    open my $fh, '<', \$fat;
+    open my $fh, '<', \$fat
+      or die "FatPacker error loading $_[1] (could be a perl installation issue?)";
     return $fh;
   }
   return
