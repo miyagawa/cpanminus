@@ -5,7 +5,7 @@ use Cwd;
 
 my $modules = [ split /\s+/, <<MODULES ];
 CPAN/DistnameInfo.pm
-HTTP/Lite.pm
+HTTP/Tiny.pm
 local/lib.pm
 Module/Metadata.pm
 Parse/CPAN/Meta.pm

@@ -243,7 +243,7 @@ Uses cURL (if available) to download stuff. Defaults to true, and
 you can say C<--no-curl> to disable using cURL.
 
 Normally with C<--lwp>, C<--wget> and C<--curl> options set to true
-(which is the default) cpanm tries L<LWP>, Wget, cURL and L<HTTP::Lite>
+(which is the default) cpanm tries L<LWP>, Wget, cURL and L<HTTP::Tiny>
 (in that order) and uses the first one available.
 
 =back
