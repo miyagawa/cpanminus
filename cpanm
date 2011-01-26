@@ -873,6 +873,8 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   sub test {
       my($self, $cmd, $distname) = @_;
       return 1 if $self->{notest};
+  
+      # http://www.nntp.perl.org/group/perl.perl5.porters/2009/10/msg152656.html
       local $ENV{AUTOMATED_TESTING} = 1
           unless $self->env('NO_AUTOMATED_TESTING');
   
@@ -1149,6 +1151,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       my($self, $mod, $want_ver) = @_;
   
       require Module::Metadata;
+      require Module::Metadata::Version; # Module::Metadata might be loaded from user's @INC, missing ::Version
       my $meta = Module::Metadata->new_from_module($mod, inc => $self->{search_inc})
           or return 0, undef;
   
