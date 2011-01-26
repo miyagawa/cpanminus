@@ -1,5 +1,8 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.1008  Wed Jan 26 14:05:51 PST 2011
+   - Fixed glitches due to the deletion of Module::Metadata::Version
+
 1.1007  Tue Jan 18 09:39:05 PST 2011
    - Fixed installation documents
    - Added PERL_CPANM_NO_AUTOMATED_TESTING to unset AUTOMATED_TESTING to find which modules break (mst)
