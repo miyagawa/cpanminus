@@ -107,13 +107,13 @@ QUESTIONS
 
     *   They provide very noisy output by default.
 
-    *   They fetches and rebuild their indexes almost every day, and this
+    *   They fetch and rebuild their indexes almost every day, and this
         takes time.
 
     *   ... and they hog 200MB of memory and thrashes/OOMs on my 256MB VPS
 
     cpanminus is designed to be very quiet (but logs all output to
-    `~/.cpanm/build.log') and to pick the sanest possibledefaults without
+    `~/.cpanm/build.log') and to pick the sanest possible defaults without
     asking any questions -- to *just work*.
 
     Note that most of these problems with existing tools are rare, or are
@@ -167,7 +167,7 @@ QUESTIONS
     run the script as the root user or with `--sudo' option.
 
     This local::lib automatic integration is still considered alpha and in
-    the work -- more bootstrapping is under development. Stay tuned.
+    the works -- more bootstrapping is under development. Stay tuned.
 
   Does this really work?
     I tested installing MojoMojo, Task::Kensho, KiokuDB, Catalyst, Jifty and
@@ -186,7 +186,7 @@ QUESTIONS
         mechanism to kill those questions with a timeout, and you can always
         say `--interactive' to make the configuration interactive.
 
-    *   Distributions that do not shipped with `META.yml' file but do
+    *   Distributions that do not ship with `META.yml' file but do
         require some specific version of toolchain for configuration.
 
     *   Distributions that test a SIGNATURE in the `*.t' unit tests and has
