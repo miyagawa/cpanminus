@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.2001  Wed Feb 16 10:54:21 PST 2011
+   - This be official 1.2
+   - Skips tests during the bootstrap, making a much better first time experience
+
 1.19_02 Tue Jan 18 14:11:23 PST 2011
    - Module::Metadata now requires version.pm 0.87. This makes cpanm unable to boostrap when version.pm is
      older than that. For now, include the pure perl version/vpp.pm and version.pm in the fatlib and then
