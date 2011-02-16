@@ -1,5 +1,5 @@
 package App::cpanminus;
-our $VERSION = "1.19_02";
+our $VERSION = "1.2000";
 
 =head1 NAME
 
@@ -126,6 +126,8 @@ The standalone executable contains the following modules embedded.
 
 =over 4
 
+=item L<CPAN::DistnameInfo> Copyright 2003 Graham Barr
+
 =item L<Parse::CPAN::Meta> Copyright 2006-2009 Adam Kennedy
 
 =item L<local::lib> Copyright 2007-2009 Matt S Trout
@@ -133,6 +135,8 @@ The standalone executable contains the following modules embedded.
 =item L<HTTP::Tiny> Copyright 2011 Christian Hansen
 
 =item L<Module::Metadata> Copyright 2001-2006 Ken Williams. 2010 Matt S Trout
+
+=item L<version> Copyright 2004-2010 John Peacock
 
 =back
 

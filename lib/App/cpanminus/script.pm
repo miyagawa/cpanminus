@@ -12,7 +12,7 @@ use Parse::CPAN::Meta;
 use constant WIN32 => $^O eq 'MSWin32';
 use constant SUNOS => $^O eq 'solaris';
 
-our $VERSION = "1.19_02";
+our $VERSION = "1.2000";
 $VERSION = eval $VERSION;
 
 my $quote = WIN32 ? q/"/ : q/'/;
@@ -107,7 +107,7 @@ sub check_libs {
 
     $self->bootstrap_local_lib;
     if (@{$self->{bootstrap_deps} || []}) {
-        local $self->{force} = 1; # to force install EUMM
+        local $self->{notest} = 1; # test failure in bootstrap should be tolerated
         $self->install_deps(Cwd::cwd, 0, @{$self->{bootstrap_deps}});
     }
 }
