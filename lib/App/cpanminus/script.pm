@@ -1035,6 +1035,25 @@ sub install_deps_bailout {
     return 1;
 }
 
+sub _patch_module_build_config_deps {
+    my($self, $config_deps) = @_;
+
+    # Crazy hack to auto-add Module::Build dependencies into
+    # configure_requires if Module::Build is there, since there's a
+    # possibility where Module::Build is in 'perl' library path while
+    # the dependencies are in 'site' and can't be loaded when -L
+    # (--local-lib-contained) is in effect.
+
+    my %config_deps = (@{$config_deps});
+    if ($config_deps{"Module::Build"}) {
+        push @{$config_deps}, (
+            'Perl::OSType' => 1,
+            'Module::Metadata' => 1.000002,
+            'version' => 0.87,
+        );
+    }
+}
+
 sub build_stuff {
     my($self, $stuff, $dist, $depth) = @_;
 
@@ -1047,6 +1066,9 @@ sub build_stuff {
     push @config_deps, %{$dist->{meta}{configure_requires} || {}};
 
     my $target = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $dist->{dir};
+
+    $self->_patch_module_build_config_deps(\@config_deps)
+        if $self->{self_contained};
 
     $self->install_deps_bailout($target, $dist->{dir}, $depth, @config_deps)
         or return;
