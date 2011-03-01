@@ -1,5 +1,8 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.29_01  Mon Feb 28 18:57:27 PST 2011
+   - Disable --uninstall-shadows by default for perl >= 5.12
+
 1.2001  Wed Feb 16 10:54:21 PST 2011
    - This be official 1.2
    - Skips tests during the bootstrap, making a much better first time experience
