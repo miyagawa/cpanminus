@@ -44,7 +44,7 @@ sub new {
         try_lwp => 1,
         try_wget => 1,
         try_curl => 1,
-        uninstall_shadows => 1,
+        uninstall_shadows => ($] < 5.012),
         skip_installed => 1,
         auto_cleanup => 7, # days
         @_,
