@@ -18,7 +18,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.2001";
+  our $VERSION = "1.29_01";
   
   =head1 NAME
   
@@ -224,7 +224,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use constant WIN32 => $^O eq 'MSWin32';
   use constant SUNOS => $^O eq 'solaris';
   
-  our $VERSION = "1.2001";
+  our $VERSION = "1.29_01";
   
   my $quote = WIN32 ? q/"/ : q/'/;
   
@@ -256,7 +256,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           try_lwp => 1,
           try_wget => 1,
           try_curl => 1,
-          uninstall_shadows => 1,
+          uninstall_shadows => ($] < 5.012),
           skip_installed => 1,
           auto_cleanup => 7, # days
           @_,
@@ -6492,8 +6492,14 @@ specify custom installation path, you SHOULD disable this option so
 you won't accidentally uninstall dual-life modules from the core
 include path.
 
-Defaults to true, and you can disable that with
-C<--no-uninst-shadows>.
+Defaults to true if your perl version is smaller than 5.12, and you
+can disable that with C<--no-uninst-shadows>.
+
+B<NOTE>: Since version 1.3000 this flag is turned off by default for
+perl newer than 5.12, since with 5.12 @INC contains site_lib directory
+I<before> the perl core library path, and uninstalling shadows is not
+necessary anymore and does more harm by deleting files from the core
+library path.
 
 =item --auto-cleanup
 
