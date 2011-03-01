@@ -217,7 +217,7 @@ Defaults to true if your perl version is smaller than 5.12, and you
 can disable that with C<--no-uninst-shadows>.
 
 B<NOTE>: Since version 1.3000 this flag is turned off by default for
-perl newer than 5.12, since with 5.12 @INC contains site_lib directory
+perl newer than 5.12, since with 5.12 @INC contains site_perl directory
 I<before> the perl core library path, and uninstalling shadows is not
 necessary anymore and does more harm by deleting files from the core
 library path.
