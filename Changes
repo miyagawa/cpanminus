@@ -1,5 +1,8 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.3000   Wed Mar  2 14:39:44 PST 2011
+   - No changes since the last beta
+
 1.29_02  Tue Mar  1 16:06:20 PST 2011
    - Improved the dependencies detection when -L is in use so the core modules that have been upgraded
      inside can be correctly be detected, using Module::CoreList.

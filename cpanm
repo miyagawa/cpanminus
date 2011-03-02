@@ -18,7 +18,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.29_01";
+  our $VERSION = "1.3000";
   
   =head1 NAME
   
@@ -224,7 +224,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use constant WIN32 => $^O eq 'MSWin32';
   use constant SUNOS => $^O eq 'solaris';
   
-  our $VERSION = "1.29_01";
+  our $VERSION = "1.3000";
   
   my $quote = WIN32 ? q/"/ : q/'/;
   
@@ -1158,6 +1158,14 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           or return 0, undef;
   
       my $version = $meta->version;
+  
+      # When -L is in use, the version loaded from 'perl' library path
+      # might be newer than the version that is shipped with the current perl
+      if ($self->{self_contained}) {
+          require Module::CoreList;
+          $version = $Module::CoreList::version{$]}{$mod};
+      }
+  
       $self->{local_versions}{$mod} = $version;
   
       if ($self->is_deprecated($meta)){
@@ -1247,6 +1255,25 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       return 1;
   }
   
+  sub _patch_module_build_config_deps {
+      my($self, $config_deps) = @_;
+  
+      # Crazy hack to auto-add Module::Build dependencies into
+      # configure_requires if Module::Build is there, since there's a
+      # possibility where Module::Build is in 'perl' library path while
+      # the dependencies are in 'site' and can't be loaded when -L
+      # (--local-lib-contained) is in effect.
+  
+      my %config_deps = (@{$config_deps});
+      if ($config_deps{"Module::Build"}) {
+          push @{$config_deps}, (
+              'Perl::OSType' => 1,
+              'Module::Metadata' => 1.000002,
+              'version' => 0.87,
+          );
+      }
+  }
+  
   sub build_stuff {
       my($self, $stuff, $dist, $depth) = @_;
   
@@ -1259,6 +1286,9 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       push @config_deps, %{$dist->{meta}{configure_requires} || {}};
   
       my $target = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $dist->{dir};
+  
+      $self->_patch_module_build_config_deps(\@config_deps)
+          if $self->{self_contained};
   
       $self->install_deps_bailout($target, $dist->{dir}, $depth, @config_deps)
           or return;
