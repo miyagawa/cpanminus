@@ -946,6 +946,14 @@ sub check_module {
         or return 0, undef;
 
     my $version = $meta->version;
+
+    # When -L is in use, the version loaded from 'perl' library path
+    # might be newer than the version that is shipped with the current perl
+    if ($self->{self_contained}) {
+        require Module::CoreList;
+        $version = $Module::CoreList::version{$]}{$mod};
+    }
+
     $self->{local_versions}{$mod} = $version;
 
     if ($self->is_deprecated($meta)){
