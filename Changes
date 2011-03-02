@@ -1,5 +1,10 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.29_02  Tue Mar  1 16:06:20 PST 2011
+   - Improved the dependencies detection when -L is in use so the core modules that have been upgraded
+     inside can be correctly be detected, using Module::CoreList.
+   - Added a crazy hack to support Build.PL configure dependencies > 0.36 when -L is in effect
+
 1.29_01  Mon Feb 28 18:57:27 PST 2011
    - Disable --uninstall-shadows by default for perl >= 5.12
 
