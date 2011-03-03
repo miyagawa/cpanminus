@@ -154,6 +154,10 @@ Tests that require input from STDIN.
 
 Tests that might fail when C<AUTOMATED_TESTING> is enabled.
 
+=item *
+
+Modules that have invalid numeric values as VERSION (such as C<1.1a>)
+
 =back
 
 These failures can be reported back to the author of the module so
