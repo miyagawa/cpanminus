@@ -198,6 +198,10 @@ Uninstalling modules. See L<pm-uninstall>.
 
 Showing the changes of the modules you're about to upgrade. See L<cpan-listchanges>
 
+=item *
+
+Patching CPAN modules with distroprefs.
+
 =back
 
 See L<cpanm> or C<cpanm -h> to see what cpanminus I<can> do :)
