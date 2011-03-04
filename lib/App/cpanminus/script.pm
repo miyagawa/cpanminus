@@ -438,7 +438,7 @@ sub _dump_inc {
 
     open my $out, ">$self->{base}/DumpedINC.pm" or die $!;
     local $" = ",";
-    print $out <<EOF
+    print $out <<EOF;
 package DumpedINC;
 my \%exclude = map { \$_ => 1 } (@exclude_inc);
 sub import {
@@ -799,6 +799,7 @@ sub install_module {
     }
 
     $self->check_libs;
+    $self->setup_module_build_patch unless $self->{pod2man};
 
     if ($dist->{module}) {
         my($ok, $local) = $self->check_module($dist->{module}, $dist->{module_version} || 0);
@@ -973,6 +974,22 @@ sub cpan_dist {
     };
 }
 
+sub setup_module_build_patch {
+    my $self = shift;
+
+    open my $out, ">$self->{base}/ModuleBuildSkipMan.pm" or die $!;
+    print $out <<EOF;
+package ModuleBuildSkipMan;
+sub import {
+  use Module::Build;
+  no warnings qw'redefine';
+  sub Module::Build::Base::ACTION_manpages {}
+  sub Module::Build::Base::ACTION_docs     {}
+}
+1;
+EOF
+}
+
 sub check_module {
     my($self, $mod, $want_ver) = @_;
 
@@ -1141,10 +1158,11 @@ sub build_stuff {
 
     my $installed;
     if ($configure_state->{use_module_build} && -e 'Build' && -f _) {
+        my @switches = $self->{pod2man} ? () : ("-I$self->{base}", "-MModuleBuildSkipMan");
         $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . $distname);
-        $self->build([ $self->{perl}, "./Build" ], $distname) &&
+        $self->build([ $self->{perl}, @switches, "./Build" ], $distname) &&
         $self->test([ $self->{perl}, "./Build", "test" ], $distname) &&
-        $self->install([ $self->{perl}, "./Build", "install" ], [ "--uninst", 1 ]) &&
+        $self->install([ $self->{perl}, @switches, "./Build", "install" ], [ "--uninst", 1 ]) &&
         $installed++;
     } elsif ($self->{make} && -e 'Makefile') {
         $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . $distname);
@@ -1189,6 +1207,11 @@ sub configure_this {
     @switches = ("-I$self->{base}", "-MDumpedINC") if $self->{self_contained};
     local $ENV{PERL5LIB} = ''                      if $self->{self_contained};
 
+    my @mb_switches = @switches;
+    unless ($self->{pod2man}) {
+        unshift @mb_switches, ("-I$self->{base}", "-MModuleBuildSkipMan");
+    }
+
     my $state = {};
 
     my $try_eumm = sub {
@@ -1210,7 +1233,7 @@ sub configure_this {
     my $try_mb = sub {
         if (-e 'Build.PL') {
             $self->chat("Running Build.PL\n");
-            if ($self->configure([ $self->{perl}, @switches, "Build.PL" ])) {
+            if ($self->configure([ $self->{perl}, @mb_switches, "Build.PL" ])) {
                 $state->{configured_ok} = -e 'Build' && -f _;
             }
             $state->{use_module_build}++;
