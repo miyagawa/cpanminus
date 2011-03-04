@@ -8,7 +8,7 @@ like last_build_log, qr/Running Makefile\.PL/, "ExtUtils::Install is M::B dep, s
 run "Params::Validate";
 like last_build_log, qr/Running Build\.PL/, "Build.PL only";
 
-run "URI::Fetch";
+run "BTROTT/URI-Fetch-0.08.tar.gz";
 like last_build_log, qr/Running Build\.PL/, "Build.PL and Makefile.PL";
 
 run "CGI";
