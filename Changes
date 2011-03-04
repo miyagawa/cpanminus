@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.3001   Thu Mar  3 18:33:56 PST 2011
+   - Documentation overhaul
+   - Fixed a bug -L will install non-core modules again and again for each run
+
 1.3000   Wed Mar  2 14:39:44 PST 2011
    - No changes since the last beta
 
