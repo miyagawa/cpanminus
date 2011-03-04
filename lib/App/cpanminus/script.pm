@@ -47,6 +47,7 @@ sub new {
         uninstall_shadows => ($] < 5.012),
         skip_installed => 1,
         auto_cleanup => 7, # days
+        pod2man => undef,
         @_,
     }, $class;
 }
@@ -95,6 +96,7 @@ sub parse_options {
         'wget!'   => \$self->{try_wget},
         'curl!'   => \$self->{try_curl},
         'auto-cleanup=s' => \$self->{auto_cleanup},
+        'pod2man!' => \$self->{pod2man},
     );
 
     $self->{argv} = \@ARGV;
@@ -668,6 +670,12 @@ sub configure {
 
     my $use_default = !$self->{interactive};
     local $ENV{PERL_MM_USE_DEFAULT} = $use_default;
+
+    # skip man page generation
+    local $ENV{PERL_MM_OPT} = $ENV{PERL_MM_OPT};
+    unless ($self->{pod2man}) {
+        $ENV{PERL_MM_OPT} .= " INSTALLMAN1DIR=none INSTALLMAN3DIR=none";
+    }
 
     local $self->{verbose} = $self->{verbose} || $self->{interactive};
     $self->run_timeout($cmd, $self->{configure_timeout});

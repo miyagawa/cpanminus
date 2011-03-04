@@ -231,6 +231,13 @@ cleaned up in one week.
 You can set the value to C<0> to make cpan never cleanup those
 directories.
 
+=item --pod2man
+
+Generates man pages for executables (man1) and libraries (man3).
+
+Defaults to false, and you can say C<--no-pod2man> to override when
+it's set in the default options in C<PERL_CPANM_OPT>.
+
 =item --lwp
 
 Uses L<LWP> module to download stuff over HTTP. Defaults to true, and
