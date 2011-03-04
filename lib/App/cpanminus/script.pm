@@ -949,7 +949,7 @@ sub check_module {
 
     # When -L is in use, the version loaded from 'perl' library path
     # might be newer than the version that is shipped with the current perl
-    if ($self->{self_contained}) {
+    if ($self->{self_contained} && $self->loaded_from_perl_lib($meta)) {
         require Module::CoreList;
         $version = $Module::CoreList::version{$]}{$mod};
     }
@@ -974,6 +974,11 @@ sub is_deprecated {
     };
 
     return unless $deprecated;
+    return $self->loaded_from_perl_lib($meta);
+}
+
+sub loaded_from_perl_lib {
+    my($self, $meta) = @_;
 
     require Config;
     for my $dir (qw(archlibexp privlibexp)) {
