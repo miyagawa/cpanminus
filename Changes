@@ -1,5 +1,8 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.30_02  Thu Mar  3 19:53:30 PST 2011
+   - Fixed a bug where tests are loading modules from your site_perl even when -L is used
+
 1.3001   Thu Mar  3 18:33:56 PST 2011
    - Documentation overhaul
    - Fixed a bug -L will install non-core modules again and again for each run
