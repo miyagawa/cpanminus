@@ -1,5 +1,8 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.30_06  Fri Mar  4 14:55:35 PST 2011
+   - Skip the man page generation by default. You can enable it with --pod2man
+
 1.30_05  Fri Mar  4 01:36:28 PST 2011
    - Fixed the way it reduces @INC in the tests when -L is in use, so the tests
      that call $^X with -I can keep those library paths. i.e. Test::More
