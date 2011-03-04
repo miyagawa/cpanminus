@@ -432,7 +432,7 @@ sub _dump_inc {
     my($self, $inc, $std_inc) = @_;
 
     my @new_inc     = map { qq('$_') } (@$inc, '.'); # . for inc/Module/Install.pm
-    my @exclude_inc = map { qq('$_') } grep { $_ ne '.' } $self->_diff($inc, $std_inc);
+    my @exclude_inc = map { qq('$_') } grep { $_ ne '.' && !ref } $self->_diff($inc, $std_inc);
 
     open my $out, ">$self->{base}/DumpedINC.pm" or die $!;
     local $" = ",";
