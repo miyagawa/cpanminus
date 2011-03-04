@@ -429,27 +429,37 @@ sub _core_only_inc {
 }
 
 sub _dump_inc {
-    my($self, $inc) = @_;
+    my($self, $inc, $std_inc) = @_;
 
-    my @inc = map { qq('$_') } (@$inc, '.'); # . for inc/Module/Install.pm
+    my @new_inc     = map { qq('$_') } (@$inc, '.'); # . for inc/Module/Install.pm
+    my @exclude_inc = map { qq('$_') } grep { $_ ne '.' } $self->_diff($inc, $std_inc);
 
     open my $out, ">$self->{base}/DumpedINC.pm" or die $!;
     local $" = ",";
     print $out <<EOF
 package DumpedINC;
-my \@old_inc;
-BEGIN {
-  \@old_inc = \@INC;
-  \@INC = (@inc);
-}
-
+my \%exclude = map { \$_ => 1 } (@exclude_inc);
 sub import {
   if (\$_[1] eq "tests") {
-    unshift \@INC, grep m!(?:\\bblib/lib|\\bblib/arch|/inc)\$!, \@old_inc;
+    \@INC = grep !\$exclude{\$_}, \@INC;
+  } else {
+    \@INC = (@new_inc);
   }
 }
 1;
 EOF
+}
+
+sub _diff {
+    my($self, $old, $new) = @_;
+
+    my @diff;
+    my %old = map { $_ => 1 } @$old;
+    for my $n (@$new) {
+        push @diff, $n unless exists $old{$n};
+    }
+
+    @diff;
 }
 
 sub _import_local_lib {
@@ -467,7 +477,7 @@ sub setup_local_lib {
         $base ||= "~/perl5";
         if ($self->{self_contained}) {
             my @inc = $self->_core_only_inc($base);
-            $self->_dump_inc(\@inc);
+            $self->_dump_inc(\@inc, \@INC);
             $self->{search_inc} = [ @inc ];
         }
         $self->_import_local_lib($base);
