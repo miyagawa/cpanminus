@@ -1,5 +1,8 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.30_03  Fri Mar  4 00:30:39 PST 2011
+   - Fixed a bug the modules are not loaded from blib in test_harness with -L
+
 1.30_02  Thu Mar  3 19:53:30 PST 2011
    - Fixed a bug where tests are loading modules from your site_perl even when -L is used
 
