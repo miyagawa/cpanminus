@@ -669,6 +669,9 @@ sub test {
     local $ENV{AUTOMATED_TESTING} = 1
         unless $self->env('NO_AUTOMATED_TESTING');
 
+   local $ENV{PERL5OPT} = "-I$self->{base} -MDumpedINC"
+        if $self->{self_contained};
+
     return 1 if $self->run_timeout($cmd, $self->{test_timeout});
     if ($self->{force}) {
         $self->diag_fail("Testing $distname failed but installing it anyway.");
