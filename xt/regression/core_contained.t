@@ -9,10 +9,10 @@ delete $ENV{$_} for qw(PERL5LIB PERL_MM_OPT MODULEBUILDRC);
 $ENV{PERL5LIB} = 'fatlib';
 my @opt = ("-L", $local_lib);
 
-run @opt, "--skip-installed", "-n", "CGI";
+run @opt, "--skip-installed", "CGI";
 like last_build_log, qr/installed CGI/, "Upgraded modules in 'perl' should be upgraded";
 
-run @opt, "--skip-installed", "-n", "CGI";
+run @opt, "--skip-installed", "CGI";
 unlike last_build_log, qr/installed CGI/, "This time it's loaded from local-lib, so it's okay to skip it";
 
 done_testing;

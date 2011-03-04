@@ -8,7 +8,7 @@ use File::Temp qw(tempdir);
 $ENV{PERL_CPANM_HOME} = tempdir(CLEANUP => 1);
 
 sub run {
-    system($^X, "./script/cpanm.PL", "--quiet", "--reinstall", @_);
+    system($^X, "./script/cpanm.PL", "--notest", "--quiet", "--reinstall", @_);
 }
 
 sub last_build_log {
