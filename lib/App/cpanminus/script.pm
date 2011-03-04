@@ -445,7 +445,7 @@ BEGIN {
 
 sub import {
   if (\$_[1] eq "tests") {
-    unshift \@INC, grep m!(?:/blib/lib|/blib/arch|/inc)\$!, \@old_inc;
+    unshift \@INC, grep m!(?:\\bblib/lib|\\bblib/arch|/inc)\$!, \@old_inc;
   }
 }
 1;
