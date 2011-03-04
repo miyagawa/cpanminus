@@ -1,5 +1,8 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.30_04  Fri Mar  4 00:46:24 PST 2011
+   - Support minor case where blib/* is manually added via -I (e.g. FCGI.pm)
+
 1.30_03  Fri Mar  4 00:30:39 PST 2011
    - Fixed a bug the modules are not loaded from blib in test_harness with -L
 
