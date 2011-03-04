@@ -435,7 +435,21 @@ sub _dump_inc {
 
     open my $out, ">$self->{base}/DumpedINC.pm" or die $!;
     local $" = ",";
-    print $out "BEGIN { \@INC = (@inc) }\n1;\n";
+    print $out <<EOF
+package DumpedINC;
+my \@old_inc;
+BEGIN {
+  \@old_inc = \@INC;
+  \@INC = (@inc);
+}
+
+sub import {
+  if (\$_[1] eq "tests") {
+    unshift \@INC, grep m!(?:/blib/lib|/blib/arch|/inc)\$!, \@old_inc;
+  }
+}
+1;
+EOF
 }
 
 sub _import_local_lib {
@@ -669,7 +683,7 @@ sub test {
     local $ENV{AUTOMATED_TESTING} = 1
         unless $self->env('NO_AUTOMATED_TESTING');
 
-   local $ENV{PERL5OPT} = "-I$self->{base} -MDumpedINC"
+   local $ENV{PERL5OPT} = "-I$self->{base} -MDumpedINC=tests"
         if $self->{self_contained};
 
     return 1 if $self->run_timeout($cmd, $self->{test_timeout});
