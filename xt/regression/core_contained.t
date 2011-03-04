@@ -10,7 +10,10 @@ $ENV{PERL5LIB} = 'fatlib';
 my @opt = ("-L", $local_lib);
 
 run @opt, "--skip-installed", "-n", "CGI";
-like last_build_log, qr/installed CGI/;
+like last_build_log, qr/installed CGI/, "Upgraded modules in 'perl' should be upgraded";
+
+run @opt, "--skip-installed", "-n", "CGI";
+unlike last_build_log, qr/installed CGI/, "This time it's loaded from local-lib, so it's okay to skip it";
 
 done_testing;
 
