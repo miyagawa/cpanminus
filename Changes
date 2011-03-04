@@ -1,5 +1,8 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.30_07  Fri Mar  4 15:19:44 PST 2011
+   - Disable the man page generation by default only if -L is in use. (suggested by rjbs)
+
 1.30_06  Fri Mar  4 14:55:35 PST 2011
    - Skip the man page generation by default. You can enable it with --pod2man
 
