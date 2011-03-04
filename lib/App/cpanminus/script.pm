@@ -47,7 +47,7 @@ sub new {
         uninstall_shadows => ($] < 5.012),
         skip_installed => 1,
         auto_cleanup => 7, # days
-        pod2man => undef,
+        pod2man => 1,
         @_,
     }, $class;
 }
@@ -79,7 +79,11 @@ sub parse_options {
         'V|version' => sub { $self->{action} = 'show_version' },
         'perl=s'    => \$self->{perl},
         'l|local-lib=s' => sub { $self->{local_lib} = $self->maybe_abs($_[1]) },
-        'L|local-lib-contained=s' => sub { $self->{local_lib} = $self->maybe_abs($_[1]); $self->{self_contained} = 1 },
+        'L|local-lib-contained=s' => sub {
+            $self->{local_lib} = $self->maybe_abs($_[1]);
+            $self->{self_contained} = 1;
+            $self->{pod2man} = undef;
+        },
         'mirror=s@' => $self->{mirrors},
         'mirror-only!' => \$self->{mirror_only},
         'prompt!'   => \$self->{prompt},

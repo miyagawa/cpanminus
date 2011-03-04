@@ -235,8 +235,9 @@ directories.
 
 Generates man pages for executables (man1) and libraries (man3).
 
-Defaults to false, and you can say C<--no-pod2man> to override when
-it's set in the default options in C<PERL_CPANM_OPT>.
+Defaults to false (no man pages generated) if
+C<-L|--local-lib-contained> option is supplied. Otherwise, defaults to
+true, and you can disable it with C<--no-pod2man>.
 
 =item --lwp
 
