@@ -18,7 +18,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.3000";
+  our $VERSION = "1.3001";
   
   =head1 NAME
   
@@ -32,12 +32,18 @@ $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   
   =head1 DESCRIPTION
   
-  cpanminus is a script to get, unpack, build and install modules from CPAN.
+  cpanminus is a script to get, unpack, build and install modules from
+  CPAN and does nothing else.
   
-  Why? It's dependency free, requires zero configuration, and stands
-  alone. When running, it requires only 10MB of RAM.
+  It's dependency free (can bootstrap itself), requires zero
+  configuration, and stands alone. When running, it requires only 10MB
+  of RAM.
   
   =head1 INSTALLATION
+  
+  There are several ways to install cpanminus to your system.
+  
+  =head2 Package management system
   
   There are Debian packages, RPMs, FreeBSD ports, and packages for other
   operation systems available. If you want to use the package management system,
@@ -45,26 +51,39 @@ $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   easy to install C<cpanm> to your system without thinking about where to
   install, and later upgrade.
   
+  =head2 Installing to system perl
+  
   You can also use the latest cpanminus to install cpanminus itself:
   
       curl -L http://cpanmin.us | perl - --sudo App::cpanminus
   
   This will install C<cpanm> to your bin directory like
   C</usr/local/bin> (unless you configured C<INSTALL_BASE> with
-  L<local::lib>), so you might need the C<--sudo> option.
+  L<local::lib>), so you probably need the C<--sudo> option.
   
-  Later you can say C<cpanm --self-upgrade --sudo> to upgrade to the
-  latest version.
+  =head2 Installing to local perl (perlbrew)
   
-  Otherwise,
+  If you have perl in your home directory, which is the case if you use
+  tools like L<perlbrew>, you don't need the C<--sudo> option, since
+  you're most likely to have a write permission to the perl's library
+  path. You can just do:
+  
+      curl -L http://cpanmin.us | perl - App::cpanminus
+  
+  to install the C<cpanm> executable to the perl's bin path, like
+  C<~/perl5/perlbrew/bin/cpanm>.
+  
+  =head2 Downloaing the standalone executable
+  
+  You can also copy the standalone executable to whatever location you'd like.
   
       cd ~/bin
       curl -LO http://xrl.us/cpanm
       chmod +x cpanm
       # edit shebang if you don't have /usr/bin/env
   
-  just works, but be sure to grab the new version manually when you
-  upgrade (C<--self-upgrade> might not work).
+  This just works, but be sure to grab the new version manually when you
+  upgrade because C<--self-upgrade> might not work for this.
   
   =head1 DEPENDENCIES
   
@@ -101,11 +120,10 @@ $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   
   =head2 But why a new client?
   
-  First of all, I have no intention to dis CPAN or CPANPLUS
-  developers. Don't get me wrong. They're great tools I've 
-  used for I<literally> years (you know how many modules I have
-  on CPAN, right?). I really respect their efforts of maintaining the
-  most important tools in the CPAN toolchain ecosystem.
+  First of all, let me be clear that CPAN and CPANPLUS are great tools
+  I've used for I<literally> years (you know how many modules I have on
+  CPAN, right?). I really respect their efforts of maintaining the most
+  important tools in the CPAN toolchain ecosystem.
   
   However, for less experienced users (mostly from outside the Perl community),
   or even really experienced Perl developers who know how to shoot themselves in
@@ -118,24 +136,94 @@ $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   It queries the CPAN Meta DB site running on Google AppEngine at
   L<http://cpanmetadb.appspot.com/>. The site is updated every hour to reflect
   the latest changes from fast syncing mirrors. The script then also falls back
-  to the site L<http://search.cpan.org/>. I've been talking to and working with
-  with the QA/toolchain people for building a more reliable CPAN DB website.
+  to scrape the site L<http://search.cpan.org/>.
   
-  Fetched files are unpacked in C<~/.cpanm>.  You can configure this with
-  the C<PERL_CPANM_HOME> environment variable.
+  Fetched files are unpacked in C<~/.cpanm> and automatically cleaned up
+  periodically.  You can configure the location of this with the
+  C<PERL_CPANM_HOME> environment variable.
   
   =head2 Where does this install modules to? Do I need root access?
   
   It installs to wherever ExtUtils::MakeMaker and Module::Build are
-  configured to (via C<PERL_MM_OPT> and C<MODULEBUILDRC>). So if
-  you're using local::lib, then it installs to your local perl5
-  directory. Otherwise it installs to the siteperl directory.
+  configured to (via C<PERL_MM_OPT> and C<PERL_MB_OPT>). So if you're
+  using local::lib, then it installs to your local perl5
+  directory. Otherwise it installs to the site_perl directory that
+  belongs to your perl.
   
-  cpanminus at a boot time checks whether you have configured local::lib, or have
-  the permission to install modules to the sitelib directory.  If neither, it
-  automatically sets up local::lib compatible installation path in a C<perl5>
-  directory under your home directory. To avoid this, run the script as the root
-  user, with C<--sudo> option or with C<--local-lib> option.
+  cpanminus at a boot time checks whether you have configured
+  local::lib, or have the permission to install modules to the site_perl
+  directory.  If neither, it automatically sets up local::lib compatible
+  installation path in a C<perl5> directory under your home
+  directory. To avoid this, run the script as the root user, with
+  C<--sudo> option or with C<--local-lib> option.
+  
+  =head2 cpanminus can't install the module XYZ. Is it a bug?
+  
+  It is more likely a problem with the distribution itself. cpanminus
+  doesn't support or is known to have issues with distributions like as
+  follows:
+  
+  =over 4
+  
+  =item *
+  
+  Tests that require input from STDIN.
+  
+  =item *
+  
+  Tests that might fail when C<AUTOMATED_TESTING> is enabled.
+  
+  =item *
+  
+  Modules that have invalid numeric values as VERSION (such as C<1.1a>)
+  
+  =back
+  
+  These failures can be reported back to the author of the module so
+  that they can fix it accordingly, rather than me.
+  
+  =head2 Does cpanm support the feature XYZ of L<CPAN> and L<CPANPLUS>?
+  
+  Most likely not. Here are the things that cpanm doesn't do by
+  itself. And it's a feature - you got that from the name I<minus>,
+  right?
+  
+  If you need these features, use L<CPAN>, L<CPANPLUS> or the standalone
+  tools that are mentioned.
+  
+  =over 4
+  
+  =item *
+  
+  Bundle:: module dependencies
+  
+  =item *
+  
+  CPAN testers reporting
+  
+  =item *
+  
+  Building RPM packages from CPAN modules
+  
+  =item *
+  
+  Listing the outdated modules that needs upgrading. See L<cpan-outdated>
+  
+  =item *
+  
+  Uninstalling modules. See L<pm-uninstall>.
+  
+  =item *
+  
+  Showing the changes of the modules you're about to upgrade. See L<cpan-listchanges>
+  
+  =item *
+  
+  Patching CPAN modules with distroprefs.
+  
+  =back
+  
+  See L<cpanm> or C<cpanm -h> to see what cpanminus I<can> do :)
   
   =head1 COPYRIGHT
   
@@ -224,7 +312,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use constant WIN32 => $^O eq 'MSWin32';
   use constant SUNOS => $^O eq 'solaris';
   
-  our $VERSION = "1.3000";
+  our $VERSION = "1.3001";
   
   my $quote = WIN32 ? q/"/ : q/'/;
   
@@ -1161,7 +1249,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   
       # When -L is in use, the version loaded from 'perl' library path
       # might be newer than the version that is shipped with the current perl
-      if ($self->{self_contained}) {
+      if ($self->{self_contained} && $self->loaded_from_perl_lib($meta)) {
           require Module::CoreList;
           $version = $Module::CoreList::version{$]}{$mod};
       }
@@ -1186,6 +1274,11 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       };
   
       return unless $deprecated;
+      return $self->loaded_from_perl_lib($meta);
+  }
+  
+  sub loaded_from_perl_lib {
+      my($self, $meta) = @_;
   
       require Config;
       for my $dir (qw(archlibexp privlibexp)) {
