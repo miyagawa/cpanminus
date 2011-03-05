@@ -48,6 +48,7 @@ sub new {
         skip_installed => 1,
         auto_cleanup => 7, # days
         pod2man => 1,
+        installed_dists => 0,
         @_,
     }, $class;
 }
@@ -143,6 +144,11 @@ sub doit {
 
     if ($self->{base} && $self->{auto_cleanup}) {
         $self->cleanup_workdirs;
+    }
+
+    if ($self->{installed_dists}) {
+        my $dists = $self->{installed_dists} > 1 ? "distributions" : "distribution";
+        $self->diag("$self->{installed_dists} $dists installed\n");
     }
 
     return !@fail;
@@ -1196,6 +1202,7 @@ sub build_stuff {
         my $msg = "Successfully $how";
         $self->diag_ok;
         $self->diag("$msg\n");
+        $self->{installed_dists}++;
         return 1;
     } else {
         my $msg = "Building $distname failed";
