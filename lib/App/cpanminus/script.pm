@@ -443,7 +443,8 @@ sub _core_only_inc {
 sub _dump_inc {
     my($self, $inc, $std_inc) = @_;
 
-    my @new_inc     = map { qq('$_') } (@$inc, '.'); # . for inc/Module/Install.pm
+    # $self->{base} for ModuleBuildPatch.pm, . for inc/Module/Install.pm
+    my @new_inc     = map { qq('$_') } (@$inc, $self->{base}, '.');
     my @exclude_inc = map { qq('$_') } grep { $_ ne '.' && !ref } $self->_diff($inc, $std_inc);
 
     open my $out, ">$self->{base}/DumpedINC.pm" or die $!;
@@ -1012,6 +1013,15 @@ sub check_module {
     # When -L is in use, the version loaded from 'perl' library path
     # might be newer than the version that is shipped with the current perl
     if ($self->{self_contained} && $self->loaded_from_perl_lib($meta)) {
+        # HACK: Module::Build 0.3622 or later has non-core module
+        # dependencies such as Perl::OSType and CPAN::Meta, and causes
+        # issues when a newer version is loaded from 'perl' while deps
+        # are loaded from the 'site' library path. Just assume it's
+        # not in the core, and install to the new local library path.
+        if ($mod eq 'Module::Build') {
+            return 0, undef;
+        }
+
         require Module::CoreList;
         $version = $Module::CoreList::version{$]}{$mod};
     }
@@ -1110,25 +1120,6 @@ sub install_deps_bailout {
     return 1;
 }
 
-sub _patch_module_build_config_deps {
-    my($self, $config_deps) = @_;
-
-    # Crazy hack to auto-add Module::Build dependencies into
-    # configure_requires if Module::Build is there, since there's a
-    # possibility where Module::Build is in 'perl' library path while
-    # the dependencies are in 'site' and can't be loaded when -L
-    # (--local-lib-contained) is in effect.
-
-    my %config_deps = (@{$config_deps});
-    if ($config_deps{"Module::Build"}) {
-        push @{$config_deps}, (
-            'Perl::OSType' => 1,
-            'Module::Metadata' => 1.000002,
-            'version' => 0.87,
-        );
-    }
-}
-
 sub build_stuff {
     my($self, $stuff, $dist, $depth) = @_;
 
@@ -1141,9 +1132,6 @@ sub build_stuff {
     push @config_deps, %{$dist->{meta}{configure_requires} || {}};
 
     my $target = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $dist->{dir};
-
-    $self->_patch_module_build_config_deps(\@config_deps)
-        if $self->{self_contained};
 
     $self->install_deps_bailout($target, $dist->{dir}, $depth, @config_deps)
         or return;
@@ -1220,7 +1208,8 @@ sub configure_this {
 
     my @mb_switches = @switches;
     unless ($self->{pod2man}) {
-        unshift @mb_switches, ("-I$self->{base}", "-MModuleBuildSkipMan");
+        # it has to be push, so Module::Build is loaded from the adjusted path when -L is in use
+        push @mb_switches, ("-I$self->{base}", "-MModuleBuildSkipMan");
     }
 
     my $state = {};
