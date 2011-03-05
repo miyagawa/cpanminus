@@ -1187,7 +1187,7 @@ sub build_stuff {
         elsif ($self->{make})  { $why = "The distribution doesn't have a proper Makefile.PL/Build.PL" }
         else                   { $why = "Can't configure the distribution. You probably need to have 'make'." }
 
-        $self->diag_fail("$why See $self->{log} for details.");
+        $self->diag_fail("$why See $self->{log} for details.", 1);
         return;
     }
 
