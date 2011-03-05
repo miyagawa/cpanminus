@@ -790,7 +790,7 @@ sub install_module {
 
     my $dist = $self->resolve_name($module);
     unless ($dist) {
-        $self->diag_fail("Couldn't find module or a distribution $module");
+        $self->diag_fail("Couldn't find module or a distribution $module", 1);
         return;
     }
 
@@ -829,7 +829,7 @@ sub install_module {
     $dist->{dir} ||= $self->fetch_module($dist);
 
     unless ($dist->{dir}) {
-        $self->diag_fail("Failed to fetch distribution $dist->{distvname}");
+        $self->diag_fail("Failed to fetch distribution $dist->{distvname}", 1);
         return;
     }
 
