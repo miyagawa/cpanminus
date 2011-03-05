@@ -148,7 +148,7 @@ sub doit {
 
     if ($self->{installed_dists}) {
         my $dists = $self->{installed_dists} > 1 ? "distributions" : "distribution";
-        $self->diag("$self->{installed_dists} $dists installed\n");
+        $self->diag("$self->{installed_dists} $dists installed\n", 1);
     }
 
     return !@fail;
@@ -336,7 +336,7 @@ Usage: cpanm [options] Module [...]
 
 Options:
   -v,--verbose              Turns on chatty output
-  -q,--quiet                Turns off all output
+  -q,--quiet                Turns off the most output
   --interactive             Turns on interactive configure (required for Task:: modules)
   -f,--force                force install
   -n,--notest               Do not run unit tests
@@ -555,7 +555,7 @@ sub diag_ok {
 }
 
 sub diag_fail {
-    my($self, $msg) = @_;
+    my($self, $msg, $always) = @_;
     chomp $msg;
     if ($self->{in_progress}) {
         $self->_diag("FAIL\n");
@@ -563,7 +563,7 @@ sub diag_fail {
     }
 
     if ($msg) {
-        $self->_diag("! $msg\n");
+        $self->_diag("! $msg\n", $always);
         $self->log("-> FAIL $msg\n");
     }
 }
@@ -577,13 +577,13 @@ sub diag_progress {
 }
 
 sub _diag {
-    my $self = shift;
-    print STDERR @_ if $self->{verbose} or !$self->{quiet};
+    my($self, $msg, $always) = @_;
+    print STDERR $msg if $always or $self->{verbose} or !$self->{quiet};
 }
 
 sub diag {
-    my($self, $msg) = @_;
-    $self->_diag($msg);
+    my($self, $msg, $always) = @_;
+    $self->_diag($msg, $always);
     $self->log($msg);
 }
 
@@ -1201,12 +1201,12 @@ sub build_stuff {
                              : "installed $distname" ;
         my $msg = "Successfully $how";
         $self->diag_ok;
-        $self->diag("$msg\n");
+        $self->diag("$msg\n", 1);
         $self->{installed_dists}++;
         return 1;
     } else {
         my $msg = "Building $distname failed";
-        $self->diag_fail("Installing $stuff failed. See $self->{log} for details.");
+        $self->diag_fail("Installing $stuff failed. See $self->{log} for details.", 1);
         return;
     }
 }

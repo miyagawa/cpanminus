@@ -3,13 +3,15 @@ use strict;
 use base qw(Exporter);
 our @EXPORT = qw(run last_build_log);
 
+use Capture::Tiny qw(capture);
 use File::Temp qw(tempdir);
 
 $ENV{PERL_CPANM_HOME} = tempdir(CLEANUP => 1);
 
 sub run {
+    my @args = @_;
     my @notest = $ENV{NOTEST} ? ("--notest") : ();
-    system($^X, "./script/cpanm.PL", @notest, "--quiet", "--reinstall", @_);
+    my($stdout, $stderr) = capture { system($^X, "./script/cpanm.PL", @notest, "--quiet", "--reinstall", @args) };
 }
 
 sub last_build_log {
