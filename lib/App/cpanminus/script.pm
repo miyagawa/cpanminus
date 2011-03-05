@@ -12,7 +12,7 @@ use Parse::CPAN::Meta;
 use constant WIN32 => $^O eq 'MSWin32';
 use constant SUNOS => $^O eq 'solaris';
 
-our $VERSION = "1.30_08";
+our $VERSION = "1.30_09";
 
 my $quote = WIN32 ? q/"/ : q/'/;
 
