@@ -1102,7 +1102,7 @@ sub install_deps_bailout {
     if (@fail) {
         unless ($self->prompt_bool("Installing the following dependencies failed:\n==> " .
                                    join(", ", @fail) . "\nDo you want to continue building $target anyway?", "n")) {
-            $self->diag_fail("Bailing out the installation for $target. Retry with --prompt or --force.");
+            $self->diag_fail("Bailing out the installation for $target. Retry with --prompt or --force.", 1);
             return;
         }
     }
