@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.30_10  Sat Mar  5 14:55:16 PST 2011
+   - Changed how it special cases Module::Build load path in -L mode. It's much more
+     reliable and support 0.38 with the new CPAN::Meta dependencies
+
 1.30_09  Fri Mar  4 18:15:40 PST 2011
    - Changed the verbosity level of -q|--quiet so that it prints only necessary
      information (instead of nothing, which is not really useful)
