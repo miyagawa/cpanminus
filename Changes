@@ -1,5 +1,8 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.30_08  Fri Mar  4 16:04:29 PST 2011
+   - Renamed the option to --man-pages and --no-man-pages
+
 1.30_07  Fri Mar  4 15:19:44 PST 2011
    - Disable the man page generation by default only if -L is in use. (suggested by rjbs)
 

@@ -12,7 +12,7 @@ use Parse::CPAN::Meta;
 use constant WIN32 => $^O eq 'MSWin32';
 use constant SUNOS => $^O eq 'solaris';
 
-our $VERSION = "1.30_07";
+our $VERSION = "1.30_08";
 
 my $quote = WIN32 ? q/"/ : q/'/;
 
@@ -100,7 +100,7 @@ sub parse_options {
         'wget!'   => \$self->{try_wget},
         'curl!'   => \$self->{try_curl},
         'auto-cleanup=s' => \$self->{auto_cleanup},
-        'pod2man!' => \$self->{pod2man},
+        'man-pages!' => \$self->{pod2man},
     );
 
     $self->{argv} = \@ARGV;

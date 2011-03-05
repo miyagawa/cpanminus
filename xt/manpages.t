@@ -10,8 +10,8 @@ run("-L", $local_lib, "Sub::Uplevel");     # M::B
 
 ok !-e "$local_lib/man", "man page is not generated with -L";
 
-run("-L", $local_lib, "--pod2man", "Hash::MultiValue");
-run("-L", $local_lib, "--pod2man", "Sub::Uplevel");
+run("-L", $local_lib, "--man-pages", "Hash::MultiValue");
+run("-L", $local_lib, "--man-pages", "Sub::Uplevel");
 
 ok -e "$local_lib/man/man3/Hash::MultiValue.3";
 ok -e "$local_lib/man/man3/Sub::Uplevel.3";

@@ -231,13 +231,13 @@ cleaned up in one week.
 You can set the value to C<0> to make cpan never cleanup those
 directories.
 
-=item --pod2man
+=item --man-pages
 
 Generates man pages for executables (man1) and libraries (man3).
 
 Defaults to false (no man pages generated) if
 C<-L|--local-lib-contained> option is supplied. Otherwise, defaults to
-true, and you can disable it with C<--no-pod2man>.
+true, and you can disable it with C<--no-man-pages>.
 
 =item --lwp
 
