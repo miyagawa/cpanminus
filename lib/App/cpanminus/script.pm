@@ -198,14 +198,6 @@ sub setup_home {
     print $out "Work directory is $self->{base}\n";
 }
 
-sub fetch_meta {
-    my($self, $dist) = @_;
-    return if $self->{mirror_only};
-
-    my $meta_yml = $self->get("http://cpansearch.perl.org/src/$dist->{cpanid}/$dist->{distvname}/META.yml");
-    return $self->parse_meta_string($meta_yml);
-}
-
 sub fetch_meta_sco {
     my($self, $dist) = @_;
     return if $self->{mirror_only};
@@ -820,8 +812,6 @@ sub install_module {
     }
 
     if ($self->{cmd} eq 'info') {
-        # skip the entire archive and just fetch META.yaml from s.c.o
-        $dist->{meta} = $self->fetch_meta($dist) if $dist->{source} eq 'cpan';
         print $self->format_dist($dist), "\n";
         return 1;
     }
