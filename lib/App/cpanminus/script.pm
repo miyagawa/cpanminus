@@ -8,6 +8,7 @@ use File::Spec ();
 use File::Copy ();
 use Getopt::Long ();
 use Parse::CPAN::Meta;
+use Symbol ();
 
 use constant WIN32 => $^O eq 'MSWin32';
 use constant SUNOS => $^O eq 'solaris';
@@ -1520,32 +1521,32 @@ sub init_tools {
         $self->{_backends}{get} = sub {
             my($self, $uri) = @_;
             return $self->file_get($uri) if $uri =~ s!^file:/+!/!;
-            my $q = $self->{verbose} ? '' : '-q';
-            open my $fh, "$wget $uri $q -O - |" or die "wget $uri: $!";
+            $self->safeexec( my $fh, $wget, $uri, ( $self->{verbose} ? () : '-q' ), '-O', '-' ) or die "wget $uri: $!";
             local $/;
             <$fh>;
         };
         $self->{_backends}{mirror} = sub {
             my($self, $uri, $path) = @_;
             return $self->file_mirror($uri, $path) if $uri =~ s!^file:/+!/!;
-            my $q = $self->{verbose} ? '' : '-q';
-            system "$wget --retry-connrefused $uri $q -O $path";
+            $self->safeexec( my $fh, $wget, '--retry-connrefused', $uri, ( $self->{verbose} ? () : '-q' ), '-O', $path ) or die "wget $uri: $!";
+            local $/;
+            <$fh>;
         };
     } elsif ($self->{try_curl} and my $curl = $self->which('curl')) {
         $self->chat("You have $curl\n");
         $self->{_backends}{get} = sub {
             my($self, $uri) = @_;
             return $self->file_get($uri) if $uri =~ s!^file:/+!/!;
-            my $q = $self->{verbose} ? '' : '-s';
-            open my $fh, "$curl -L $q $uri |" or die "curl $uri: $!";
+            $self->safeexec( my $fh, $curl, '-L', ( $self->{verbose} ? () : '-s' ), $uri ) or die "curl $uri: $!";
             local $/;
             <$fh>;
         };
         $self->{_backends}{mirror} = sub {
             my($self, $uri, $path) = @_;
             return $self->file_mirror($uri, $path) if $uri =~ s!^file:/+!/!;
-            my $q = $self->{verbose} ? '' : '-s';
-            system "$curl -L $uri $q -# -o $path";
+            $self->safeexec( my $fh, $curl, '-L', $uri, ( $self->{verbose} ? () : '-s' ), '-#', '-o', $path ) or die "curl $uri: $!";
+            local $/;
+            <$fh>;
         };
     } else {
         require HTTP::Tiny;
@@ -1667,6 +1668,28 @@ sub init_tools {
             }
             return -d $root ? $root : undef;
         };
+    }
+}
+
+sub safeexec {
+    my $self = shift;
+    warn @_;
+    my $rdr = $_[0] ||= Symbol::gensym();
+
+    if (WIN32) {
+        my $cmd = join q{ }, map { $self->shell_quote($_) } @_[ 1 .. $#_ ];
+        return open( $rdr, "$cmd |" );
+    }
+
+    if ( my $pid = open( $rdr, '-|' ) ) {
+        return $pid;
+    }
+    elsif ( defined $pid ) {
+        exec( @_[ 1 .. $#_ ] );
+        exit 1;
+    }
+    else {
+        return;
     }
 }
 
