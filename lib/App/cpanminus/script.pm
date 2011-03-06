@@ -50,6 +50,8 @@ sub new {
         pod2man => 1,
         installed_dists => 0,
         scandeps => 0,
+        scandeps_tree => [],
+        format   => 'tree',
         @_,
     }, $class;
 }
@@ -104,6 +106,7 @@ sub parse_options {
         'auto-cleanup=s' => \$self->{auto_cleanup},
         'man-pages!' => \$self->{pod2man},
         'scandeps'   => \$self->{scandeps},
+        'format=s'   => \$self->{format},
     );
 
     $self->{argv} = \@ARGV;
@@ -812,7 +815,7 @@ sub install_module {
     }
 
     if ($self->{cmd} eq 'info') {
-        print $dist->{cpanid}, "/", $dist->{filename}, "\n";
+        print $self->format_dist($dist), "\n";
         return 1;
     }
 
@@ -851,6 +854,13 @@ sub install_module {
     }
 
     return $self->build_stuff($module, $dist, $depth);
+}
+
+sub format_dist {
+    my($self, $dist) = @_;
+
+    # TODO support --dist-format?
+    return "$dist->{cpanid}/$dist->{filename}";
 }
 
 sub fetch_module {
@@ -1153,14 +1163,16 @@ sub build_stuff {
 
     my $distname = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $stuff;
 
+    my $walkup;
     if ($self->{scandeps}) {
-        push @{$self->{scandeps_tree}}, [ $distname, $depth ];
+        $walkup = $self->scandeps_append_child($dist);
     }
 
     $self->install_deps_bailout($distname, $dist->{dir}, $depth, @deps)
         or return;
 
     if ($self->{scandeps}) {
+        $walkup->();
         return 1;
     }
 
@@ -1360,16 +1372,61 @@ sub cleanup_workdirs {
     }
 }
 
+sub scandeps_append_child {
+    my($self, $dist) = @_;
+
+    my $new_node = [ $dist, [] ];
+
+    my $curr_node = $self->{scandeps_current} || [ undef, $self->{scandeps_tree} ];
+    push @{$curr_node->[1]}, $new_node;
+
+    $self->{scandeps_current} = $new_node;
+
+    return sub { $self->{scandeps_current} = $curr_node };
+}
+
 sub dump_scandeps {
     my $self = shift;
 
-    for my $node (@{$self->{scandeps_tree} || []}) {
-        if ($node->[1] == 0) {
-            print "$node->[0]\n";
-        } else {
-            print " " x ($node->[1] - 1);
-            print "\\_ ", $node->[0], "\n";
-        }
+    if ($self->{format} eq 'tree') {
+        $self->walk_down(sub {
+            my($dist, $depth) = @_;
+            if ($depth == 0) {
+                print $self->format_dist($dist), "\n";
+            } else {
+                print " " x ($depth - 1);
+                print "\\_ ", $self->format_dist($dist), "\n";
+            }
+        }, 1);
+    } elsif ($self->{format} eq 'dists') {
+        $self->walk_down(sub {
+            my($dist, $depth) = @_;
+            print $self->format_dist($dist), "\n";
+        }, 0);
+    } elsif ($self->{format} eq 'json') {
+        require JSON;
+        print JSON::encode_json($self->{scandeps_tree});
+    } elsif ($self->{format} eq 'yaml') {
+        require YAML;
+        print YAML::Dump($self->{scandeps_tree});
+    } else {
+        $self->diag("Unknown format: $self->{format}\n");
+    }
+}
+
+sub walk_down {
+    my($self, $cb, $pre) = @_;
+    $self->_do_walk_down($self->{scandeps_tree}, $cb, 0, $pre);
+}
+
+sub _do_walk_down {
+    my($self, $children, $cb, $depth, $pre) = @_;
+
+    # DFS - $pre determines when we call the callback
+    for my $node (@$children) {
+        $cb->($node->[0], $depth) if $pre;
+        $self->_do_walk_down($node->[1], $cb, $depth + 1, $pre);
+        $cb->($node->[0], $depth) unless $pre;
     }
 }
 
