@@ -200,13 +200,18 @@ sub setup_home {
 
 sub fetch_meta {
     my($self, $dist) = @_;
+    return if $self->{mirror_only};
 
-    unless ($self->{mirror_only}) {
-        my $meta_yml = $self->get("http://cpansearch.perl.org/src/$dist->{cpanid}/$dist->{distvname}/META.yml");
-        return $self->parse_meta_string($meta_yml);
-    }
+    my $meta_yml = $self->get("http://cpansearch.perl.org/src/$dist->{cpanid}/$dist->{distvname}/META.yml");
+    return $self->parse_meta_string($meta_yml);
+}
 
-    return undef;
+sub fetch_meta_sco {
+    my($self, $dist) = @_;
+    return if $self->{mirror_only};
+
+    my $meta_yml = $self->get("http://search.cpan.org/meta/$dist->{distvname}/META.yml");
+    return $self->parse_meta_string($meta_yml);
 }
 
 sub package_index_for {
@@ -1156,6 +1161,11 @@ sub build_stuff {
         $dist->{meta} = $self->parse_meta('META.yml');
     }
 
+    if (!$dist->{meta} && $dist->{source} eq 'cpan') {
+        $self->chat("META.yml not found or unparsable. Fetching META.yml from search.cpan.org\n");
+        $dist->{meta} = $self->fetch_meta_sco($dist);
+    }
+
     push @config_deps, %{$dist->{meta}{configure_requires} || {}};
 
     my $target = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $dist->{dir};
@@ -1402,10 +1412,10 @@ sub dump_scandeps {
         $self->walk_down(sub {
             my($dist, $depth) = @_;
             if ($depth == 0) {
-                print $self->format_dist($dist), "\n";
+                print "$dist->{distvname}\n";
             } else {
                 print " " x ($depth - 1);
-                print "\\_ ", $self->format_dist($dist), "\n";
+                print "\\_ $dist->{distvname}\n";
             }
         }, 1);
     } elsif ($self->{format} eq 'dists') {
