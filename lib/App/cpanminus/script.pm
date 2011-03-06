@@ -49,6 +49,7 @@ sub new {
         auto_cleanup => 7, # days
         pod2man => 1,
         installed_dists => 0,
+        scandeps => 0,
         @_,
     }, $class;
 }
@@ -102,6 +103,7 @@ sub parse_options {
         'curl!'   => \$self->{try_curl},
         'auto-cleanup=s' => \$self->{auto_cleanup},
         'man-pages!' => \$self->{pod2man},
+        'scandeps'   => \$self->{scandeps},
     );
 
     $self->{argv} = \@ARGV;
@@ -114,6 +116,7 @@ sub check_libs {
     $self->bootstrap_local_lib;
     if (@{$self->{bootstrap_deps} || []}) {
         local $self->{notest} = 1; # test failure in bootstrap should be tolerated
+        local $self->{scandeps} = 0;
         $self->install_deps(Cwd::cwd, 0, @{$self->{bootstrap_deps}});
     }
 }
@@ -149,6 +152,10 @@ sub doit {
     if ($self->{installed_dists}) {
         my $dists = $self->{installed_dists} > 1 ? "distributions" : "distribution";
         $self->diag("$self->{installed_dists} $dists installed\n", 1);
+    }
+
+    if ($self->{scandeps}) {
+        $self->dump_scandeps();
     }
 
     return !@fail;
@@ -1146,8 +1153,16 @@ sub build_stuff {
 
     my $distname = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $stuff;
 
+    if ($self->{scandeps}) {
+        push @{$self->{scandeps_tree}}, [ $distname, $depth ];
+    }
+
     $self->install_deps_bailout($distname, $dist->{dir}, $depth, @deps)
         or return;
+
+    if ($self->{scandeps}) {
+        return 1;
+    }
 
     if ($self->{installdeps} && $depth == 0) {
         $self->diag("<== Installed dependencies for $stuff. Finishing.\n");
@@ -1342,6 +1357,19 @@ sub cleanup_workdirs {
     if (@targets) {
         $self->chat("Expiring ", scalar(@targets), " work directories.\n");
         File::Path::rmtree(\@targets, 0, 0); # safe = 0, since blib usually doesn't have write bits
+    }
+}
+
+sub dump_scandeps {
+    my $self = shift;
+
+    for my $node (@{$self->{scandeps_tree} || []}) {
+        if ($node->[1] == 0) {
+            print "$node->[0]\n";
+        } else {
+            print " " x ($node->[1] - 1);
+            print "\\_ ", $node->[0], "\n";
+        }
     }
 }
 
