@@ -1031,7 +1031,7 @@ sub check_module {
     if ($self->is_deprecated($meta)){
         return 0, $version;
     } elsif (!$want_ver or $version >= version->new($want_ver)) {
-        return 1, $version;
+        return 1, ($version || 'undef');
     } else {
         return 0, $version;
     }
