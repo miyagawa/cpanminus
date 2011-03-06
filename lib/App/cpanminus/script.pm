@@ -1324,7 +1324,7 @@ sub find_prereqs {
     }
 
     # No need to remove, but this gets in the way of signature testing :/
-    unlink 'MYMETA.yml';
+    unlink $_ for qw(MYMETA.json MYMETA.yml);
 
     return @deps;
 }
