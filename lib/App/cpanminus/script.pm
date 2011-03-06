@@ -814,11 +814,9 @@ sub install_module {
         return 1;
     }
 
-    if ($dist->{source} eq 'cpan') {
-        $dist->{meta} = $self->fetch_meta($dist);
-    }
-
     if ($self->{cmd} eq 'info') {
+        # skip the entire archive and just fetch META.yaml from s.c.o
+        $dist->{meta} = $self->fetch_meta($dist) if $dist->{source} eq 'cpan';
         print $self->format_dist($dist), "\n";
         return 1;
     }
