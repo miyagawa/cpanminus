@@ -1673,7 +1673,6 @@ sub init_tools {
 
 sub safeexec {
     my $self = shift;
-    warn @_;
     my $rdr = $_[0] ||= Symbol::gensym();
 
     if (WIN32) {
