@@ -1047,7 +1047,7 @@ sub check_module {
         }
 
         require Module::CoreList;
-        $version = $Module::CoreList::version{$]}{$mod};
+        $version = $Module::CoreList::version{$]+0}{$mod};
     }
 
     $self->{local_versions}{$mod} = $version;
