@@ -79,6 +79,7 @@ sub parse_options {
         'perl=s'    => \$self->{perl},
         'l|local-lib=s' => sub { $self->{local_lib} = $self->maybe_abs($_[1]) },
         'L|local-lib-contained=s' => sub { $self->{local_lib} = $self->maybe_abs($_[1]); $self->{self_contained} = 1 },
+        'g|use-git' => \$self->{use_git},
         'mirror=s@' => $self->{mirrors},
         'mirror-only!' => \$self->{mirror_only},
         'prompt!'   => \$self->{prompt},
@@ -125,6 +126,13 @@ sub doit {
 
     $self->configure_mirrors;
 
+    my $prev_branch;
+    if ($self->{use_git})
+    {
+      $prev_branch = `git name-rev --name-only HEAD`;
+      chomp $prev_branch;
+    }
+
     my @fail;
     for my $module (@{$self->{argv}}) {
         if ($module =~ s/\.pm$//i) {
@@ -137,6 +145,14 @@ sub doit {
 
     if ($self->{base} && $self->{auto_cleanup}) {
         $self->cleanup_workdirs;
+    if ($self->{use_git})
+    {
+      if (@fail)
+      {
+        $self->run(["git", "checkout", "-q", $prev_branch]);
+      }
+
+      $self->run(["git", "branch", "-d", (keys %{$self->{git_branches}})]);
     }
 
     return !@fail;
@@ -457,6 +473,23 @@ sub setup_local_lib {
             $self->{search_inc} = [ @inc ];
         }
         $self->_import_local_lib($base);
+        if ($self->{use_git})
+        {
+          $ENV{GIT_DIR} = File::Spec->canonpath("$base/.git");
+          $ENV{GIT_WORK_TREE} = File::Spec->canonpath("$base");
+          if (! -d "$base/.git")
+          {
+            $self->run(["git", "init", "-q"]);
+            $self->run(["git", "commit", "-q", "--allow-empty", "-m", "Inital Commit"]);
+          }
+        }
+        $self->{use_git} = -d "$base/.git";
+        if ($self->{use_git})
+        {
+          $ENV{GIT_DIR} = File::Spec->canonpath("$base/.git");
+          $ENV{GIT_WORK_TREE} = File::Spec->canonpath("$base");
+          $self->{git_branches} = {};
+        }
     }
 
     $self->bootstrap_local_lib_deps;
@@ -1070,6 +1103,13 @@ sub _patch_module_build_config_deps {
 sub build_stuff {
     my($self, $stuff, $dist, $depth) = @_;
 
+    my $prev_branch;
+    if ($self->{use_git})
+    {
+      $prev_branch = `git name-rev --name-only HEAD`;
+      chomp $prev_branch;
+    }
+
     my @config_deps;
     if (!%{$dist->{meta} || {}} && -e 'META.yml') {
         $self->chat("Checking configure dependencies from META.yml\n");
@@ -1104,6 +1144,25 @@ sub build_stuff {
         return 1;
     }
 
+    if ($self->{use_git})
+    {
+      my $cwd = Cwd::cwd;
+      $self->chdir($self->{local_lib});
+
+      my $child_branch = `git name-rev --name-only HEAD`;
+      chomp $child_branch;
+
+      $self->run(["git", "branch", "-f", $dist->{distvname}, $prev_branch]);
+      $self->run(["git", "checkout", "-q", $dist->{distvname}]);
+      $self->{git_branches}->{$dist->{distvname}} = 1;
+
+      if ($child_branch ne $prev_branch)
+      {
+        $self->run(["git", "merge", "--no-ff", "--no-summary", $child_branch]);
+      }
+      $self->chdir($cwd);
+    }
+
     my $installed;
     if ($configure_state->{use_module_build} && -e 'Build' && -f _) {
         $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . $distname);
@@ -1128,10 +1187,33 @@ sub build_stuff {
         return;
     }
 
+    #if (rand > 0.8) { return };
+
     if ($installed) {
         my $local   = $self->{local_versions}{$dist->{module} || ''};
         my $version = $dist->{module_version} || $dist->{meta}{version} || $dist->{version};
         my $reinstall = $local && ($local eq $version);
+
+        if ($self->{use_git})
+        {
+
+          $self->chdir($self->{local_lib});
+
+          $self->run(["git", "add", "$self->{local_lib}"]);
+          $self->run(["git", "commit", "-q", "-m", "Install of '$dist->{module}' v$dist->{module_version}"]);
+
+          if ($depth == 0)
+          {
+            $self->run(["git", "tag", "-f", $dist->{distvname}]);
+
+            # Fully merge the previous branch
+            $self->run(["git", "symbolic-ref", "HEAD", "refs/heads/".$prev_branch]);
+            $self->run(["git", "merge", $dist->{distvname}]);
+            $self->run(["git", "branch", "-d", $dist->{distvname}]);
+          }
+
+          $self->chdir($self->{base});
+        }
 
         my $how = $reinstall ? "reinstalled $distname"
                 : $local     ? "installed $distname (upgraded from $local)"
