@@ -3,6 +3,7 @@ use strict;
 use Config;
 use Cwd ();
 use File::Basename ();
+use File::Find ();
 use File::Path ();
 use File::Spec ();
 use File::Copy ();
@@ -1170,7 +1171,7 @@ sub build_stuff {
 
     $self->diag_ok($configure_state->{configured_ok} ? "OK" : "N/A");
 
-    my @deps = $self->find_prereqs($dist->{meta});
+    my @deps = $self->find_prereqs($dist);
 
     my $distname = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $stuff;
 
@@ -1313,9 +1314,14 @@ sub safe_eval {
 }
 
 sub find_prereqs {
-    my($self, $meta) = @_;
+    my($self, $dist) = @_;
 
     my @deps;
+    if ($dist->{module} =~ /^Bundle::/i) {
+        push @deps, $self->bundle_deps($dist);
+    }
+
+    my $meta = $dist->{meta};
     if (-e 'MYMETA.yml') {
         $self->chat("Checking dependencies from MYMETA.yml ...\n");
         my $mymeta = $self->parse_meta('MYMETA.yml');
@@ -1350,6 +1356,40 @@ sub find_prereqs {
     unlink $_ for qw(MYMETA.json MYMETA.yml);
 
     return @deps;
+}
+
+sub bundle_deps {
+    my($self, $dist) = @_;
+
+    my @files;
+    File::Find::find({
+        wanted => sub { push @files, File::Spec->rel2abs($_) if /\.pm/i },
+        no_chdir => 1,
+    }, '.');
+
+    my @deps;
+
+    for my $file (@files) {
+        open my $pod, "<", $file or next;
+        my $in_contents;
+        while (<$pod>) {
+            if (/^=head\d\s+CONTENTS/) {
+                $in_contents = 1;
+            } elsif (/^=/) {
+                $in_contents = 0;
+            } elsif ($in_contents) {
+                /^(\S+)\s*(\S+)?/
+                    and push @deps, $1, $self->maybe_version($2);
+            }
+        }
+    }
+
+    return @deps;
+}
+
+sub maybe_version {
+    my($self, $string) = @_;
+    return $string && $string =~ /^\.?\d/ ? $string : undef;
 }
 
 sub extract_requires {
