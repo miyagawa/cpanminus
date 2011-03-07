@@ -5,3 +5,4 @@ MANIFEST			This list of files
 README
 lib/App/cpanminus.pm
 t/happy_cpantesters.t
+etc/_cpanm
