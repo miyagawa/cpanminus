@@ -1582,6 +1582,7 @@ sub init_tools {
                 or return undef;
 
             chomp $root;
+            $root =~ s!^\./!!;
             $root =~ s{^(.+?)/.*$}{$1};
 
             system "$tar $xf$ar $tarfile";
