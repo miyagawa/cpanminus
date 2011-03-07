@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.30_13  Mon Mar  7 10:42:01 PST 2011
+   - Fix for the use of Module::CoreList for perl with versions ending in 0, such as 5.13.10.
+   - Do not attempt to upgrade Module::Build if you have the version that comes with perl
+
 1.30_12  Sun Mar  6 18:54:41 PST 2011
    - Support Bundle:: modules #81
    - Fixed a bug where META.yml is being fetched for no reason. This reduces the HTTP
