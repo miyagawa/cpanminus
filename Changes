@@ -1,5 +1,16 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.30_12  Sun Mar  6 18:54:41 PST 2011
+   - Support Bundle:: modules #81
+   - Fixed a bug where META.yml is being fetched for no reason. This reduces the HTTP
+     GET calls a lot and should speed up the build process
+   - Falls back to search.cpan.org/meta service when (and only when) META.yml is not
+     included or unparsable. Now it can handle distributions like AnyEvent::HTTP or
+     ancient packages better.
+   - Fixed a bug where nmake is doubly quoted on Win32 (charsbar) #76
+   - Makes the wget/curl execution safer (J. Nick Koston)
+   - Support archives where tar list begins with ./ like Image::Magick (Reported by doy) #80
+
 1.30_11  Sun Mar  6 01:34:59 PST 2011
    - Fix SIGNATURE testing for Module::Build 0.38 or later
    - Implemented EXPERIMENTAL --scandeps command and --format option
