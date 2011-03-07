@@ -1037,17 +1037,19 @@ sub check_module {
     # When -L is in use, the version loaded from 'perl' library path
     # might be newer than the version that is shipped with the current perl
     if ($self->{self_contained} && $self->loaded_from_perl_lib($meta)) {
+        require Module::CoreList;
+        my $core_version = $Module::CoreList::version{$]+0}{$mod};
+
         # HACK: Module::Build 0.3622 or later has non-core module
         # dependencies such as Perl::OSType and CPAN::Meta, and causes
         # issues when a newer version is loaded from 'perl' while deps
         # are loaded from the 'site' library path. Just assume it's
         # not in the core, and install to the new local library path.
-        if ($mod eq 'Module::Build') {
+        if ($mod eq 'Module::Build' && $core_version != $version) {
             return 0, undef;
         }
 
-        require Module::CoreList;
-        $version = $Module::CoreList::version{$]+0}{$mod};
+        $version = $core_version;
     }
 
     $self->{local_versions}{$mod} = $version;
