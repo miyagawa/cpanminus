@@ -1449,7 +1449,7 @@ sub dump_scandeps {
                 print "\\_ $dist->{distvname}\n";
             }
         }, 1);
-    } elsif ($self->{format} eq 'dists') {
+    } elsif ($self->{format} =~ /^dists?$/) {
         $self->walk_down(sub {
             my($dist, $depth) = @_;
             print $self->format_dist($dist), "\n";
