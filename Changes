@@ -1,5 +1,16 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.4000  Tue Mar  8 01:00:49 PST 2011
+   [New Features]
+      - Changed the verbosity level of -q to be actually *so* useful and recommended now
+      - Added a new option --no-man-pages to skip man page generation and installation
+      - Added new --scandeps and --format option that scans module dependency tree before
+        actually installing a module
+      - Support Bundle:: modules
+      - Added new --save-dists option
+
+   See below changes between 1.30_02 and 1.30_13 for more improvements and bug fixes.
+
 1.30_13  Mon Mar  7 10:42:01 PST 2011
    - Fix for the use of Module::CoreList for perl with versions ending in 0, such as 5.13.10.
    - Do not attempt to upgrade Module::Build if you have the version that comes with perl
