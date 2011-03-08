@@ -259,7 +259,7 @@ to replay installations on other machines.
 
 =back
 
-=item --save-tarballs
+=item --save-dists
 
 Specifies the optional directory path to copy downloaded tarballs in
 the CPAN mirror compatible directory structure

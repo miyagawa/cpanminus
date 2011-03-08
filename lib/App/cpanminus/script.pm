@@ -54,7 +54,7 @@ sub new {
         scandeps => 0,
         scandeps_tree => [],
         format   => 'tree',
-        save_tarballs => undef,
+        save_dists => undef,
         @_,
     }, $class;
 }
@@ -110,8 +110,8 @@ sub parse_options {
         'man-pages!' => \$self->{pod2man},
         'scandeps'   => \$self->{scandeps},
         'format=s'   => \$self->{format},
-        'save-tarballs=s' => sub {
-            $self->{save_tarballs} = $self->maybe_abs($_[1]);
+        'save-dists=s' => sub {
+            $self->{save_dists} = $self->maybe_abs($_[1]);
         },
     );
 
@@ -909,7 +909,7 @@ sub fetch_module {
         my $dir = $self->unpack($file);
         next unless $dir; # unpack failed
 
-        if (my $save = $self->{save_tarballs}) {
+        if (my $save = $self->{save_dists}) {
             my $path = "$save/authors/id/$dist->{pathname}";
             $self->chat("Copying $name to $path\n");
             File::Path::mkpath([ File::Basename::dirname($path) ], 0, 0777);
