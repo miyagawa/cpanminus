@@ -1,5 +1,8 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.4001  Tue Mar  8 10:10:28 PST 2011
+      - Fixed a workaround code for META.yml being JSON (reported by leedo)
+
 1.4000  Tue Mar  8 01:00:49 PST 2011
    [New Features]
       - Changed the verbosity level of -q to be actually *so* useful and recommended now
