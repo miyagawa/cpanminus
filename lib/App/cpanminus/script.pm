@@ -266,7 +266,7 @@ sub search_module {
         my $uri  = "http://cpanmetadb.appspot.com/v1.0/package/$module";
         my $yaml = $self->get($uri);
         my $meta = $self->parse_meta_string($yaml);
-        if ($meta->{distfile}) {
+        if ($meta && $meta->{distfile}) {
             return $self->cpan_module($module, $meta->{distfile}, $meta->{version});
         }
 
@@ -1160,6 +1160,8 @@ sub build_stuff {
         $dist->{meta} = $self->fetch_meta_sco($dist);
     }
 
+    $dist->{meta} ||= {};
+
     push @config_deps, %{$dist->{meta}{configure_requires} || {}};
 
     my $target = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $dist->{dir};
@@ -1327,8 +1329,10 @@ sub find_prereqs {
     if (-e 'MYMETA.yml') {
         $self->chat("Checking dependencies from MYMETA.yml ...\n");
         my $mymeta = $self->parse_meta('MYMETA.yml');
-        @deps = $self->extract_requires($mymeta);
-        $meta->{$_} = $mymeta->{$_} for keys %$mymeta; # merge
+        if ($mymeta) {
+            @deps = $self->extract_requires($mymeta);
+            $meta->{$_} = $mymeta->{$_} for keys %$mymeta; # merge
+        }
     } elsif (-e '_build/prereqs') {
         $self->chat("Checking dependencies from _build/prereqs ...\n");
         my $mymeta = do { open my $in, "_build/prereqs"; $self->safe_eval(join "", <$in>) };
@@ -1737,12 +1741,12 @@ sub safeexec {
 
 sub parse_meta {
     my($self, $file) = @_;
-    return eval { (Parse::CPAN::Meta::LoadFile($file))[0] } || {};
+    return eval { (Parse::CPAN::Meta::LoadFile($file))[0] } || undef;
 }
 
 sub parse_meta_string {
     my($self, $yaml) = @_;
-    return eval { (Parse::CPAN::Meta::Load($yaml))[0] } || {};
+    return eval { (Parse::CPAN::Meta::Load($yaml))[0] } || undef;
 }
 
 1;
