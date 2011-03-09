@@ -73,6 +73,7 @@ sub parse_options {
 
     if ($0 ne '-' && !-t STDIN){ # e.g. $ cpanm < author/requires.cpanm
         push @ARGV, $self->load_argv_from_fh(\*STDIN);
+        $self->{load_from_stdin} = 1;
     }
 
     Getopt::Long::Configure("bundling");
@@ -140,7 +141,8 @@ sub doit {
         $self->$action() and return 1;
     }
 
-    $self->show_help(1) unless @{$self->{argv}};
+    $self->show_help(1)
+        unless @{$self->{argv}} or $self->{load_from_stdin};
 
     $self->configure_mirrors;
 
