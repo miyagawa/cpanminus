@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.4002  Tue Mar  8 17:47:51 PST 2011
+      - Display configure errors in --scandeps so that configure_requires can be
+        manually satisfied (suggested by marcus)
+
 1.4001  Tue Mar  8 10:10:28 PST 2011
       - Fixed a workaround code for META.yml being JSON (reported by leedo)
 
