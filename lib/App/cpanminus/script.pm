@@ -1188,6 +1188,17 @@ sub build_stuff {
         or return;
 
     if ($self->{scandeps}) {
+        unless ($configure_state->{configured_ok}) {
+            my $diag = <<DIAG;
+! Configuring $distname failed. See $self->{log} for details.
+! You might have to install the following modules first to get --scandeps working correctly.
+DIAG
+            if (@config_deps) {
+                my @tree = @{$self->{scandeps_tree}};
+                $diag .= "!\n" . join("", map "! * $_->[0]{module}\n", @tree[0..$#tree-1]) if @tree;
+            }
+            $self->diag("!\n$diag!\n", 1);
+        }
         $walkup->();
         return 1;
     }
