@@ -1017,11 +1017,12 @@ sub setup_module_build_patch {
     open my $out, ">$self->{base}/ModuleBuildSkipMan.pm" or die $!;
     print $out <<EOF;
 package ModuleBuildSkipMan;
-sub import {
-  use Module::Build;
-  no warnings qw'redefine';
-  sub Module::Build::Base::ACTION_manpages {}
-  sub Module::Build::Base::ACTION_docs     {}
+CHECK {
+  if (%Module::Build::) {
+    no warnings 'redefine';
+    *Module::Build::Base::ACTION_manpages = sub {};
+    *Module::Build::Base::ACTION_docs     = sub {};
+  }
 }
 1;
 EOF
