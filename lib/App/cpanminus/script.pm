@@ -1554,7 +1554,7 @@ sub init_tools {
     }
 
     # use --no-lwp if they have a broken LWP, to upgrade LWP
-    if ($self->{try_lwp} && eval { require LWP::UserAgent; LWP::UserAgent->VERSION(5.802) }) {
+    if ($self->{try_lwp} && eval { require LWP::UserAgent; require LWP::Protocol::http; LWP::UserAgent->VERSION(5.802) }) {
         $self->chat("You have LWP $LWP::VERSION\n");
         my $ua = sub {
             LWP::UserAgent->new(
