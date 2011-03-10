@@ -1,5 +1,17 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.4004 Thu Mar 10 10:04:28 PST 2011
+   [Incompatible Changes]
+      - Fixed the issue where `ssh host cpanm Module` waits on input forever. As a side
+        effect of fixing this bug, cpanm reads modules from STDIN only if there's no
+        module arguments given. Options such as -L or --scandeps continu to work. #86
+        (Reported by dku, Getty and many people)
+
+   [Bug Fixes]
+      - Fixed a long standing bug where newer versions of bundled modules such as LWP
+        could be loaded when combined with -L or -l, which causes API incompatiblities.
+      - Fixed the use of gunzip (cho45)
+
 1.4003  Wed Mar  9 18:13:21 PST 2011
       - Fixed a weird bug that -L fails to bootstrap Module::Build when an old version
         such as 0.28 is installed 
