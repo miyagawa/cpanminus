@@ -237,7 +237,7 @@ sub generate_mirror_index {
                 print $fh $buffer;
             }
         } else {
-            unless (system("gunzip -c $gz_file > $file")) {
+            if (system("gunzip -c $gz_file > $file")) {
                 $self->diag_fail("Cannot uncompress -- please install gunzip or Compress::Zlib");
                 return;
             }
