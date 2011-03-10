@@ -1,5 +1,12 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.4003  Wed Mar  9 18:13:21 PST 2011
+      - Fixed a weird bug that -L fails to bootstrap Module::Build when an old version
+        such as 0.28 is installed 
+      - Do not show help if it reads args from STDIN and nothing is supplied
+      - Stripped down the `cpanm` executable size for 20% by stripping POD for fatpacked
+        dependencies :)
+
 1.4002  Tue Mar  8 17:47:51 PST 2011
       - Display configure errors in --scandeps so that configure_requires can be
         manually satisfied (suggested by marcus)

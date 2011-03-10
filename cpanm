@@ -18,7 +18,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.4002";
+  our $VERSION = "1.4003";
   
   =head1 NAME
   
@@ -314,7 +314,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use constant WIN32 => $^O eq 'MSWin32';
   use constant SUNOS => $^O eq 'solaris';
   
-  our $VERSION = "1.4002";
+  our $VERSION = "1.4003";
   
   my $quote = WIN32 ? q/"/ : q/'/;
   
@@ -373,6 +373,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   
       if ($0 ne '-' && !-t STDIN){ # e.g. $ cpanm < author/requires.cpanm
           push @ARGV, $self->load_argv_from_fh(\*STDIN);
+          $self->{load_from_stdin} = 1;
       }
   
       Getopt::Long::Configure("bundling");
@@ -440,7 +441,8 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           $self->$action() and return 1;
       }
   
-      $self->show_help(1) unless @{$self->{argv}};
+      $self->show_help(1)
+          unless @{$self->{argv}} or $self->{load_from_stdin};
   
       $self->configure_mirrors;
   
@@ -1315,11 +1317,12 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       open my $out, ">$self->{base}/ModuleBuildSkipMan.pm" or die $!;
       print $out <<EOF;
   package ModuleBuildSkipMan;
-  sub import {
-    use Module::Build;
-    no warnings qw'redefine';
-    sub Module::Build::Base::ACTION_manpages {}
-    sub Module::Build::Base::ACTION_docs     {}
+  CHECK {
+    if (%Module::Build::) {
+      no warnings 'redefine';
+      *Module::Build::Base::ACTION_manpages = sub {};
+      *Module::Build::Base::ACTION_docs     = sub {};
+    }
   }
   1;
   EOF

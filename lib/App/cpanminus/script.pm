@@ -14,7 +14,7 @@ use Symbol ();
 use constant WIN32 => $^O eq 'MSWin32';
 use constant SUNOS => $^O eq 'solaris';
 
-our $VERSION = "1.4002";
+our $VERSION = "1.4003";
 
 my $quote = WIN32 ? q/"/ : q/'/;
 
