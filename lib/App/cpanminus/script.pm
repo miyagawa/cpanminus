@@ -490,10 +490,10 @@ sub _diff {
     @diff;
 }
 
-sub _import_local_lib {
-    my($self, @args) = @_;
+sub _setup_local_lib_env {
+    my($self, $base) = @_;
     local $SIG{__WARN__} = sub { }; # catch 'Attempting to write ...'
-    local::lib->import(@args);
+    local::lib->setup_env_hash_for($base);
 }
 
 sub setup_local_lib {
@@ -508,7 +508,7 @@ sub setup_local_lib {
             $self->_dump_inc(\@inc, \@INC);
             $self->{search_inc} = [ @inc ];
         }
-        $self->_import_local_lib($base);
+        $self->_setup_local_lib_env($base);
     }
 
     $self->bootstrap_local_lib_deps;
@@ -1554,7 +1554,7 @@ sub init_tools {
     }
 
     # use --no-lwp if they have a broken LWP, to upgrade LWP
-    if ($self->{try_lwp} && eval { require LWP::UserAgent; require LWP::Protocol::http; LWP::UserAgent->VERSION(5.802) }) {
+    if ($self->{try_lwp} && eval { require LWP::UserAgent; LWP::UserAgent->VERSION(5.802) }) {
         $self->chat("You have LWP $LWP::VERSION\n");
         my $ua = sub {
             LWP::UserAgent->new(
