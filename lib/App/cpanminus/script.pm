@@ -71,11 +71,6 @@ sub parse_options {
     push @ARGV, split /\s+/, $self->env('OPT');
     push @ARGV, @_;
 
-    if ($0 ne '-' && !-t STDIN){ # e.g. $ cpanm < author/requires.cpanm
-        push @ARGV, $self->load_argv_from_fh(\*STDIN);
-        $self->{load_from_stdin} = 1;
-    }
-
     Getopt::Long::Configure("bundling");
     Getopt::Long::GetOptions(
         'f|force'   => sub { $self->{skip_installed} = 0; $self->{force} = 1 },
@@ -115,6 +110,11 @@ sub parse_options {
             $self->{save_dists} = $self->maybe_abs($_[1]);
         },
     );
+
+    if (!@ARGV && $0 ne '-' && !-t STDIN){ # e.g. # cpanm < author/requires.cpanm
+        push @ARGV, $self->load_argv_from_fh(\*STDIN);
+        $self->{load_from_stdin} = 1;
+    }
 
     $self->{argv} = \@ARGV;
 }
