@@ -1057,9 +1057,15 @@ sub check_module {
 
     $self->{local_versions}{$mod} = $version;
 
+    # CPAN::Version and version behave diffrently for "alpha" version strings
+    # See: http://search.cpan.org/~jpeacock/version-0.88/lib/version.pod#How_to_compare_version_objects
+    # CPAN::Version will see '2.007_001' == '2.007001'
+    # version will see '2.007_001' < '2.007001'
+    require CPAN::Version;
+
     if ($self->is_deprecated($meta)){
         return 0, $version;
-    } elsif (!$want_ver or $version >= version->new($want_ver)) {
+    } elsif (!$want_ver or CPAN::Version->vcmp($version,$want_ver) >= 0) {
         return 1, ($version || 'undef');
     } else {
         return 0, $version;
