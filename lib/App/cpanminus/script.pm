@@ -197,9 +197,10 @@ sub setup_home {
         };
     }
 
-    open my $out, ">$self->{log}" or die "$self->{log}: $!";
-    print $out "cpanm (App::cpanminus) $VERSION on perl $] built for $Config{archname}\n";
-    print $out "Work directory is $self->{base}\n";
+    { open my $out, ">$self->{log}" or die "$self->{log}: $!" }
+
+    $self->chat("cpanm (App::cpanminus) $VERSION on perl $] built for $Config{archname}\n" .
+                "Work directory is $self->{base}\n");
 }
 
 sub fetch_meta_sco {
