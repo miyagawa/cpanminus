@@ -536,7 +536,7 @@ sub prompt {
     my $dispdef = defined $def ? "[$def] " : " ";
     $def = defined $def ? $def : "";
 
-    if ($self->{quiet} || !$self->{prompt} || (!$isa_tty && eof STDIN)) {
+    if (!$self->{prompt} || (!$isa_tty && eof STDIN)) {
         return $def;
     }
 
