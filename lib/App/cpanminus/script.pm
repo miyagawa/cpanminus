@@ -1549,6 +1549,8 @@ sub init_tools {
 
     return if $self->{initialized}++;
 
+    $self->chat("You have App::cpanminus $VERSION\n");
+
     if ($self->{make} = $self->which($Config{make})) {
         $self->chat("You have make $self->{make}\n");
     }
