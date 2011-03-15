@@ -54,7 +54,7 @@ path. You can just do:
 to install the C<cpanm> executable to the perl's bin path, like
 C<~/perl5/perlbrew/bin/cpanm>.
 
-=head2 Downloaing the standalone executable
+=head2 Downloading the standalone executable
 
 You can also copy the standalone executable to whatever location you'd like.
 
