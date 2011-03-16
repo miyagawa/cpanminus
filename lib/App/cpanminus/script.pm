@@ -1041,8 +1041,10 @@ sub check_module {
     # When -L is in use, the version loaded from 'perl' library path
     # might be newer than the version that is shipped with the current perl
     if ($self->{self_contained} && $self->loaded_from_perl_lib($meta)) {
-        require Module::CoreList;
-        my $core_version = $Module::CoreList::version{$]+0}{$mod};
+        my $core_version = eval {
+            require Module::CoreList;
+            $Module::CoreList::version{$]+0}{$mod};
+        };
 
         # HACK: Module::Build 0.3622 or later has non-core module
         # dependencies such as Perl::OSType and CPAN::Meta, and causes
@@ -1053,7 +1055,7 @@ sub check_module {
             return 0, undef;
         }
 
-        $version = $core_version;
+        $version = $core_version if $core_version;
     }
 
     $self->{local_versions}{$mod} = $version;
