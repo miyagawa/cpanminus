@@ -713,9 +713,10 @@ sub build {
 
     return 1 if $self->run_timeout($cmd, $self->{build_timeout});
     while (1) {
-        my $ans = lc $self->prompt("Building $distname failed.\nYou can s)kip, r)etry or l)ook ?", "s");
+        my $ans = lc $self->prompt("Building $distname failed.\nYou can s)kip, r)etry, e)xamine build log, or l)ook ?", "s");
         return                               if $ans eq 's';
         return $self->build($cmd, $distname) if $ans eq 'r';
+        $self->show_build_log                if $ans eq 'e';
         $self->look                          if $ans eq 'l';
     }
 }
@@ -738,10 +739,11 @@ sub test {
     } else {
         $self->diag_fail;
         while (1) {
-            my $ans = lc $self->prompt("Testing $distname failed.\nYou can s)kip, r)etry, f)orce install or l)ook ?", "s");
+            my $ans = lc $self->prompt("Testing $distname failed.\nYou can s)kip, r)etry, f)orce install, e)xamine build log, or l)ook ?", "s");
             return                              if $ans eq 's';
             return $self->test($cmd, $distname) if $ans eq 'r';
             return 1                            if $ans eq 'f';
+            $self->show_build_log               if $ans eq 'e';
             $self->look                         if $ans eq 'l';
         }
     }
@@ -772,6 +774,32 @@ sub look {
         system $shell;
     } else {
         $self->diag_fail("You don't seem to have a SHELL :/");
+    }
+}
+
+sub show_build_log {
+    my $self = shift;
+
+    my @pagers = (
+        $ENV{PAGER},
+        (WIN32 ? () : ('less')),
+        'more'
+    );
+    my $pager;
+    while (@pagers) {
+        $pager = shift @pagers;
+        next unless $pager;
+        $pager = $self->which($pager);
+        next unless $pager;
+        last;
+    }
+
+    if ($pager) {
+        # win32 'more' doesn't allow "more build.log", the < is required
+        system("$pager < $self->{log}");
+    }
+    else {
+        $self->diag_fail("You don't seem to have a PAGER :/");
     }
 }
 
@@ -1319,9 +1347,10 @@ sub configure_this {
 
     unless ($state->{configured_ok}) {
         while (1) {
-            my $ans = lc $self->prompt("Configuring $dist->{dist} failed.\nYou can s)kip, r)etry or l)ook ?", "s");
+            my $ans = lc $self->prompt("Configuring $dist->{dist} failed.\nYou can s)kip, r)etry, e)xamine build log, or l)ook ?", "s");
             last                                if $ans eq 's';
             return $self->configure_this($dist) if $ans eq 'r';
+            $self->show_build_log               if $ans eq 'e';
             $self->look                         if $ans eq 'l';
         }
     }
