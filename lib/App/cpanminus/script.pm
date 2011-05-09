@@ -508,6 +508,8 @@ sub setup_local_lib {
             my @inc = $self->_core_only_inc($base);
             $self->_dump_inc(\@inc, \@INC);
             $self->{search_inc} = [ @inc ];
+        } else {
+            $self->{search_inc} = [ $base, @INC ];
         }
         $self->_setup_local_lib_env($base);
     }
