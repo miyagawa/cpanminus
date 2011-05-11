@@ -1,5 +1,12 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.4005 Wed May 11 12:05:49 PDT 2011
+   [Bug Fixes]
+      - -l should now correctly locate installed modules to skip reinstalling. Regression in 1.4004
+      - Ignore Module::CoreList loading errors with -L on perl < 5.8.9
+      - Fixed --prompt in combination with --quest RT:66602
+      - Fixed a broken Bundle:: module installation
+
 1.4004 Thu Mar 10 10:04:28 PST 2011
    [Incompatible Changes]
       - Fixed the issue where `ssh host cpanm Module` waits on input forever. As a side
