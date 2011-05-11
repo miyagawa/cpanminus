@@ -4,7 +4,7 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
    [Bug Fixes]
       - -l should now correctly locate installed modules to skip reinstalling. Regression in 1.4004
       - Ignore Module::CoreList loading errors with -L on perl < 5.8.9
-      - Fixed --prompt in combination with --quest RT:66602
+      - Fixed --prompt in combination with --quiet RT:66602
       - Fixed a broken Bundle:: module installation
 
 1.4004 Thu Mar 10 10:04:28 PST 2011
