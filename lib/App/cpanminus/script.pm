@@ -1340,9 +1340,6 @@ sub find_prereqs {
     my($self, $dist) = @_;
 
     my @deps;
-    if ($dist->{module} =~ /^Bundle::/i) {
-        push @deps, $self->bundle_deps($dist);
-    }
 
     my $meta = $dist->{meta};
     if (-e 'MYMETA.yml') {
@@ -1375,6 +1372,10 @@ sub find_prereqs {
                 last;
             }
         }
+    }
+
+    if ($dist->{module} =~ /^Bundle::/i) {
+        push @deps, $self->bundle_deps($dist);
     }
 
     # No need to remove, but this gets in the way of signature testing :/
