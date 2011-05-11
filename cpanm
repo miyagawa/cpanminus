@@ -18,7 +18,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.4004";
+  our $VERSION = "1.4005";
   
   =head1 NAME
   
@@ -73,7 +73,7 @@ $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   to install the C<cpanm> executable to the perl's bin path, like
   C<~/perl5/perlbrew/bin/cpanm>.
   
-  =head2 Downloaing the standalone executable
+  =head2 Downloading the standalone executable
   
   You can also copy the standalone executable to whatever location you'd like.
   
@@ -314,7 +314,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use constant WIN32 => $^O eq 'MSWin32';
   use constant SUNOS => $^O eq 'solaris';
   
-  our $VERSION = "1.4004";
+  our $VERSION = "1.4005";
   
   my $quote = WIN32 ? q/"/ : q/'/;
   
@@ -497,9 +497,10 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           };
       }
   
-      open my $out, ">$self->{log}" or die "$self->{log}: $!";
-      print $out "cpanm (App::cpanminus) $VERSION on perl $] built for $Config{archname}\n";
-      print $out "Work directory is $self->{base}\n";
+      { open my $out, ">$self->{log}" or die "$self->{log}: $!" }
+  
+      $self->chat("cpanm (App::cpanminus) $VERSION on perl $] built for $Config{archname}\n" .
+                  "Work directory is $self->{base}\n");
   }
   
   sub fetch_meta_sco {
@@ -807,6 +808,8 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
               my @inc = $self->_core_only_inc($base);
               $self->_dump_inc(\@inc, \@INC);
               $self->{search_inc} = [ @inc ];
+          } else {
+              $self->{search_inc} = [ $base, @INC ];
           }
           $self->_setup_local_lib_env($base);
       }
@@ -836,7 +839,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       my $dispdef = defined $def ? "[$def] " : " ";
       $def = defined $def ? $def : "";
   
-      if ($self->{quiet} || !$self->{prompt} || (!$isa_tty && eof STDIN)) {
+      if (!$self->{prompt} || (!$isa_tty && eof STDIN)) {
           return $def;
       }
   
@@ -1340,8 +1343,10 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       # When -L is in use, the version loaded from 'perl' library path
       # might be newer than the version that is shipped with the current perl
       if ($self->{self_contained} && $self->loaded_from_perl_lib($meta)) {
-          require Module::CoreList;
-          my $core_version = $Module::CoreList::version{$]+0}{$mod};
+          my $core_version = eval {
+              require Module::CoreList;
+              $Module::CoreList::version{$]+0}{$mod};
+          };
   
           # HACK: Module::Build 0.3622 or later has non-core module
           # dependencies such as Perl::OSType and CPAN::Meta, and causes
@@ -1352,7 +1357,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
               return 0, undef;
           }
   
-          $version = $core_version;
+          $version = $core_version if $core_version;
       }
   
       $self->{local_versions}{$mod} = $version;
@@ -1635,9 +1640,6 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       my($self, $dist) = @_;
   
       my @deps;
-      if ($dist->{module} =~ /^Bundle::/i) {
-          push @deps, $self->bundle_deps($dist);
-      }
   
       my $meta = $dist->{meta};
       if (-e 'MYMETA.yml') {
@@ -1670,6 +1672,10 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
                   last;
               }
           }
+      }
+  
+      if ($dist->{module} =~ /^Bundle::/i) {
+          push @deps, $self->bundle_deps($dist);
       }
   
       # No need to remove, but this gets in the way of signature testing :/
