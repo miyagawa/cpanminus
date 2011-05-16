@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.4006 Mon May 16 10:02:45 PDT 2011
+   [Bug Fixes]
+      - Proper fix for the -l option installing the same modules
+
 1.4005 Wed May 11 12:05:49 PDT 2011
    [Bug Fixes]
       - -l should now correctly locate installed modules to skip reinstalling. Regression in 1.4004
