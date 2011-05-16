@@ -509,7 +509,11 @@ sub setup_local_lib {
             $self->_dump_inc(\@inc, \@INC);
             $self->{search_inc} = [ @inc ];
         } else {
-            $self->{search_inc} = [ $base, @INC ];
+            $self->{search_inc} = [
+                local::lib->install_base_arch_path($base),
+                local::lib->install_base_perl_path($base),
+                @INC,
+            ];
         }
         $self->_setup_local_lib_env($base);
     }
