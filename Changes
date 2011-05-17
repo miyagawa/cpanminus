@@ -1,5 +1,13 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.4007 Tue May 17 10:51:18 PDT 2011
+   [Incompatible Changes]
+      - Remove LWP from Makefile.PL dependencies, since due to the split it brings in many
+        dependencies such as HTTP::Daemon and HTTP::Parser (which requires a C compiler).
+        HTTP::Tiny is embedded as a last resort anyway, and if Makefile.PL is executed via
+        some CPAN client (CPAN.pm, CPANPLUS or cpanminus) it means your client is already
+        configured to be able to fetch files over HTTP.
+
 1.4006 Mon May 16 10:02:45 PDT 2011
    [Bug Fixes]
       - Proper fix for the -l option installing the same modules
