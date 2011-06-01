@@ -73,7 +73,7 @@ controlled repository such as git.
 =item --look
 
 Download and unpack the distribution and then open the directory with
-your shell. Handy to poke around the source code or do the manual
+your shell. Handy to poke around the source code or do manual
 testing.
 
 =item -h, --help
