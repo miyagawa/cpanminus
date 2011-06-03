@@ -459,6 +459,8 @@ sub _core_only_inc {
 sub _dump_inc {
     my($self, $inc, $std_inc) = @_;
 
+    # TODO Win32 has forward slashes in @INC but backslashes in %Config
+
     # $self->{base} for ModuleBuildPatch.pm, . for inc/Module/Install.pm
     my @new_inc     = map { qq('$_') } (@$inc, $self->{base}, '.');
     my @exclude_inc = map { qq('$_') } grep { $_ ne '.' && !ref } $self->_diff($inc, $std_inc);
