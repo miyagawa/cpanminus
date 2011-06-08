@@ -55,6 +55,7 @@ sub new {
         scandeps_tree => [],
         format   => 'tree',
         save_dists => undef,
+        skip_configure => 0,
         @_,
     }, $class;
 }
@@ -109,6 +110,7 @@ sub parse_options {
         'save-dists=s' => sub {
             $self->{save_dists} = $self->maybe_abs($_[1]);
         },
+        'skip-configure!' => \$self->{skip_configure},
     );
 
     if (!@ARGV && $0 ne '-' && !-t STDIN){ # e.g. # cpanm < author/requires.cpanm
@@ -1269,6 +1271,16 @@ DIAG
 
 sub configure_this {
     my($self, $dist) = @_;
+
+    if ($self->{skip_configure}) {
+        my $eumm = -e 'Makefile';
+        my $mb   = -e 'Build' && -f _;
+        return {
+            configured => 1,
+            configured_ok => $eumm || $mb,
+            use_module_build => $mb,
+        };
+    }
 
     my @switches;
     @switches = ("-I$self->{base}", "-MDumpedINC") if $self->{self_contained};
