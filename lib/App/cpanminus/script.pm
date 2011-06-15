@@ -529,8 +529,7 @@ sub bootstrap_local_lib_deps {
     my $self = shift;
     push @{$self->{bootstrap_deps}},
         'ExtUtils::MakeMaker' => 6.31,
-        'ExtUtils::Install'   => 1.46,
-        'Module::Build'       => 0.36;
+        'ExtUtils::Install'   => 1.46;
 }
 
 sub prompt_bool {
@@ -1061,8 +1060,10 @@ sub check_module {
         # issues when a newer version is loaded from 'perl' while deps
         # are loaded from the 'site' library path. Just assume it's
         # not in the core, and install to the new local library path.
-        if ($mod eq 'Module::Build' && $core_version != $version) {
-            return 0, undef;
+        if ($mod eq 'Module::Build') {
+            if ($version < 0.36 or $core_version != $version) {
+                return 0, undef;
+            }
         }
 
         $version = $core_version if $core_version;
