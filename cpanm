@@ -355,6 +355,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           scandeps_tree => [],
           format   => 'tree',
           save_dists => undef,
+          skip_configure => 0,
           @_,
       }, $class;
   }
@@ -409,6 +410,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           'save-dists=s' => sub {
               $self->{save_dists} = $self->maybe_abs($_[1]);
           },
+          'skip-configure!' => \$self->{skip_configure},
       );
   
       if (!@ARGV && $0 ne '-' && !-t STDIN){ # e.g. # cpanm < author/requires.cpanm
@@ -759,6 +761,8 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   sub _dump_inc {
       my($self, $inc, $std_inc) = @_;
   
+      # TODO Win32 has forward slashes in @INC but backslashes in %Config
+  
       # $self->{base} for ModuleBuildPatch.pm, . for inc/Module/Install.pm
       my @new_inc     = map { qq('$_') } (@$inc, $self->{base}, '.');
       my @exclude_inc = map { qq('$_') } grep { $_ ne '.' && !ref } $self->_diff($inc, $std_inc);
@@ -825,8 +829,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       my $self = shift;
       push @{$self->{bootstrap_deps}},
           'ExtUtils::MakeMaker' => 6.31,
-          'ExtUtils::Install'   => 1.46,
-          'Module::Build'       => 0.36;
+          'ExtUtils::Install'   => 1.46;
   }
   
   sub prompt_bool {
@@ -1357,8 +1360,10 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           # issues when a newer version is loaded from 'perl' while deps
           # are loaded from the 'site' library path. Just assume it's
           # not in the core, and install to the new local library path.
-          if ($mod eq 'Module::Build' && $core_version != $version) {
-              return 0, undef;
+          if ($mod eq 'Module::Build') {
+              if ($version < 0.36 or $core_version != $version) {
+                  return 0, undef;
+              }
           }
   
           $version = $core_version if $core_version;
@@ -1567,6 +1572,16 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   
   sub configure_this {
       my($self, $dist) = @_;
+  
+      if ($self->{skip_configure}) {
+          my $eumm = -e 'Makefile';
+          my $mb   = -e 'Build' && -f _;
+          return {
+              configured => 1,
+              configured_ok => $eumm || $mb,
+              use_module_build => $mb,
+          };
+      }
   
       my @switches;
       @switches = ("-I$self->{base}", "-MDumpedINC") if $self->{self_contained};
@@ -5476,7 +5491,7 @@ controlled repository such as git.
 =item --look
 
 Download and unpack the distribution and then open the directory with
-your shell. Handy to poke around the source code or do the manual
+your shell. Handy to poke around the source code or do manual
 testing.
 
 =item -h, --help
