@@ -239,8 +239,8 @@ Same as Perl.
 Patches and code improvements were contributed by:
 
 Goro Fuji, Kazuhiro Osawa, Tokuhiro Matsuno, Kenichi Ishigaki, Ian
-Wells, Pedro Melo, Masayoshi Sekimura, Matt S Trout, squeeky, horus
-and Ingy dot Net.
+Wells, Pedro Melo, Masayoshi Sekimura, Matt S Trout (mst), squeeky,
+horus and Ingy dot Net.
 
 =head2 ACKNOWLEDGEMENTS
 
