@@ -1,5 +1,10 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.4008 Wed Jun 15 17:58:28 PDT 2011
+   [Improvements]
+      - Added experimental --skip-configure
+      - Delay load Module::Build bootstrap so that -L won't auto-intall the latest M::B
+
 1.4007 Tue May 17 10:51:18 PDT 2011
    [Incompatible Changes]
       - Remove LWP from Makefile.PL dependencies, since due to the split it brings in many
