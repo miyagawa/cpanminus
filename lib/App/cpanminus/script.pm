@@ -1137,7 +1137,7 @@ sub install_deps {
     }
 
     my @fail;
-    for my $mod (@install) {
+    for my $mod (_shuffle(@install)) {
         $self->install_module($mod, $depth + 1)
             or push @fail, $mod;
     }
@@ -1786,6 +1786,14 @@ sub parse_meta {
 sub parse_meta_string {
     my($self, $yaml) = @_;
     return eval { (Parse::CPAN::Meta::Load($yaml))[0] } || undef;
+}
+
+sub _shuffle {
+    my @result;
+
+    push @result, splice(@_, int(rand($#_)), 1) while @_;
+
+    return @result;
 }
 
 1;
