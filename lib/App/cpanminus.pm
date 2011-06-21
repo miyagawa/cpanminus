@@ -188,7 +188,7 @@ Building RPM packages from CPAN modules
 
 =item *
 
-Listing the outdated modules that needs upgrading. See L<cpan-outdated>
+Listing the outdated modules that needs upgrading. See L<App::cpanoutdated>
 
 =item *
 
