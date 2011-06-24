@@ -1279,7 +1279,7 @@ DIAG
         $self->diag_ok;
         $self->diag("$msg\n", 1);
         $self->{installed_dists}++;
-        $self->save_meta($stuff, $dist, $module_name);
+        $self->save_meta($stuff, $dist, $module_name, \@config_deps, \@deps);
         return 1;
     } else {
         my $msg = "Building $distname failed";
@@ -1390,7 +1390,7 @@ sub find_module_name {
 }
 
 sub save_meta {
-    my($self, $module, $dist, $module_name) = @_;
+    my($self, $module, $dist, $module_name, $config_deps, $build_deps) = @_;
 
     return unless $dist->{distvname} && $dist->{source} eq 'cpan';
 
@@ -1408,18 +1408,21 @@ sub save_meta {
         }
     }
 
-    $module_name ||= "";
+    my $local = {
+        name => $module_name,
+        module => $module,
+        version => $dist->{version},
+        dist => $dist->{distvname},
+        pathname => $dist->{pathname},
+        requires => {
+            configure => +{ @$config_deps },
+            build     => +{ @$build_deps },
+        },
+    };
 
+    require JSON::PP;
     open my $fh, ">", "$dir/local.json" or die $!;
-    print $fh <<JSON;
-{
-    "name": "$module_name",
-    "module": "$module",
-    "version": "$dist->{version}",
-    "dist": "$dist->{distvname}",
-    "pathname": "$dist->{pathname}"
-}
-JSON
+    print $fh JSON::PP::encode_json($local);
 }
 
 sub install_base {
@@ -1575,8 +1578,8 @@ sub dump_scandeps {
             print $self->format_dist($dist), "\n";
         }, 0);
     } elsif ($self->{format} eq 'json') {
-        require JSON;
-        print JSON::encode_json($self->{scandeps_tree});
+        require JSON::PP;
+        print JSON::PP::encode_json($self->{scandeps_tree});
     } elsif ($self->{format} eq 'yaml') {
         require YAML;
         print YAML::Dump($self->{scandeps_tree});
