@@ -14,7 +14,7 @@ use Symbol ();
 use constant WIN32 => $^O eq 'MSWin32';
 use constant SUNOS => $^O eq 'solaris';
 
-our $VERSION = "1.4008";
+our $VERSION = "1.5000";
 
 my $quote = WIN32 ? q/"/ : q/'/;
 
@@ -51,6 +51,7 @@ sub new {
         auto_cleanup => 7, # days
         pod2man => 1,
         installed_dists => 0,
+        showdeps => 0,
         scandeps => 0,
         scandeps_tree => [],
         format   => 'tree',
@@ -106,6 +107,7 @@ sub parse_options {
         'auto-cleanup=s' => \$self->{auto_cleanup},
         'man-pages!' => \$self->{pod2man},
         'scandeps'   => \$self->{scandeps},
+        'showdeps'   => sub { $self->{showdeps} = 1; $self->{skip_installed} = 0 },
         'format=s'   => \$self->{format},
         'save-dists=s' => sub {
             $self->{save_dists} = $self->maybe_abs($_[1]);
@@ -360,6 +362,7 @@ Options:
   -n,--notest               Do not run unit tests
   -S,--sudo                 sudo to run install commands
   --installdeps             Only install dependencies
+  --showdeps                Only display direct dependencies
   --reinstall               Reinstall the distribution even if you already have the latest version installed
   --mirror                  Specify the base URL for the mirror (e.g. http://cpan.cpantesters.org/)
   --mirror-only             Use the mirror's index file instead of the CPAN Meta DB
@@ -1198,6 +1201,15 @@ sub build_stuff {
         $name =~ s/-/::/g;
         $name;
     };
+
+    if ($self->{showdeps}) {
+        my %rootdeps = (@config_deps, @deps); # merge
+        for my $mod (keys %rootdeps) {
+            my $ver = $rootdeps{$mod};
+            print $mod, ($ver ? " $ver" : ""), "\n";
+        }
+        return 1;
+    }
 
     my $distname = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $stuff;
 
