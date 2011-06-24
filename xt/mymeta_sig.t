@@ -2,6 +2,8 @@ use strict;
 use Test::More;
 use xt::Run;
 
+plan skip_all => "disabling MYMETA tests";
+
 use Test::Requires "Module::Signature";
 
 run "Term::ProgressBar";
