@@ -1193,7 +1193,11 @@ sub build_stuff {
     $self->diag_ok($configure_state->{configured_ok} ? "OK" : "N/A");
 
     my @deps = $self->find_prereqs($dist);
-    my $module_name = $self->find_module_name($configure_state);
+    my $module_name = $self->find_module_name($configure_state) || do {
+        my $name = $dist->{meta}{name};
+        $name =~ s/-/::/g;
+        $name;
+    };
 
     my $distname = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $stuff;
 
