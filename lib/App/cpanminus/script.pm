@@ -1193,6 +1193,7 @@ sub build_stuff {
     $self->diag_ok($configure_state->{configured_ok} ? "OK" : "N/A");
 
     my @deps = $self->find_prereqs($dist);
+    my $module_name = $self->find_module_name($configure_state);
 
     my $distname = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $stuff;
 
@@ -1262,6 +1263,7 @@ DIAG
         $self->diag_ok;
         $self->diag("$msg\n", 1);
         $self->{installed_dists}++;
+        $self->save_meta($stuff, $dist, $module_name);
         return 1;
     } else {
         my $msg = "Building $distname failed";
@@ -1350,6 +1352,66 @@ sub configure_this {
     return $state;
 }
 
+sub find_module_name {
+    my($self, $state) = @_;
+
+    return unless $state->{configured_ok};
+
+    if ($state->{use_module_build} &&
+        -e "_build/build_params") {
+        my $params = do { open my $in, "_build/build_params"; $self->safe_eval(join "", <$in>) };
+        return $params->[2]{module_name};
+    } elsif (-e "Makefile") {
+        open my $mf, "Makefile";
+        while (<$mf>) {
+            if (/^\#\s+NAME\s+=>\s+(.*)/) {
+                return $self->safe_eval($1);
+            }
+        }
+    }
+
+    return;
+}
+
+sub save_meta {
+    my($self, $module, $dist, $module_name) = @_;
+
+    return unless $dist->{distvname} && $dist->{source} eq 'cpan';
+
+    my $base = ($ENV{PERL_MM_OPT} || '') =~ /INSTALL_BASE=/
+        ? ($self->install_base($ENV{PERL_MM_OPT}) . "/lib/perl5") : $Config{sitelibexp};
+
+    my $dir = "$base/auto/meta/$dist->{distvname}";
+    File::Path::mkpath([ $dir ], 0, 0777);
+
+    # Existence of MYMETA.* Depends on EUMM/M::B/M::I versions *and* whether user
+    # has CPAN::Meta or YAML::Tiny/JSON installed
+    for my $file (qw( META.yml MYMETA.yml MYMETA.json )) {
+        if (-e $file) {
+            File::Copy::copy($file, "$dir/$file");
+        }
+    }
+
+    $module_name ||= "";
+
+    open my $fh, ">", "$dir/local.json" or die $!;
+    print $fh <<JSON;
+{
+    "name": "$module_name",
+    "module": "$module",
+    "version": "$dist->{version}",
+    "dist": "$dist->{distvname}",
+    "pathname": "$dist->{pathname}"
+}
+JSON
+}
+
+sub install_base {
+    my($self, $mm_opt) = @_;
+    $mm_opt =~ /INSTALL_BASE=(\S+)/ and return $1;
+    die "Your PERL_MM_OPT doesn't contain INSTALL_BASE";
+}
+
 sub safe_eval {
     my($self, $code) = @_;
     eval $code;
@@ -1396,9 +1458,6 @@ sub find_prereqs {
     if ($dist->{module} =~ /^Bundle::/i) {
         push @deps, $self->bundle_deps($dist);
     }
-
-    # No need to remove, but this gets in the way of signature testing :/
-    unlink $_ for qw(MYMETA.json MYMETA.yml);
 
     return @deps;
 }
