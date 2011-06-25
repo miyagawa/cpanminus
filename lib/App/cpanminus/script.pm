@@ -9,7 +9,6 @@ use File::Spec ();
 use File::Copy ();
 use Getopt::Long ();
 use Parse::CPAN::Meta;
-use Dist::Metadata;
 use Symbol ();
 
 use constant WIN32 => $^O eq 'MSWin32';
@@ -1045,9 +1044,12 @@ EOF
 sub check_module {
     my($self, $mod, $want_ver) = @_;
 
-    require Module::Metadata;
-    my $meta = Module::Metadata->new_from_module($mod, inc => $self->{search_inc})
-        or return 0, undef;
+    my $meta = do {
+        no strict 'refs';
+        local ${"$mod\::VERSION"};
+        require Module::Metadata;
+        Module::Metadata->new_from_module($mod, inc => $self->{search_inc});
+    } or return 0, undef;
 
     my $version = $meta->version;
 
