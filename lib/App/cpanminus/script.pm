@@ -9,6 +9,7 @@ use File::Spec ();
 use File::Copy ();
 use Getopt::Long ();
 use Parse::CPAN::Meta;
+use Dist::Metadata;
 use Symbol ();
 
 use constant WIN32 => $^O eq 'MSWin32';
