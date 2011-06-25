@@ -1072,7 +1072,7 @@ sub check_module {
             }
         }
 
-        $version = $core_version if $core_version;
+        $version = $core_version if %Module::CoreList::version;
     }
 
     $self->{local_versions}{$mod} = $version;
