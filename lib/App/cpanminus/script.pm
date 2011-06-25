@@ -1418,11 +1418,19 @@ sub save_meta {
             configure => +{ @$config_deps },
             build     => +{ @$build_deps },
         },
+        provides => $self->find_provides($dist->{meta}),
     };
 
     require JSON::PP;
     open my $fh, ">", "$dir/local.json" or die $!;
     print $fh JSON::PP::encode_json($local);
+}
+
+sub find_provides {
+    my $self = shift;
+    require Dist::Metadata;
+    my $dist = Dist::Metadata->new(dir => '.');
+    $dist->package_versions;
 }
 
 sub install_base {
