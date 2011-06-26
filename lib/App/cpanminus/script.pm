@@ -36,6 +36,7 @@ sub new {
         log => undef,
         mirrors => [],
         mirror_only => undef,
+        mirror_index => undef,
         perl => $^X,
         argv => [],
         local_lib => undef,
@@ -91,6 +92,7 @@ sub parse_options {
         },
         'mirror=s@' => $self->{mirrors},
         'mirror-only!' => \$self->{mirror_only},
+        'index=s'   => sub { $self->{mirror_index} = $_[1]; $self->{mirror_only} = 1 },
         'prompt!'   => \$self->{prompt},
         'installdeps' => \$self->{installdeps},
         'skip-installed!' => \$self->{skip_installed},
@@ -254,8 +256,13 @@ sub generate_mirror_index {
 
 sub search_mirror_index {
     my ($self, $mirror, $module) = @_;
+    $self->search_mirror_index_file($self->package_index_for($mirror), $module);
+}
 
-    open my $fh, '<', $self->package_index_for($mirror) or return;
+sub search_mirror_index_file {
+    my($self, $file, $module) = @_;
+
+    open my $fh, '<', $file or return;
     while (<$fh>) {
         if (m!^\Q$module\E\s+([\w\.]+)\s+(.*)!m) {
             return $self->cpan_module($module, $2, $1);
@@ -286,6 +293,12 @@ sub search_module {
             and return $self->cpan_module($module, $1);
 
         $self->diag_fail("Finding $module on search.cpan.org failed.");
+    }
+
+    if ($self->{mirror_index}) {
+        $self->chat("Searching $module on mirror index $self->{mirror_index} ...\n");
+        my $pkg = $self->search_mirror_index_file($self->{mirror_index}, $module);
+        return $pkg;
     }
 
     MIRROR: for my $mirror (@{ $self->{mirrors} }) {
