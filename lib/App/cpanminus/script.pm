@@ -94,6 +94,7 @@ sub parse_options {
         'mirror=s@' => $self->{mirrors},
         'mirror-only!' => \$self->{mirror_only},
         'index=s'   => sub { $self->{mirror_index} = $_[1]; $self->{mirror_only} = 1 },
+        'cascade-search!' => \$self->{cascade_search},
         'prompt!'   => \$self->{prompt},
         'installdeps' => \$self->{installdeps},
         'skip-installed!' => \$self->{skip_installed},
@@ -311,7 +312,9 @@ sub search_module {
     if ($self->{mirror_index}) {
         $self->chat("Searching $module on mirror index $self->{mirror_index} ...\n");
         my $pkg = $self->search_mirror_index_file($self->{mirror_index}, $module);
-        return $pkg;
+        if ($pkg or not $self->{cascade_search}) {
+            return $pkg;
+        }
     }
 
     MIRROR: for my $mirror (@{ $self->{mirrors} }) {
