@@ -162,7 +162,7 @@ sub doit {
             $module = join '::', grep { $_ } File::Spec->splitdir($dirs), $file;
         }
 
-        ($module, my $version) = split /\@/, $module, 2;
+        ($module, my $version) = split /\~/, $module, 2;
         if ($self->{skip_satisfied}) {
             $self->check_libs;
             my($ok, $local) = $self->check_module($module, $version || 0);
@@ -1249,7 +1249,7 @@ sub build_stuff {
         my %rootdeps = (@config_deps, @deps); # merge
         for my $mod (keys %rootdeps) {
             my $ver = $rootdeps{$mod};
-            print $mod, ($ver ? "\@$ver" : ""), "\n";
+            print $mod, ($ver ? "~$ver" : ""), "\n";
         }
         return 1;
     }
