@@ -859,7 +859,7 @@ sub install_module {
 
     my $dist = $self->resolve_name($module, $version);
     unless ($dist) {
-        $self->diag_fail("Couldn't find module or a distribution $module", 1);
+        $self->diag_fail("Couldn't find module or a distribution $module ($version)", 1);
         return;
     }
 
