@@ -1,5 +1,8 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.49_01 Sun Jun 26 10:56:51 PDT 2011
+      - A couple of experimental new features (documented in 1.5)
+
 1.4008 Wed Jun 15 17:58:28 PDT 2011
    [Improvements]
       - Added experimental --skip-configure
