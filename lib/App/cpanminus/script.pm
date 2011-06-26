@@ -81,7 +81,7 @@ sub parse_options {
         'n|notest!' => \$self->{notest},
         'S|sudo!'   => \$self->{sudo},
         'v|verbose' => sub { $self->{verbose} = $self->{interactive} = 1 },
-        'q|quiet'   => \$self->{quiet},
+        'q|quiet!'  => \$self->{quiet},
         'h|help'    => sub { $self->{action} = 'show_help' },
         'V|version' => sub { $self->{action} = 'show_version' },
         'perl=s'    => \$self->{perl},
