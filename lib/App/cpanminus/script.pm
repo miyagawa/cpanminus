@@ -163,6 +163,7 @@ sub doit {
 
         ($module, my $version) = split /\@/, $module, 2;
         if ($self->{skip_satisfied}) {
+            $self->check_libs;
             my($ok, $local) = $self->check_module($module, $version || 0);
             if ($ok) {
                 $self->diag("You have $module (" . ($local || 'undef') . ")\n", 1);
