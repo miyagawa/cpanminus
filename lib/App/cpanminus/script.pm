@@ -1106,8 +1106,10 @@ sub check_module {
         # issues when a newer version is loaded from 'perl' while deps
         # are loaded from the 'site' library path. Just assume it's
         # not in the core, and install to the new local library path.
+        # Core version 0.38 means >= perl 5.14 and all deps are satisfied
         if ($mod eq 'Module::Build') {
-            if ($version < 0.36 or $core_version != $version) {
+            if ($version < 0.36 or # too old anyway
+                ($core_version != $version and $core_version < 0.38)) {
                 return 0, undef;
             }
         }
