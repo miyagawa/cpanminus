@@ -172,7 +172,7 @@ sub doit {
             }
         }
 
-        $self->install_module($module, 0)
+        $self->install_module($module, 0, $version)
             or push @fail, $module;
     }
 
@@ -269,17 +269,30 @@ sub generate_mirror_index {
 }
 
 sub search_mirror_index {
-    my ($self, $mirror, $module) = @_;
-    $self->search_mirror_index_file($self->package_index_for($mirror), $module);
+    my ($self, $mirror, $module, $version) = @_;
+    $self->search_mirror_index_file($self->package_index_for($mirror), $module, $version);
 }
 
 sub search_mirror_index_file {
-    my($self, $file, $module) = @_;
+    my($self, $file, $module, $version) = @_;
 
     open my $fh, '<', $file or return;
+    my $found;
     while (<$fh>) {
         if (m!^\Q$module\E\s+([\w\.]+)\s+(.*)!m) {
-            return $self->cpan_module($module, $2, $1);
+            $found = $self->cpan_module($module, $2, $1);
+            last;
+        }
+    }
+
+    return $found unless $self->{cascade_search};
+
+    if ($found) {
+        if (!$version or
+            version->new($found->{version} || 0) >= version->new($version)) {
+            return $found;
+        } else {
+            $self->chat("Found $module version $found->{version} < $version.\n");
         }
     }
 
@@ -287,7 +300,7 @@ sub search_mirror_index_file {
 }
 
 sub search_module {
-    my($self, $module) = @_;
+    my($self, $module, $version) = @_;
 
     unless ($self->{mirror_only}) {
         $self->chat("Searching $module on cpanmetadb ...\n");
@@ -311,10 +324,8 @@ sub search_module {
 
     if ($self->{mirror_index}) {
         $self->chat("Searching $module on mirror index $self->{mirror_index} ...\n");
-        my $pkg = $self->search_mirror_index_file($self->{mirror_index}, $module);
-        if ($pkg or not $self->{cascade_search}) {
-            return $pkg;
-        }
+        my $pkg = $self->search_mirror_index_file($self->{mirror_index}, $module, $version);
+        return $pkg if $pkg;
     }
 
     MIRROR: for my $mirror (@{ $self->{mirrors} }) {
@@ -330,10 +341,10 @@ sub search_module {
             $self->{pkgs}{$uri} = "!!retrieved!!";
         }
 
-        my $pkg = $self->search_mirror_index($mirror, $module);
+        my $pkg = $self->search_mirror_index($mirror, $module, $version);
         return $pkg if $pkg;
 
-        $self->diag_fail("Finding $module on mirror $mirror failed.");
+        $self->diag_fail("Finding $module ($version) on mirror $mirror failed.");
     }
 
     return;
@@ -839,14 +850,14 @@ sub self_upgrade {
 }
 
 sub install_module {
-    my($self, $module, $depth) = @_;
+    my($self, $module, $depth, $version) = @_;
 
     if ($self->{seen}{$module}++) {
         $self->chat("Already tried $module. Skipping.\n");
         return 1;
     }
 
-    my $dist = $self->resolve_name($module);
+    my $dist = $self->resolve_name($module, $version);
     unless ($dist) {
         $self->diag_fail("Couldn't find module or a distribution $module", 1);
         return;
@@ -975,7 +986,7 @@ sub unpack {
 }
 
 sub resolve_name {
-    my($self, $module) = @_;
+    my($self, $module, $version) = @_;
 
     # URL
     if ($module =~ /^(ftp|https?|file):/) {
@@ -1013,7 +1024,7 @@ sub resolve_name {
     }
 
     # Module name
-    return $self->search_module($module);
+    return $self->search_module($module, $version);
 }
 
 sub cpan_module {
@@ -1162,19 +1173,19 @@ sub install_deps {
     while (my($mod, $ver) = splice @deps, 0, 2) {
         next if $seen{$mod} or $mod eq 'perl' or $mod eq 'Config';
         if ($self->should_install($mod, $ver)) {
-            push @install, $mod;
+            push @install, [ $mod, $ver ];
             $seen{$mod} = 1;
         }
     }
 
     if (@install) {
-        $self->diag("==> Found dependencies: " . join(", ", @install) . "\n");
+        $self->diag("==> Found dependencies: " . join(", ",  map $_->[0], @install) . "\n");
     }
 
     my @fail;
     for my $mod (@install) {
-        $self->install_module($mod, $depth + 1)
-            or push @fail, $mod;
+        $self->install_module($mod->[0], $depth + 1, $mod->[1])
+            or push @fail, $mod->[0];
     }
 
     $self->chdir($self->{base});
