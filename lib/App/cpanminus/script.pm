@@ -49,6 +49,7 @@ sub new {
         try_curl => 1,
         uninstall_shadows => ($] < 5.012),
         skip_installed => 1,
+        skip_satisfied => 0,
         auto_cleanup => 7, # days
         pod2man => 1,
         installed_dists => 0,
@@ -96,6 +97,7 @@ sub parse_options {
         'prompt!'   => \$self->{prompt},
         'installdeps' => \$self->{installdeps},
         'skip-installed!' => \$self->{skip_installed},
+        'skip-satisfied!' => \$self->{skip_satisfied},
         'reinstall'    => sub { $self->{skip_installed} = 0 },
         'interactive!' => \$self->{interactive},
         'i|install' => sub { $self->{cmd} = 'install' },
@@ -158,6 +160,16 @@ sub doit {
             my ($volume, $dirs, $file) = File::Spec->splitpath($module);
             $module = join '::', grep { $_ } File::Spec->splitdir($dirs), $file;
         }
+
+        ($module, my $version) = split /\@/, $module, 2;
+        if ($self->{skip_satisfied}) {
+            my($ok, $local) = $self->check_module($module, $version || 0);
+            if ($ok) {
+                $self->diag("You have $module (" . ($local || 'undef') . ")\n", 1);
+                next;
+            }
+        }
+
         $self->install_module($module, 0)
             or push @fail, $module;
     }
@@ -1222,7 +1234,7 @@ sub build_stuff {
         my %rootdeps = (@config_deps, @deps); # merge
         for my $mod (keys %rootdeps) {
             my $ver = $rootdeps{$mod};
-            print $mod, ($ver ? " $ver" : ""), "\n";
+            print $mod, ($ver ? "\@$ver" : ""), "\n";
         }
         return 1;
     }
