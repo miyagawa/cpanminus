@@ -829,7 +829,7 @@ sub look {
 
 sub chdir {
     my $self = shift;
-    chdir(File::Spec->canonpath($_[0])) or die "$_[0]: $!";
+    Cwd::chdir(File::Spec->canonpath($_[0])) or die "$_[0]: $!";
 }
 
 sub configure_mirrors {
