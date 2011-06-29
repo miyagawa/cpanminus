@@ -141,6 +141,16 @@ $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   Fetched files are unpacked in C<~/.cpanm> and automatically cleaned up
   periodically.  You can configure the location of this with the
   C<PERL_CPANM_HOME> environment variable.
+
+  =head2 What if appspot.com has been blocked(like in China)?
+  
+  You can setup a reverse proxy for cpanmetadb.appspot.com on a host which 
+  can access cpanmetadb.appspot.com, then specify the domain of your proxy 
+  with C<--metaurl> like:
+
+      cpanm --metaurl http://example.org Module
+
+  The C<http://> prefix can be omitted.
   
   =head2 Where does this install modules to? Do I need root access?
   
@@ -334,6 +344,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           quiet => undef,
           interactive => undef,
           log => undef,
+          metaurl => undef,
           mirrors => [],
           mirror_only => undef,
           perl => $^X,
@@ -388,6 +399,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
               $self->{self_contained} = 1;
               $self->{pod2man} = undef;
           },
+          'metaurl=s' => \$self->{metaurl},
           'mirror=s@' => $self->{mirrors},
           'mirror-only!' => \$self->{mirror_only},
           'prompt!'   => \$self->{prompt},
@@ -446,6 +458,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       $self->show_help(1)
           unless @{$self->{argv}} or $self->{load_from_stdin};
   
+      $self->configure_metaurl;
       $self->configure_mirrors;
   
       my @fail;
@@ -567,15 +580,15 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       my($self, $module) = @_;
   
       unless ($self->{mirror_only}) {
-          $self->chat("Searching $module on cpanmetadb ...\n");
-          my $uri  = "http://cpanmetadb.appspot.com/v1.0/package/$module";
+          $self->chat("Searching $module on cpanmetadb(".$self->{metaurl}.") ...\n");
+          my $uri  = $self->{metaurl}."/v1.0/package/$module";
           my $yaml = $self->get($uri);
           my $meta = $self->parse_meta_string($yaml);
           if ($meta && $meta->{distfile}) {
               return $self->cpan_module($module, $meta->{distfile}, $meta->{version});
           }
   
-          $self->diag_fail("Finding $module on cpanmetadb failed.");
+          $self->diag_fail("Finding $module on cpanmetadb(".$self->{metaurl}.") failed.");
   
           $self->chat("Searching $module on search.cpan.org ...\n");
           my $uri  = "http://search.cpan.org/perldoc?$module";
@@ -661,6 +674,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
     -S,--sudo                 sudo to run install commands
     --installdeps             Only install dependencies
     --reinstall               Reinstall the distribution even if you already have the latest version installed
+    --metaurl                 Specify the meta database URL for cpanm (defalut: http://cpanmetadb.appspot.com/)
     --mirror                  Specify the base URL for the mirror (e.g. http://cpan.cpantesters.org/)
     --mirror-only             Use the mirror's index file instead of the CPAN Meta DB
     --prompt                  Prompt when configure/build/test fails
@@ -1089,6 +1103,16 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       chdir(File::Spec->canonpath($_[0])) or die "$_[0]: $!";
   }
   
+  sub configure_metaurl {
+      my $self = shift;
+      if ($self->{metaurl}) {
+          $self->{metaurl} =~ s!^http://|/$!!g;
+          $self->{metaurl} = 'http://'.$self->{metaurl};
+      } else {
+          $self->{metaurl} = 'http://cpanmetadb.appspot.com';
+      }
+  }
+
   sub configure_mirrors {
       my $self = shift;
       unless (@{$self->{mirrors}}) {
@@ -5459,6 +5483,8 @@ cpanm - get, unpack build and install modules from CPAN
   cpanm -L extlib Plack                                     # install Plack and all non-core deps into extlib
   cpanm --mirror http://cpan.cpantesters.org/ DBI           # use the fast-syncing mirror
   cpanm --scandeps Moose                                    # See what modules will be installed for Moose
+  cpanm --metaurl http://example.org Dancer                 # Specify the meta database URL to http://example.org 
+                                                            # instead of the default http://cpanmetadb.appspot.com
 
 =head1 COMMANDS
 
@@ -5563,6 +5589,18 @@ would install Plack and all of its non-core dependencies into the
 directory C<extlib>, which can be loaded from your application with:
 
   use local::lib '/path/to/extlib';
+
+=item --metaurl
+
+Specify the meta database URL for cpanm.
+(Defaults to C<http://cpanmetadb.appspot.com>)
+
+If you can't access C<appspot.com> for somehow, you can setup a reverse proxy 
+to C<cpanmetadb.appspot.com> on a host which can access it, then use C<--metaurl> like:
+
+      cpanm --metaurl http://example.com Module
+
+The C<http://> prefix can be omitted.
 
 =item --mirror
 
