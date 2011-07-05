@@ -376,7 +376,21 @@ sub load_argv_from_fh {
 }
 
 sub show_version {
-    print "cpanm (App::cpanminus) version $VERSION\n";
+    my $self = shift;
+    my @args = @{$self->{argv}};
+    
+    if (scalar(@args)) {
+        foreach my $mod (@args) {
+            my ($install, $version) = $self->check_module($mod, 0);
+            $install ?  
+                print "$mod version $version\n" :
+                print "$mod not found.\n";
+        }
+
+    } else {
+        print "cpanm (App::cpanminus) version $VERSION\n";
+    }
+
     return 1;
 }
 
