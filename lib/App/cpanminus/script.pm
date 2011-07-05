@@ -118,6 +118,7 @@ sub parse_options {
             $self->{save_dists} = $self->maybe_abs($_[1]);
         },
         'skip-configure!' => \$self->{skip_configure},
+        'metacpan'   => \$self->{metacpan},
     );
 
     if (!@ARGV && $0 ne '-' && !-t STDIN){ # e.g. # cpanm < author/requires.cpanm
@@ -303,6 +304,28 @@ sub search_module {
     my($self, $module, $version) = @_;
 
     unless ($self->{mirror_only}) {
+        require JSON::PP;
+        if ($self->{metacpan}) {
+            $self->chat("Searching $module on metacpan ...\n");
+            my $module_uri  = "http://api.metacpan.org/module/$module";
+            my $module_yaml = $self->get($module_uri);
+            my $module_meta = eval { JSON::PP::decode_json($module_yaml) };
+            if ($module_meta && $module_meta->{distribution}) {
+                my $dist_uri = "http://api.metacpan.org/release/$module_meta->{distribution}";
+                my $dist_yaml = $self->get($dist_uri);
+                my $dist_meta = eval { JSON::PP::decode_json($dist_yaml) };
+                if ($dist_meta && $dist_meta->{download_url}) {
+                    (my $distfile = $dist_meta->{download_url}) =~ s!.+/authors/id/!!;
+                    local $self->{mirrors} = $self->{mirrors};
+                    if ($dist_meta->{stat}->{mtime} > time()-24*60*60) {
+                        $self->{mirrors} = ['http://cpan.cpantesters.org'];
+                    }
+                    return $self->cpan_module($module, $distfile, $dist_meta->{version});
+                }
+            }
+            $self->diag_fail("Finding $module on metacpan failed.");
+        }
+
         $self->chat("Searching $module on cpanmetadb ...\n");
         my $uri  = "http://cpanmetadb.appspot.com/v1.0/package/$module";
         my $yaml = $self->get($uri);
