@@ -5459,6 +5459,7 @@ cpanm - get, unpack build and install modules from CPAN
   cpanm -L extlib Plack                                     # install Plack and all non-core deps into extlib
   cpanm --mirror http://cpan.cpantesters.org/ DBI           # use the fast-syncing mirror
   cpanm --scandeps Moose                                    # See what modules will be installed for Moose
+  cpanm --mirror https://example.org/ --mirror-only LWP     # install from secure darkpan
 
 =head1 COMMANDS
 
@@ -5586,6 +5587,13 @@ shell aliases, like:
 
   alias minicpanm='cpanm --mirror ~/minicpan --mirror-only'
   alias darkpan='cpanm --mirror http://mycompany.example.com/DPAN --mirror-only'
+
+B<Tip:> If you want to have a secure darkpan over https
+
+  cpanm LWP::Protocol::https
+
+If your SSL certificate is self signed set C<PERL_LWP_SSL_VERIFY_HOSTNAME>
+environment variable to C<0>.
 
 =item --prompt
 
