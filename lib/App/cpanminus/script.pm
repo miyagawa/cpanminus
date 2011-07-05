@@ -304,8 +304,8 @@ sub search_module {
     my($self, $module, $version) = @_;
 
     unless ($self->{mirror_only}) {
-        require JSON::PP;
         if ($self->{metacpan}) {
+            require JSON::PP;
             $self->chat("Searching $module on metacpan ...\n");
             my $module_uri  = "http://api.metacpan.org/module/$module";
             my $module_yaml = $self->get($module_uri);
