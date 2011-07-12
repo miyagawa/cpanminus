@@ -289,7 +289,7 @@ library path.
 
 =item --auto-cleanup
 
-Specifies the number of days in whcih cpanm's work directories
+Specifies the number of days in which cpanm's work directories
 expire. Defaults to 7, which means old work directories will be
 cleaned up in one week.
 
