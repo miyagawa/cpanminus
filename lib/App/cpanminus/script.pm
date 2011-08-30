@@ -1421,7 +1421,7 @@ sub find_module_name {
     if ($state->{use_module_build} &&
         -e "_build/build_params") {
         my $params = do { open my $in, "_build/build_params"; $self->safe_eval(join "", <$in>) };
-        return ref $params eq 'ARRAY' ? $params->[2]{module_name} : undef;
+        return eval { $params->[2]{module_name} } || undef;
     } elsif (-e "Makefile") {
         open my $mf, "Makefile";
         while (<$mf>) {
