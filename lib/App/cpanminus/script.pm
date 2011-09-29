@@ -989,7 +989,7 @@ sub resolve_name {
     my($self, $module, $version) = @_;
 
     # URL
-    if ($module =~ /^(ftp|https?|file):/) {
+    if ($module =~ /^(ftp|https?|file|scp):/) {
         if ($module =~ m!authors/id/!) {
             return $self->cpan_dist($module, $module);
         } else {
@@ -1700,6 +1700,20 @@ sub file_mirror {
     File::Copy::copy($uri, $path);
 }
 
+my @scp_options = split(/ /, env('SCP_OPT') || '-q -B');
+
+sub file_scp_get {
+    my($self, $uri) = @_;
+    return unless -e '/dev/fd/1';
+    open my $fh, '-|', 'scp', @scp_options, $uri, '/dev/fd/1' or return;
+    return join '', <$fh>;
+}
+
+sub file_scp_mirror {
+    my($self, $uri, $path) = @_;
+    system('scp', @scp_options, $uri, $path);
+}
+
 sub init_tools {
     my $self = shift;
 
@@ -1722,14 +1736,16 @@ sub init_tools {
             );
         };
         $self->{_backends}{get} = sub {
-            my $self = shift;
-            my $res = $ua->()->request(HTTP::Request->new(GET => $_[0]));
+            my($self, $uri) = @_;
+	    return $self->file_scp_get($uri) if $uri =~ s!^scp:/+!!;
+            my $res = $ua->()->request(HTTP::Request->new(GET => $uri));
             return unless $res->is_success;
             return $res->decoded_content;
         };
         $self->{_backends}{mirror} = sub {
-            my $self = shift;
-            my $res = $ua->()->mirror(@_);
+	    my($self, $uri, $path) = @_;
+            return $self->file_scp_mirror($uri, $path) if $uri =~ s!^scp:/+!!;
+            my $res = $ua->()->mirror($uri, $path);
             $res->code;
         };
     } elsif ($self->{try_wget} and my $wget = $self->which('wget')) {
@@ -1737,6 +1753,7 @@ sub init_tools {
         $self->{_backends}{get} = sub {
             my($self, $uri) = @_;
             return $self->file_get($uri) if $uri =~ s!^file:/+!/!;
+            return $self->file_scp_get($uri) if $uri =~ s!^scp:/+!!;
             $self->safeexec( my $fh, $wget, $uri, ( $self->{verbose} ? () : '-q' ), '-O', '-' ) or die "wget $uri: $!";
             local $/;
             <$fh>;
@@ -1744,12 +1761,14 @@ sub init_tools {
         $self->{_backends}{mirror} = sub {
             my($self, $uri, $path) = @_;
             return $self->file_mirror($uri, $path) if $uri =~ s!^file:/+!/!;
+            return $self->file_scp_mirror($uri, $path) if $uri =~ s!^scp:/+!!;
             $self->safeexec( my $fh, $wget, '--retry-connrefused', $uri, ( $self->{verbose} ? () : '-q' ), '-O', $path ) or die "wget $uri: $!";
             local $/;
             <$fh>;
         };
     } elsif ($self->{try_curl} and my $curl = $self->which('curl')) {
         $self->chat("You have $curl\n");
+	# curl can handle SSH protocol (via scp:// or sftp:// prefixes)
         $self->{_backends}{get} = sub {
             my($self, $uri) = @_;
             return $self->file_get($uri) if $uri =~ s!^file:/+!/!;
@@ -1769,14 +1788,16 @@ sub init_tools {
         $self->chat("Falling back to HTTP::Tiny $HTTP::Tiny::VERSION\n");
 
         $self->{_backends}{get} = sub {
-            my $self = shift;
-            my $res = HTTP::Tiny->new->get($_[0]);
+            my($self, $uri) = @_;
+	    return $self->file_scp_get($uri) if $uri =~ s!^scp:/+!!;
+            my $res = HTTP::Tiny->new->get($uri);
             return unless $res->{success};
             return $res->{content};
         };
         $self->{_backends}{mirror} = sub {
-            my $self = shift;
-            my $res = HTTP::Tiny->new->mirror(@_);
+	    my($self, $uri, $path) = @_;
+	    return $self->file_scp_mirror($uri, $path) if $uri =~ s!^scp:/+!!;
+            my $res = HTTP::Tiny->new->mirror($uri, $path);
             return $res->{status};
         };
     }
