@@ -1714,8 +1714,16 @@ sub get_scheme_backend {
 	# Try to load the correct backend
 	if ($scheme eq 'file') {
 	    $backend = {
-		get    => sub { $_[0]->file_get($_[1]) },
-		mirror => sub { $_[0]->file_mirror($_[0], $_[1]) },
+		get    => sub {
+		    my($self, $uri) = @_;
+		    $uri =~ s,^file://,,;
+		    $self->file_get($uri);
+		},
+		mirror => sub {
+		    my($self, $uri, $path) = @_;
+		    $uri =~ s,^file://,,;
+		    $self->file_mirror($uri, $path);
+		},
 	    };
 	}
 	elsif ($scheme =~ /^(?:https?|ftp)\z/) {
