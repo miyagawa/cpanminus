@@ -322,8 +322,25 @@ Uses cURL (if available) to download stuff. Defaults to true, and
 you can say C<--no-curl> to disable using cURL.
 
 Normally with C<--lwp>, C<--wget> and C<--curl> options set to true
-(which is the default) cpanm tries L<LWP>, Wget, cURL and L<HTTP::Tiny>
-(in that order) and uses the first one available.
+(which is the default) cpanm tries L<LWP>, Wget, cURL and
+L<HTTP::Tiny> (in that order) for C<ftp://>, C<http://> and
+C<https://> schemes and uses the first one available.
+
+=item --scp
+
+Use C<scp> command to download stuff for C<scp://> scheme.
+
+Normally with C<--curl> and C<--scp> options set to true (which is the
+default) cpanm tries C<scp> and cURL (in that order) for C<scp://>
+scheme.
+
+=item --sftp
+
+Use C<sftp> command to download stuff for C<sftp://> scheme.
+
+Normally with C<--curl> and C<--sftp> options set to true (which is
+the default) cpanm tries C<sftp> and cURL (in that order) for
+C<sftp://> scheme.
 
 =back
 

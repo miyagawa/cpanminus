@@ -47,6 +47,8 @@ sub new {
         try_lwp => 1,
         try_wget => 1,
         try_curl => 1,
+	try_scp => 1,
+	try_sftp => 1,
         uninstall_shadows => ($] < 5.012),
         skip_installed => 1,
         skip_satisfied => 0,
@@ -109,6 +111,8 @@ sub parse_options {
         'lwp!'    => \$self->{try_lwp},
         'wget!'   => \$self->{try_wget},
         'curl!'   => \$self->{try_curl},
+        'scp!'    => \$self->{try_scp},
+        'sftp!'   => \$self->{try_sftp},
         'auto-cleanup=s' => \$self->{auto_cleanup},
         'man-pages!' => \$self->{pod2man},
         'scandeps'   => \$self->{scandeps},
@@ -314,8 +318,7 @@ sub search_module {
         $self->diag_fail("Finding $module on cpanmetadb failed.");
 
         $self->chat("Searching $module on search.cpan.org ...\n");
-        my $uri  = "http://search.cpan.org/perldoc?$module";
-        my $html = $self->get($uri);
+        my $html = $self->get("http://search.cpan.org/perldoc?$module");
         $html =~ m!<a href="/CPAN/authors/id/(.*?\.(?:tar\.gz|tgz|tar\.bz2|zip))">!
             and return $self->cpan_module($module, $1);
 
@@ -989,7 +992,7 @@ sub resolve_name {
     my($self, $module, $version) = @_;
 
     # URL
-    if ($module =~ /^(ftp|https?|file|scp):/) {
+    if ($module =~ /^(ftp|https?|file|scp|sftp):/) {
         if ($module =~ m!authors/id/!) {
             return $self->cpan_dist($module, $module);
         } else {
@@ -1030,7 +1033,7 @@ sub resolve_name {
 sub cpan_module {
     my($self, $module, $dist, $version) = @_;
 
-    my $dist = $self->cpan_dist($dist);
+    $dist = $self->cpan_dist($dist);
     $dist->{module} = $module;
     $dist->{module_version} = $version if $version && $version ne 'undef';
 
@@ -1684,8 +1687,185 @@ sub which {
     return;
 }
 
-sub get      { $_[0]->{_backends}{get}->(@_) };
-sub mirror   { $_[0]->{_backends}{mirror}->(@_) };
+# curl can be used for https?|ftp|scp|sftp
+sub _curl_backend {
+    my($self, $curl) = @_;
+    return {
+	get => sub {
+	    my($self, $uri) = @_;
+	    $self->safeexec( my $fh, $curl, '-L', ( $self->{verbose} ? () : '-s' ), $uri ) or die "curl $uri: $!";
+	    local $/;
+	    <$fh>;
+	},
+	mirror => sub {
+	    my($self, $uri, $path) = @_;
+	    $self->safeexec( my $fh, $curl, '-L', $uri, ( $self->{verbose} ? () : '-s' ), '-#', '-o', $path ) or die "curl $uri: $!";
+	    local $/;
+	    <$fh>;
+	},
+    };
+}
+
+sub get_scheme_backend {
+    my($self, $uri) = @_;
+    my $scheme = $uri =~ /^([a-zA-Z][a-zA-Z0-9.+\-]*):/ ? $1 : 'file';
+    unless (exists $self->{_backends}{"/$scheme"}) { # prefix with / to keep the name uniq
+	my $backend;
+	# Try to load the correct backend
+	if ($scheme eq 'file') {
+	    $backend = {
+		get    => sub { $_[0]->file_get($_[1]) },
+		mirror => sub { $_[0]->file_mirror($_[0], $_[1]) },
+	    };
+	}
+	elsif ($scheme =~ /^(?:https?|ftp)\z/) {
+	    # use --no-lwp if they have a broken LWP, to upgrade LWP
+	    if ($self->{try_lwp} && eval { require LWP::UserAgent; LWP::UserAgent->VERSION(5.802) }) {
+		$self->chat("You have LWP $LWP::VERSION\n");
+		my $ua = sub {
+		    LWP::UserAgent->new(
+			parse_head => 0,
+			env_proxy => 1,
+			agent => "cpanminus/$VERSION",
+			timeout => 30,
+			@_,
+		    );
+		};
+		$backend = {
+		    get => sub {
+			my $self = shift;
+			my $res = $ua->()->request(HTTP::Request->new(GET => $_[0]));
+			return unless $res->is_success;
+			return $res->decoded_content;
+		    },
+		    mirror => sub {
+			my $self = shift;
+			my $res = $ua->()->mirror(@_);
+			$res->code;
+		    },
+		};
+	    } elsif ($self->{try_wget} and my $wget = $self->which('wget')) {
+		$self->chat("You have $wget\n");
+		$backend = {
+		    get => sub {
+			my($self, $uri) = @_;
+			$self->safeexec( my $fh, $wget, $uri, ( $self->{verbose} ? () : '-q' ), '-O', '-' ) or die "wget $uri: $!";
+			local $/;
+			<$fh>;
+		    },
+		    mirror => sub {
+			my($self, $uri, $path) = @_;
+			$self->safeexec( my $fh, $wget, '--retry-connrefused', $uri, ( $self->{verbose} ? () : '-q' ), '-O', $path ) or die "wget $uri: $!";
+			local $/;
+			<$fh>;
+		    },
+		};
+	    } elsif ($self->{try_curl} and my $curl = $self->which('curl')) {
+		$self->chat("You have $curl\n");
+		$backend = $self->_curl_backend($curl);
+	    } elsif (eval { require HTTP::Tiny }) {
+		$self->chat("Falling back to HTTP::Tiny $HTTP::Tiny::VERSION\n");
+		$backend = {
+		    get => sub {
+			my $self = shift;
+			my $res = HTTP::Tiny->new->get($_[0]);
+			return unless $res->{success};
+			return $res->{content};
+		    },
+		    mirror => sub {
+			my $self = shift;
+			my $res = HTTP::Tiny->new->mirror(@_);
+			return $res->{status};
+		    },
+		};
+	    }
+	} elsif ($scheme eq 'scp') {
+	    if ($self->{try_scp} and my $scp = $self->which('scp')) {
+		$self->chat("You have $scp\n");
+		my($output_file, $is_tmp_file);
+		if (-c '/dev/fd/1') {
+		    $output_file = '/dev/fd/1';
+		} else {
+		    $is_tmp_file = 1;
+		    $output_file = "$self->{base}/scp.tmp";
+		}
+		$backend = {
+		    get => sub {
+			my($self, $uri) = @_;
+			$uri =~ s,^scp://,,;
+			$self->safeexec( my $fh, $scp, ( $self->{verbose} ? () : '-q' ), '-B', $uri, $output_file ) or die "scp $uri: $!";
+			if ($is_tmp_file) {
+			    my $content = $self->file_get($output_file);
+			    unlink $output_file;
+			    return $content;
+			}
+			local $/;
+			join '', <$fh>;
+		    },
+		    mirror => sub {
+			my($self, $uri, $path) = @_;
+			$uri =~ s,^scp://,,;
+			$self->safeexec( my $fh, $scp, ( $self->{verbose} ? () : '-q' ), '-B', $uri, $path ) or die "scp $uri: $!";
+			local $/;
+			join '', <$fh>;
+		    },
+		};
+	    } elsif ($self->{try_curl} and my $curl = $self->which('curl')) {
+		$self->chat("You have $curl\n");
+		$backend = $self->_curl_backend($curl);
+	    }
+	} elsif ($scheme eq 'sftp') {
+	    if ($self->{try_sftp} and my $sftp = $self->which('sftp')) {
+		$self->chat("You have $sftp\n");
+		# can't use /dev/fd/1 here, sftp need to seek...
+		my $output_file = "$self->{base}/sftp.tmp";
+		$backend = {
+		    get => sub {
+			my($self, $uri) = @_;
+			$uri =~ s,^sftp://,,;
+			$self->safeexec( my $fh, $sftp, ( $self->{verbose} ? () : '-q' ), $uri, $output_file ) or die "sftp $uri: $!";
+			my $content = $self->file_get($output_file);
+			unlink $output_file;
+			return $content;
+		    },
+		    mirror => sub {
+			my($self, $uri, $path) = @_;
+			$uri =~ s,^sftp://,,;
+			$self->safeexec( my $fh, $sftp, ( $self->{verbose} ? () : '-q' ), $uri, $path ) or die "sftp $uri: $!";
+			local $/;
+			join '', <$fh>;
+		    },
+		};
+	    } elsif ($self->{try_curl} and my $curl = $self->which('curl')) {
+		$self->chat("You have $curl\n");
+		$backend = $self->_curl_backend($curl);
+	    }
+	}
+	# No included backend found, try to load one in
+	# App::cpanminus::backend:: namespace
+	unless (defined $backend) {
+	    (my $module = $scheme) =~ tr/a-zA-Z0-9//cd;
+	    $self->chat("Try to load external $scheme backend App::cpanminus::backend::$module\n");
+	    # The module must return a hash ref with 2 keys: 'get' &
+	    # 'mirror' and an anonymous function for each
+	    $backend = eval "require App::cpanminus::backend::$module"
+		or die "Can't find a backend to handle `$scheme' scheme!\n";
+	}
+	$self->{_backends}{"/$scheme"} = $backend;
+    }
+    return $self->{_backends}{"/$scheme"};
+}
+
+sub get {
+    my($self, $uri) = @_;
+    return $self->get_scheme_backend($uri)->{get}->($self, $uri);
+}
+
+sub mirror {
+    my($self, $uri, $path) = @_;
+    return $self->get_scheme_backend($uri)->{mirror}->($self, $uri, $path);
+}
+
 sub untar    { $_[0]->{_backends}{untar}->(@_) };
 sub unzip    { $_[0]->{_backends}{unzip}->(@_) };
 
@@ -1700,20 +1880,6 @@ sub file_mirror {
     File::Copy::copy($uri, $path);
 }
 
-my @scp_options = split(/ /, env('SCP_OPT') || '-q -B');
-
-sub file_scp_get {
-    my($self, $uri) = @_;
-    return unless -e '/dev/fd/1';
-    open my $fh, '-|', 'scp', @scp_options, $uri, '/dev/fd/1' or return;
-    return join '', <$fh>;
-}
-
-sub file_scp_mirror {
-    my($self, $uri, $path) = @_;
-    system('scp', @scp_options, $uri, $path);
-}
-
 sub init_tools {
     my $self = shift;
 
@@ -1721,85 +1887,6 @@ sub init_tools {
 
     if ($self->{make} = $self->which($Config{make})) {
         $self->chat("You have make $self->{make}\n");
-    }
-
-    # use --no-lwp if they have a broken LWP, to upgrade LWP
-    if ($self->{try_lwp} && eval { require LWP::UserAgent; LWP::UserAgent->VERSION(5.802) }) {
-        $self->chat("You have LWP $LWP::VERSION\n");
-        my $ua = sub {
-            LWP::UserAgent->new(
-                parse_head => 0,
-                env_proxy => 1,
-                agent => "cpanminus/$VERSION",
-                timeout => 30,
-                @_,
-            );
-        };
-        $self->{_backends}{get} = sub {
-            my($self, $uri) = @_;
-	    return $self->file_scp_get($uri) if $uri =~ s!^scp:/+!!;
-            my $res = $ua->()->request(HTTP::Request->new(GET => $uri));
-            return unless $res->is_success;
-            return $res->decoded_content;
-        };
-        $self->{_backends}{mirror} = sub {
-	    my($self, $uri, $path) = @_;
-            return $self->file_scp_mirror($uri, $path) if $uri =~ s!^scp:/+!!;
-            my $res = $ua->()->mirror($uri, $path);
-            $res->code;
-        };
-    } elsif ($self->{try_wget} and my $wget = $self->which('wget')) {
-        $self->chat("You have $wget\n");
-        $self->{_backends}{get} = sub {
-            my($self, $uri) = @_;
-            return $self->file_get($uri) if $uri =~ s!^file:/+!/!;
-            return $self->file_scp_get($uri) if $uri =~ s!^scp:/+!!;
-            $self->safeexec( my $fh, $wget, $uri, ( $self->{verbose} ? () : '-q' ), '-O', '-' ) or die "wget $uri: $!";
-            local $/;
-            <$fh>;
-        };
-        $self->{_backends}{mirror} = sub {
-            my($self, $uri, $path) = @_;
-            return $self->file_mirror($uri, $path) if $uri =~ s!^file:/+!/!;
-            return $self->file_scp_mirror($uri, $path) if $uri =~ s!^scp:/+!!;
-            $self->safeexec( my $fh, $wget, '--retry-connrefused', $uri, ( $self->{verbose} ? () : '-q' ), '-O', $path ) or die "wget $uri: $!";
-            local $/;
-            <$fh>;
-        };
-    } elsif ($self->{try_curl} and my $curl = $self->which('curl')) {
-        $self->chat("You have $curl\n");
-	# curl can handle SSH protocol (via scp:// or sftp:// prefixes)
-        $self->{_backends}{get} = sub {
-            my($self, $uri) = @_;
-            return $self->file_get($uri) if $uri =~ s!^file:/+!/!;
-            $self->safeexec( my $fh, $curl, '-L', ( $self->{verbose} ? () : '-s' ), $uri ) or die "curl $uri: $!";
-            local $/;
-            <$fh>;
-        };
-        $self->{_backends}{mirror} = sub {
-            my($self, $uri, $path) = @_;
-            return $self->file_mirror($uri, $path) if $uri =~ s!^file:/+!/!;
-            $self->safeexec( my $fh, $curl, '-L', $uri, ( $self->{verbose} ? () : '-s' ), '-#', '-o', $path ) or die "curl $uri: $!";
-            local $/;
-            <$fh>;
-        };
-    } else {
-        require HTTP::Tiny;
-        $self->chat("Falling back to HTTP::Tiny $HTTP::Tiny::VERSION\n");
-
-        $self->{_backends}{get} = sub {
-            my($self, $uri) = @_;
-	    return $self->file_scp_get($uri) if $uri =~ s!^scp:/+!!;
-            my $res = HTTP::Tiny->new->get($uri);
-            return unless $res->{success};
-            return $res->{content};
-        };
-        $self->{_backends}{mirror} = sub {
-	    my($self, $uri, $path) = @_;
-	    return $self->file_scp_mirror($uri, $path) if $uri =~ s!^scp:/+!!;
-            my $res = HTTP::Tiny->new->mirror($uri, $path);
-            return $res->{status};
-        };
     }
 
     my $tar = $self->which('tar');
