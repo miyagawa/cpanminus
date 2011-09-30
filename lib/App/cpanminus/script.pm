@@ -104,6 +104,7 @@ sub parse_options {
         'i|install' => sub { $self->{cmd} = 'install' },
         'info'      => sub { $self->{cmd} = 'info' },
         'look'      => sub { $self->{cmd} = 'look'; $self->{skip_installed} = 0 },
+        'download'  => sub { $self->{cmd} = 'download'; $self->{skip_installed} = 0 },
         'self-upgrade' => sub { $self->{cmd} = 'install'; $self->{skip_installed} = 1; push @ARGV, 'App::cpanminus' },
         'uninst-shadows!'  => \$self->{uninstall_shadows},
         'lwp!'    => \$self->{try_lwp},
@@ -119,6 +120,10 @@ sub parse_options {
         },
         'skip-configure!' => \$self->{skip_configure},
     );
+
+    if ($self->{cmd} eq 'download' && !$self->{save_dists}) {
+        $self->{save_dists} = $self->maybe_abs(Cwd::cwd);
+    }
 
     if (!@ARGV && $0 ne '-' && !-t STDIN){ # e.g. # cpanm < author/requires.cpanm
         push @ARGV, $self->load_argv_from_fh(\*STDIN);
@@ -415,6 +420,7 @@ Commands:
   --self-upgrade            upgrades itself
   --info                    Displays distribution info on CPAN
   --look                    Opens the distribution with your SHELL
+  --download                Only download tarballs
   -V,--version              Displays software version
 
 Examples:
@@ -428,6 +434,7 @@ Examples:
   cpanm --installdeps .                                     # install all the deps for the current directory
   cpanm -L extlib Plack                                     # install Plack and all non-core deps into extlib
   cpanm --mirror http://cpan.cpantesters.org/ DBI           # use the fast-syncing mirror
+  cpanm --download CGI Data::FormValidator                  # only download tarballs (to --save-dists or .)
 
 You can also specify the default options in PERL_CPANM_OPT environment variable in the shell rc:
 
@@ -893,6 +900,10 @@ sub install_module {
 
     $dist->{dir} ||= $self->fetch_module($dist);
 
+    if ($self->{cmd} eq 'download') {
+        return 1;
+    }
+
     unless ($dist->{dir}) {
         $self->diag_fail("Failed to fetch distribution $dist->{distvname}", 1);
         return;
@@ -966,7 +977,12 @@ sub fetch_module {
 
         if (my $save = $self->{save_dists}) {
             my $path = "$save/authors/id/$dist->{pathname}";
-            $self->chat("Copying $name to $path\n");
+            my $msg = "Copying $name to $path\n";
+            if ($self->{cmd} eq 'download') {
+                $self->diag($msg);
+            } else {
+                $self->chat($msg);
+            }
             File::Path::mkpath([ File::Basename::dirname($path) ], 0, 0777);
             File::Copy::copy($file, $path) or warn $!;
         }
