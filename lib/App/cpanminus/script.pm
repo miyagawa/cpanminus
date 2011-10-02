@@ -992,7 +992,7 @@ sub resolve_name {
     my($self, $module, $version) = @_;
 
     # URL
-    if ($self->get_scheme_backend($module)) {
+    if ($self->get_scheme_backend($module, 1)) {
         if ($module =~ m!authors/id/!) {
             return $self->cpan_dist($module, $module);
         } else {
@@ -1690,17 +1690,16 @@ sub which {
 # curl can be used for https?|ftp|scp|sftp
 sub _curl_backend {
     my($self, $curl) = @_;
-    my @base_opts = ($curl, '-L', ( $self->{verbose} ? () : '-s' ));
     return {
         get => sub {
             my($self, $uri) = @_;
-            $self->safeexec( my $fh, @base_opts, $uri ) or die "curl $uri: $!";
+            $self->safeexec( my $fh, $curl, '-L', ( $self->{verbose} ? () : '-s' ), $uri ) or die "curl $uri: $!";
             local $/;
             <$fh>;
         },
         mirror => sub {
             my($self, $uri, $path) = @_;
-            $self->safeexec( my $fh, @base_opts, '-#', '-o', $path ) or die "curl $uri: $!";
+            $self->safeexec( my $fh, $curl, '-L', ( $self->{verbose} ? () : '-s' ), '-#', '-o', $path ) or die "curl $uri: $!";
             local $/;
             <$fh>;
         },
@@ -1708,8 +1707,14 @@ sub _curl_backend {
 }
 
 sub get_scheme_backend {
-    my($self, $uri) = @_;
-    my $scheme = $uri =~ /^([a-zA-Z][a-zA-Z0-9.+\-]*):/ ? $1 : 'file';
+    my($self, $uri, $accept_only_uri) = @_;
+    my $scheme;
+    if ($uri =~ m,^([a-zA-Z][a-zA-Z0-9.+\-]*)://,) {
+        $scheme = $1;
+    } else {
+        return if $accept_only_uri;
+        $scheme = 'file';
+    }
     unless (exists $self->{_backends}{"/$scheme"}) { # prefix with / to keep the name uniq
         my $backend;
         # Try to load the correct backend
@@ -1854,11 +1859,14 @@ sub get_scheme_backend {
         # App::cpanminus::backend:: namespace
         unless (defined $backend) {
             (my $module = $scheme) =~ tr/a-zA-Z0-9//cd;
-            $self->chat("Try to load external $scheme backend App::cpanminus::backend::$module\n");
-            # The module must return a hash ref with 2 keys: 'get' &
-            # 'mirror' and an anonymous function for each
-            $backend = eval "require App::cpanminus::backend::$module"
-                or die "Can't find a backend to handle `$scheme' scheme!\n";
+            substr($module, 0, 0, 'App::cpanminus::backend::');
+            $self->chat("Try to load external $scheme backend $module\n");
+            # The module must define 2 functions: 'get' & 'mirror'
+            eval "require $module" or die "Can't find a backend to handle `$scheme' scheme (loading $module failed)!\n";
+            $backend = {};
+            foreach my $func (qw(get mirror)) {
+                $backend->{$func} = $module->can($func) or die "$module does not implement $func function!\n";
+            }
         }
         $self->{_backends}{"/$scheme"} = $backend;
     }
