@@ -501,31 +501,6 @@ sub _core_only_inc {
     );
 }
 
-sub _dump_inc {
-    my($self, $inc, $std_inc) = @_;
-
-    # TODO Win32 has forward slashes in @INC but backslashes in %Config
-
-    # $self->{base} for ModuleBuildPatch.pm, . for inc/Module/Install.pm
-    my @new_inc     = map { qq('$_') } (@$inc, $self->{base}, '.');
-    my @exclude_inc = map { qq('$_') } grep { $_ ne '.' && !ref } $self->_diff($inc, $std_inc);
-
-    open my $out, ">$self->{base}/DumpedINC.pm" or die $!;
-    local $" = ",";
-    print $out <<EOF;
-package DumpedINC;
-my \%exclude = map { \$_ => 1 } (@exclude_inc);
-sub import {
-  if (\$_[1] eq "tests") {
-    \@INC = grep !\$exclude{\$_}, \@INC;
-  } else {
-    \@INC = (@new_inc);
-  }
-}
-1;
-EOF
-}
-
 sub _diff {
     my($self, $old, $new) = @_;
 
@@ -553,7 +528,6 @@ sub setup_local_lib {
         $base ||= "~/perl5";
         if ($self->{self_contained}) {
             my @inc = $self->_core_only_inc($base);
-            $self->_dump_inc(\@inc, \@INC);
             $self->{search_inc} = [ @inc ];
         } else {
             $self->{search_inc} = [
@@ -779,9 +753,6 @@ sub test {
     # http://www.nntp.perl.org/group/perl.perl5.porters/2009/10/msg152656.html
     local $ENV{AUTOMATED_TESTING} = 1
         unless $self->env('NO_AUTOMATED_TESTING');
-
-   local $ENV{PERL5OPT} = "-I$self->{base} -MDumpedINC=tests"
-        if $self->{self_contained};
 
     return 1 if $self->run_timeout($cmd, $self->{test_timeout});
     if ($self->{force}) {
@@ -1101,19 +1072,6 @@ sub check_module {
             $Module::CoreList::version{$]+0}{$mod};
         };
 
-        # HACK: Module::Build 0.3622 or later has non-core module
-        # dependencies such as Perl::OSType and CPAN::Meta, and causes
-        # issues when a newer version is loaded from 'perl' while deps
-        # are loaded from the 'site' library path. Just assume it's
-        # not in the core, and install to the new local library path.
-        # Core version 0.38 means >= perl 5.14 and all deps are satisfied
-        if ($mod eq 'Module::Build') {
-            if ($version < 0.36 or # too old anyway
-                ($core_version != $version and $core_version < 0.38)) {
-                return 0, undef;
-            }
-        }
-
         $version = $core_version if %Module::CoreList::version;
     }
 
@@ -1341,11 +1299,7 @@ sub configure_this {
         };
     }
 
-    my @switches;
-    @switches = ("-I$self->{base}", "-MDumpedINC") if $self->{self_contained};
-    local $ENV{PERL5LIB} = ''                      if $self->{self_contained};
-
-    my @mb_switches = @switches;
+    my @mb_switches;
     unless ($self->{pod2man}) {
         # it has to be push, so Module::Build is loaded from the adjusted path when -L is in use
         push @mb_switches, ("-I$self->{base}", "-MModuleBuildSkipMan");
@@ -1361,7 +1315,7 @@ sub configure_this {
             # with 0 even if header files are missing, to avoid receiving
             # tons of FAIL reports in such cases. So exit code can't be
             # trusted if it went well.
-            if ($self->configure([ $self->{perl}, @switches, "Makefile.PL" ])) {
+            if ($self->configure([ $self->{perl}, "Makefile.PL" ])) {
                 $state->{configured_ok} = -e 'Makefile';
             }
             $state->{configured}++;
