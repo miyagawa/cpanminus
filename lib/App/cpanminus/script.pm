@@ -455,7 +455,7 @@ sub _writable {
 
 sub maybe_abs {
     my($self, $lib) = @_;
-    $lib =~ /^[~\/]/ ? $lib : Cwd::abs_path($lib);
+    $lib =~ /^[~\/]/ ? $lib : File::Spec->canonpath(Cwd::cwd . "/$lib");
 }
 
 sub bootstrap_local_lib {
