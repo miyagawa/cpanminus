@@ -1239,8 +1239,13 @@ DIAG
     }
 
     if ($self->{installdeps} && $depth == 0) {
-        $self->diag("<== Installed dependencies for $stuff. Finishing.\n");
-        return 1;
+        if ($configure_state->{configured_ok}) {
+            $self->diag("<== Installed dependencies for $stuff. Finishing.\n");
+            return 1;
+        } else {
+            $self->diag("! Configuring $distname failed. See $self->{log} for details.\n", 1);
+            return;
+        }
     }
 
     my $installed;
