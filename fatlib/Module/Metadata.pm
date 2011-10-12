@@ -11,7 +11,7 @@ package Module::Metadata;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '1.000003';
+$VERSION = '1.000007';
 $VERSION = eval $VERSION;
 
 use File::Spec;
@@ -36,7 +36,7 @@ my $PKG_REGEXP  = qr{   # match a package declaration
   \s*                   # optional whitespace
   ($V_NUM_REGEXP)?        # optional version number
   \s*                   # optional whitesapce
-  ;                     # semicolon line terminator
+  [;\{]                 # semicolon line terminator or block start (since 5.16)
 }x;
 
 my $VARNAME_REGEXP = qr{ # match fully-qualified VERSION name
@@ -68,6 +68,18 @@ sub new_from_file {
   return undef unless defined( $filename ) && -f $filename;
   return $class->_init(undef, $filename, @_);
 }
+
+sub new_from_handle {
+  my $class    = shift;
+  my $handle   = shift;
+  my $filename = shift;
+  return undef unless defined($handle) && defined($filename);
+  $filename = File::Spec->rel2abs( $filename );
+
+  return $class->_init(undef, $filename, @_, handle => $handle);
+
+}
+
 
 sub new_from_module {
   my $class   = shift;
@@ -183,7 +195,6 @@ sub new_from_module {
   
         if ( $package eq $prime_package ) {
           if ( exists( $prime{$package} ) ) {
-            # M::B::ModuleInfo will handle this conflict
             die "Unexpected conflict in '$package'; multiple versions found.\n";
           } else {
             $prime{$package}{file} = $mapped_filename;
@@ -282,6 +293,7 @@ sub _init {
   my $filename = shift;
   my %props = @_;
 
+  my $handle = delete $props{handle};
   my( %valid_props, @valid_props );
   @valid_props = qw( collect_pod inc );
   @valid_props{@valid_props} = delete( @props{@valid_props} );
@@ -302,7 +314,12 @@ sub _init {
 
   my $self = bless(\%data, $class);
 
-  $self->_parse_file();
+  if ( $handle ) {
+    $self->_parse_fh($handle);
+  }
+  else {
+    $self->_parse_file();
+  }
 
   unless($self->{module} and length($self->{module})) {
     my ($v, $d, $f) = File::Spec->splitpath($self->{filename});
@@ -517,9 +534,9 @@ sub _evaluate_version_line {
     use version;
     no strict;
 
-    local $sigil$var;
-    \$$var=undef;
       \$vsub = sub {
+        local $sigil$var;
+        \$$var=undef;
         $line;
         \$$var
       };
