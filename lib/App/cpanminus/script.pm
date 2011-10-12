@@ -1241,11 +1241,6 @@ sub build_stuff {
     $self->diag_ok($configure_state->{configured_ok} ? "OK" : "N/A");
 
     my @deps = $self->find_prereqs($dist);
-    my $module_name = $self->find_module_name($configure_state) || do {
-        my $name = $dist->{meta}{name};
-        $name =~ s/-/::/g;
-        $name;
-    };
 
     if ($self->{showdeps}) {
         my %rootdeps = (@config_deps, @deps); # merge
@@ -1324,7 +1319,7 @@ DIAG
         $self->diag_ok;
         $self->diag("$msg\n", 1);
         $self->{installed_dists}++;
-        $self->save_meta($stuff, $dist, $module_name, \@config_deps, \@deps);
+        $self->save_meta($stuff, $dist, \@config_deps, \@deps);
         return 1;
     } else {
         my $msg = "Building $distname failed";
@@ -1361,7 +1356,6 @@ sub configure_this {
     my $try_eumm = sub {
         if (-e 'Makefile.PL') {
             $self->chat("Running Makefile.PL\n");
-            local $ENV{X_MYMETA} = 'YAML';
 
             # NOTE: according to Devel::CheckLib, most XS modules exit
             # with 0 even if header files are missing, to avoid receiving
@@ -1413,69 +1407,33 @@ sub configure_this {
     return $state;
 }
 
-sub find_module_name {
-    my($self, $state) = @_;
-
-    return unless $state->{configured_ok};
-
-    if ($state->{use_module_build} &&
-        -e "_build/build_params") {
-        my $params = do { open my $in, "_build/build_params"; $self->safe_eval(join "", <$in>) };
-        return eval { $params->[2]{module_name} } || undef;
-    } elsif (-e "Makefile") {
-        open my $mf, "Makefile";
-        while (<$mf>) {
-            if (/^\#\s+NAME\s+=>\s+(.*)/) {
-                return $self->safe_eval($1);
-            }
-        }
-    }
-
-    return;
-}
-
 sub save_meta {
-    my($self, $module, $dist, $module_name, $config_deps, $build_deps) = @_;
+    my($self, $module, $dist, $config_deps, $build_deps) = @_;
 
     return unless $dist->{distvname} && $dist->{source} eq 'cpan';
 
     my $base = ($ENV{PERL_MM_OPT} || '') =~ /INSTALL_BASE=/
         ? ($self->install_base($ENV{PERL_MM_OPT}) . "/lib/perl5") : $Config{sitelibexp};
 
-    my $dir = "$base/auto/meta/$dist->{distvname}";
+    my $dir = "$base/$Config{archname}/.meta/$dist->{distvname}";
     File::Path::mkpath([ $dir ], 0, 0777);
 
-    # Existence of MYMETA.* Depends on EUMM/M::B/M::I versions *and* whether user
-    # has CPAN::Meta or YAML::Tiny/JSON installed
-    for my $file (qw( META.yml MYMETA.yml MYMETA.json )) {
-        if (-e $file) {
-            File::Copy::copy($file, "$dir/$file");
-        }
+    # Existence of MYMETA.* Depends on EUMM/M::B versions and CPAN::Meta
+    if (-e "MYMETA.json") {
+        File::Copy::copy("MYMETA.json", "$dir/MYMETA.json");
     }
 
     my $local = {
-        name => $module_name,
         module => $module,
         version => $dist->{version},
         dist => $dist->{distvname},
         pathname => $dist->{pathname},
-        requires => {
-            configure => +{ @$config_deps },
-            build     => +{ @$build_deps },
-        },
-        provides => $self->find_provides($dist->{meta}),
+        provides => Module::Metadata->package_versions_from_directory("blib/lib"),
     };
 
     require JSON::PP;
-    open my $fh, ">", "$dir/local.json" or die $!;
+    open my $fh, ">", "$dir/install.json" or die $!;
     print $fh JSON::PP::encode_json($local);
-}
-
-sub find_provides {
-    my $self = shift;
-    require Dist::Metadata;
-    my $dist = Dist::Metadata->new(dir => '.');
-    $dist->package_versions;
 }
 
 sub install_base {
