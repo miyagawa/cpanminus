@@ -237,8 +237,6 @@ The standalone executable contains the following modules embedded.
 
 =item L<Version::Requirements> copyright (c) 2010 by Ricardo Signes
 
-=item L<Dist::Metadata> copyright (c) 2011 by Randy Stauner
-
 =item L<CPAN::Meta::YAML> copyright (c) 2010 by Adam Kennedy
 
 =back
