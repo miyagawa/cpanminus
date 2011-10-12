@@ -455,6 +455,7 @@ sub _writable {
 
 sub maybe_abs {
     my($self, $lib) = @_;
+    return $lib if $lib eq '_'; # special case: gh-113
     $lib =~ /^[~\/]/ ? $lib : File::Spec->canonpath(Cwd::cwd . "/$lib");
 }
 
@@ -520,6 +521,7 @@ sub _setup_local_lib_env {
 
 sub setup_local_lib {
     my($self, $base) = @_;
+    $base = undef if $base eq '_';
 
     require local::lib;
     {
