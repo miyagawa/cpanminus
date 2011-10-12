@@ -1199,6 +1199,11 @@ sub build_stuff {
     $self->diag_ok($configure_state->{configured_ok} ? "OK" : "N/A");
 
     my @deps = $self->find_prereqs($dist);
+    my $module_name = $self->find_module_name($configure_state) || do {
+        my $name = $dist->{meta}{name};
+        $name =~ s/-/::/g;
+        $name;
+    };
 
     if ($self->{showdeps}) {
         my %rootdeps = (@config_deps, @deps); # merge
@@ -1277,7 +1282,7 @@ DIAG
         $self->diag_ok;
         $self->diag("$msg\n", 1);
         $self->{installed_dists}++;
-        $self->save_meta($stuff, $dist, \@config_deps, \@deps);
+        $self->save_meta($stuff, $dist, $module_name, \@config_deps, \@deps);
         return 1;
     } else {
         my $msg = "Building $distname failed";
@@ -1361,8 +1366,29 @@ sub configure_this {
     return $state;
 }
 
+sub find_module_name {
+    my($self, $state) = @_;
+
+    return unless $state->{configured_ok};
+
+    if ($state->{use_module_build} &&
+        -e "_build/build_params") {
+        my $params = do { open my $in, "_build/build_params"; $self->safe_eval(join "", <$in>) };
+        return eval { $params->[2]{module_name} } || undef;
+    } elsif (-e "Makefile") {
+        open my $mf, "Makefile";
+        while (<$mf>) {
+            if (/^\#\s+NAME\s+=>\s+(.*)/) {
+                return $self->safe_eval($1);
+            }
+        }
+    }
+
+    return;
+}
+
 sub save_meta {
-    my($self, $module, $dist, $config_deps, $build_deps) = @_;
+    my($self, $module, $dist, $module_name, $config_deps, $build_deps) = @_;
 
     return unless $dist->{distvname} && $dist->{source} eq 'cpan';
 
@@ -1378,6 +1404,7 @@ sub save_meta {
     }
 
     my $local = {
+        name => $module_name,
         module => $module,
         version => $dist->{version},
         dist => $dist->{distvname},
