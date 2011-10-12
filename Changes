@@ -1,5 +1,17 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.49_02 Wed Oct 12 18:53:35 JST 2011
+   [Improvements]
+      - Use Cwd::chdir to change PWD (yannk)
+
+   [Bug Fixes]
+      - Unbreak -L with newer ExtUtils::ParseXS installed
+
+   [Developers]
+      - Changed the path to save metadata information
+      - removed Dist::Metadata use, but instead use Module::Metadata to get provides
+      - removed the ugly DumpedINC hack for -L
+
 1.49_01 Sun Jun 26 10:56:51 PDT 2011
       - A couple of experimental new features (documented in 1.5)
 
