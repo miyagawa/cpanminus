@@ -98,7 +98,6 @@ sub parse_options {
         'prompt!'   => \$self->{prompt},
         'installdeps' => \$self->{installdeps},
         'skip-installed!' => \$self->{skip_installed},
-        'skip-satisfied!' => \$self->{skip_satisfied},
         'reinstall'    => sub { $self->{skip_installed} = 0 },
         'interactive!' => \$self->{interactive},
         'i|install' => sub { $self->{cmd} = 'install' },
@@ -163,7 +162,7 @@ sub doit {
         }
 
         ($module, my $version) = split /\~/, $module, 2;
-        if ($self->{skip_satisfied}) {
+        if (defined $version) {
             $self->check_libs;
             my($ok, $local) = $self->check_module($module, $version || 0);
             if ($ok) {
