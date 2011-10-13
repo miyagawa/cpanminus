@@ -1406,18 +1406,34 @@ sub save_meta {
         File::Copy::copy("MYMETA.json", "$dir/MYMETA.json");
     }
 
+    my $provides = $self->_merge_hashref(
+        map Module::Metadata->package_versions_from_directory($_),
+            qw( blib/lib blib/arch ) # FCGI.pm :(
+    );
+
     my $local = {
         name => $module_name,
         module => $module,
         version => $dist->{version},
         dist => $dist->{distvname},
         pathname => $dist->{pathname},
-        provides => Module::Metadata->package_versions_from_directory("blib/lib"),
+        provides => $provides,
     };
 
     require JSON::PP;
     open my $fh, ">", "$dir/install.json" or die $!;
     print $fh JSON::PP::encode_json($local);
+}
+
+sub _merge_hashref {
+    my($self, @hashrefs) = @_;
+
+    my %hash;
+    for my $h (@hashrefs) {
+        %hash = (%hash, %$h);
+    }
+
+    return \%hash;
 }
 
 sub install_base {
