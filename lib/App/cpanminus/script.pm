@@ -1,3 +1,4 @@
+
 package App::cpanminus::script;
 use strict;
 use Config;
@@ -593,6 +594,7 @@ sub prompt {
     $def = defined $def ? $def : "";
 
     if (!$self->{prompt} || (!$isa_tty && eof STDIN)) {
+        $self->chat("$mess $dispdef$def\n");
         return $def;
     }
 
