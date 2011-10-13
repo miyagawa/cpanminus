@@ -318,7 +318,7 @@ sub search_module {
                     (my $distfile = $dist_meta->{download_url}) =~ s!.+/authors/id/!!;
                     local $self->{mirrors} = $self->{mirrors};
                     if ($dist_meta->{stat}->{mtime} > time()-24*60*60) {
-                        $self->{mirrors} = ['http://cpan.cpantesters.org'];
+                        $self->{mirrors} = ['http://cpan.metacpan.org'];
                     }
                     return $self->cpan_module($module, $distfile, $dist_meta->{version});
                 }
