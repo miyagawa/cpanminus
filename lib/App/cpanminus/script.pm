@@ -15,7 +15,7 @@ use Symbol ();
 use constant WIN32 => $^O eq 'MSWin32';
 use constant SUNOS => $^O eq 'solaris';
 
-our $VERSION = "1.49_01";
+our $VERSION = "1.5000";
 
 my $quote = WIN32 ? q/"/ : q/'/;
 
@@ -123,6 +123,7 @@ sub parse_options {
             $self->{save_dists} = $self->maybe_abs($_[1]);
         },
         'skip-configure!' => \$self->{skip_configure},
+        'metacpan'   => \$self->{metacpan},
     );
 
     if (!@ARGV && $0 ne '-' && !-t STDIN){ # e.g. # cpanm < author/requires.cpanm
@@ -168,7 +169,7 @@ sub doit {
         }
 
         ($module, my $version) = split /\~/, $module, 2;
-        if ($self->{skip_satisfied}) {
+        if ($self->{skip_satisfied} or defined $version) {
             $self->check_libs;
             my($ok, $local) = $self->check_module($module, $version || 0);
             if ($ok) {
@@ -308,6 +309,28 @@ sub search_module {
     my($self, $module, $version) = @_;
 
     unless ($self->{mirror_only}) {
+        if ($self->{metacpan}) {
+            require JSON::PP;
+            $self->chat("Searching $module on metacpan ...\n");
+            my $module_uri  = "http://api.metacpan.org/module/$module";
+            my $module_yaml = $self->get($module_uri);
+            my $module_meta = eval { JSON::PP::decode_json($module_yaml) };
+            if ($module_meta && $module_meta->{distribution}) {
+                my $dist_uri = "http://api.metacpan.org/release/$module_meta->{distribution}";
+                my $dist_yaml = $self->get($dist_uri);
+                my $dist_meta = eval { JSON::PP::decode_json($dist_yaml) };
+                if ($dist_meta && $dist_meta->{download_url}) {
+                    (my $distfile = $dist_meta->{download_url}) =~ s!.+/authors/id/!!;
+                    local $self->{mirrors} = $self->{mirrors};
+                    if ($dist_meta->{stat}->{mtime} > time()-24*60*60) {
+                        $self->{mirrors} = ['http://cpan.metacpan.org'];
+                    }
+                    return $self->cpan_module($module, $distfile, $dist_meta->{version});
+                }
+            }
+            $self->diag_fail("Finding $module on metacpan failed.");
+        }
+
         $self->chat("Searching $module on cpanmetadb ...\n");
         my $uri  = "http://cpanmetadb.appspot.com/v1.0/package/$module";
         my $yaml = $self->get($uri);
@@ -460,7 +483,8 @@ sub _writable {
 
 sub maybe_abs {
     my($self, $lib) = @_;
-    $lib =~ /^[~\/]/ ? $lib : Cwd::abs_path($lib);
+    return $lib if $lib eq '_'; # special case: gh-113
+    $lib =~ /^[~\/]/ ? $lib : File::Spec->canonpath(Cwd::cwd . "/$lib");
 }
 
 sub bootstrap_local_lib {
@@ -505,31 +529,6 @@ sub _core_only_inc {
     );
 }
 
-sub _dump_inc {
-    my($self, $inc, $std_inc) = @_;
-
-    # TODO Win32 has forward slashes in @INC but backslashes in %Config
-
-    # $self->{base} for ModuleBuildPatch.pm, . for inc/Module/Install.pm
-    my @new_inc     = map { qq('$_') } (@$inc, $self->{base}, '.');
-    my @exclude_inc = map { qq('$_') } grep { $_ ne '.' && !ref } $self->_diff($inc, $std_inc);
-
-    open my $out, ">$self->{base}/DumpedINC.pm" or die $!;
-    local $" = ",";
-    print $out <<EOF;
-package DumpedINC;
-my \%exclude = map { \$_ => 1 } (@exclude_inc);
-sub import {
-  if (\$_[1] eq "tests") {
-    \@INC = grep !\$exclude{\$_}, \@INC;
-  } else {
-    \@INC = (@new_inc);
-  }
-}
-1;
-EOF
-}
-
 sub _diff {
     my($self, $old, $new) = @_;
 
@@ -550,6 +549,7 @@ sub _setup_local_lib_env {
 
 sub setup_local_lib {
     my($self, $base) = @_;
+    $base = undef if $base eq '_';
 
     require local::lib;
     {
@@ -557,7 +557,6 @@ sub setup_local_lib {
         $base ||= "~/perl5";
         if ($self->{self_contained}) {
             my @inc = $self->_core_only_inc($base);
-            $self->_dump_inc(\@inc, \@INC);
             $self->{search_inc} = [ @inc ];
         } else {
             $self->{search_inc} = [
@@ -784,9 +783,6 @@ sub test {
     # http://www.nntp.perl.org/group/perl.perl5.porters/2009/10/msg152656.html
     local $ENV{AUTOMATED_TESTING} = 1
         unless $self->env('NO_AUTOMATED_TESTING');
-
-   local $ENV{PERL5OPT} = "-I$self->{base} -MDumpedINC=tests"
-        if $self->{self_contained};
 
     return 1 if $self->run_timeout($cmd, $self->{test_timeout});
     if ($self->{force}) {
@@ -1089,12 +1085,9 @@ EOF
 sub check_module {
     my($self, $mod, $want_ver) = @_;
 
-    my $meta = do {
-        no strict 'refs';
-        local ${"$mod\::VERSION"};
-        require Module::Metadata;
-        Module::Metadata->new_from_module($mod, inc => $self->{search_inc});
-    } or return 0, undef;
+    require Module::Metadata;
+    my $meta = Module::Metadata->new_from_module($mod, inc => $self->{search_inc})
+        or return 0, undef;
 
     my $version = $meta->version;
 
@@ -1105,19 +1098,6 @@ sub check_module {
             require Module::CoreList;
             $Module::CoreList::version{$]+0}{$mod};
         };
-
-        # HACK: Module::Build 0.3622 or later has non-core module
-        # dependencies such as Perl::OSType and CPAN::Meta, and causes
-        # issues when a newer version is loaded from 'perl' while deps
-        # are loaded from the 'site' library path. Just assume it's
-        # not in the core, and install to the new local library path.
-        # Core version 0.38 means >= perl 5.14 and all deps are satisfied
-        if ($mod eq 'Module::Build') {
-            if ($version < 0.36 or # too old anyway
-                ($core_version != $version and $core_version < 0.38)) {
-                return 0, undef;
-            }
-        }
 
         $version = $core_version if %Module::CoreList::version;
     }
@@ -1288,8 +1268,13 @@ DIAG
     }
 
     if ($self->{installdeps} && $depth == 0) {
-        $self->diag("<== Installed dependencies for $stuff. Finishing.\n");
-        return 1;
+        if ($configure_state->{configured_ok}) {
+            $self->diag("<== Installed dependencies for $stuff. Finishing.\n");
+            return 1;
+        } else {
+            $self->diag("! Configuring $distname failed. See $self->{log} for details.\n", 1);
+            return;
+        }
     }
 
     my $installed;
@@ -1351,11 +1336,7 @@ sub configure_this {
         };
     }
 
-    my @switches;
-    @switches = ("-I$self->{base}", "-MDumpedINC") if $self->{self_contained};
-    local $ENV{PERL5LIB} = ''                      if $self->{self_contained};
-
-    my @mb_switches = @switches;
+    my @mb_switches;
     unless ($self->{pod2man}) {
         # it has to be push, so Module::Build is loaded from the adjusted path when -L is in use
         push @mb_switches, ("-I$self->{base}", "-MModuleBuildSkipMan");
@@ -1366,13 +1347,12 @@ sub configure_this {
     my $try_eumm = sub {
         if (-e 'Makefile.PL') {
             $self->chat("Running Makefile.PL\n");
-            local $ENV{X_MYMETA} = 'YAML';
 
             # NOTE: according to Devel::CheckLib, most XS modules exit
             # with 0 even if header files are missing, to avoid receiving
             # tons of FAIL reports in such cases. So exit code can't be
             # trusted if it went well.
-            if ($self->configure([ $self->{perl}, @switches, "Makefile.PL" ])) {
+            if ($self->configure([ $self->{perl}, "Makefile.PL" ])) {
                 $state->{configured_ok} = -e 'Makefile';
             }
             $state->{configured}++;
@@ -1426,7 +1406,7 @@ sub find_module_name {
     if ($state->{use_module_build} &&
         -e "_build/build_params") {
         my $params = do { open my $in, "_build/build_params"; $self->safe_eval(join "", <$in>) };
-        return $params->[2]{module_name};
+        return eval { $params->[2]{module_name} } || undef;
     } elsif (-e "Makefile") {
         open my $mf, "Makefile";
         while (<$mf>) {
@@ -1447,16 +1427,18 @@ sub save_meta {
     my $base = ($ENV{PERL_MM_OPT} || '') =~ /INSTALL_BASE=/
         ? ($self->install_base($ENV{PERL_MM_OPT}) . "/lib/perl5") : $Config{sitelibexp};
 
-    my $dir = "$base/auto/meta/$dist->{distvname}";
+    my $dir = "$base/$Config{archname}/.meta/$dist->{distvname}";
     File::Path::mkpath([ $dir ], 0, 0777);
 
-    # Existence of MYMETA.* Depends on EUMM/M::B/M::I versions *and* whether user
-    # has CPAN::Meta or YAML::Tiny/JSON installed
-    for my $file (qw( META.yml MYMETA.yml MYMETA.json )) {
-        if (-e $file) {
-            File::Copy::copy($file, "$dir/$file");
-        }
+    # Existence of MYMETA.* Depends on EUMM/M::B versions and CPAN::Meta
+    if (-e "MYMETA.json") {
+        File::Copy::copy("MYMETA.json", "$dir/MYMETA.json");
     }
+
+    my $provides = $self->_merge_hashref(
+        map Module::Metadata->package_versions_from_directory($_),
+            qw( blib/lib blib/arch ) # FCGI.pm :(
+    );
 
     my $local = {
         name => $module_name,
@@ -1464,23 +1446,23 @@ sub save_meta {
         version => $dist->{version},
         dist => $dist->{distvname},
         pathname => $dist->{pathname},
-        requires => {
-            configure => +{ @$config_deps },
-            build     => +{ @$build_deps },
-        },
-        provides => $self->find_provides($dist->{meta}),
+        provides => $provides,
     };
 
     require JSON::PP;
-    open my $fh, ">", "$dir/local.json" or die $!;
+    open my $fh, ">", "$dir/install.json" or die $!;
     print $fh JSON::PP::encode_json($local);
 }
 
-sub find_provides {
-    my $self = shift;
-    require Dist::Metadata;
-    my $dist = Dist::Metadata->new(dir => '.');
-    $dist->package_versions;
+sub _merge_hashref {
+    my($self, @hashrefs) = @_;
+
+    my %hash;
+    for my $h (@hashrefs) {
+        %hash = (%hash, %$h);
+    }
+
+    return \%hash;
 }
 
 sub install_base {
@@ -1497,23 +1479,36 @@ sub safe_eval {
 sub find_prereqs {
     my($self, $dist) = @_;
 
-    my @deps;
+    my @deps = $self->extract_meta_prereqs($dist);
+
+    if ($dist->{module} =~ /^Bundle::/i) {
+        push @deps, $self->bundle_deps($dist);
+    }
+
+    return @deps;
+}
+
+sub extract_meta_prereqs {
+    my($self, $dist) = @_;
 
     my $meta = $dist->{meta};
+
+    my @deps;
     if (-e 'MYMETA.yml') {
         $self->chat("Checking dependencies from MYMETA.yml ...\n");
         my $mymeta = $self->parse_meta('MYMETA.yml');
-        if ($mymeta) {
+        if ($mymeta && $mymeta->{'meta-spec'}{version} eq '1.4') {
             @deps = $self->extract_requires($mymeta);
             $meta->{$_} = $mymeta->{$_} for keys %$mymeta; # merge
+            return @deps;
         }
-    } elsif (-e '_build/prereqs') {
+    }
+
+    if (-e '_build/prereqs') {
         $self->chat("Checking dependencies from _build/prereqs ...\n");
         my $mymeta = do { open my $in, "_build/prereqs"; $self->safe_eval(join "", <$in>) };
         @deps = $self->extract_requires($mymeta);
-    }
-
-    if (-e 'Makefile') {
+    } elsif (-e 'Makefile') {
         $self->chat("Finding PREREQ from Makefile ...\n");
         open my $mf, "Makefile";
         while (<$mf>) {
@@ -1530,10 +1525,6 @@ sub find_prereqs {
                 last;
             }
         }
-    }
-
-    if ($dist->{module} =~ /^Bundle::/i) {
-        push @deps, $self->bundle_deps($dist);
     }
 
     return @deps;
@@ -1577,8 +1568,8 @@ sub extract_requires {
     my($self, $meta) = @_;
 
     my @deps;
-    push @deps, %{$meta->{requires}} if $meta->{requires};
     push @deps, %{$meta->{build_requires}} if $meta->{build_requires};
+    push @deps, %{$meta->{requires}} if $meta->{requires};
 
     return @deps;
 }

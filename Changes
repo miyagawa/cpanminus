@@ -1,5 +1,37 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.5000 Thu Oct 13 15:31:13 JST 2011
+   [New Features]
+      - Added EXPERIMENTAL --mirror-index, --skip-satisfied and --cascade-search options
+      - Installs MYMETA.json and install.json into $ARCH/.meta library path
+
+   [Bug Fixes]
+      - Use Cwd::chdir to update CWD environment variable
+      - Fix ExtUtils::ParseXS issue with -L
+      - Fix CoreList bootstrap issue with perl < 5.8.9 when using -L
+      - Dump more descriptive error message when configure failed with --installdeps #111
+
+   [Improvements]
+      - Upgraded many fatlib embedded modules
+      - Support --no-quiet
+      - Removed ugly @INC dumping hack for -L. This causes modules that has conditional
+        deps such as Any::Moose not to pull down necessary requirements. This is a known
+        issue and will be addressed later.
+      - Support special _ for -l and -L argument to respect local::lib defaults #115
+
+
+1.49_02 Wed Oct 12 18:53:35 JST 2011
+   [Improvements]
+      - Use Cwd::chdir to change PWD (yannk)
+
+   [Bug Fixes]
+      - Unbreak -L with newer ExtUtils::ParseXS installed
+
+   [Developers]
+      - Changed the path to save metadata information
+      - removed Dist::Metadata use, but instead use Module::Metadata to get provides
+      - removed the ugly DumpedINC hack for -L
+
 1.49_01 Sun Jun 26 10:56:51 PDT 2011
       - A couple of experimental new features (documented in 1.5)
 
