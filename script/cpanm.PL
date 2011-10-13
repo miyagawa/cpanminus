@@ -169,6 +169,11 @@ shell aliases, like:
   alias minicpanm='cpanm --mirror ~/minicpan --mirror-only'
   alias darkpan='cpanm --mirror http://mycompany.example.com/DPAN --mirror-only'
 
+=item --mirror-index
+
+B<EXPERIMENTAL>: Specifies the file path to C<02packages.details.txt>
+for module search index.
+    
 =item --prompt
 
 Prompts when a test fails so that you can skip, force install, retry
@@ -286,6 +291,30 @@ perl newer than 5.12, since with 5.12 @INC contains site_perl directory
 I<before> the perl core library path, and uninstalling shadows is not
 necessary anymore and does more harm by deleting files from the core
 library path.
+
+=item --cascade-search
+
+B<EXPERIMENTAL>: Specifies whether to cascade search when you specify
+multiple mirrors and a mirror has a lower version of the module than
+requested. Defaults to false.
+
+=item --skip-satisfied
+
+B<EXPERIMENTAL>: Specifies whether a module (and version) given in the
+command line is skipped if it's already installed.
+
+If you run:
+
+  cpanm --skip-satisfied CGI DBI~1.2
+
+cpanm won't install them if you already have CGI (for whatever
+versions) or have DBI with version higher than 1.2. It is similar to
+C<--skip-installed> but while C<--skip-installed> checks if the
+I<latest> version of CPAN is installed, C<--skip-satisfied> checks if
+a requested version (or not, which means any version) is installed.
+
+Defaults to false for bare module names, but if you specify versions
+with C<~>, it will always skip satisfied requirements.
 
 =item --auto-cleanup
 
