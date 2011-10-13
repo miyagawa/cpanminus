@@ -1474,25 +1474,36 @@ sub safe_eval {
 sub find_prereqs {
     my($self, $dist) = @_;
 
-    my @deps;
+    my @deps = $self->extract_meta_prereqs($dist);
+
+    if ($dist->{module} =~ /^Bundle::/i) {
+        push @deps, $self->bundle_deps($dist);
+    }
+
+    return @deps;
+}
+
+sub extract_meta_prereqs {
+    my($self, $dist) = @_;
 
     my $meta = $dist->{meta};
-    my $mymeta_found;
+
+    my @deps;
     if (-e 'MYMETA.yml') {
         $self->chat("Checking dependencies from MYMETA.yml ...\n");
         my $mymeta = $self->parse_meta('MYMETA.yml');
-        if ($mymeta) {
+        if ($mymeta && $mymeta->{'meta-spec'}{version} eq '1.4') {
             @deps = $self->extract_requires($mymeta);
             $meta->{$_} = $mymeta->{$_} for keys %$mymeta; # merge
-            $mymeta_found++;
+            return @deps;
         }
-    } elsif (-e '_build/prereqs') {
+    }
+
+    if (-e '_build/prereqs') {
         $self->chat("Checking dependencies from _build/prereqs ...\n");
         my $mymeta = do { open my $in, "_build/prereqs"; $self->safe_eval(join "", <$in>) };
         @deps = $self->extract_requires($mymeta);
-    }
-
-    if (-e 'Makefile' and !$mymeta_found) {
+    } elsif (-e 'Makefile') {
         $self->chat("Finding PREREQ from Makefile ...\n");
         open my $mf, "Makefile";
         while (<$mf>) {
@@ -1509,10 +1520,6 @@ sub find_prereqs {
                 last;
             }
         }
-    }
-
-    if ($dist->{module} =~ /^Bundle::/i) {
-        push @deps, $self->bundle_deps($dist);
     }
 
     return @deps;
