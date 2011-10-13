@@ -1489,13 +1489,23 @@ sub extract_meta_prereqs {
     my $meta = $dist->{meta};
 
     my @deps;
+    if (-e "MYMETA.json") {
+        require JSON::PP;
+        $self->chat("Checking dependencies from MYMETA.json ...\n");
+        my $json = do { open my $in, "<MYMETA.json"; local $/; <$in> };
+        my $mymeta = JSON::PP::decode_json($json);
+        if ($mymeta) {
+            $meta->{$_} = $mymeta->{$_} for qw(name version);
+            return $self->extract_requires($mymeta);
+        }
+    }
+
     if (-e 'MYMETA.yml') {
         $self->chat("Checking dependencies from MYMETA.yml ...\n");
         my $mymeta = $self->parse_meta('MYMETA.yml');
-        if ($mymeta && $mymeta->{'meta-spec'}{version} eq '1.4') {
-            @deps = $self->extract_requires($mymeta);
-            $meta->{$_} = $mymeta->{$_} for keys %$mymeta; # merge
-            return @deps;
+        if ($mymeta) {
+            $meta->{$_} = $mymeta->{$_} for qw(name version);
+            return $self->extract_requires($mymeta);
         }
     }
 
@@ -1561,6 +1571,15 @@ sub maybe_version {
 
 sub extract_requires {
     my($self, $meta) = @_;
+
+    if ($meta->{'meta-spec'} && $meta->{'meta-spec'}{version} == 2) {
+        my @phase = $self->{notest} ? qw( build runtime ) : qw( build test runtime );
+        my @deps = map {
+            my $p = $meta->{prereqs}{$_} || {};
+            %{$p->{requires} || {}};
+        } @phase;
+        return @deps;
+    }
 
     my @deps;
     push @deps, %{$meta->{build_requires}} if $meta->{build_requires};
