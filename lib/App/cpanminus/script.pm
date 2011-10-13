@@ -308,12 +308,12 @@ sub search_module {
             require JSON::PP;
             $self->chat("Searching $module on metacpan ...\n");
             my $module_uri  = "http://api.metacpan.org/module/$module";
-            my $module_yaml = $self->get($module_uri);
-            my $module_meta = eval { JSON::PP::decode_json($module_yaml) };
+            my $module_json = $self->get($module_uri);
+            my $module_meta = eval { JSON::PP::decode_json($module_json) };
             if ($module_meta && $module_meta->{distribution}) {
                 my $dist_uri = "http://api.metacpan.org/release/$module_meta->{distribution}";
-                my $dist_yaml = $self->get($dist_uri);
-                my $dist_meta = eval { JSON::PP::decode_json($dist_yaml) };
+                my $dist_json = $self->get($dist_uri);
+                my $dist_meta = eval { JSON::PP::decode_json($dist_json) };
                 if ($dist_meta && $dist_meta->{download_url}) {
                     (my $distfile = $dist_meta->{download_url}) =~ s!.+/authors/id/!!;
                     local $self->{mirrors} = $self->{mirrors};
