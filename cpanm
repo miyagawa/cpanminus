@@ -327,7 +327,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use constant WIN32 => $^O eq 'MSWin32';
   use constant SUNOS => $^O eq 'solaris';
   
-  our $VERSION = "1.5000";
+  our $VERSION = "1.5001";
   
   my $quote = WIN32 ? q/"/ : q/'/;
   
@@ -431,6 +431,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
               $self->{save_dists} = $self->maybe_abs($_[1]);
           },
           'skip-configure!' => \$self->{skip_configure},
+          'metacpan'   => \$self->{metacpan},
       );
   
       if (!@ARGV && $0 ne '-' && !-t STDIN){ # e.g. # cpanm < author/requires.cpanm
@@ -616,6 +617,28 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       my($self, $module, $version) = @_;
   
       unless ($self->{mirror_only}) {
+          if ($self->{metacpan}) {
+              require JSON::PP;
+              $self->chat("Searching $module on metacpan ...\n");
+              my $module_uri  = "http://api.metacpan.org/module/$module";
+              my $module_json = $self->get($module_uri);
+              my $module_meta = eval { JSON::PP::decode_json($module_json) };
+              if ($module_meta && $module_meta->{distribution}) {
+                  my $dist_uri = "http://api.metacpan.org/release/$module_meta->{distribution}";
+                  my $dist_json = $self->get($dist_uri);
+                  my $dist_meta = eval { JSON::PP::decode_json($dist_json) };
+                  if ($dist_meta && $dist_meta->{download_url}) {
+                      (my $distfile = $dist_meta->{download_url}) =~ s!.+/authors/id/!!;
+                      local $self->{mirrors} = $self->{mirrors};
+                      if ($dist_meta->{stat}->{mtime} > time()-24*60*60) {
+                          $self->{mirrors} = ['http://cpan.metacpan.org'];
+                      }
+                      return $self->cpan_module($module, $distfile, $dist_meta->{version});
+                  }
+              }
+              $self->diag_fail("Finding $module on metacpan failed.");
+          }
+  
           $self->chat("Searching $module on cpanmetadb ...\n");
           my $uri  = "http://cpanmetadb.appspot.com/v1.0/package/$module";
           my $yaml = $self->get($uri);
@@ -1764,23 +1787,46 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   sub find_prereqs {
       my($self, $dist) = @_;
   
-      my @deps;
+      my @deps = $self->extract_meta_prereqs($dist);
+  
+      if ($dist->{module} =~ /^Bundle::/i) {
+          push @deps, $self->bundle_deps($dist);
+      }
+  
+      return @deps;
+  }
+  
+  sub extract_meta_prereqs {
+      my($self, $dist) = @_;
   
       my $meta = $dist->{meta};
+  
+      my @deps;
+      if (-e "MYMETA.json") {
+          require JSON::PP;
+          $self->chat("Checking dependencies from MYMETA.json ...\n");
+          my $json = do { open my $in, "<MYMETA.json"; local $/; <$in> };
+          my $mymeta = JSON::PP::decode_json($json);
+          if ($mymeta) {
+              $meta->{$_} = $mymeta->{$_} for qw(name version);
+              return $self->extract_requires($mymeta);
+          }
+      }
+  
       if (-e 'MYMETA.yml') {
           $self->chat("Checking dependencies from MYMETA.yml ...\n");
           my $mymeta = $self->parse_meta('MYMETA.yml');
           if ($mymeta) {
-              @deps = $self->extract_requires($mymeta);
-              $meta->{$_} = $mymeta->{$_} for keys %$mymeta; # merge
+              $meta->{$_} = $mymeta->{$_} for qw(name version);
+              return $self->extract_requires($mymeta);
           }
-      } elsif (-e '_build/prereqs') {
+      }
+  
+      if (-e '_build/prereqs') {
           $self->chat("Checking dependencies from _build/prereqs ...\n");
           my $mymeta = do { open my $in, "_build/prereqs"; $self->safe_eval(join "", <$in>) };
           @deps = $self->extract_requires($mymeta);
-      }
-  
-      if (-e 'Makefile') {
+      } elsif (-e 'Makefile') {
           $self->chat("Finding PREREQ from Makefile ...\n");
           open my $mf, "Makefile";
           while (<$mf>) {
@@ -1797,10 +1843,6 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
                   last;
               }
           }
-      }
-  
-      if ($dist->{module} =~ /^Bundle::/i) {
-          push @deps, $self->bundle_deps($dist);
       }
   
       return @deps;
@@ -1843,9 +1885,18 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   sub extract_requires {
       my($self, $meta) = @_;
   
+      if ($meta->{'meta-spec'} && $meta->{'meta-spec'}{version} == 2) {
+          my @phase = $self->{notest} ? qw( build runtime ) : qw( build test runtime );
+          my @deps = map {
+              my $p = $meta->{prereqs}{$_} || {};
+              %{$p->{requires} || {}};
+          } @phase;
+          return @deps;
+      }
+  
       my @deps;
-      push @deps, %{$meta->{requires}} if $meta->{requires};
       push @deps, %{$meta->{build_requires}} if $meta->{build_requires};
+      push @deps, %{$meta->{requires}} if $meta->{requires};
   
       return @deps;
   }
@@ -11019,6 +11070,11 @@ shell aliases, like:
 
 B<EXPERIMENTAL>: Specifies the file path to C<02packages.details.txt>
 for module search index.
+
+=item --metacpan
+
+B<EXPERIMENTAL>: Use L<http://api.metacpan.org/> API for module lookup instead of
+L<http://cpanmetadb.appspot.com/>.
     
 =item --prompt
 
