@@ -256,8 +256,6 @@ $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   
   =item L<Version::Requirements> copyright (c) 2010 by Ricardo Signes
   
-  =item L<Dist::Metadata> copyright (c) 2011 by Randy Stauner
-  
   =item L<CPAN::Meta::YAML> copyright (c) 2010 by Adam Kennedy
   
   =back
@@ -413,7 +411,6 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           'prompt!'   => \$self->{prompt},
           'installdeps' => \$self->{installdeps},
           'skip-installed!' => \$self->{skip_installed},
-          'skip-satisfied!' => \$self->{skip_satisfied},
           'reinstall'    => sub { $self->{skip_installed} = 0 },
           'interactive!' => \$self->{interactive},
           'i|install' => sub { $self->{cmd} = 'install' },
@@ -478,7 +475,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           }
   
           ($module, my $version) = split /\~/, $module, 2;
-          if ($self->{skip_satisfied}) {
+          if (defined $version) {
               $self->check_libs;
               my($ok, $local) = $self->check_module($module, $version || 0);
               if ($ok) {
@@ -771,7 +768,8 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   
   sub maybe_abs {
       my($self, $lib) = @_;
-      $lib =~ /^[~\/]/ ? $lib : Cwd::abs_path($lib);
+      return $lib if $lib eq '_'; # special case: gh-113
+      $lib =~ /^[~\/]/ ? $lib : File::Spec->canonpath(Cwd::cwd . "/$lib");
   }
   
   sub bootstrap_local_lib {
@@ -836,6 +834,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   
   sub setup_local_lib {
       my($self, $base) = @_;
+      $base = undef if $base eq '_';
   
       require local::lib;
       {
@@ -1370,12 +1369,9 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   sub check_module {
       my($self, $mod, $want_ver) = @_;
   
-      my $meta = do {
-          no strict 'refs';
-          local ${"$mod\::VERSION"};
-          require Module::Metadata;
-          Module::Metadata->new_from_module($mod, inc => $self->{search_inc});
-      } or return 0, undef;
+      require Module::Metadata;
+      my $meta = Module::Metadata->new_from_module($mod, inc => $self->{search_inc})
+          or return 0, undef;
   
       my $version = $meta->version;
   
@@ -1556,8 +1552,13 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       }
   
       if ($self->{installdeps} && $depth == 0) {
-          $self->diag("<== Installed dependencies for $stuff. Finishing.\n");
-          return 1;
+          if ($configure_state->{configured_ok}) {
+              $self->diag("<== Installed dependencies for $stuff. Finishing.\n");
+              return 1;
+          } else {
+              $self->diag("! Configuring $distname failed. See $self->{log} for details.\n", 1);
+              return;
+          }
       }
   
       my $installed;
@@ -1718,18 +1719,34 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           File::Copy::copy("MYMETA.json", "$dir/MYMETA.json");
       }
   
+      my $provides = $self->_merge_hashref(
+          map Module::Metadata->package_versions_from_directory($_),
+              qw( blib/lib blib/arch ) # FCGI.pm :(
+      );
+  
       my $local = {
           name => $module_name,
           module => $module,
           version => $dist->{version},
           dist => $dist->{distvname},
           pathname => $dist->{pathname},
-          provides => Module::Metadata->package_versions_from_directory("blib/lib"),
+          provides => $provides,
       };
   
       require JSON::PP;
       open my $fh, ">", "$dir/install.json" or die $!;
       print $fh JSON::PP::encode_json($local);
+  }
+  
+  sub _merge_hashref {
+      my($self, @hashrefs) = @_;
+  
+      my %hash;
+      for my $h (@hashrefs) {
+          %hash = (%hash, %$h);
+      }
+  
+      return \%hash;
   }
   
   sub install_base {
@@ -7999,7 +8016,7 @@ $fatpacked{"Module/Metadata.pm"} = <<'MODULE_METADATA';
   
   use strict;
   use vars qw($VERSION);
-  $VERSION = '1.000003';
+  $VERSION = '1.000007';
   $VERSION = eval $VERSION;
   
   use File::Spec;
@@ -8024,7 +8041,7 @@ $fatpacked{"Module/Metadata.pm"} = <<'MODULE_METADATA';
     \s*                   # optional whitespace
     ($V_NUM_REGEXP)?        # optional version number
     \s*                   # optional whitesapce
-    ;                     # semicolon line terminator
+    [;\{]                 # semicolon line terminator or block start (since 5.16)
   }x;
   
   my $VARNAME_REGEXP = qr{ # match fully-qualified VERSION name
@@ -8056,6 +8073,18 @@ $fatpacked{"Module/Metadata.pm"} = <<'MODULE_METADATA';
     return undef unless defined( $filename ) && -f $filename;
     return $class->_init(undef, $filename, @_);
   }
+  
+  sub new_from_handle {
+    my $class    = shift;
+    my $handle   = shift;
+    my $filename = shift;
+    return undef unless defined($handle) && defined($filename);
+    $filename = File::Spec->rel2abs( $filename );
+  
+    return $class->_init(undef, $filename, @_, handle => $handle);
+  
+  }
+  
   
   sub new_from_module {
     my $class   = shift;
@@ -8171,7 +8200,6 @@ $fatpacked{"Module/Metadata.pm"} = <<'MODULE_METADATA';
     
           if ( $package eq $prime_package ) {
             if ( exists( $prime{$package} ) ) {
-              # M::B::ModuleInfo will handle this conflict
               die "Unexpected conflict in '$package'; multiple versions found.\n";
             } else {
               $prime{$package}{file} = $mapped_filename;
@@ -8270,6 +8298,7 @@ $fatpacked{"Module/Metadata.pm"} = <<'MODULE_METADATA';
     my $filename = shift;
     my %props = @_;
   
+    my $handle = delete $props{handle};
     my( %valid_props, @valid_props );
     @valid_props = qw( collect_pod inc );
     @valid_props{@valid_props} = delete( @props{@valid_props} );
@@ -8290,7 +8319,12 @@ $fatpacked{"Module/Metadata.pm"} = <<'MODULE_METADATA';
   
     my $self = bless(\%data, $class);
   
-    $self->_parse_file();
+    if ( $handle ) {
+      $self->_parse_fh($handle);
+    }
+    else {
+      $self->_parse_file();
+    }
   
     unless($self->{module} and length($self->{module})) {
       my ($v, $d, $f) = File::Spec->splitpath($self->{filename});
@@ -8505,9 +8539,9 @@ $fatpacked{"Module/Metadata.pm"} = <<'MODULE_METADATA';
       use version;
       no strict;
   
-      local $sigil$var;
-      \$$var=undef;
         \$vsub = sub {
+          local $sigil$var;
+          \$$var=undef;
           $line;
           \$$var
         };
@@ -11100,7 +11134,7 @@ library path.
 
 =item --auto-cleanup
 
-Specifies the number of days in whcih cpanm's work directories
+Specifies the number of days in which cpanm's work directories
 expire. Defaults to 7, which means old work directories will be
 cleaned up in one week.
 
