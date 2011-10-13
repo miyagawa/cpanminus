@@ -1556,8 +1556,8 @@ sub extract_requires {
     my($self, $meta) = @_;
 
     my @deps;
-    push @deps, %{$meta->{requires}} if $meta->{requires};
     push @deps, %{$meta->{build_requires}} if $meta->{build_requires};
+    push @deps, %{$meta->{requires}} if $meta->{requires};
 
     return @deps;
 }
