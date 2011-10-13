@@ -163,7 +163,7 @@ sub doit {
         }
 
         ($module, my $version) = split /\~/, $module, 2;
-        if ($self->{skip_satisfied}) {
+        if ($self->{skip_satisfied} or defined $version) {
             $self->check_libs;
             my($ok, $local) = $self->check_module($module, $version || 0);
             if ($ok) {
