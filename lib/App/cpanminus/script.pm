@@ -1087,14 +1087,14 @@ sub check_module {
     my $version = $meta->version;
 
     # When -L is in use, the version loaded from 'perl' library path
-    # might be newer than the version that is shipped with the current perl
+    # might be newer than (or actually wasn't core at) the version
+    # that is shipped with the current perl
     if ($self->{self_contained} && $self->loaded_from_perl_lib($meta)) {
-        my $core_version = eval {
-            require Module::CoreList;
-            $Module::CoreList::version{$]+0}{$mod};
-        };
-
-        $version = $core_version if %Module::CoreList::version;
+        require Module::CoreList;
+        unless (exists $Module::CoreList::version{$]+0}{$mod}) {
+            return 0, undef;
+        }
+        $version = $Module::CoreList::version{$]+0}{$mod};
     }
 
     $self->{local_versions}{$mod} = $version;
