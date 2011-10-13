@@ -1477,12 +1477,14 @@ sub find_prereqs {
     my @deps;
 
     my $meta = $dist->{meta};
+    my $mymeta_found;
     if (-e 'MYMETA.yml') {
         $self->chat("Checking dependencies from MYMETA.yml ...\n");
         my $mymeta = $self->parse_meta('MYMETA.yml');
         if ($mymeta) {
             @deps = $self->extract_requires($mymeta);
             $meta->{$_} = $mymeta->{$_} for keys %$mymeta; # merge
+            $mymeta_found++;
         }
     } elsif (-e '_build/prereqs') {
         $self->chat("Checking dependencies from _build/prereqs ...\n");
@@ -1490,7 +1492,7 @@ sub find_prereqs {
         @deps = $self->extract_requires($mymeta);
     }
 
-    if (-e 'Makefile') {
+    if (-e 'Makefile' and !$mymeta_found) {
         $self->chat("Finding PREREQ from Makefile ...\n");
         open my $mf, "Makefile";
         while (<$mf>) {
