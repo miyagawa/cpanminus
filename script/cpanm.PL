@@ -173,6 +173,11 @@ shell aliases, like:
 
 B<EXPERIMENTAL>: Specifies the file path to C<02packages.details.txt>
 for module search index.
+
+=item --metacpan
+
+Use L<http://api.metacpan.org/> API for module lookup instead of
+L<http://cpanmetadb.appspot.com/>.
     
 =item --prompt
 
