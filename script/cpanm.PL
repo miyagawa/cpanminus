@@ -176,7 +176,7 @@ for module search index.
 
 =item --metacpan
 
-Use L<http://api.metacpan.org/> API for module lookup instead of
+B<EXPERIMENTAL>: Use L<http://api.metacpan.org/> API for module lookup instead of
 L<http://cpanmetadb.appspot.com/>.
     
 =item --prompt

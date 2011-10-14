@@ -15,7 +15,7 @@ use Symbol ();
 use constant WIN32 => $^O eq 'MSWin32';
 use constant SUNOS => $^O eq 'solaris';
 
-our $VERSION = "1.5000";
+our $VERSION = "1.5001";
 
 my $quote = WIN32 ? q/"/ : q/'/;
 
@@ -313,12 +313,12 @@ sub search_module {
             require JSON::PP;
             $self->chat("Searching $module on metacpan ...\n");
             my $module_uri  = "http://api.metacpan.org/module/$module";
-            my $module_yaml = $self->get($module_uri);
-            my $module_meta = eval { JSON::PP::decode_json($module_yaml) };
+            my $module_json = $self->get($module_uri);
+            my $module_meta = eval { JSON::PP::decode_json($module_json) };
             if ($module_meta && $module_meta->{distribution}) {
                 my $dist_uri = "http://api.metacpan.org/release/$module_meta->{distribution}";
-                my $dist_yaml = $self->get($dist_uri);
-                my $dist_meta = eval { JSON::PP::decode_json($dist_yaml) };
+                my $dist_json = $self->get($dist_uri);
+                my $dist_meta = eval { JSON::PP::decode_json($dist_json) };
                 if ($dist_meta && $dist_meta->{download_url}) {
                     (my $distfile = $dist_meta->{download_url}) =~ s!.+/authors/id/!!;
                     local $self->{mirrors} = $self->{mirrors};
@@ -1494,13 +1494,23 @@ sub extract_meta_prereqs {
     my $meta = $dist->{meta};
 
     my @deps;
+    if (-e "MYMETA.json") {
+        require JSON::PP;
+        $self->chat("Checking dependencies from MYMETA.json ...\n");
+        my $json = do { open my $in, "<MYMETA.json"; local $/; <$in> };
+        my $mymeta = JSON::PP::decode_json($json);
+        if ($mymeta) {
+            $meta->{$_} = $mymeta->{$_} for qw(name version);
+            return $self->extract_requires($mymeta);
+        }
+    }
+
     if (-e 'MYMETA.yml') {
         $self->chat("Checking dependencies from MYMETA.yml ...\n");
         my $mymeta = $self->parse_meta('MYMETA.yml');
-        if ($mymeta && $mymeta->{'meta-spec'}{version} eq '1.4') {
-            @deps = $self->extract_requires($mymeta);
-            $meta->{$_} = $mymeta->{$_} for keys %$mymeta; # merge
-            return @deps;
+        if ($mymeta) {
+            $meta->{$_} = $mymeta->{$_} for qw(name version);
+            return $self->extract_requires($mymeta);
         }
     }
 
@@ -1566,6 +1576,15 @@ sub maybe_version {
 
 sub extract_requires {
     my($self, $meta) = @_;
+
+    if ($meta->{'meta-spec'} && $meta->{'meta-spec'}{version} == 2) {
+        my @phase = $self->{notest} ? qw( build runtime ) : qw( build test runtime );
+        my @deps = map {
+            my $p = $meta->{prereqs}{$_} || {};
+            %{$p->{requires} || {}};
+        } @phase;
+        return @deps;
+    }
 
     my @deps;
     push @deps, %{$meta->{build_requires}} if $meta->{build_requires};

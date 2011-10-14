@@ -1,5 +1,13 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.5001 Fri Oct 14 00:18:33 JST 2011
+   [New Features]
+      - Added EXPERIMENTAL --metacpan support (tokuhirom)
+
+   [Improvements]
+      - Do not scan Makefile if MYMETA.yml is found
+      - Support MYMETA.json with spec 2.0
+
 1.5000 Thu Oct 13 15:31:13 JST 2011
    [New Features]
       - Added EXPERIMENTAL --mirror-index, --skip-satisfied and --cascade-search options
