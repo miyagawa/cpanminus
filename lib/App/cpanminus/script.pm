@@ -1221,11 +1221,8 @@ sub build_stuff {
     $self->diag_ok($configure_state->{configured_ok} ? "OK" : "N/A");
 
     my @deps = $self->find_prereqs($dist);
-    my $module_name = $self->find_module_name($configure_state) || do {
-        my $name = $dist->{meta}{name};
-        $name =~ s/-/::/g;
-        $name;
-    };
+    my $module_name = $self->find_module_name($configure_state) || $dist->{meta}{name};
+    $module_name =~ s/-/::/g;
 
     if ($self->{showdeps}) {
         my %rootdeps = (@config_deps, @deps); # merge
