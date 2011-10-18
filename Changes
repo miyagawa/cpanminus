@@ -1,5 +1,10 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.5002 Tue Oct 18 09:06:17 JST 2011
+   [Bug Fixes]
+      - Make sure to include non-core perl modules in -L that are installed in 'perl' by mistake
+      - Ensure all module names use :: instead of dashes because of EUMM NAME errors (Christian Walde)
+
 1.5001 Fri Oct 14 00:18:33 JST 2011
    [New Features]
       - Added EXPERIMENTAL --metacpan support (tokuhirom)

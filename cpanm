@@ -18,7 +18,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.5001";
+  our $VERSION = "1.5002";
   $VERSION = eval $VERSION;
   
   =head1 NAME
@@ -327,7 +327,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use constant WIN32 => $^O eq 'MSWin32';
   use constant SUNOS => $^O eq 'solaris';
   
-  our $VERSION = "1.5001";
+  our $VERSION = "1.5002";
   
   my $quote = WIN32 ? q/"/ : q/'/;
   
@@ -1400,14 +1400,14 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       my $version = $meta->version;
   
       # When -L is in use, the version loaded from 'perl' library path
-      # might be newer than the version that is shipped with the current perl
+      # might be newer than (or actually wasn't core at) the version
+      # that is shipped with the current perl
       if ($self->{self_contained} && $self->loaded_from_perl_lib($meta)) {
-          my $core_version = eval {
-              require Module::CoreList;
-              $Module::CoreList::version{$]+0}{$mod};
-          };
-  
-          $version = $core_version if %Module::CoreList::version;
+          require Module::CoreList;
+          unless (exists $Module::CoreList::version{$]+0}{$mod}) {
+              return 0, undef;
+          }
+          $version = $Module::CoreList::version{$]+0}{$mod};
       }
   
       $self->{local_versions}{$mod} = $version;
@@ -1534,11 +1534,8 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       $self->diag_ok($configure_state->{configured_ok} ? "OK" : "N/A");
   
       my @deps = $self->find_prereqs($dist);
-      my $module_name = $self->find_module_name($configure_state) || do {
-          my $name = $dist->{meta}{name};
-          $name =~ s/-/::/g;
-          $name;
-      };
+      my $module_name = $self->find_module_name($configure_state) || $dist->{meta}{name};
+      $module_name =~ s/-/::/g;
   
       if ($self->{showdeps}) {
           my %rootdeps = (@config_deps, @deps); # merge
