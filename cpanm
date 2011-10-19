@@ -18,8 +18,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.5002";
-  $VERSION = eval $VERSION;
+  our $VERSION = "1.5003";
   
   =head1 NAME
   
@@ -327,7 +326,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use constant WIN32 => $^O eq 'MSWin32';
   use constant SUNOS => $^O eq 'solaris';
   
-  our $VERSION = "1.5002";
+  our $VERSION = "1.5003";
   
   my $quote = WIN32 ? q/"/ : q/'/;
   
@@ -1732,18 +1731,12 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       my $base = ($ENV{PERL_MM_OPT} || '') =~ /INSTALL_BASE=/
           ? ($self->install_base($ENV{PERL_MM_OPT}) . "/lib/perl5") : $Config{sitelibexp};
   
-      my $dir = "$base/$Config{archname}/.meta/$dist->{distvname}";
-      File::Path::mkpath([ $dir ], 0, 0777);
-  
-      # Existence of MYMETA.* Depends on EUMM/M::B versions and CPAN::Meta
-      if (-e "MYMETA.json") {
-          File::Copy::copy("MYMETA.json", "$dir/MYMETA.json");
-      }
-  
       my $provides = $self->_merge_hashref(
           map Module::Metadata->package_versions_from_directory($_),
               qw( blib/lib blib/arch ) # FCGI.pm :(
       );
+  
+      mkdir "blib/meta", 0777 or die $!;
   
       my $local = {
           name => $module_name,
@@ -1755,8 +1748,22 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       };
   
       require JSON::PP;
-      open my $fh, ">", "$dir/install.json" or die $!;
+      open my $fh, ">", "blib/meta/install.json" or die $!;
       print $fh JSON::PP::encode_json($local);
+  
+      # Existence of MYMETA.* Depends on EUMM/M::B versions and CPAN::Meta
+      if (-e "MYMETA.json") {
+          File::Copy::copy("MYMETA.json", "blib/meta/MYMETA.json");
+      }
+  
+      my @cmd = (
+          ($self->{sudo} ? 'sudo' : ()),
+          $^X,
+          '-MExtUtils::Install=install',
+          '-e',
+          qq[install({ 'blib/meta' => "$base/$Config{archname}/.meta/$dist->{distvname}" })],
+      );
+      $self->run(\@cmd);
   }
   
   sub _merge_hashref {

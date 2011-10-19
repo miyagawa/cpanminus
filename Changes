@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.5003 Wed Oct 19 16:29:29 JST 2011
+   [Bug Fixes]
+      - Use ExtUtils::Install to install meta files and let --sudo run it with sudo #124
+
 1.5002 Tue Oct 18 09:06:17 JST 2011
    [Bug Fixes]
       - Make sure to include non-core perl modules in -L that are installed in 'perl' by mistake
