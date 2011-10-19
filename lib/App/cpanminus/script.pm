@@ -1419,18 +1419,12 @@ sub save_meta {
     my $base = ($ENV{PERL_MM_OPT} || '') =~ /INSTALL_BASE=/
         ? ($self->install_base($ENV{PERL_MM_OPT}) . "/lib/perl5") : $Config{sitelibexp};
 
-    my $dir = "$base/$Config{archname}/.meta/$dist->{distvname}";
-    File::Path::mkpath([ $dir ], 0, 0777);
-
-    # Existence of MYMETA.* Depends on EUMM/M::B versions and CPAN::Meta
-    if (-e "MYMETA.json") {
-        File::Copy::copy("MYMETA.json", "$dir/MYMETA.json");
-    }
-
     my $provides = $self->_merge_hashref(
         map Module::Metadata->package_versions_from_directory($_),
             qw( blib/lib blib/arch ) # FCGI.pm :(
     );
+
+    mkdir "blib/meta", 0777 or die $!;
 
     my $local = {
         name => $module_name,
@@ -1442,8 +1436,22 @@ sub save_meta {
     };
 
     require JSON::PP;
-    open my $fh, ">", "$dir/install.json" or die $!;
+    open my $fh, ">", "blib/meta/install.json" or die $!;
     print $fh JSON::PP::encode_json($local);
+
+    # Existence of MYMETA.* Depends on EUMM/M::B versions and CPAN::Meta
+    if (-e "MYMETA.json") {
+        File::Copy::copy("MYMETA.json", "blib/meta/MYMETA.json");
+    }
+
+    my @cmd = (
+        ($self->{sudo} ? 'sudo' : ()),
+        $^X,
+        '-MExtUtils::Install=install',
+        '-e',
+        qq[install({ 'blib/meta' => "$base/$Config{archname}/.meta/$dist->{distvname}" })],
+    );
+    $self->run(\@cmd);
 }
 
 sub _merge_hashref {
