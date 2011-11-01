@@ -156,6 +156,8 @@ sub doit {
 
     $self->configure_mirrors;
 
+    my $cwd = Cwd::cwd;
+
     my @fail;
     for my $module (@{$self->{argv}}) {
         if ($module =~ s/\.pm$//i) {
@@ -173,6 +175,7 @@ sub doit {
             }
         }
 
+        $self->chdir($cwd);
         $self->install_module($module, 0, $version)
             or push @fail, $module;
     }
