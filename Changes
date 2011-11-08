@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.5004 Tue Nov  8 14:28:20 PST 2011
+   [Bug Fixes]
+      - Include version of the main module instead of distribution version in install.json (pfig)
+
 1.5003 Wed Oct 19 16:29:29 JST 2011
    [Bug Fixes]
       - Use ExtUtils::Install to install meta files and let --sudo run it with sudo #124
