@@ -1429,7 +1429,7 @@ sub save_meta {
     my $local = {
         name => $module_name,
         module => $module,
-        version => $dist->{version},
+        version => $provides->{$module}{version} || $dist->{version},
         dist => $dist->{distvname},
         pathname => $dist->{pathname},
         provides => $provides,
