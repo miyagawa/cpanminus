@@ -1449,7 +1449,7 @@ sub save_meta {
         $^X,
         '-MExtUtils::Install=install',
         '-e',
-        qq[install({ 'blib/meta' => "$base/$Config{archname}/.meta/$dist->{distvname}" })],
+        qq[install({ 'blib/meta' => '$base/$Config{archname}/.meta/$dist->{distvname}' })],
     );
     $self->run(\@cmd);
 }
