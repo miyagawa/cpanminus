@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.5005 Tue Nov 22 13:29:27 PST 2011
+   [Bug Fixes]
+      - Fixed a bug where copying meta JSON files fail on Win32 (#133, #135)
+
 1.5004 Tue Nov  8 14:28:20 PST 2011
    [Bug Fixes]
       - Include version of the main module instead of distribution version in install.json (pfig)
