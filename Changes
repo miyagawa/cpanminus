@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.5006 Tue Nov 29 11:47:15 PST 2011
+   [Improvements]
+      - Updated cpanmetadb URL to point to cpanmetadb.plackperl.org
+
 1.5005 Tue Nov 22 13:29:27 PST 2011
    [Bug Fixes]
       - Fixed a bug where copying meta JSON files fail on Win32 (#133, #135)

@@ -18,7 +18,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.5005";
+  our $VERSION = "1.5006";
   
   =head1 NAME
   
@@ -134,7 +134,7 @@ $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   =head2 Zero-conf? How does this module get/parse/update the CPAN index?
   
   It queries the CPAN Meta DB site running on Google AppEngine at
-  L<http://cpanmetadb.appspot.com/>. The site is updated every hour to reflect
+  L<http://cpanmetadb.plackperl.org/>. The site is updated every hour to reflect
   the latest changes from fast syncing mirrors. The script then also falls back
   to scrape the site L<http://search.cpan.org/>.
   
@@ -326,7 +326,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use constant WIN32 => $^O eq 'MSWin32';
   use constant SUNOS => $^O eq 'solaris';
   
-  our $VERSION = "1.5005";
+  our $VERSION = "1.5006";
   
   my $quote = WIN32 ? q/"/ : q/'/;
   
@@ -639,7 +639,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           }
   
           $self->chat("Searching $module on cpanmetadb ...\n");
-          my $uri  = "http://cpanmetadb.appspot.com/v1.0/package/$module";
+          my $uri  = "http://cpanmetadb.plackperl.org/v1.0/package/$module";
           my $yaml = $self->get($uri);
           my $meta = $self->parse_meta_string($yaml);
           if ($meta && $meta->{distfile}) {
@@ -11078,7 +11078,7 @@ for module search index.
 =item --metacpan
 
 B<EXPERIMENTAL>: Use L<http://api.metacpan.org/> API for module lookup instead of
-L<http://cpanmetadb.appspot.com/>.
+L<http://cpanmetadb.plackperl.org/>.
     
 =item --prompt
 
