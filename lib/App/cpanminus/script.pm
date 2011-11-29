@@ -327,7 +327,7 @@ sub search_module {
         }
 
         $self->chat("Searching $module on cpanmetadb ...\n");
-        my $uri  = "http://cpanmetadb.appspot.com/v1.0/package/$module";
+        my $uri  = "http://cpanmetadb.plackperl.org/v1.0/package/$module";
         my $yaml = $self->get($uri);
         my $meta = $self->parse_meta_string($yaml);
         if ($meta && $meta->{distfile}) {
