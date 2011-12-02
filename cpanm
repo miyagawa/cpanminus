@@ -10921,6 +10921,8 @@ use App::cpanminus::script;
 unless (caller) {
     my $app = App::cpanminus::script->new;
     $app->parse_options(@ARGV);
+    # Make sure directories are o+rx so that --sudo works.
+    umask(0022);
     $app->doit or exit(1);
 }
 
