@@ -303,6 +303,14 @@ B<EXPERIMENTAL>: Specifies whether to cascade search when you specify
 multiple mirrors and a mirror has a lower version of the module than
 requested. Defaults to false.
 
+=item --skip-installed
+
+Specifies whether a module given in the command line is skipped if its latest
+version is already installed. Defaults to true.
+
+B<NOTE>: The C<PERL5LIB> environment variable have to be correctly set for this
+to work with modules installed using L<local::lib>.
+
 =item --skip-satisfied
 
 B<EXPERIMENTAL>: Specifies whether a module (and version) given in the
