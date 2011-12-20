@@ -1,5 +1,14 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.5007 Tue Dec 20 10:15:48 PST 2011
+   [Bug Fixes]
+      - Fixed to change directory when installing from multiple local directories (motemen)
+
+   [Improvements]
+      - Stop setting AUTOMATED_TESTING (again!) and set PERL_MM_USE_DEFAULT in testing (#138)
+      - Offer opening the build.log with PAGER when --prompt is enabled (doy)
+      - Documentation added for --skip-installed option (AlexBio)
+
 1.5006 Tue Nov 29 11:47:15 PST 2011
    [Improvements]
       - Updated cpanmetadb URL to point to cpanmetadb.plackperl.org
