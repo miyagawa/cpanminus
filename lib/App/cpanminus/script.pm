@@ -779,9 +779,8 @@ sub test {
     my($self, $cmd, $distname) = @_;
     return 1 if $self->{notest};
 
-    # http://www.nntp.perl.org/group/perl.perl5.porters/2009/10/msg152656.html
-    local $ENV{AUTOMATED_TESTING} = 1
-        unless $self->env('NO_AUTOMATED_TESTING');
+    # https://rt.cpan.org/Ticket/Display.html?id=48965#txn-1013385
+    local $ENV{PERL_MM_USE_DEFAULT} = 1;
 
     return 1 if $self->run_timeout($cmd, $self->{test_timeout});
     if ($self->{force}) {
