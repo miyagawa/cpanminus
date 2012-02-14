@@ -1545,6 +1545,11 @@ sub extract_meta_prereqs {
         }
     }
 
+    if (-e 'dist.ini') {
+        $self->chat("Checking dependencies from dist.init ...\n");
+        push(@deps, split(/\n/, `dzil listdeps`));
+    }
+
     if (-e '_build/prereqs') {
         $self->chat("Checking dependencies from _build/prereqs ...\n");
         my $mymeta = do { open my $in, "_build/prereqs"; $self->safe_eval(join "", <$in>) };
