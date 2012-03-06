@@ -522,8 +522,8 @@ sub _core_only_inc {
     my($self, $base) = @_;
     require local::lib;
     (
-        local::lib->install_base_perl_path($base),
-        local::lib->install_base_arch_path($base),
+        local::lib->resolve_path(local::lib->install_base_perl_path($base)),
+        local::lib->resolve_path(local::lib->install_base_arch_path($base)),
         @Config{qw(privlibexp archlibexp)},
     );
 }
@@ -559,8 +559,8 @@ sub setup_local_lib {
             $self->{search_inc} = [ @inc ];
         } else {
             $self->{search_inc} = [
-                local::lib->install_base_arch_path($base),
-                local::lib->install_base_perl_path($base),
+                local::lib->resolve_path(local::lib->install_base_arch_path($base)),
+                local::lib->resolve_path(local::lib->install_base_perl_path($base)),
                 @INC,
             ];
         }
