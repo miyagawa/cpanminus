@@ -1,5 +1,11 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.5008 Sat Mar 17 18:19:57 PDT 2012
+   [Bug Fixes]
+      - Fied a bug where `cpanm Foo` doesn't properly activate local::lib during installs
+        when you don't have write permissions #143 (goodel, ash)
+      - Improved the warning message when you don't have write permisisons #145 (ash)
+
 1.5007 Tue Dec 20 10:15:48 PST 2011
    [Bug Fixes]
       - Fixed to change directory when installing from multiple local directories (motemen)
