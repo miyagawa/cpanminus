@@ -1,5 +1,10 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.5009 Fri Mar 30 18:44:12 CEST 2012
+   [Bug Fixes]
+      - Fixed a bug where URL containing ~ (childe) fails to install #134
+      - Fixed a bug where install.json contains bogus data when you specify dist paths
+
 1.5008 Sat Mar 17 18:19:57 PDT 2012
    [Bug Fixes]
       - Fied a bug where `cpanm Foo` doesn't properly activate local::lib during installs

@@ -18,7 +18,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.5008";
+  our $VERSION = "1.5009";
   
   =head1 NAME
   
@@ -326,7 +326,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use constant WIN32 => $^O eq 'MSWin32';
   use constant SUNOS => $^O eq 'solaris';
   
-  our $VERSION = "1.5008";
+  our $VERSION = "1.5009";
   
   my $quote = WIN32 ? q/"/ : q/'/;
   
@@ -477,7 +477,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
               $module = join '::', grep { $_ } File::Spec->splitdir($dirs), $file;
           }
   
-          ($module, my $version) = split /\~/, $module, 2;
+          ($module, my $version) = split /\~/, $module, 2 if $module =~ /\~[\d\._]+$/;
           if ($self->{skip_satisfied} or defined $version) {
               $self->check_libs;
               my($ok, $local) = $self->check_module($module, $version || 0);
@@ -1772,8 +1772,8 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   
       my $local = {
           name => $module_name,
-          module => $module,
-          version => $provides->{$module}{version} || $dist->{version},
+          target => $module,
+          version => $provides->{$module_name}{version} || $dist->{version},
           dist => $dist->{distvname},
           pathname => $dist->{pathname},
           provides => $provides,
