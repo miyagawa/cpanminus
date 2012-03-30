@@ -6,7 +6,7 @@ use Module::Install::Base ();
 
 use vars qw{$VERSION @ISA $ISCORE};
 BEGIN {
-	$VERSION = '1.02';
+	$VERSION = '1.06';
 	@ISA     = 'Module::Install::Base';
 	$ISCORE  = 1;
 }
@@ -151,13 +151,19 @@ sub install_as_site   { $_[0]->installdirs('site')   }
 sub install_as_vendor { $_[0]->installdirs('vendor') }
 
 sub dynamic_config {
-	my $self = shift;
-	unless ( @_ ) {
-		warn "You MUST provide an explicit true/false value to dynamic_config\n";
-		return $self;
+	my $self  = shift;
+	my $value = @_ ? shift : 1;
+	if ( $self->{values}->{dynamic_config} ) {
+		# Once dynamic we never change to static, for safety
+		return 0;
 	}
-	$self->{values}->{dynamic_config} = $_[0] ? 1 : 0;
+	$self->{values}->{dynamic_config} = $value ? 1 : 0;
 	return 1;
+}
+
+# Convenience command
+sub static_config {
+	shift->dynamic_config(0);
 }
 
 sub perl_version {
