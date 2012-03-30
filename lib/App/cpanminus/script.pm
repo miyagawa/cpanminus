@@ -165,7 +165,7 @@ sub doit {
             $module = join '::', grep { $_ } File::Spec->splitdir($dirs), $file;
         }
 
-        ($module, my $version) = split /\~/, $module, 2;
+        ($module, my $version) = split /\~/, $module, 2 if $module =~ /\~[\d\._]+$/;
         if ($self->{skip_satisfied} or defined $version) {
             $self->check_libs;
             my($ok, $local) = $self->check_module($module, $version || 0);
