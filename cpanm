@@ -18,7 +18,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.5009";
+  our $VERSION = "1.5010";
   
   =head1 NAME
   
@@ -326,7 +326,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use constant WIN32 => $^O eq 'MSWin32';
   use constant SUNOS => $^O eq 'solaris';
   
-  our $VERSION = "1.5009";
+  our $VERSION = "1.5010";
   
   my $quote = WIN32 ? q/"/ : q/'/;
   
@@ -338,6 +338,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           cmd  => 'install',
           seen => {},
           notest => undef,
+          test_only => undef,
           installdeps => undef,
           force => undef,
           sudo => undef,
@@ -391,6 +392,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       Getopt::Long::GetOptions(
           'f|force'   => sub { $self->{skip_installed} = 0; $self->{force} = 1 },
           'n|notest!' => \$self->{notest},
+          'test-only' => sub { $self->{notest} = 0; $self->{skip_installed} = 0; $self->{test_only} = 1 },
           'S|sudo!'   => \$self->{sudo},
           'v|verbose' => sub { $self->{verbose} = $self->{interactive} = 1 },
           'q|quiet!'  => \$self->{quiet},
@@ -738,6 +740,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
     --interactive             Turns on interactive configure (required for Task:: modules)
     -f,--force                force install
     -n,--notest               Do not run unit tests
+    --test-only               Run tests only, do not install
     -S,--sudo                 sudo to run install commands
     --installdeps             Only install dependencies
     --showdeps                Only display direct dependencies
@@ -1113,7 +1116,11 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   }
   
   sub install {
-      my($self, $cmd, $uninst_opts) = @_;
+      my($self, $cmd, $uninst_opts, $depth) = @_;
+  
+      if ($depth == 0 && $self->{test_only}) {
+          return 1;
+      }
   
       if ($self->{sudo}) {
           unshift @$cmd, "sudo";
@@ -1618,13 +1625,13 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . $distname);
           $self->build([ $self->{perl}, @switches, "./Build" ], $distname) &&
           $self->test([ $self->{perl}, "./Build", "test" ], $distname) &&
-          $self->install([ $self->{perl}, @switches, "./Build", "install" ], [ "--uninst", 1 ]) &&
+          $self->install([ $self->{perl}, @switches, "./Build", "install" ], [ "--uninst", 1 ], $depth) &&
           $installed++;
       } elsif ($self->{make} && -e 'Makefile') {
           $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . $distname);
           $self->build([ $self->{make} ], $distname) &&
           $self->test([ $self->{make}, "test" ], $distname) &&
-          $self->install([ $self->{make}, "install" ], [ "UNINST=1" ]) &&
+          $self->install([ $self->{make}, "install" ], [ "UNINST=1" ], $depth) &&
           $installed++;
       } else {
           my $why;
@@ -1637,7 +1644,10 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           return;
       }
   
-      if ($installed) {
+      if ($installed && $self->{test_only}) {
+          $self->diag_ok;
+          $self->diag("Successfully tested $distname\n", 1);
+      } elsif ($installed) {
           my $local   = $self->{local_versions}{$dist->{module} || ''};
           my $version = $dist->{module_version} || $dist->{meta}{version} || $dist->{version};
           my $reinstall = $local && ($local eq $version);
@@ -1652,8 +1662,8 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           $self->save_meta($stuff, $dist, $module_name, \@config_deps, \@deps);
           return 1;
       } else {
-          my $msg = "Building $distname failed";
-          $self->diag_fail("Installing $stuff failed. See $self->{log} for details.", 1);
+          my $what = $self->{test_only} ? "Testing" : "Installing";
+          $self->diag_fail("$what $stuff failed. See $self->{log} for details.", 1);
           return;
       }
   }
@@ -10964,16 +10974,16 @@ cpanm - get, unpack build and install modules from CPAN
 
 =head1 SYNOPSIS
 
-  cpanm Test::More                                          # install Test::More
-  cpanm MIYAGAWA/Plack-0.99_05.tar.gz                       # full distribution path
-  cpanm http://example.org/LDS/CGI.pm-3.20.tar.gz           # install from URL
-  cpanm ~/dists/MyCompany-Enterprise-1.00.tar.gz            # install from a local file
-  cpanm --interactive Task::Kensho                          # Configure interactively
-  cpanm .                                                   # install from local directory
-  cpanm --installdeps .                                     # install all the deps for the current directory
-  cpanm -L extlib Plack                                     # install Plack and all non-core deps into extlib
-  cpanm --mirror http://cpan.cpantesters.org/ DBI           # use the fast-syncing mirror
-  cpanm --scandeps Moose                                    # See what modules will be installed for Moose
+  cpanm Test::More                                 # install Test::More
+  cpanm MIYAGAWA/Plack-0.99_05.tar.gz              # full distribution path
+  cpanm http://example.org/LDS/CGI.pm-3.20.tar.gz  # install from URL
+  cpanm ~/dists/MyCompany-Enterprise-1.00.tar.gz   # install from a local file
+  cpanm --interactive Task::Kensho                 # Configure interactively
+  cpanm .                                          # install from local directory
+  cpanm --installdeps .                            # install all the deps for the current directory
+  cpanm -L extlib Plack                            # install Plack and all non-core deps into extlib
+  cpanm --mirror http://cpan.cpantesters.org/ DBI  # use the fast-syncing mirror
+  cpanm --scandeps Moose                           # See what modules will be installed for Moose
 
 =head1 COMMANDS
 
@@ -11037,6 +11047,16 @@ architecture you've already tested to make sure it builds fine.
 
 Defaults to false, and you can say C<--no-notest> to override when it
 is set in the default options in C<PERL_CPANM_OPT>.
+
+=item --test-only
+
+Run the tests only, and do not install the specified module or
+distributions. Handy if you want to verify the new (or even old)
+releases pass its unit tests without installing the module.
+
+Note that if you specify this option with a module or distribution
+that has dependencies, these dependencies will be installed if you
+don't currently have them.
 
 =item -S, --sudo
 

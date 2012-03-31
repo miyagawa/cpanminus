@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.5010 Sat Mar 31 12:59:52 CEST 2012
+   [New Feature]
+      - Implemented --test-only option #40
+
 1.5009 Fri Mar 30 18:44:12 CEST 2012
    [Bug Fixes]
       - Fixed a bug where URL containing ~ (childe) fails to install #134
