@@ -26,6 +26,7 @@ sub new {
         cmd  => 'install',
         seen => {},
         notest => undef,
+        test_only => undef,
         installdeps => undef,
         force => undef,
         sudo => undef,
@@ -79,6 +80,7 @@ sub parse_options {
     Getopt::Long::GetOptions(
         'f|force'   => sub { $self->{skip_installed} = 0; $self->{force} = 1 },
         'n|notest!' => \$self->{notest},
+        'test-only' => sub { $self->{notest} = 0; $self->{skip_installed} = 0; $self->{test_only} = 1 },
         'S|sudo!'   => \$self->{sudo},
         'v|verbose' => sub { $self->{verbose} = $self->{interactive} = 1 },
         'q|quiet!'  => \$self->{quiet},
@@ -426,6 +428,7 @@ Options:
   --interactive             Turns on interactive configure (required for Task:: modules)
   -f,--force                force install
   -n,--notest               Do not run unit tests
+  --test-only               Run tests only, do not install
   -S,--sudo                 sudo to run install commands
   --installdeps             Only install dependencies
   --showdeps                Only display direct dependencies
@@ -801,7 +804,11 @@ sub test {
 }
 
 sub install {
-    my($self, $cmd, $uninst_opts) = @_;
+    my($self, $cmd, $uninst_opts, $depth) = @_;
+
+    if ($depth == 0 && $self->{test_only}) {
+        return 1;
+    }
 
     if ($self->{sudo}) {
         unshift @$cmd, "sudo";
@@ -1306,13 +1313,13 @@ DIAG
         $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . $distname);
         $self->build([ $self->{perl}, @switches, "./Build" ], $distname) &&
         $self->test([ $self->{perl}, "./Build", "test" ], $distname) &&
-        $self->install([ $self->{perl}, @switches, "./Build", "install" ], [ "--uninst", 1 ]) &&
+        $self->install([ $self->{perl}, @switches, "./Build", "install" ], [ "--uninst", 1 ], $depth) &&
         $installed++;
     } elsif ($self->{make} && -e 'Makefile') {
         $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . $distname);
         $self->build([ $self->{make} ], $distname) &&
         $self->test([ $self->{make}, "test" ], $distname) &&
-        $self->install([ $self->{make}, "install" ], [ "UNINST=1" ]) &&
+        $self->install([ $self->{make}, "install" ], [ "UNINST=1" ], $depth) &&
         $installed++;
     } else {
         my $why;
@@ -1325,7 +1332,10 @@ DIAG
         return;
     }
 
-    if ($installed) {
+    if ($installed && $self->{test_only}) {
+        $self->diag_ok;
+        $self->diag("Successfully tested $distname\n", 1);
+    } elsif ($installed) {
         my $local   = $self->{local_versions}{$dist->{module} || ''};
         my $version = $dist->{module_version} || $dist->{meta}{version} || $dist->{version};
         my $reinstall = $local && ($local eq $version);
@@ -1340,8 +1350,8 @@ DIAG
         $self->save_meta($stuff, $dist, $module_name, \@config_deps, \@deps);
         return 1;
     } else {
-        my $msg = "Building $distname failed";
-        $self->diag_fail("Installing $stuff failed. See $self->{log} for details.", 1);
+        my $what = $self->{test_only} ? "Testing" : "Installing";
+        $self->diag_fail("$what $stuff failed. See $self->{log} for details.", 1);
         return;
     }
 }

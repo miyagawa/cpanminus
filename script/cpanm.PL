@@ -105,6 +105,16 @@ architecture you've already tested to make sure it builds fine.
 Defaults to false, and you can say C<--no-notest> to override when it
 is set in the default options in C<PERL_CPANM_OPT>.
 
+=item --test-only
+
+Run the tests only, and do not install the specified module or
+distributions. Handy if you want to verify the new (or even old)
+releases pass its unit tests without installing the module.
+
+Note that if you specify this option with a module or distribution
+that has dependencies, these dependencies will be installed if you
+don't currently have them.
+
 =item -S, --sudo
 
 Switch to the root user with C<sudo> when installing modules. Use this
