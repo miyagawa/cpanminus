@@ -31,16 +31,16 @@ cpanm - get, unpack build and install modules from CPAN
 
 =head1 SYNOPSIS
 
-  cpanm Test::More                                          # install Test::More
-  cpanm MIYAGAWA/Plack-0.99_05.tar.gz                       # full distribution path
-  cpanm http://example.org/LDS/CGI.pm-3.20.tar.gz           # install from URL
-  cpanm ~/dists/MyCompany-Enterprise-1.00.tar.gz            # install from a local file
-  cpanm --interactive Task::Kensho                          # Configure interactively
-  cpanm .                                                   # install from local directory
-  cpanm --installdeps .                                     # install all the deps for the current directory
-  cpanm -L extlib Plack                                     # install Plack and all non-core deps into extlib
-  cpanm --mirror http://cpan.cpantesters.org/ DBI           # use the fast-syncing mirror
-  cpanm --scandeps Moose                                    # See what modules will be installed for Moose
+  cpanm Test::More                                 # install Test::More
+  cpanm MIYAGAWA/Plack-0.99_05.tar.gz              # full distribution path
+  cpanm http://example.org/LDS/CGI.pm-3.20.tar.gz  # install from URL
+  cpanm ~/dists/MyCompany-Enterprise-1.00.tar.gz   # install from a local file
+  cpanm --interactive Task::Kensho                 # Configure interactively
+  cpanm .                                          # install from local directory
+  cpanm --installdeps .                            # install all the deps for the current directory
+  cpanm -L extlib Plack                            # install Plack and all non-core deps into extlib
+  cpanm --mirror http://cpan.cpantesters.org/ DBI  # use the fast-syncing mirror
+  cpanm --scandeps Moose                           # See what modules will be installed for Moose
 
 =head1 COMMANDS
 
