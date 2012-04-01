@@ -6,6 +6,7 @@ our @EXPORT = qw(run last_build_log);
 use Capture::Tiny qw(capture);
 use File::Temp qw(tempdir);
 
+delete $ENV{PERL_CPANM_OPT};
 $ENV{PERL_CPANM_HOME} = tempdir(CLEANUP => 1);
 
 sub run {
