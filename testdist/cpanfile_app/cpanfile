@@ -1,0 +1,2 @@
+requires 'Hash::MultiValue', 0.10;
+test_requires 'Test::Warn';

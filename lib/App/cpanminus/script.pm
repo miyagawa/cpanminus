@@ -1359,6 +1359,16 @@ DIAG
 sub configure_this {
     my($self, $dist) = @_;
 
+    if (-e 'cpanfile' && $self->{installdeps}) {
+        require CPAN::cpanfile;
+        $dist->{cpanfile} = eval { CPAN::cpanfile->load('cpanfile') };
+        return {
+            configured       => 1,
+            configured_ok    => !!$dist->{cpanfile},
+            use_module_build => 0,
+        };
+    }
+
     if ($self->{skip_configure}) {
         my $eumm = -e 'Makefile';
         my $mb   = -e 'Build' && -f _;
@@ -1532,6 +1542,15 @@ sub find_prereqs {
 
 sub extract_meta_prereqs {
     my($self, $dist) = @_;
+
+    if ($dist->{cpanfile}) {
+        my $prereq = $dist->{cpanfile}->prereq;
+        my @phase = $self->{notest} ? qw( build runtime ) : qw( build test runtime );
+        require CPAN::Meta::Requirements;
+        my $req = CPAN::Meta::Requirements->new;
+        $req->add_requirements($prereq->requirements_for($_, 'requires')) for @phase;
+        return %{$req->as_string_hash};
+    }
 
     my $meta = $dist->{meta};
 
