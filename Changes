@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.5011 Thu Apr 12 18:57:06 JST 2012
+   [Improvements]
+      - Point default mirror to www.cpan.org #148
+
 1.5010 Sat Mar 31 12:59:52 CEST 2012
    [New Feature]
       - Implemented --test-only option #40

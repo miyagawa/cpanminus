@@ -14,7 +14,7 @@ use Symbol ();
 use constant WIN32 => $^O eq 'MSWin32';
 use constant SUNOS => $^O eq 'solaris';
 
-our $VERSION = "1.5010";
+our $VERSION = "1.5011";
 
 my $quote = WIN32 ? q/"/ : q/'/;
 
@@ -869,7 +869,7 @@ sub chdir {
 sub configure_mirrors {
     my $self = shift;
     unless (@{$self->{mirrors}}) {
-        $self->{mirrors} = [ 'http://search.cpan.org/CPAN' ];
+        $self->{mirrors} = [ 'http://www.cpan.org' ];
     }
     for (@{$self->{mirrors}}) {
         s!^/!file:///!;
