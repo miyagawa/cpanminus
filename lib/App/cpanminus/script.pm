@@ -308,6 +308,12 @@ sub search_mirror_index_file {
 sub search_module {
     my($self, $module, $version) = @_;
 
+    if ($self->{mirror_index}) {
+        $self->chat("Searching $module on mirror index $self->{mirror_index} ...\n");
+        my $pkg = $self->search_mirror_index_file($self->{mirror_index}, $module, $version);
+        return $pkg if $pkg;
+    }
+
     unless ($self->{mirror_only}) {
         if ($self->{metacpan}) {
             require JSON::PP;
@@ -348,12 +354,6 @@ sub search_module {
             and return $self->cpan_module($module, $1);
 
         $self->diag_fail("Finding $module on search.cpan.org failed.");
-    }
-
-    if ($self->{mirror_index}) {
-        $self->chat("Searching $module on mirror index $self->{mirror_index} ...\n");
-        my $pkg = $self->search_mirror_index_file($self->{mirror_index}, $module, $version);
-        return $pkg if $pkg;
     }
 
     MIRROR: for my $mirror (@{ $self->{mirrors} }) {
