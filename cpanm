@@ -2074,6 +2074,8 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   
       return if $self->{initialized}++;
   
+      $self->chat("You have App::cpanminus $VERSION\n");
+  
       if ($self->{make} = $self->which($Config{make})) {
           $self->chat("You have make $self->{make}\n");
       }
