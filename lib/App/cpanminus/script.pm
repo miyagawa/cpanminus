@@ -500,6 +500,24 @@ sub bootstrap_local_lib {
     # root, locally-installed perl or --sudo: don't care about install_base
     return if $self->{sudo} or (_writable($Config{installsitelib}) and _writable($Config{installsitebin}));
 
+    # Check for writable install location if ExtUtils::MakeMaker DESTDIR option defined
+    if ($ENV{PERL_MM_OPT}) {
+      foreach (split(/\s/,$ENV{PERL_MM_OPT})) {
+          my ($mm_key,$mm_value) = split('=',$_,2);
+          next unless ( $mm_key eq "DESTDIR" );
+          return if (_writable("$mm_value/".$Config{installsitelib}) and _writable("$mm_value/".$Config{installsitebin}));
+      }
+    }
+
+    # Check for writable install location if Module::Build destdir option defined
+    if ($ENV{PERL_MB_OPT}) {
+      foreach (split(/--/,$ENV{PERL_MB_OPT})) {
+          my ($mb_key,$mb_value) = split(/\s/,$_,2);
+          next unless ( $mb_key eq "destdir" );
+          return if (_writable("$mb_value/".$Config{installsitelib}) and _writable("$mb_value/".$Config{installsitebin}));
+      }
+    }
+
     # local::lib is configured in the shell -- yay
     if ($ENV{PERL_MM_OPT} and ($ENV{MODULEBUILDRC} or $ENV{PERL_MB_OPT})) {
         $self->bootstrap_local_lib_deps;
