@@ -512,7 +512,7 @@ sub bootstrap_local_lib {
     # Check for writable install location if Module::Build destdir option defined
     if ($ENV{PERL_MB_OPT}) {
       foreach (split(/--/,$ENV{PERL_MB_OPT})) {
-          my ($mb_key,$mb_value) = split(/\s/,$_,2);
+          my ($mb_key,$mb_value) = split(/\s/,$_);
           next unless ( $mb_key eq "destdir" );
           return if (_writable("$mb_value/".$Config{installsitelib}) and _writable("$mb_value/".$Config{installsitebin}));
       }
