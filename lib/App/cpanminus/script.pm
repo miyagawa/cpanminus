@@ -498,25 +498,7 @@ sub bootstrap_local_lib {
     }
 
     # root, locally-installed perl or --sudo: don't care about install_base
-    return if $self->{sudo} or (_writable($Config{installsitelib}) and _writable($Config{installsitebin}));
-
-    # Check for writable install location if ExtUtils::MakeMaker DESTDIR option defined
-    if ($ENV{PERL_MM_OPT}) {
-      foreach (split(/\s/,$ENV{PERL_MM_OPT})) {
-          my ($mm_key,$mm_value) = split('=',$_,2);
-          next unless ( $mm_key eq "DESTDIR" );
-          return if (_writable("$mm_value/".$Config{installsitelib}) and _writable("$mm_value/".$Config{installsitebin}));
-      }
-    }
-
-    # Check for writable install location if Module::Build destdir option defined
-    if ($ENV{PERL_MB_OPT}) {
-      foreach (split(/--/,$ENV{PERL_MB_OPT})) {
-          my ($mb_key,$mb_value) = split(/\s/,$_);
-          next unless ( $mb_key eq "destdir" );
-          return if (_writable("$mb_value/".$Config{installsitelib}) and _writable("$mb_value/".$Config{installsitebin}));
-      }
-    }
+    return if $self->{sudo} or (_writable($self->dest_dir() . $Config{installsitelib}) and _writable($self->dest_dir() . $Config{installsitebin}));
 
     # local::lib is configured in the shell -- yay
     if ($ENV{PERL_MM_OPT} and ($ENV{MODULEBUILDRC} or $ENV{PERL_MB_OPT})) {
@@ -1479,6 +1461,8 @@ sub save_meta {
     my $base = ($ENV{PERL_MM_OPT} || '') =~ /INSTALL_BASE=/
         ? ($self->install_base($ENV{PERL_MM_OPT}) . "/lib/perl5") : $Config{sitelibexp};
 
+    $base = $self->dest_dir() . $base;
+
     my $provides = $self->_merge_hashref(
         map Module::Metadata->package_versions_from_directory($_),
             qw( blib/lib blib/arch ) # FCGI.pm :(
@@ -1529,6 +1513,34 @@ sub install_base {
     my($self, $mm_opt) = @_;
     $mm_opt =~ /INSTALL_BASE=(\S+)/ and return $1;
     die "Your PERL_MM_OPT doesn't contain INSTALL_BASE";
+}
+
+sub dest_dir {
+    my($self) = @_;
+
+    if ( -e 'Build' && -f _ ) {
+        # Use destdir if provided and using Module::Build
+        if ($ENV{PERL_MB_OPT}) {
+            foreach (split(/--/,$ENV{PERL_MB_OPT})) {
+                my ($mb_key,$mb_value) = split(/\s/,$_,2);
+                next unless ( $mb_key eq "destdir" );
+                next unless ( $mb_value ne "" );
+                return "$mb_value/";
+            }
+        }
+    } else {
+        # Use DESTDIR if provided and using ExtUtils::MakeMaker
+        if ($ENV{PERL_MM_OPT}) {
+            foreach (split(/\s/,$ENV{PERL_MM_OPT})) {
+                my ($mm_key,$mm_value) = split('=',$_,2);
+                next unless ( $mm_key eq "DESTDIR" );
+                next unless ( $mm_value ne "" );
+                return "$mm_value/";
+            }
+        }
+    }
+
+    return "";
 }
 
 sub safe_eval {
