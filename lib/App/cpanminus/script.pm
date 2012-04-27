@@ -497,6 +497,11 @@ sub bootstrap_local_lib {
         return $self->setup_local_lib($self->{local_lib});
     }
 
+    # Set up search_inc to use DESTDIR if needed
+    if (dest_dir() ne "" ) {
+        $self->setup_destdir_lib();
+    }
+
     # root, locally-installed perl or --sudo: don't care about install_base
     return if $self->{sudo} or (_writable($self->dest_dir() . $Config{installsitelib}) and _writable($self->dest_dir() . $Config{installsitebin}));
 
@@ -572,6 +577,21 @@ sub setup_local_lib {
     }
 
     $self->bootstrap_local_lib_deps;
+}
+
+sub setup_destdir_lib {
+    my($self) = @_;
+
+    my $prefix = $Config{prefix};
+    my @new_inc = ();
+    foreach ( @INC ) {
+        if ( $_ =~ /^$prefix\// ) {
+            push(@new_inc, $self->dest_dir() . $_);
+        } else {
+            push(@new_inc, $_);
+        }
+    }
+    $self->{search_inc} = [ @new_inc ];
 }
 
 sub bootstrap_local_lib_deps {
@@ -785,6 +805,19 @@ sub test {
 
     # https://rt.cpan.org/Ticket/Display.html?id=48965#txn-1013385
     local $ENV{PERL_MM_USE_DEFAULT} = 1;
+
+    # set up PERL5LIB to use DESTDIR
+    my $prefix = $Config{prefix};
+    my $new_inc = "";
+    foreach ( @INC ) {
+        next unless ( ref($_) eq "" );
+        if ( $_ =~ /^$prefix\// ) {
+            $new_inc .= $self->dest_dir() . $_ . ":";
+        } else {
+            $new_inc .= $_ . ":";
+        }
+    }
+    $ENV{PERL5LIB} = $new_inc;
 
     return 1 if $self->run_timeout($cmd, $self->{test_timeout});
     if ($self->{force}) {
