@@ -452,6 +452,8 @@ Examples:
   cpanm MIYAGAWA/Plack-0.99_05.tar.gz                       # full distribution path
   cpanm http://example.org/LDS/CGI.pm-3.20.tar.gz           # install from URL
   cpanm ~/dists/MyCompany-Enterprise-1.00.tar.gz            # install from a local file
+  cpanm http://gtihub.com/miyagawa/Plack.git                # install from github
+  cpanm git://gtihub.com/miyagawa/Plack.git                 # ditto
   cpanm --interactive Task::Kensho                          # Configure interactively
   cpanm .                                                   # install from local directory
   cpanm --installdeps .                                     # install all the deps for the current directory
@@ -1021,6 +1023,18 @@ sub unpack {
 
 sub resolve_name {
     my($self, $module, $version) = @_;
+
+    # github
+    # translate
+    #   git://github.com/USERNAME/MODULENAME.git
+    #   http://github.com/USERNAME/MODULENAME.git
+    #   https://USERNAME@github.com/USERNAME/MODULENAME.git
+    # into
+    #   http://github.com/USERNAME/MODULENAME/tarball/master
+    if ($module =~ m{^(?:git|https?)://[^/]*github\.com/(.+?)\.git$}) {
+        my $branch = 'master';
+        return { uris => [ "http://github.com/$1/tarball/$branch" ] }
+    }
 
     # URL
     if ($module =~ /^(ftp|https?|file):/) {
