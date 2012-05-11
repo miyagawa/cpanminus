@@ -1,5 +1,10 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.5012 Fri May 11 05:47:56 CEST 2012
+   [Improvements]
+      - Change the behavior of --mirror-index so that it won't fallback to CPAN mirrors #150 (thaljef)
+      - Support v-strings in versions specified install [https://github.com/miyagawa/carton/issues/48]
+
 1.5011 Thu Apr 12 18:57:06 JST 2012
    [Improvements]
       - Point default mirror to www.cpan.org #148
