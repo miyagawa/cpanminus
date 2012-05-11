@@ -10,6 +10,6 @@ run "-L", $local_lib, "--mirror-index", "xt/mirror.txt", "--skip-installed", "Ha
 like last_build_log, qr/Hash::MultiValue is up to date/;
 
 run "-L", $local_lib, "--mirror-index", "xt/mirror.txt", "--skip-installed", "--cascade-search", "Hash::MultiValue~0.03";
-like last_build_log, qr/installed Hash-MultiValue/;
+like last_build_log, qr/Couldn't find .* Hash::MultiValue/;
 
 done_testing;

@@ -311,7 +311,11 @@ sub search_module {
     if ($self->{mirror_index}) {
         $self->chat("Searching $module on mirror index $self->{mirror_index} ...\n");
         my $pkg = $self->search_mirror_index_file($self->{mirror_index}, $module, $version);
-        return $pkg if $pkg;
+        if (not $pkg) {
+           $self->diag_fail("Finding $module ($version) on mirror index $self->{mirror_index} failed.");
+           return;
+        }
+        return $pkg;
     }
 
     unless ($self->{mirror_only}) {
