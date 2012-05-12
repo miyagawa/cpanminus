@@ -18,7 +18,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.5012";
+  our $VERSION = "1.5013";
   
   =head1 NAME
   
@@ -326,7 +326,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use constant WIN32 => $^O eq 'MSWin32';
   use constant SUNOS => $^O eq 'solaris';
   
-  our $VERSION = "1.5012";
+  our $VERSION = "1.5013";
   
   my $quote = WIN32 ? q/"/ : q/'/;
   
@@ -623,11 +623,12 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       if ($self->{mirror_index}) {
           $self->chat("Searching $module on mirror index $self->{mirror_index} ...\n");
           my $pkg = $self->search_mirror_index_file($self->{mirror_index}, $module, $version);
-          if (not $pkg) {
+          return $pkg if $pkg;
+  
+          unless ($self->{cascade_search}) {
              $self->diag_fail("Finding $module ($version) on mirror index $self->{mirror_index} failed.");
              return;
           }
-          return $pkg;
       }
   
       unless ($self->{mirror_only}) {
@@ -11276,8 +11277,8 @@ library path.
 =item --cascade-search
 
 B<EXPERIMENTAL>: Specifies whether to cascade search when you specify
-multiple mirrors and a mirror has a lower version of the module than
-requested. Defaults to false.
+multiple mirrors and a mirror doesn't have a module or has a lower
+version of the module than requested. Defaults to false.
 
 =item --skip-installed
 
