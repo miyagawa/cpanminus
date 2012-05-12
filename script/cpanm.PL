@@ -310,8 +310,8 @@ library path.
 =item --cascade-search
 
 B<EXPERIMENTAL>: Specifies whether to cascade search when you specify
-multiple mirrors and a mirror has a lower version of the module than
-requested. Defaults to false.
+multiple mirrors and a mirror doesn't have a module or has a lower
+version of the module than requested. Defaults to false.
 
 =item --skip-installed
 
