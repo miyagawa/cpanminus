@@ -516,7 +516,7 @@ sub bootstrap_local_lib {
 !   - Configure local::lib your existing local::lib in this shell to set PERL_MM_OPT etc.
 !   - Install local::lib by running the following commands
 !
-!         cpanm --local-lib=~/perl5 local::lib && eval $(perl -I ~/perl5/lib/perl5/ -Mlocal::lib)
+!         cpanm --local-lib=~/perl5 local::lib && eval \$(perl -I ~/perl5/lib/perl5/ -Mlocal::lib)
 !
 DIAG
     sleep 2;
