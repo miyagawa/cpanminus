@@ -1848,17 +1848,17 @@ sub init_tools {
         $self->{_backends}{untar} = sub {
             my($self, $tarfile) = @_;
 
-            my $xf = "xf" . ($self->{verbose} ? 'v' : '');
+            my $xf = ($self->{verbose} ? 'v' : '')."xf";
             my $ar = $tarfile =~ /bz2$/ ? 'j' : 'z';
 
-            my($root, @others) = `$tar tf$ar $tarfile`
+            my($root, @others) = `$tar ${ar}tf $tarfile`
                 or return undef;
 
             chomp $root;
             $root =~ s!^\./!!;
             $root =~ s{^(.+?)/.*$}{$1};
 
-            system "$tar $xf$ar $tarfile";
+            system "$tar $ar$xf $tarfile";
             return $root if -d $root;
 
             $self->diag_fail("Bad archive: $tarfile");
