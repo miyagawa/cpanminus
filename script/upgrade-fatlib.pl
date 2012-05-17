@@ -6,10 +6,12 @@ use Cwd;
 
 my $modules = [ split /\s+/, <<MODULES ];
 CPAN/DistnameInfo.pm
+CPAN/Meta/Requirements.pm
 HTTP/Tiny.pm
 local/lib.pm
 version.pm
 Module/Metadata.pm
+Module/CPANfile.pm
 Parse/CPAN/Meta.pm
 MODULES
 
