@@ -14,7 +14,7 @@ use Symbol ();
 use constant WIN32 => $^O eq 'MSWin32';
 use constant SUNOS => $^O eq 'solaris';
 
-our $VERSION = "1.5011";
+our $VERSION = "1.5013";
 
 my $quote = WIN32 ? q/"/ : q/'/;
 
@@ -167,7 +167,7 @@ sub doit {
             $module = join '::', grep { $_ } File::Spec->splitdir($dirs), $file;
         }
 
-        ($module, my $version) = split /\~/, $module, 2 if $module =~ /\~[\d\._]+$/;
+        ($module, my $version) = split /\~/, $module, 2 if $module =~ /\~[v\d\._]+$/;
         if ($self->{skip_satisfied} or defined $version) {
             $self->check_libs;
             my($ok, $local) = $self->check_module($module, $version || 0);
@@ -308,6 +308,17 @@ sub search_mirror_index_file {
 sub search_module {
     my($self, $module, $version) = @_;
 
+    if ($self->{mirror_index}) {
+        $self->chat("Searching $module on mirror index $self->{mirror_index} ...\n");
+        my $pkg = $self->search_mirror_index_file($self->{mirror_index}, $module, $version);
+        return $pkg if $pkg;
+
+        unless ($self->{cascade_search}) {
+           $self->diag_fail("Finding $module ($version) on mirror index $self->{mirror_index} failed.");
+           return;
+        }
+    }
+
     unless ($self->{mirror_only}) {
         if ($self->{metacpan}) {
             require JSON::PP;
@@ -348,12 +359,6 @@ sub search_module {
             and return $self->cpan_module($module, $1);
 
         $self->diag_fail("Finding $module on search.cpan.org failed.");
-    }
-
-    if ($self->{mirror_index}) {
-        $self->chat("Searching $module on mirror index $self->{mirror_index} ...\n");
-        my $pkg = $self->search_mirror_index_file($self->{mirror_index}, $module, $version);
-        return $pkg if $pkg;
     }
 
     MIRROR: for my $mirror (@{ $self->{mirrors} }) {
@@ -1359,6 +1364,16 @@ DIAG
 sub configure_this {
     my($self, $dist) = @_;
 
+    if (-e 'cpanfile' && $self->{installdeps}) {
+        require CPAN::cpanfile;
+        $dist->{cpanfile} = eval { CPAN::cpanfile->load('cpanfile') };
+        return {
+            configured       => 1,
+            configured_ok    => !!$dist->{cpanfile},
+            use_module_build => 0,
+        };
+    }
+
     if ($self->{skip_configure}) {
         my $eumm = -e 'Makefile';
         my $mb   = -e 'Build' && -f _;
@@ -1532,6 +1547,15 @@ sub find_prereqs {
 
 sub extract_meta_prereqs {
     my($self, $dist) = @_;
+
+    if ($dist->{cpanfile}) {
+        my $prereq = $dist->{cpanfile}->prereq;
+        my @phase = $self->{notest} ? qw( build runtime ) : qw( build test runtime );
+        require CPAN::Meta::Requirements;
+        my $req = CPAN::Meta::Requirements->new;
+        $req->add_requirements($prereq->requirements_for($_, 'requires')) for @phase;
+        return %{$req->as_string_hash};
+    }
 
     my $meta = $dist->{meta};
 
