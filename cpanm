@@ -18,7 +18,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.5013";
+  our $VERSION = "1.5014";
   
   =head1 NAME
   
@@ -326,7 +326,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use constant WIN32 => $^O eq 'MSWin32';
   use constant SUNOS => $^O eq 'solaris';
   
-  our $VERSION = "1.5013";
+  our $VERSION = "1.5014";
   
   my $quote = WIN32 ? q/"/ : q/'/;
   
@@ -833,7 +833,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   !   - Configure local::lib your existing local::lib in this shell to set PERL_MM_OPT etc.
   !   - Install local::lib by running the following commands
   !
-  !         cpanm --local-lib=~/perl5 local::lib && eval $(perl -I ~/perl5/lib/perl5/ -Mlocal::lib)
+  !         cpanm --local-lib=~/perl5 local::lib && eval \$(perl -I ~/perl5/lib/perl5/ -Mlocal::lib)
   !
   DIAG
       sleep 2;
@@ -1900,7 +1900,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           $self->chat("Finding PREREQ from Makefile ...\n");
           open my $mf, "Makefile";
           while (<$mf>) {
-              if (/^\#\s+PREREQ_PM => {\s*(.*?)\s*}/) {
+              if (/^\#\s+PREREQ_PM => \{\s*(.*?)\s*\}/) {
                   my @all;
                   my @pairs = split ', ', $1;
                   for (@pairs) {
@@ -2184,17 +2184,17 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           $self->{_backends}{untar} = sub {
               my($self, $tarfile) = @_;
   
-              my $xf = "xf" . ($self->{verbose} ? 'v' : '');
+              my $xf = ($self->{verbose} ? 'v' : '')."xf";
               my $ar = $tarfile =~ /bz2$/ ? 'j' : 'z';
   
-              my($root, @others) = `$tar tf$ar $tarfile`
+              my($root, @others) = `$tar ${ar}tf $tarfile`
                   or return undef;
   
               chomp $root;
               $root =~ s!^\./!!;
               $root =~ s{^(.+?)/.*$}{$1};
   
-              system "$tar $xf$ar $tarfile";
+              system "$tar $ar$xf $tarfile";
               return $root if -d $root;
   
               $self->diag_fail("Bad archive: $tarfile");

@@ -1,5 +1,11 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.5014 Tue Jun 12 18:27:02 PDT 2012
+   [Improvements]
+      - Make sure 'f' flag becomes the last for some tar versions (mst, aaronsw)
+      - Fixed warnings on perl 5.17+ (rjbs)
+      - Fix local::lib error message (berekuk)
+
 1.5013 Sat May 12 06:15:44 EEST 2012
    [Bug Fixes]
       - Fixed --cascade-search to seach for missing modules, which was broken by #150
