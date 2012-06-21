@@ -47,4 +47,10 @@ WriteMakefile(
     },
     LICENSE => 'perl',
     EXE_FILES => [ 'bin/cpanm' ],
+    META_MERGE => {
+        resources => {
+            repository => 'git://github.com/miyagawa/cpanminus.git',
+            bugtracker => 'https://github.com/miyagawa/cpanminus/issues',
+        },
+    },
 );
