@@ -36,7 +36,8 @@ if (-e 'cpanm') {
 }
 
 use ExtUtils::MakeMaker;
-WriteMakefile(
+
+my %args = (
     NAME => 'App::cpanminus',
     VERSION_FROM => "lib/App/cpanminus.pm",
     ABSTRACT => 'Get, unpack, build and install modules from CPAN.',
@@ -47,10 +48,16 @@ WriteMakefile(
     },
     LICENSE => 'perl',
     EXE_FILES => [ 'bin/cpanm' ],
-    META_MERGE => {
+);
+
+my $eummv = eval ($ExtUtils::MakeMaker::VERSION);
+if ($eummv >= 6.45) {
+    $args{META_MERGE} = {
         resources => {
             repository => 'git://github.com/miyagawa/cpanminus.git',
             bugtracker => 'https://github.com/miyagawa/cpanminus/issues',
         },
-    },
-);
+    };
+}
+
+WriteMakefile(%args);
