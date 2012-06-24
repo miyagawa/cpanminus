@@ -10,7 +10,7 @@ $ENV{PERL5LIB} = 'fatlib';
 my @opt = ("-L", $local_lib);
 
 run @opt, "--no-notest", "Test::Simple";
-like last_build_log, qr/Successfully installed Test-Simple/;
+like last_build_log, qr/Successfully (re)?installed Test-Simple/;
 
 done_testing;
 

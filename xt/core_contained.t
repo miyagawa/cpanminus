@@ -2,6 +2,10 @@ use strict;
 use Test::More;
 use xt::Run;
 
+if ($] >= 5.014) {
+    plan skip_all => "Skip with perl $]";
+}
+
 run "--skip-installed", "CGI"; # this upgrades CGI in core
 
 my $local_lib = "$ENV{PERL_CPANM_HOME}/perl5";
