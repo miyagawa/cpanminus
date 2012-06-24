@@ -1,5 +1,10 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.5015 Sun Jun 24 15:34:57 PDT 2012
+   [Improvements]
+      - Improved Makefile.PL to include bugtracker info (Ben Bullock)
+      - Fixed some merge mess with devel
+
 1.5014 Tue Jun 12 18:27:02 PDT 2012
    [Improvements]
       - Make sure 'f' flag becomes the last for some tar versions (mst, aaronsw)
