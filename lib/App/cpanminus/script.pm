@@ -1365,8 +1365,8 @@ sub configure_this {
     my($self, $dist) = @_;
 
     if (-e 'cpanfile' && $self->{installdeps}) {
-        require CPAN::cpanfile;
-        $dist->{cpanfile} = eval { CPAN::cpanfile->load('cpanfile') };
+        require Module::CPANfile;
+        $dist->{cpanfile} = eval { Module::CPANfile->load('cpanfile') };
         return {
             configured       => 1,
             configured_ok    => !!$dist->{cpanfile},
