@@ -1115,12 +1115,13 @@ sub git_uri {
     my $dh  = File::Temp->newdir(CLEANUP => 1);
     my $dir = Cwd::abs_path($dh->dirname);
 
-    system 'git', 'clone', $uri, $dir;
+    my $cmd = "git clone $uri $dir";
+    $self->run($cmd);
 
     return {
         source => 'local',
-        dir => $dir,
-        _dh => $dh,
+        dir    => $dir,
+        handle => $dh,
     };
 }
 
