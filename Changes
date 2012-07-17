@@ -1,5 +1,10 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.5016 Tue Jul 17 12:00:57 PDT 2012
+   [Improvements]
+      - Added Module/CPANfile.pm to the fatlib. This allows bootstrapping dependencies
+        with cpanm --installdeps on Heroku etc.
+
 1.5015 Sun Jun 24 15:34:57 PDT 2012
    [Improvements]
       - Improved Makefile.PL to include bugtracker info (Ben Bullock)
