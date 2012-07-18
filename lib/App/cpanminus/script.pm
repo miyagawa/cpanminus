@@ -1878,9 +1878,17 @@ sub init_tools {
             my($root, @others) = `$tar ${ar}tf $tarfile`
                 or return undef;
 
-            chomp $root;
-            $root =~ s!^\./!!;
-            $root =~ s{^(.+?)/.*$}{$1};
+            FILE: {
+                chomp $root;
+                $root =~ s!^\./!!;
+                $root =~ s{^(.+?)/.*$}{$1};
+
+                if (!length($root)) {
+                    # archive had ./ as the first entry, so try again
+                    $root = shift(@others);
+                    redo FILE if $root;
+                }
+            }
 
             system "$tar $ar$xf $tarfile";
             return $root if -d $root;
