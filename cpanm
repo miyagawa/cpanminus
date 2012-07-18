@@ -18,7 +18,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.5016";
+  our $VERSION = "1.5017";
   
   =head1 NAME
   
@@ -326,7 +326,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use constant WIN32 => $^O eq 'MSWin32';
   use constant SUNOS => $^O eq 'solaris';
   
-  our $VERSION = "1.5016";
+  our $VERSION = "1.5017";
   
   my $quote = WIN32 ? q/"/ : q/'/;
   
@@ -2190,9 +2190,17 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
               my($root, @others) = `$tar ${ar}tf $tarfile`
                   or return undef;
   
-              chomp $root;
-              $root =~ s!^\./!!;
-              $root =~ s{^(.+?)/.*$}{$1};
+              FILE: {
+                  chomp $root;
+                  $root =~ s!^\./!!;
+                  $root =~ s{^(.+?)/.*$}{$1};
+  
+                  if (!length($root)) {
+                      # archive had ./ as the first entry, so try again
+                      $root = shift(@others);
+                      redo FILE if $root;
+                  }
+              }
   
               system "$tar $ar$xf $tarfile";
               return $root if -d $root;
@@ -2213,8 +2221,17 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
               my($root, @others) = `$ar -dc $tarfile | $tar tf -`
                   or return undef;
   
-              chomp $root;
-              $root =~ s{^(.+?)/.*$}{$1};
+              FILE: {
+                  chomp $root;
+                  $root =~ s!^\./!!;
+                  $root =~ s{^(.+?)/.*$}{$1};
+  
+                  if (!length($root)) {
+                      # archive had ./ as the first entry, so try again
+                      $root = shift(@others);
+                      redo FILE if $root;
+                  }
+              }
   
               system "$ar -dc $tarfile | $tar $x";
               return $root if -d $root;
@@ -2227,8 +2244,17 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           $self->{_backends}{untar} = sub {
               my $self = shift;
               my $t = Archive::Tar->new($_[0]);
-              my $root = ($t->list_files)[0];
-              $root =~ s{^(.+?)/.*$}{$1};
+              my($root, @others) = $t->list_files;
+              FILE: {
+                  $root =~ s!^\./!!;
+                  $root =~ s{^(.+?)/.*$}{$1};
+  
+                  if (!length($root)) {
+                      # archive had ./ as the first entry, so try again
+                      $root = shift(@others);
+                      redo FILE if $root;
+                  }
+              }
               $t->extract;
               return -d $root ? $root : undef;
           };
