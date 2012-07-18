@@ -1878,9 +1878,17 @@ sub init_tools {
             my($root, @others) = `$tar ${ar}tf $tarfile`
                 or return undef;
 
-            chomp $root;
-            $root =~ s!^\./!!;
-            $root =~ s{^(.+?)/.*$}{$1};
+            FILE: {
+                chomp $root;
+                $root =~ s!^\./!!;
+                $root =~ s{^(.+?)/.*$}{$1};
+
+                if (!length($root)) {
+                    # archive had ./ as the first entry, so try again
+                    $root = shift(@others);
+                    redo FILE if $root;
+                }
+            }
 
             system "$tar $ar$xf $tarfile";
             return $root if -d $root;
@@ -1901,8 +1909,17 @@ sub init_tools {
             my($root, @others) = `$ar -dc $tarfile | $tar tf -`
                 or return undef;
 
-            chomp $root;
-            $root =~ s{^(.+?)/.*$}{$1};
+            FILE: {
+                chomp $root;
+                $root =~ s!^\./!!;
+                $root =~ s{^(.+?)/.*$}{$1};
+
+                if (!length($root)) {
+                    # archive had ./ as the first entry, so try again
+                    $root = shift(@others);
+                    redo FILE if $root;
+                }
+            }
 
             system "$ar -dc $tarfile | $tar $x";
             return $root if -d $root;
@@ -1916,7 +1933,16 @@ sub init_tools {
             my $self = shift;
             my $t = Archive::Tar->new($_[0]);
             my $root = ($t->list_files)[0];
-            $root =~ s{^(.+?)/.*$}{$1};
+            FILE: {
+                $root =~ s!^\./!!;
+                $root =~ s{^(.+?)/.*$}{$1};
+
+                if (!length($root)) {
+                    # archive had ./ as the first entry, so try again
+                    $root = shift(@others);
+                    redo FILE if $root;
+                }
+            }
             $t->extract;
             return -d $root ? $root : undef;
         };
