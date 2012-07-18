@@ -1932,7 +1932,7 @@ sub init_tools {
         $self->{_backends}{untar} = sub {
             my $self = shift;
             my $t = Archive::Tar->new($_[0]);
-            my $root = ($t->list_files)[0];
+            my($root, @others) = $t->list_files;
             FILE: {
                 $root =~ s!^\./!!;
                 $root =~ s{^(.+?)/.*$}{$1};
