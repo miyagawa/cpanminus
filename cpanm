@@ -418,7 +418,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           'i|install' => sub { $self->{cmd} = 'install' },
           'info'      => sub { $self->{cmd} = 'info' },
           'look'      => sub { $self->{cmd} = 'look'; $self->{skip_installed} = 0 },
-          'self-upgrade' => sub { $self->{cmd} = 'install'; $self->{skip_installed} = 1; push @ARGV, 'App::cpanminus' },
+          'self-upgrade' => sub { $self->check_upgrade; $self->{cmd} = 'install'; $self->{skip_installed} = 1; push @ARGV, 'App::cpanminus' },
           'uninst-shadows!'  => \$self->{uninstall_shadows},
           'lwp!'    => \$self->{try_lwp},
           'wget!'   => \$self->{try_wget},
@@ -441,6 +441,33 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       }
   
       $self->{argv} = \@ARGV;
+  }
+  
+  sub check_upgrade {
+      if ($0 !~ /^$Config{installsitebin}/) {
+          if ($0 =~ m!perlbrew/bin!) {
+              warn <<WARN;
+  It appears your cpanm executable was installed via `perlbrew install-cpanm`.
+  cpanm --self-upgrade won't upgrade the version of cpanm you're running.
+  
+  Run the following command to get it upgraded.
+  
+    perlbrew install-cpanm
+  
+  WARN
+          } else {
+              warn <<WARN;
+  You are running cpanm from the path where your current perl won't install executables to.
+  Because of that, cpanm --self-upgrade won't upgrade the version of cpanm you're running.
+  
+    cpanm path   : $0
+    Install path : $Config{installsitebin}
+  
+  It means you either installed cpanm globally with system perl, or use distro packages such
+  as rpm or apt-get, and you have to use them again to upgrade cpanm.
+  WARN
+          }
+      }
   }
   
   sub check_libs {
