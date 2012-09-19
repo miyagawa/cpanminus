@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.5018 Wed Sep 19 14:40:28 JST 2012
+   [Improvements]
+      - Check cpanm path upon --self-upgrade to give warnings for perlbrew users
+
 1.5017 Wed Jul 18 08:28:49 PDT 2012
    [Improvements]
       - Ignore tarballs whose first entry is "./" (doy) #184
