@@ -93,6 +93,7 @@ sub parse_options {
             $self->{self_contained} = 1;
             $self->{pod2man} = undef;
         },
+        'M|mirror-dark=s@' => sub { $self->{mirrors} ||= []; push $self->{mirrors}, $_[1]; $self->{mirror_only} = 1 },
         'mirror=s@' => $self->{mirrors},
         'mirror-only!' => \$self->{mirror_only},
         'mirror-index=s'  => sub { $self->{mirror_index} = $_[1]; $self->{mirror_only} = 1 },
