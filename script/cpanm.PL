@@ -179,6 +179,10 @@ shell aliases, like:
   alias minicpanm='cpanm --mirror ~/minicpan --mirror-only'
   alias darkpan='cpanm --mirror http://mycompany.example.com/DPAN --mirror-only'
 
+=item -M,--mirror-dark
+
+Same as C<--mirror> but also sets C<--mirror-only> at the same time.
+
 =item --mirror-index
 
 B<EXPERIMENTAL>: Specifies the file path to C<02packages.details.txt>
