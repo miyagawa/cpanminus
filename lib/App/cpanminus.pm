@@ -9,7 +9,7 @@ App::cpanminus - get, unpack, build and install modules from CPAN
 
     cpanm Module
 
-Run C<cpanm -h> for more options.
+Run C<cpanm -h> or C<perldoc cpanm> for more options.
 
 =head1 DESCRIPTION
 
@@ -114,9 +114,9 @@ writing code.
 
 =head2 Zero-conf? How does this module get/parse/update the CPAN index?
 
-It queries the CPAN Meta DB site running on Google AppEngine at
-L<http://cpanmetadb.plackperl.org/>. The site is updated every hour to reflect
-the latest changes from fast syncing mirrors. The script then also falls back
+It queries the CPAN Meta DB site at L<http://cpanmetadb.plackperl.org/>.
+The site is updated at least every hour to reflect the latest changes
+from fast syncing mirrors. The script then also falls back
 to scrape the site L<http://search.cpan.org/>.
 
 Fetched files are unpacked in C<~/.cpanm> and automatically cleaned up
