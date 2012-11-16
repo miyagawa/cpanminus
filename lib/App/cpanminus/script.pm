@@ -1286,7 +1286,7 @@ sub build_stuff {
 
     $self->diag_progress("Configuring $target");
 
-    my $configure_state = $self->configure_this($dist);
+    my $configure_state = $self->configure_this($dist, $depth);
 
     $self->diag_ok($configure_state->{configured_ok} ? "OK" : "N/A");
 
@@ -1389,9 +1389,9 @@ DIAG
 }
 
 sub configure_this {
-    my($self, $dist) = @_;
+    my($self, $dist, $depth) = @_;
 
-    if (-e 'cpanfile' && $self->{installdeps}) {
+    if (-e 'cpanfile' && $self->{installdeps} && $depth == 0) {
         require Module::CPANfile;
         $dist->{cpanfile} = eval { Module::CPANfile->load('cpanfile') };
         return {
@@ -1464,10 +1464,10 @@ sub configure_this {
     unless ($state->{configured_ok}) {
         while (1) {
             my $ans = lc $self->prompt("Configuring $dist->{dist} failed.\nYou can s)kip, r)etry, e)xamine build log, or l)ook ?", "s");
-            last                                if $ans eq 's';
-            return $self->configure_this($dist) if $ans eq 'r';
-            $self->show_build_log               if $ans eq 'e';
-            $self->look                         if $ans eq 'l';
+            last                                        if $ans eq 's';
+            return $self->configure_this($dist, $depth) if $ans eq 'r';
+            $self->show_build_log                       if $ans eq 'e';
+            $self->look                                 if $ans eq 'l';
         }
     }
 
