@@ -2008,15 +2008,16 @@ sub init_tools {
             $self->diag_fail("Read of file[$file] failed")
                 if $status != Archive::Zip::AZ_OK();
             my @members = $zip->members();
-            my $root;
             for my $member ( @members ) {
                 my $af = $member->fileName();
                 next if ($af =~ m!^(/|\.\./)!);
-                $root = $af unless $root;
                 $status = $member->extractToFileNamed( $af );
                 $self->diag_fail("Extracting of file[$af] from zipfile[$file failed")
                     if $status != Archive::Zip::AZ_OK();
             }
+
+            my ($root) = $zip->membersMatching( qr<^[^/]+/$> );
+            $root &&= $root->fileName;
             return -d $root ? $root : undef;
         };
     }
