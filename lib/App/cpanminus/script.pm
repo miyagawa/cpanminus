@@ -517,8 +517,11 @@ sub _writable {
 
 sub maybe_abs {
     my($self, $lib) = @_;
-    return $lib if $lib eq '_'; # special case: gh-113
-    $lib =~ /^[~\/]/ ? $lib : File::Spec->canonpath(Cwd::cwd . "/$lib");
+    if ($lib ne '_' # special case: gh-113
+        && !File::Spec->file_name_is_absolute($lib)) {
+        $lib = File::Spec->canonpath(File::Spec->catdir(Cwd::cwd(), $lib));
+    }
+    $lib;
 }
 
 sub bootstrap_local_lib {
