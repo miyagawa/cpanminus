@@ -162,6 +162,14 @@ Specifies the base URL for the CPAN mirror to use, such as
 C<http://cpan.cpantesters.org/> (you can omit the trailing slash). You
 can specify multiple mirror URLs by repeating the command line option.
 
+You can use a local directory that has a CPAN mirror structure
+(created by tools such as L<OrePAN> or L<Pinto>) by using a special
+URL scheme C<file://>. If the given URL begins with `/` (without any
+scheme), it is considered as a file scheme as well.
+
+  cpanm --mirror file:///path/to/mirror
+  cpanm --mirror ~/minicpan      # Because shell expands ~ to /home/user
+
 Defaults to C<http://search.cpan.org/CPAN> which is a geo location
 aware redirector.
 
