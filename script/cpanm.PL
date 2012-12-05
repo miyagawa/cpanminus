@@ -176,7 +176,7 @@ minicpan when you're offline, or your own CPAN index (a.k.a darkpan).
 B<Tip:> It might be useful if you name these mirror options with your
 shell aliases, like:
 
-  alias minicpanm='cpanm --mirror ~/minicpan --mirror-only'
+  alias minicpanm='cpanm --mirror file://$HOME/minicpan --mirror-only'
   alias darkpan='cpanm --mirror http://mycompany.example.com/DPAN --mirror-only'
 
 =item --mirror-index
