@@ -18,7 +18,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.5018";
+  our $VERSION = "1.5019";
   
   =head1 NAME
   
@@ -28,7 +28,7 @@ $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   
       cpanm Module
   
-  Run C<cpanm -h> for more options.
+  Run C<cpanm -h> or C<perldoc cpanm> for more options.
   
   =head1 DESCRIPTION
   
@@ -133,9 +133,9 @@ $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   
   =head2 Zero-conf? How does this module get/parse/update the CPAN index?
   
-  It queries the CPAN Meta DB site running on Google AppEngine at
-  L<http://cpanmetadb.plackperl.org/>. The site is updated every hour to reflect
-  the latest changes from fast syncing mirrors. The script then also falls back
+  It queries the CPAN Meta DB site at L<http://cpanmetadb.plackperl.org/>.
+  The site is updated at least every hour to reflect the latest changes
+  from fast syncing mirrors. The script then also falls back
   to scrape the site L<http://search.cpan.org/>.
   
   Fetched files are unpacked in C<~/.cpanm> and automatically cleaned up
@@ -326,7 +326,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use constant WIN32 => $^O eq 'MSWin32';
   use constant SUNOS => $^O eq 'solaris';
   
-  our $VERSION = "1.5018";
+  our $VERSION = "1.5019";
   
   my $quote = WIN32 ? q/"/ : q/'/;
   
@@ -511,7 +511,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
               $self->check_libs;
               my($ok, $local) = $self->check_module($module, $version || 0);
               if ($ok) {
-                  $self->diag("You have $module (" . ($local || 'undef') . ")\n", 1);
+                  $self->diag("You have $module ($local)\n", 1);
                   next;
               }
           }
@@ -1598,7 +1598,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   
       $self->diag_progress("Configuring $target");
   
-      my $configure_state = $self->configure_this($dist);
+      my $configure_state = $self->configure_this($dist, $depth);
   
       $self->diag_ok($configure_state->{configured_ok} ? "OK" : "N/A");
   
@@ -1701,9 +1701,9 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   }
   
   sub configure_this {
-      my($self, $dist) = @_;
+      my($self, $dist, $depth) = @_;
   
-      if (-e 'cpanfile' && $self->{installdeps}) {
+      if (-e 'cpanfile' && $self->{installdeps} && $depth == 0) {
           require Module::CPANfile;
           $dist->{cpanfile} = eval { Module::CPANfile->load('cpanfile') };
           return {
@@ -1776,10 +1776,10 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       unless ($state->{configured_ok}) {
           while (1) {
               my $ans = lc $self->prompt("Configuring $dist->{dist} failed.\nYou can s)kip, r)etry, e)xamine build log, or l)ook ?", "s");
-              last                                if $ans eq 's';
-              return $self->configure_this($dist) if $ans eq 'r';
-              $self->show_build_log               if $ans eq 'e';
-              $self->look                         if $ans eq 'l';
+              last                                        if $ans eq 's';
+              return $self->configure_this($dist, $depth) if $ans eq 'r';
+              $self->show_build_log                       if $ans eq 'e';
+              $self->look                                 if $ans eq 'l';
           }
       }
   
@@ -11370,6 +11370,14 @@ directory C<extlib>, which can be loaded from your application with:
 Specifies the base URL for the CPAN mirror to use, such as
 C<http://cpan.cpantesters.org/> (you can omit the trailing slash). You
 can specify multiple mirror URLs by repeating the command line option.
+
+You can use a local directory that has a CPAN mirror structure
+(created by tools such as L<OrePAN> or L<Pinto>) by using a special
+URL scheme C<file://>. If the given URL begins with `/` (without any
+scheme), it is considered as a file scheme as well.
+
+  cpanm --mirror file:///path/to/mirror
+  cpanm --mirror ~/minicpan      # Because shell expands ~ to /home/user
 
 Defaults to C<http://search.cpan.org/CPAN> which is a geo location
 aware redirector.

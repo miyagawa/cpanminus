@@ -1,5 +1,13 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.5019 Sun Dec 23 02:19:45 JST 2012
+   [Bug Fixes]
+      - Fixes a bug where --installdeps fail to configure dependencies with cpanfile (hoelzro)
+
+   [Improvements]
+      - Cleaned up unused code
+      - Added documentation about --mirror option and local file path
+
 1.5018 Wed Sep 19 14:40:28 JST 2012
    [Improvements]
       - Check cpanm path upon --self-upgrade to give warnings for perlbrew users
