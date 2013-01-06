@@ -221,6 +221,13 @@ sub doit {
     if ($self->{scandeps}) {
         $self->dump_scandeps();
     }
+    # Workaround for older File::Temp's
+    # where creating a tempdir with an implicit $PWD
+    # causes tempdir non-cleanup if $PWD changes
+    # as paths are stored internally without being resolved
+    # absolutely.
+    # https://rt.cpan.org/Public/Bug/Display.html?id=44924
+    $self->chdir($cwd);
 
     return !@fail;
 }
