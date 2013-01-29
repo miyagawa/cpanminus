@@ -329,10 +329,10 @@ sub search_mirror_index_file {
 
     if ($found) {
         if (!$version or
-            version->new($found->{version} || 0) >= version->new($version)) {
+            version->new($found->{module_version} || 0) >= version->new($version)) {
             return $found;
         } else {
-            $self->chat("Found $module version $found->{version} < $version.\n");
+            $self->chat("Found $module version $found->{module_version} < $version.\n");
         }
     }
 
