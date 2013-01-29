@@ -1,5 +1,10 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.5020 Tue Jan 29 10:29:08 PST 2013
+   [Bug Fixes]
+      - Fixed a bug in --cascade-search that was checking a wrong version from 02packages file (Bryce Baril)
+      - Added a workaround for older version of File::Temp bug (kentnl)
+
 1.5019 Sun Dec 23 02:19:45 JST 2012
    [Bug Fixes]
       - Fixes a bug where --installdeps fail to configure dependencies with cpanfile (hoelzro)
