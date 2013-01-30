@@ -1144,14 +1144,36 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       } else {
           $self->diag_fail;
           while (1) {
-              my $ans = lc $self->prompt("Testing $distname failed.\nYou can s)kip, r)etry, f)orce install, e)xamine build log, or l)ook ?", "s");
+              my $ans = lc $self->prompt("Testing $distname failed.\nYou can s)kip, r)etry, o) retry with test parallelism turned off, f)orce install, e)xamine build log, or l)ook ?", "s");
               return                              if $ans eq 's';
               return $self->test($cmd, $distname) if $ans eq 'r';
+              return $self->test_no_parallel($cmd, $distname) if $ans eq 'o';
               return 1                            if $ans eq 'f';
               $self->show_build_log               if $ans eq 'e';
               $self->look                         if $ans eq 'l';
           }
       }
+  }
+  
+  sub test_no_parallel {
+      my $self = shift;
+  
+      #
+      # HARNESS_OPTIONS is used by Test::Harness.
+      # It can contain more options than just "j" (for jobs) so we have to be
+      # careful to keep those options while changing the j option to 1 if it
+      # exists.
+      #
+      local $ENV{HARNESS_OPTIONS} = $ENV{HARNESS_OPTIONS} || "";
+      $ENV{HARNESS_OPTIONS} =~ s{(j\d+)?}{j1};
+  
+      #
+      # TEST_JOBS is used by the perl5 source make, and maybe elsewhere?
+      # Just setting it here in case...
+      #
+      local $ENV{TEST_JOBS} = 1;
+  
+      return $self->test(@_);
   }
   
   sub install {
