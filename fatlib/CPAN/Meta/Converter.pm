@@ -2,21 +2,27 @@ use 5.006;
 use strict;
 use warnings;
 package CPAN::Meta::Converter;
-BEGIN {
-  $CPAN::Meta::Converter::VERSION = '2.110930';
-}
-# ABSTRACT: Convert CPAN distribution metadata structures
+our $VERSION = '2.120921'; # VERSION
 
 
 use CPAN::Meta::Validator;
-use version 0.82 ();
+use CPAN::Meta::Requirements;
+use version 0.88 ();
 use Parse::CPAN::Meta 1.4400 ();
 
 sub _dclone {
   my $ref = shift;
+
+  # if an object is in the data structure and doesn't specify how to
+  # turn itself into JSON, we just stringify the object.  That does the
+  # right thing for typical things that might be there, like version objects,
+  # Path::Class objects, etc.
+  no warnings 'once';
+  local *UNIVERSAL::TO_JSON = sub { return "$_[0]" };
+
   my $backend = Parse::CPAN::Meta->json_backend();
-  return $backend->new->decode(
-    $backend->new->convert_blessed->encode($ref)
+  return $backend->new->utf8->decode(
+    $backend->new->utf8->allow_blessed->convert_blessed->encode($ref)
   );
 }
 
@@ -311,7 +317,10 @@ sub _clean_version {
   return 0 if ! length $element;
   return 0 if ( $element eq 'undef' || $element eq '<undef>' );
 
-  if ( my $v = eval { version->new($element) } ) {
+  my $v = eval { version->new($element) };
+  # XXX check defined $v and not just $v because version objects leak memory
+  # in boolean context -- dagolden, 2012-02-03
+  if ( defined $v ) {
     return $v->is_qv ? $v->normal : $element;
   }
   else {
@@ -319,29 +328,36 @@ sub _clean_version {
   }
 }
 
+sub _bad_version_hook {
+  my ($v) = @_;
+  $v =~ s{[a-z]+$}{}; # strip trailing alphabetics
+  my $vobj = eval { version->parse($v) };
+  return defined($vobj) ? $vobj : version->parse(0); # or give up
+}
+
 sub _version_map {
   my ($element) = @_;
-  return undef unless defined $element;
+  return unless defined $element;
   if ( ref $element eq 'HASH' ) {
-    my $new_map = {};
-    for my $k ( keys %$element ) {
+    # XXX turn this into CPAN::Meta::Requirements with bad version hook
+    # and then turn it back into a hash
+    my $new_map = CPAN::Meta::Requirements->new(
+      { bad_version_hook => sub { version->new(0) } } # punt
+    );
+    while ( my ($k,$v) = each %$element ) {
       next unless _is_module_name($k);
-      my $value = $element->{$k};
-      if ( ! ( defined $value && length $value ) ) {
-        $new_map->{$k} = 0;
+      if ( !defined($v) || !length($v) || $v eq 'undef' || $v eq '<undef>'  ) {
+        $v = 0;
       }
-      elsif ( $value eq 'undef' || $value eq '<undef>' ) {
-        $new_map->{$k} = 0;
+      # some weird, old META have bad yml with module => module
+      # so check if value is like a module name and not like a version
+      if ( _is_module_name($v) && ! version::is_lax($v) ) {
+        $new_map->add_minimum($k => 0);
+        $new_map->add_minimum($v => 0);
       }
-      elsif ( _is_module_name( $value ) ) { # some weird, old META have this
-        $new_map->{$k} = 0;
-        $new_map->{$value} = 0;
-      }
-      else {
-        $new_map->{$k} = _clean_version($value);
-      }
+      $new_map->add_string_requirement($k => $v);
     }
-    return $new_map;
+    return $new_map->as_string_hash;
   }
   elsif ( ref $element eq 'ARRAY' ) {
     my $hashref = { map { $_ => 0 } @$element };
@@ -424,9 +440,8 @@ sub _get_build_requires {
   my $test_h  = _extract_prereqs($_[2]->{prereqs}, qw(test  requires)) || {};
   my $build_h = _extract_prereqs($_[2]->{prereqs}, qw(build requires)) || {};
 
-  require Version::Requirements;
-  my $test_req  = Version::Requirements->from_string_hash($test_h);
-  my $build_req = Version::Requirements->from_string_hash($build_h);
+  my $test_req  = CPAN::Meta::Requirements->from_string_hash($test_h);
+  my $build_req = CPAN::Meta::Requirements->from_string_hash($build_h);
 
   $test_req->add_requirements($build_req)->as_string_hash;
 }
@@ -434,12 +449,12 @@ sub _get_build_requires {
 sub _extract_prereqs {
   my ($prereqs, $phase, $type) = @_;
   return unless ref $prereqs eq 'HASH';
-  return $prereqs->{$phase}{$type};
+  return scalar _version_map($prereqs->{$phase}{$type});
 }
 
 sub _downgrade_optional_features {
   my (undef, undef, $meta) = @_;
-  return undef unless exists $meta->{optional_features};
+  return unless exists $meta->{optional_features};
   my $origin = $meta->{optional_features};
   my $features = {};
   for my $name ( keys %$origin ) {
@@ -460,7 +475,7 @@ sub _downgrade_optional_features {
 
 sub _upgrade_optional_features {
   my (undef, undef, $meta) = @_;
-  return undef unless exists $meta->{optional_features};
+  return unless exists $meta->{optional_features};
   my $origin = $meta->{optional_features};
   my $features = {};
   for my $name ( keys %$origin ) {
@@ -556,7 +571,7 @@ my $resource2_upgrade = {
     return unless $item;
     if ( $item =~ m{^mailto:(.*)$} ) { return { mailto => $1 } }
     elsif( _is_urlish($item) ) { return { web => $item } }
-    else { return undef }
+    else { return }
   },
   repository => sub { return _is_urlish($_[0]) ? { url => $_[0] } : undef },
   ':custom'  => \&_prefix_custom,
@@ -564,7 +579,7 @@ my $resource2_upgrade = {
 
 sub _upgrade_resources_2 {
   my (undef, undef, $meta, $version) = @_;
-  return undef unless exists $meta->{resources};
+  return unless exists $meta->{resources};
   return _convert($meta->{resources}, $resource2_upgrade);
 }
 
@@ -602,7 +617,7 @@ my $resources2_cleanup = {
 
 sub _cleanup_resources_2 {
   my ($resources, $key, $meta, $to_version) = @_;
-  return undef unless $resources && ref $resources eq 'HASH';
+  return unless $resources && ref $resources eq 'HASH';
   return _convert($resources, $resources2_cleanup, $to_version);
 }
 
@@ -616,7 +631,7 @@ my $resource1_spec = {
 
 sub _resources_1_3 {
   my (undef, undef, $meta, $version) = @_;
-  return undef unless exists $meta->{resources};
+  return unless exists $meta->{resources};
   return _convert($meta->{resources}, $resource1_spec);
 }
 
@@ -629,7 +644,7 @@ sub _resources_1_2 {
     $resources->{license} = $meta->license_url
       if _is_urlish($meta->{license_url});
   }
-  return undef unless keys %$resources;
+  return unless keys %$resources;
   return _convert($resources, $resource1_spec);
 }
 
@@ -643,7 +658,7 @@ my $resource_downgrade_spec = {
 
 sub _downgrade_resources {
   my (undef, undef, $meta, $version) = @_;
-  return undef unless exists $meta->{resources};
+  return unless exists $meta->{resources};
   return _convert($meta->{resources}, $resource_downgrade_spec);
 }
 
@@ -1242,6 +1257,8 @@ sub convert {
 }
 
 1;
+
+# ABSTRACT: Convert CPAN distribution metadata structures
 
 
 

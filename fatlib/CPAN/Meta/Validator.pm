@@ -2,10 +2,7 @@ use 5.006;
 use strict;
 use warnings;
 package CPAN::Meta::Validator;
-BEGIN {
-  $CPAN::Meta::Validator::VERSION = '2.110930';
-}
-# ABSTRACT: validate CPAN distribution metadata structures
+our $VERSION = '2.120921'; # VERSION
 
 
 #--------------------------------------------------------------------------#
@@ -692,7 +689,7 @@ my %v1_licenses = (
     'apache'       => 'http://apache.org/licenses/LICENSE-2.0',
     'artistic'     => 'http://opensource.org/licenses/artistic-license.php',
     'artistic_2'   => 'http://opensource.org/licenses/artistic-license-2.0.php',
-    'lgpl'         => 'http://www.opensource.org/licenses/lgpl-license.phpt',
+    'lgpl'         => 'http://www.opensource.org/licenses/lgpl-license.php',
     'bsd'          => 'http://www.opensource.org/licenses/bsd-license.php',
     'gpl'          => 'http://www.opensource.org/licenses/gpl-license.php',
     'mit'          => 'http://opensource.org/licenses/mit-license.php',
@@ -828,6 +825,8 @@ sub _error {
 }
 
 1;
+
+# ABSTRACT: validate CPAN distribution metadata structures
 
 
 
