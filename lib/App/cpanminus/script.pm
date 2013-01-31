@@ -1169,6 +1169,22 @@ sub sha1_for {
     return $dg->hexdigest;
 }
 
+sub verify_signature {
+    my($self, $dist) = @_;
+
+    $self->diag_progress("Verifying the SIGNATURE file");
+    my $out = `$self->{cpansign} -v --skip 2>&1`;
+    $self->log($out);
+
+    if ($out =~ /Signature verified OK/) {
+        $self->diag_ok("Verified OK");
+        return 1;
+    } else {
+        $self->diag_fail("SIGNATURE verificaion for $dist->{filename} failed\n");
+        return;
+    }
+}
+
 sub resolve_name {
     my($self, $module, $version) = @_;
 
@@ -1381,6 +1397,10 @@ sub install_deps_bailout {
 
 sub build_stuff {
     my($self, $stuff, $dist, $depth) = @_;
+
+    if ($self->{verify} && -e 'SIGNATURE') {
+        $self->verify_signature($dist) or return;
+    }
 
     my @config_deps;
     if (!%{$dist->{meta} || {}} && -e 'META.yml') {

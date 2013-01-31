@@ -347,6 +347,11 @@ a requested version (or not, which means any version) is installed.
 Defaults to false for bare module names, but if you specify versions
 with C<~>, it will always skip satisfied requirements.
 
+=item --verify
+
+Verify the integrity of distribution files retrieved from PAUSE using
+CHECKSUMS and SIGNATURES (if found). Defaults to false.
+
 =item --auto-cleanup
 
 Specifies the number of days in which cpanm's work directories
