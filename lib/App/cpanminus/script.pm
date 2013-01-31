@@ -1086,6 +1086,7 @@ sub verify_checksums_signature {
     $self->chat("Verifying the signature of CHECKSUMS\n");
 
     my $rv = eval {
+        local $SIG{__WARN__} = sub {}; # suppress warnings
         my $v = Module::Signature::_verify($chk_file);
         $v == Module::Signature::SIGNATURE_OK();
     };
