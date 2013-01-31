@@ -343,8 +343,7 @@ sub search_mirror_index_file {
     return $found unless $self->{cascade_search};
 
     if ($found) {
-        if (!$version or
-            version->new($found->{module_version} || 0) >= version->new($version)) {
+        if ($self->satisfy_version($module, $found->{module_version}, $version)) {
             return $found;
         } else {
             $self->chat("Found $module version $found->{module_version} < $version.\n");
@@ -970,6 +969,11 @@ sub install_module {
             $self->diag("$dist->{module} is up to date. ($local)\n", 1);
             return 1;
         }
+
+        unless ($self->satisfy_version($dist->{module}, $dist->{module_version}, $version)) {
+            $self->diag("Found $dist->{module} $dist->{module_version} which doesn't satisfy $version.\n");
+            return;
+        }
     }
 
     if ($dist->{dist} eq 'perl'){
@@ -1306,11 +1310,22 @@ sub check_module {
 
     if ($self->is_deprecated($meta)){
         return 0, $version;
-    } elsif (!$want_ver or $version >= version->new($want_ver)) {
+    } elsif ($self->satisfy_version($mod, $version, $want_ver)) {
         return 1, ($version || 'undef');
     } else {
         return 0, $version;
     }
+}
+
+sub satisfy_version {
+    my($self, $mod, $version, $want_ver) = @_;
+
+    $want_ver = '0' unless defined($want_ver) && length($want_ver);
+
+    require CPAN::Meta::Requirements;
+    my $requirements = CPAN::Meta::Requirements->new;
+    $requirements->add_string_requirement($mod, $want_ver);
+    $requirements->accepts_module($mod, $version);
 }
 
 sub is_deprecated {
