@@ -1,5 +1,10 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.5021 Thu Jan 31 00:42:28 PST 2013
+   [Improvements]
+      - Added new --verify option that enables verifying CHECKSUM and SIGNATURE for distributions
+        from CPAN/PAUSE
+
 1.5020 Tue Jan 29 10:29:08 PST 2013
    [Bug Fixes]
       - Fixed a bug in --cascade-search that was checking a wrong version from 02packages file (Bryce Baril)
