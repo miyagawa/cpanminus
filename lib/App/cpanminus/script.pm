@@ -60,6 +60,7 @@ sub new {
         format   => 'tree',
         save_dists => undef,
         skip_configure => 0,
+        verify => 0,
         @_,
     }, $class;
 }
@@ -83,6 +84,7 @@ sub parse_options {
         'test-only' => sub { $self->{notest} = 0; $self->{skip_installed} = 0; $self->{test_only} = 1 },
         'S|sudo!'   => \$self->{sudo},
         'v|verbose' => sub { $self->{verbose} = $self->{interactive} = 1 },
+        'verify!'   => \$self->{verify},
         'q|quiet!'  => \$self->{quiet},
         'h|help'    => sub { $self->{action} = 'show_help' },
         'V|version' => sub { $self->{action} = 'show_version' },
@@ -170,11 +172,24 @@ sub check_libs {
     }
 }
 
+sub setup_verify {
+    my $self = shift;
+
+    my $has_modules = eval { require Module::Signature; require Digest::SHA; 1 };
+    $self->{cpansign} = $self->which('cpansign');
+
+    unless ($has_modules && $self->{cpansign}) {
+        warn "WARNING: Module::Signature and Digest::SHA is required for distribution verifications.\n";
+        $self->{verify} = 0;
+    }
+}
+
 sub doit {
     my $self = shift;
 
     $self->setup_home;
     $self->init_tools;
+    $self->setup_verify if $self->{verify};
 
     if (my $action = $self->{action}) {
         $self->$action() and return 1;
@@ -1034,7 +1049,7 @@ sub fetch_module {
         $self->diag_ok;
         $dist->{local_path} = File::Spec->rel2abs($name);
 
-        my $dir = $self->unpack($file);
+        my $dir = $self->unpack($file, $uri, $dist);
         next unless $dir; # unpack failed
 
         if (my $save = $self->{save_dists}) {
@@ -1049,13 +1064,109 @@ sub fetch_module {
 }
 
 sub unpack {
-    my($self, $file) = @_;
+    my($self, $file, $uri, $dist) = @_;
+
+    if ($self->{verify}) {
+        $self->verify_archive($file, $uri, $dist) or return;
+    }
+
     $self->chat("Unpacking $file\n");
     my $dir = $file =~ /\.zip/i ? $self->unzip($file) : $self->untar($file);
     unless ($dir) {
         $self->diag_fail("Failed to unpack $file: no directory");
     }
     return $dir;
+}
+
+sub verify_checksums_signature {
+    my($self, $chk_file) = @_;
+
+    require Module::Signature;
+
+    $self->chat("Verifying the signature of CHECKSUMS\n");
+
+    my $rv = eval {
+        my $v = Module::Signature::_verify($chk_file);
+        $v == Module::Signature::SIGNATURE_OK();
+    };
+    if ($rv) {
+        $self->chat("Verified OK!\n");
+    } else {
+        $self->diag_fail("Verifying CHECKSUMS signature failed: $rv\n");
+        return;
+    }
+
+    return 1;
+}
+
+sub verify_archive {
+    my($self, $file, $uri, $dist) = @_;
+
+    unless ($dist->{cpanid}) {
+        $self->chat("Archive '$file' does not seem to be from PAUSE. Skip verification.\n");
+    }
+
+    (my $mirror = $uri) =~ s!/authors/id.*$!!;
+
+    (my $chksum_uri = $uri) =~ s!/[^/]*$!/CHECKSUMS!;
+    my $chk_file = $self->source_for($mirror) . "/$dist->{cpanid}.CHECKSUMS";
+    $self->diag_progress("Fetching $chksum_uri");
+    $self->mirror($chksum_uri, $chk_file);
+
+    unless (-e $chk_file) {
+        $self->diag_fail("Fetching $chksum_uri failed.\n");
+        return;
+    }
+
+    $self->diag_ok;
+    $self->verify_checksums_signature($chk_file) or return;
+    $self->verify_checksum($file, $chk_file);
+}
+
+sub verify_checksum {
+    my($self, $file, $chk_file) = @_;
+
+    $self->chat("Verifying the SHA1 for $file\n");
+
+    open my $fh, "<$chk_file" or die "$chk_file: $!";
+    my $data = join '', <$fh>;
+    $data =~ s/\015?\012/\n/g;
+
+    require Safe;
+    my $chksum = Safe->new->reval($data);
+
+    if (!ref $chksum or ref $chksum ne 'HASH') {
+        $self->diag_fail("! Checksum file downloaded from $chk_file is broken.\n");
+        return;
+    }
+
+    if (my $sha = $chksum->{$file}{sha256}) {
+        my $hex = $self->sha1_for($file);
+        if ($hex eq $sha) {
+            $self->chat("Checksum for $file: Verified!\n");
+        } else {
+            $self->diag_fail("Checksum mismatch for $file\n");
+            return;
+        }
+    } else {
+        $self->chat("Checksum for $file not found in CHECKSUMS.\n");
+        return;
+    }
+}
+
+sub sha1_for {
+    my($self, $file) = @_;
+
+    require Digest::SHA;
+
+    open my $fh, "<", $file or die "$file: $!";
+    my $dg = Digest::SHA->new(256);
+    my($data);
+    while (read($fh, $data, 4096)) {
+        $dg->add($data);
+    }
+
+    return $dg->hexdigest;
 }
 
 sub resolve_name {
