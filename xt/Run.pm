@@ -15,7 +15,7 @@ sub run {
     my($stdout, $stderr, $exit) = capture {
         system($^X, "./script/cpanm.PL", @notest, "--quiet", "--reinstall", @args);
     };
-    ::diag $stderr if $stderr;
+    ::diag($stderr) if $stderr;
     return wantarray ? ($stdout, $stderr, $exit) : $stdout;
 }
 
