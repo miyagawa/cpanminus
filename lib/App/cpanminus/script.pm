@@ -346,7 +346,7 @@ sub search_mirror_index_file {
         if ($self->satisfy_version($module, $found->{module_version}, $version)) {
             return $found;
         } else {
-            $self->chat("Found $module version $found->{module_version} < $version.\n");
+            $self->chat("Found $module $found->{module_version} which doesn't satisfy $version.\n");
         }
     }
 
@@ -1328,6 +1328,16 @@ sub satisfy_version {
     $requirements->accepts_module($mod, $version);
 }
 
+sub unsatisfy_how {
+    my($self, $ver, $want_ver) = @_;
+
+    if ($want_ver =~ /^[v0-9\.\_]+$/) {
+        return "$ver < $want_ver";
+    } else {
+        return "$ver doesn't satisfy $want_ver";
+    }
+}
+
 sub is_deprecated {
     my($self, $meta) = @_;
 
@@ -1361,7 +1371,7 @@ sub should_install {
     my($ok, $local) = $self->check_module($mod, $ver);
 
     if ($ok)       { $self->chat("Yes ($local)\n") }
-    elsif ($local) { $self->chat("No ($local < $ver)\n") }
+    elsif ($local) { $self->chat("No (" . $self->unsatisfy_how($local, $ver) . ")\n") }
     else           { $self->chat("No\n") }
 
     return $mod unless $ok;
