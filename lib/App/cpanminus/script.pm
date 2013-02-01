@@ -539,8 +539,11 @@ sub _writable {
 
 sub maybe_abs {
     my($self, $lib) = @_;
-    return $lib if $lib eq '_'; # special case: gh-113
-    $lib =~ /^[~\/]/ ? $lib : File::Spec->canonpath(Cwd::cwd . "/$lib");
+    if ($lib ne '_' # special case: gh-113
+        && !File::Spec->file_name_is_absolute($lib)) {
+        $lib = File::Spec->canonpath(File::Spec->catdir(Cwd::cwd(), $lib));
+    }
+    $lib;
 }
 
 sub bootstrap_local_lib {
@@ -1983,14 +1986,20 @@ sub init_tools {
         $self->chat("You have $wget\n");
         $self->{_backends}{get} = sub {
             my($self, $uri) = @_;
-            return $self->file_get($uri) if $uri =~ s!^file:/+!/!;
+            if ($uri =~ s!^file:/+!!) {
+                $uri = qq!/$uri! unless $uri =~ m!^[a-zA-Z]:!;
+                return $self->file_get($uri);
+            }
             $self->safeexec( my $fh, $wget, $uri, ( $self->{verbose} ? () : '-q' ), '-O', '-' ) or die "wget $uri: $!";
             local $/;
             <$fh>;
         };
         $self->{_backends}{mirror} = sub {
             my($self, $uri, $path) = @_;
-            return $self->file_mirror($uri, $path) if $uri =~ s!^file:/+!/!;
+            if ($uri =~ s!^file:/+!!) {
+                $uri = qq!/$uri! unless $uri =~ m!^[a-zA-Z]:!;
+                return $self->file_mirror($uri, $path);
+            }
             $self->safeexec( my $fh, $wget, '--retry-connrefused', $uri, ( $self->{verbose} ? () : '-q' ), '-O', $path ) or die "wget $uri: $!";
             local $/;
             <$fh>;
@@ -1999,14 +2008,20 @@ sub init_tools {
         $self->chat("You have $curl\n");
         $self->{_backends}{get} = sub {
             my($self, $uri) = @_;
-            return $self->file_get($uri) if $uri =~ s!^file:/+!/!;
+            if ($uri =~ s!^file:/+!!) {
+                $uri = qq!/$uri! unless $uri =~ m!^[a-zA-Z]:!;
+                return $self->file_get($uri);
+            }
             $self->safeexec( my $fh, $curl, '-L', ( $self->{verbose} ? () : '-s' ), $uri ) or die "curl $uri: $!";
             local $/;
             <$fh>;
         };
         $self->{_backends}{mirror} = sub {
             my($self, $uri, $path) = @_;
-            return $self->file_mirror($uri, $path) if $uri =~ s!^file:/+!/!;
+            if ($uri =~ s!^file:/+!!) {
+                $uri = qq!/$uri! unless $uri =~ m!^[a-zA-Z]:!;
+                return $self->file_mirror($uri, $path);
+            }
             $self->safeexec( my $fh, $curl, '-L', $uri, ( $self->{verbose} ? () : '-s' ), '-#', '-o', $path ) or die "curl $uri: $!";
             local $/;
             <$fh>;
@@ -2016,13 +2031,22 @@ sub init_tools {
         $self->chat("Falling back to HTTP::Tiny $HTTP::Tiny::VERSION\n");
 
         $self->{_backends}{get} = sub {
-            my $self = shift;
-            my $res = HTTP::Tiny->new->get($_[0]);
+            my ($self, $uri) = @_;
+            if ($uri =~ s!^file:/+!!) {
+                $uri = qq!/$uri! unless $uri =~ m!^[a-zA-Z]:!;
+                return $self->file_get($uri);
+            }
+            my $res = HTTP::Tiny->new->get($uri);
             return unless $res->{success};
             return $res->{content};
         };
         $self->{_backends}{mirror} = sub {
             my $self = shift;
+            my ($uri, $path) = @_;
+            if ($uri =~ s!^file:/+!!) {
+                $uri = qq!/$uri! unless $uri =~ m!^[a-zA-Z]:!;
+                return $self->file_mirror($uri, $path);
+            }
             my $res = HTTP::Tiny->new->mirror(@_);
             return $res->{status};
         };
