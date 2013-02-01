@@ -370,23 +370,57 @@ sub search_module {
 
     unless ($self->{mirror_only}) {
         if ($self->{metacpan}) {
+            my $release;
             require JSON::PP;
-            $self->chat("Searching $module on metacpan ...\n");
-            my $module_uri  = "http://api.metacpan.org/module/$module";
-            my $module_json = $self->get($module_uri);
-            my $module_meta = eval { JSON::PP::decode_json($module_json) };
-            if ($module_meta && $module_meta->{distribution}) {
-                my $dist_uri = "http://api.metacpan.org/release/$module_meta->{distribution}";
-                my $dist_json = $self->get($dist_uri);
-                my $dist_meta = eval { JSON::PP::decode_json($dist_json) };
-                if ($dist_meta && $dist_meta->{download_url}) {
-                    (my $distfile = $dist_meta->{download_url}) =~ s!.+/authors/id/!!;
-                    local $self->{mirrors} = $self->{mirrors};
-                    if ($dist_meta->{stat}->{mtime} > time()-24*60*60) {
-                        $self->{mirrors} = ['http://cpan.metacpan.org'];
-                    }
-                    return $self->cpan_module($module, $distfile, $dist_meta->{version});
+            my $encode_json_body = sub {
+                my $param = JSON::PP::encode_json(shift);
+                $param =~ s/([^a-zA-Z0-9_\-.])/uc sprintf("%%%02x",ord($1))/eg;
+                return $param;
+            };
+            if (!$version) {
+                $self->chat("Searching $module on metacpan ...\n");
+                my $module_uri  = "http://api.metacpan.org/module/$module";
+                my $module_json = $self->get($module_uri);
+                my $module_meta = eval { JSON::PP::decode_json($module_json) };
+                if ($module_meta && $module_meta->{release}) {
+                    $release = $module_meta->{release};
                 }
+            } else {
+                $self->chat("Searching $module ($version) on metacpan ...\n");
+                my $module_uri  = 'http://api.metacpan.org/module/_search?source=';
+                $module_uri .= $encode_json_body->({
+                    filter => { and => [
+                        { term => { 'module.name'    => $module  } },
+                        { term => { 'module.version' => $version } },
+                    ] },
+                    fields => [ 'release' ],
+                });
+                my $module_json = $self->get($module_uri);
+                my $module_meta = eval { JSON::PP::decode_json($module_json) };
+                if (defined $module_meta->{hits}->{hits}->[0]->{fields}->{release}) {
+                    $release = $module_meta->{hits}->{hits}->[0]->{fields}->{release};
+                }
+            }
+            my $dist_uri = "http://api.metacpan.org/release/_search?source=";
+            $dist_uri .= $encode_json_body->({
+                filter => {
+                    term => { 'release.name' => $release }
+                },
+                fields => [ 'download_url', 'stat', 'version' ],
+            });
+            my $dist_json = $self->get($dist_uri);
+            my $dist_meta = eval { JSON::PP::decode_json($dist_json) };
+            if ($dist_meta) {
+                $dist_meta = $dist_meta->{hits}->{hits}->[0]->{fields};
+            }
+            if ($dist_meta && $dist_meta->{download_url}) {
+                my $distfile = $dist_meta->{download_url};
+                $distfile =~ s!.+/authors/id/!!;
+                local $self->{mirrors} = $self->{mirrors};
+                if ($dist_meta->{stat}->{mtime} > time()-24*60*60) {
+                    $self->{mirrors} = ['http://cpan.metacpan.org'];
+                }
+                return $self->cpan_module($module, $distfile, $dist_meta->{version});
             }
             $self->diag_fail("Finding $module on metacpan failed.");
         }
