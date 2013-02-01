@@ -2072,8 +2072,24 @@ sub which {
     return;
 }
 
-sub get      { $_[0]->{_backends}{get}->(@_) };
-sub mirror   { $_[0]->{_backends}{mirror}->(@_) };
+sub get      {
+    my($self, $uri) = @_;
+    if ($uri =~ /^file:/) {
+        $self->file_get($uri);
+    } else {
+        $self->{_backends}{get}->($uri);
+    }
+}
+
+sub mirror   {
+    my($self, $uri, $local) = @_;
+    if ($uri =~ /^file:/) {
+        $self->file_mirror($uri, $local);
+    } else {
+        $self->{_backends}{mirror}->($uri, $local);
+    }
+}
+
 sub untar    { $_[0]->{_backends}{untar}->(@_) };
 sub unzip    { $_[0]->{_backends}{unzip}->(@_) };
 
@@ -2138,14 +2154,12 @@ sub init_tools {
         $self->chat("You have $wget\n");
         $self->{_backends}{get} = sub {
             my($self, $uri) = @_;
-            return $self->file_get($uri) if $uri =~ m!^file:/+!;
             $self->safeexec( my $fh, $wget, $uri, ( $self->{verbose} ? () : '-q' ), '-O', '-' ) or die "wget $uri: $!";
             local $/;
             <$fh>;
         };
         $self->{_backends}{mirror} = sub {
             my($self, $uri, $path) = @_;
-            return $self->file_mirror($uri, $path) if $uri =~ m!^file:/+!;
             $self->safeexec( my $fh, $wget, '--retry-connrefused', $uri, ( $self->{verbose} ? () : '-q' ), '-O', $path ) or die "wget $uri: $!";
             local $/;
             <$fh>;
@@ -2154,14 +2168,12 @@ sub init_tools {
         $self->chat("You have $curl\n");
         $self->{_backends}{get} = sub {
             my($self, $uri) = @_;
-            return $self->file_get($uri) if $uri =~ m!^file:/+!;
             $self->safeexec( my $fh, $curl, '-L', ( $self->{verbose} ? () : '-s' ), $uri ) or die "curl $uri: $!";
             local $/;
             <$fh>;
         };
         $self->{_backends}{mirror} = sub {
             my($self, $uri, $path) = @_;
-            return $self->file_mirror($uri, $path) if $uri =~ m!^file:/+!;
             $self->safeexec( my $fh, $curl, '-L', $uri, ( $self->{verbose} ? () : '-s' ), '-#', '-o', $path ) or die "curl $uri: $!";
             local $/;
             <$fh>;
