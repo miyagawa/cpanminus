@@ -319,6 +319,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use File::Path ();
   use File::Spec ();
   use File::Copy ();
+  use File::Temp ();
   use Getopt::Long ();
   use Parse::CPAN::Meta;
   use Symbol ();
@@ -1526,6 +1527,11 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           };
       }
   
+      # Git
+      if ($module =~ /(^git:|\.git$)/) {
+          return $self->git_uri($module);
+      }
+  
       # cpan URI
       if ($module =~ s!^cpan:///distfile/!!) {
           return $self->cpan_dist($module);
@@ -1574,6 +1580,21 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           $d->properties,
           source  => 'cpan',
           uris    => $url,
+      };
+  }
+  
+  sub git_uri {
+      my ($self, $uri) = @_;
+  
+      my $dh  = File::Temp->newdir(CLEANUP => 1);
+      my $dir = Cwd::abs_path($dh->dirname);
+  
+      system 'git', 'clone', $uri, $dir;
+  
+      return {
+          source => 'local',
+          dir => $dir,
+          _dh => $dh,
       };
   }
   
