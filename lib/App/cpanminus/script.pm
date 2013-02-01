@@ -367,6 +367,125 @@ sub search_mirror_index_file {
     return;
 }
 
+sub is_exact_version {
+    my($self, $version) = @_;
+    defined($version) && $version =~ /^==/;
+}
+
+sub encode_json {
+    my($self, $data) = @_;
+    require JSON::PP;
+
+    my $json = JSON::PP::encode_json($data);
+    $json =~ s/([^a-zA-Z0-9_\-.])/uc sprintf("%%%02x",ord($1))/eg;
+    $json;
+}
+
+sub search_metacpan {
+    my($self, $module, $version, $exact) = @_;
+
+    require JSON::PP;
+
+    my $release;
+    if ($exact) {
+        $version =~ s/^== *//;
+        $self->chat("Searching $module ($version) on metacpan ...\n");
+        my $module_uri = "http://api.metacpan.org/module/_search?source=";
+        $module_uri .= $self->encode_json({
+            filter => { and => [
+                { term => { 'module.authorized' => JSON::PP::true() } },
+                { term => { 'module.name'    => $module } },
+                { term => { 'module.version' => $version } },
+            ] },
+            fields => [ 'release' ],
+        });
+
+        my $module_json = $self->get($module_uri);
+        my $module_meta = eval { JSON::PP::decode_json($module_json) };
+        $release = $module_meta->{hits}{hits}[0]{fields}{release} if $module_meta;
+    } else {
+        $self->chat("Searching $module on metacpan ...\n");
+        my $module_uri  = "http://api.metacpan.org/module/$module";
+        my $module_json = $self->get($module_uri);
+        my $module_meta = eval { JSON::PP::decode_json($module_json) };
+        $release = $module_meta->{release} if $module_meta;
+    }
+
+    my $dist_uri = "http://api.metacpan.org/release/_search?source=";
+    $dist_uri .= $self->encode_json({
+        filter => {
+            term => { 'release.name' => $release },
+        },
+        fields => [ 'download_url', 'stat', 'version' ],
+    });
+
+    my $dist_json = $self->get($dist_uri);
+    my $dist_meta = eval { JSON::PP::decode_json($dist_json) };
+
+    if ($dist_meta) {
+        $dist_meta = $dist_meta->{hits}{hits}[0]{fields};
+    }
+    if ($dist_meta && $dist_meta->{download_url}) {
+        (my $distfile = $dist_meta->{download_url}) =~ s!.+/authors/id/!!;
+        local $self->{mirrors} = $self->{mirrors};
+        if ($dist_meta->{stat}->{mtime} > time()-24*60*60) {
+            $self->{mirrors} = ['http://cpan.metacpan.org'];
+        }
+        return $self->cpan_module($module, $distfile, $dist_meta->{version});
+    }
+
+    $self->diag_fail("Finding $module on metacpan failed.");
+}
+
+sub search_database {
+    my($self, $module, $version) = @_;
+
+    my $exact_search;
+    if ($self->is_exact_version($version)) {
+        $exact_search = 1;
+        $self->{metacpan} = 1; # enable releases search
+    }
+
+    my $found;
+
+    if ($self->{metacpan}) {
+        $found = $self->search_metacpan($module, $version, $exact_search) and return $found;
+    }
+
+    $found = $self->search_cpanmetadb($module, $version) and return $found;
+    $found = $self->search_sco($module, $version) and return $found;
+}
+
+sub search_cpanmetadb {
+    my($self, $module, $version) = @_;
+
+    $self->chat("Searching $module on cpanmetadb ...\n");
+
+    my $uri  = "http://cpanmetadb.plackperl.org/v1.0/package/$module";
+    my $yaml = $self->get($uri);
+    my $meta = $self->parse_meta_string($yaml);
+    if ($meta && $meta->{distfile}) {
+        return $self->cpan_module($module, $meta->{distfile}, $meta->{version});
+    }
+
+    $self->diag_fail("Finding $module on cpanmetadb failed.");
+    return;
+}
+
+sub search_sco {
+    my($self, $module, $version) = @_;
+
+    $self->chat("Searching $module on search.cpan.org ...\n");
+    my $uri  = "http://search.cpan.org/perldoc?$module";
+    my $html = $self->get($uri);
+    $html =~ m!<a href="/CPAN/authors/id/(.*?\.(?:tar\.gz|tgz|tar\.bz2|zip))">!
+      and return $self->cpan_module($module, $1);
+
+    $self->diag_fail("Finding $module on search.cpan.org failed.");
+
+    return;
+}
+
 sub search_module {
     my($self, $module, $version) = @_;
 
@@ -382,45 +501,8 @@ sub search_module {
     }
 
     unless ($self->{mirror_only}) {
-        if ($self->{metacpan}) {
-            require JSON::PP;
-            $self->chat("Searching $module on metacpan ...\n");
-            my $module_uri  = "http://api.metacpan.org/module/$module";
-            my $module_json = $self->get($module_uri);
-            my $module_meta = eval { JSON::PP::decode_json($module_json) };
-            if ($module_meta && $module_meta->{distribution}) {
-                my $dist_uri = "http://api.metacpan.org/release/$module_meta->{distribution}";
-                my $dist_json = $self->get($dist_uri);
-                my $dist_meta = eval { JSON::PP::decode_json($dist_json) };
-                if ($dist_meta && $dist_meta->{download_url}) {
-                    (my $distfile = $dist_meta->{download_url}) =~ s!.+/authors/id/!!;
-                    local $self->{mirrors} = $self->{mirrors};
-                    if ($dist_meta->{stat}->{mtime} > time()-24*60*60) {
-                        $self->{mirrors} = ['http://cpan.metacpan.org'];
-                    }
-                    return $self->cpan_module($module, $distfile, $dist_meta->{version});
-                }
-            }
-            $self->diag_fail("Finding $module on metacpan failed.");
-        }
-
-        $self->chat("Searching $module on cpanmetadb ...\n");
-        my $uri  = "http://cpanmetadb.plackperl.org/v1.0/package/$module";
-        my $yaml = $self->get($uri);
-        my $meta = $self->parse_meta_string($yaml);
-        if ($meta && $meta->{distfile}) {
-            return $self->cpan_module($module, $meta->{distfile}, $meta->{version});
-        }
-
-        $self->diag_fail("Finding $module on cpanmetadb failed.");
-
-        $self->chat("Searching $module on search.cpan.org ...\n");
-        my $uri  = "http://search.cpan.org/perldoc?$module";
-        my $html = $self->get($uri);
-        $html =~ m!<a href="/CPAN/authors/id/(.*?\.(?:tar\.gz|tgz|tar\.bz2|zip))">!
-            and return $self->cpan_module($module, $1);
-
-        $self->diag_fail("Finding $module on search.cpan.org failed.");
+        my $found = $self->search_database($module, $version);
+        return $found if $found;
     }
 
     MIRROR: for my $mirror (@{ $self->{mirrors} }) {
@@ -978,10 +1060,12 @@ sub install_module {
     $self->setup_module_build_patch unless $self->{pod2man};
 
     if ($dist->{module}) {
-        my($ok, $local) = $self->check_module($dist->{module}, $dist->{module_version} || 0);
-        if ($self->{skip_installed} && $ok) {
-            $self->diag("$dist->{module} is up to date. ($local)\n", 1);
-            return 1;
+        unless ($self->is_exact_version($version)) {
+            my($ok, $local) = $self->check_module($dist->{module}, $dist->{module_version} || 0);
+            if ($self->{skip_installed} && $ok) {
+                $self->diag("$dist->{module} is up to date. ($local)\n", 1);
+                return 1;
+            }
         }
 
         unless ($self->satisfy_version($dist->{module}, $dist->{module_version}, $version)) {
