@@ -12,7 +12,11 @@ $ENV{PERL_CPANM_HOME} = tempdir(CLEANUP => 1);
 sub run {
     my @args = @_;
     my @notest = $ENV{NOTEST} ? ("--notest") : ();
-    return capture { system($^X, "./script/cpanm.PL", @notest, "--quiet", "--reinstall", @args) };
+    my($stdout, $stderr, $exit) = capture {
+        system($^X, "./script/cpanm.PL", @notest, "--quiet", "--reinstall", @args);
+    };
+    ::diag($stderr) if $stderr;
+    return wantarray ? ($stdout, $stderr, $exit) : $stdout;
 }
 
 sub last_build_log {

@@ -2,15 +2,12 @@ use 5.006;
 use strict;
 use warnings;
 package CPAN::Meta::Prereqs;
-BEGIN {
-  $CPAN::Meta::Prereqs::VERSION = '2.110930';
-}
-# ABSTRACT: a set of distribution prerequisites by phase and type
+our $VERSION = '2.120921'; # VERSION
 
 
 use Carp qw(confess);
 use Scalar::Util qw(blessed);
-use Version::Requirements 0.101020; # finalize
+use CPAN::Meta::Requirements 2.121;
 
 
 sub __legal_phases { qw(configure build test runtime develop)   }
@@ -38,7 +35,7 @@ sub new {
 
       next TYPE unless keys %$spec;
 
-      $guts{prereqs}{$phase}{$type} = Version::Requirements->from_string_hash(
+      $guts{prereqs}{$phase}{$type} = CPAN::Meta::Requirements->from_string_hash(
         $spec
       );
     }
@@ -62,7 +59,7 @@ sub requirements_for {
     confess "requested requirements for unknown type: $type";
   }
 
-  my $req = ($self->{prereqs}{$phase}{$type} ||= Version::Requirements->new);
+  my $req = ($self->{prereqs}{$phase}{$type} ||= CPAN::Meta::Requirements->new);
 
   $req->finalize if $self->is_finalized;
 
@@ -81,7 +78,7 @@ sub with_merged_prereqs {
 
   for my $phase ($self->__legal_phases) {
     for my $type ($self->__legal_types) {
-      my $req = Version::Requirements->new;
+      my $req = CPAN::Meta::Requirements->new;
 
       for my $prereq (@prereq_objs) {
         my $this_req = $prereq->requirements_for($phase, $type);
@@ -139,6 +136,8 @@ sub clone {
 }
 
 1;
+
+# ABSTRACT: a set of distribution prerequisites by phase and type
 
 
 

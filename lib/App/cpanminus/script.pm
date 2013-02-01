@@ -14,7 +14,7 @@ use Symbol ();
 use constant WIN32 => $^O eq 'MSWin32';
 use constant SUNOS => $^O eq 'solaris';
 
-our $VERSION = "1.5021";
+our $VERSION = "1.59_01";
 
 my $quote = WIN32 ? q/"/ : q/'/;
 
@@ -184,6 +184,20 @@ sub setup_verify {
     }
 }
 
+sub parse_module_args {
+    my($self, $module) = @_;
+
+    # Plack@1.2 -> Plack~"==1.2"
+    $module =~ s/@([v\d\._]+)$/~== $1/;
+
+    # Plack~1.20, DBI~"> 1.0, <= 2.0"
+    if ($module =~ /\~[v\d\._,<>= ]+$/) {
+        return split /\~/, $module, 2;
+    } else {
+        return $module, undef;
+    }
+}
+
 sub doit {
     my $self = shift;
 
@@ -209,7 +223,7 @@ sub doit {
             $module = join '::', grep { $_ } File::Spec->splitdir($dirs), $file;
         }
 
-        ($module, my $version) = split /\~/, $module, 2 if $module =~ /\~[v\d\._]+$/;
+        ($module, my $version) = $self->parse_module_args($module);
         if ($self->{skip_satisfied} or defined $version) {
             $self->check_libs;
             my($ok, $local) = $self->check_module($module, $version || 0);
@@ -343,11 +357,10 @@ sub search_mirror_index_file {
     return $found unless $self->{cascade_search};
 
     if ($found) {
-        if (!$version or
-            version->new($found->{module_version} || 0) >= version->new($version)) {
+        if ($self->satisfy_version($module, $found->{module_version}, $version)) {
             return $found;
         } else {
-            $self->chat("Found $module version $found->{module_version} < $version.\n");
+            $self->chat("Found $module $found->{module_version} which doesn't satisfy $version.\n");
         }
     }
 
@@ -370,23 +383,58 @@ sub search_module {
 
     unless ($self->{mirror_only}) {
         if ($self->{metacpan}) {
+            my $release;
             require JSON::PP;
-            $self->chat("Searching $module on metacpan ...\n");
-            my $module_uri  = "http://api.metacpan.org/module/$module";
-            my $module_json = $self->get($module_uri);
-            my $module_meta = eval { JSON::PP::decode_json($module_json) };
-            if ($module_meta && $module_meta->{distribution}) {
-                my $dist_uri = "http://api.metacpan.org/release/$module_meta->{distribution}";
-                my $dist_json = $self->get($dist_uri);
-                my $dist_meta = eval { JSON::PP::decode_json($dist_json) };
-                if ($dist_meta && $dist_meta->{download_url}) {
-                    (my $distfile = $dist_meta->{download_url}) =~ s!.+/authors/id/!!;
-                    local $self->{mirrors} = $self->{mirrors};
-                    if ($dist_meta->{stat}->{mtime} > time()-24*60*60) {
-                        $self->{mirrors} = ['http://cpan.metacpan.org'];
-                    }
-                    return $self->cpan_module($module, $distfile, $dist_meta->{version});
+            my $encode_json_body = sub {
+                my $param = JSON::PP::encode_json(shift);
+                $param =~ s/([^a-zA-Z0-9_\-.])/uc sprintf("%%%02x",ord($1))/eg;
+                return $param;
+            };
+            my $exact_version;
+            if (defined $version && (($exact_version) = $version =~ /^== (.+)$/)) {
+                $self->chat("Searching $module ($exact_version) on metacpan ...\n");
+                my $module_uri  = 'http://api.metacpan.org/module/_search?source=';
+                $module_uri .= $encode_json_body->({
+                    filter => { and => [
+                        { term => { 'module.name'    => $module  } },
+                        { term => { 'module.version' => $exact_version } },
+                    ] },
+                    fields => [ 'release' ],
+                });
+                my $module_json = $self->get($module_uri);
+                my $module_meta = eval { JSON::PP::decode_json($module_json) };
+                if (defined $module_meta->{hits}->{hits}->[0]->{fields}->{release}) {
+                    $release = $module_meta->{hits}->{hits}->[0]->{fields}->{release};
                 }
+            } else {
+                $self->chat("Searching $module on metacpan ...\n");
+                my $module_uri  = "http://api.metacpan.org/module/$module";
+                my $module_json = $self->get($module_uri);
+                my $module_meta = eval { JSON::PP::decode_json($module_json) };
+                if ($module_meta && $module_meta->{release}) {
+                    $release = $module_meta->{release};
+                }
+            }
+            my $dist_uri = "http://api.metacpan.org/release/_search?source=";
+            $dist_uri .= $encode_json_body->({
+                filter => {
+                    term => { 'release.name' => $release }
+                },
+                fields => [ 'download_url', 'stat', 'version' ],
+            });
+            my $dist_json = $self->get($dist_uri);
+            my $dist_meta = eval { JSON::PP::decode_json($dist_json) };
+            if ($dist_meta) {
+                $dist_meta = $dist_meta->{hits}->{hits}->[0]->{fields};
+            }
+            if ($dist_meta && $dist_meta->{download_url}) {
+                my $distfile = $dist_meta->{download_url};
+                $distfile =~ s!.+/authors/id/!!;
+                local $self->{mirrors} = $self->{mirrors};
+                if ($dist_meta->{stat}->{mtime} > time()-24*60*60) {
+                    $self->{mirrors} = ['http://cpan.metacpan.org'];
+                }
+                return $self->cpan_module($module, $distfile, $dist_meta->{version});
             }
             $self->diag_fail("Finding $module on metacpan failed.");
         }
@@ -970,6 +1018,11 @@ sub install_module {
             $self->diag("$dist->{module} is up to date. ($local)\n", 1);
             return 1;
         }
+
+        unless ($self->satisfy_version($dist->{module}, $dist->{module_version}, $version)) {
+            $self->diag("Found $dist->{module} $dist->{module_version} which doesn't satisfy $version.\n");
+            return;
+        }
     }
 
     if ($dist->{dist} eq 'perl'){
@@ -1306,10 +1359,31 @@ sub check_module {
 
     if ($self->is_deprecated($meta)){
         return 0, $version;
-    } elsif (!$want_ver or $version >= version->new($want_ver)) {
+    } elsif ($self->satisfy_version($mod, $version, $want_ver)) {
         return 1, ($version || 'undef');
     } else {
         return 0, $version;
+    }
+}
+
+sub satisfy_version {
+    my($self, $mod, $version, $want_ver) = @_;
+
+    $want_ver = '0' unless defined($want_ver) && length($want_ver);
+
+    require CPAN::Meta::Requirements;
+    my $requirements = CPAN::Meta::Requirements->new;
+    $requirements->add_string_requirement($mod, $want_ver);
+    $requirements->accepts_module($mod, $version);
+}
+
+sub unsatisfy_how {
+    my($self, $ver, $want_ver) = @_;
+
+    if ($want_ver =~ /^[v0-9\.\_]+$/) {
+        return "$ver < $want_ver";
+    } else {
+        return "$ver doesn't satisfy $want_ver";
     }
 }
 
@@ -1346,7 +1420,7 @@ sub should_install {
     my($ok, $local) = $self->check_module($mod, $ver);
 
     if ($ok)       { $self->chat("Yes ($local)\n") }
-    elsif ($local) { $self->chat("No ($local < $ver)\n") }
+    elsif ($local) { $self->chat("No (" . $self->unsatisfy_how($local, $ver) . ")\n") }
     else           { $self->chat("No\n") }
 
     return $mod unless $ok;
