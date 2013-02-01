@@ -390,21 +390,14 @@ sub search_module {
                 $param =~ s/([^a-zA-Z0-9_\-.])/uc sprintf("%%%02x",ord($1))/eg;
                 return $param;
             };
-            if (!$version) {
-                $self->chat("Searching $module on metacpan ...\n");
-                my $module_uri  = "http://api.metacpan.org/module/$module";
-                my $module_json = $self->get($module_uri);
-                my $module_meta = eval { JSON::PP::decode_json($module_json) };
-                if ($module_meta && $module_meta->{release}) {
-                    $release = $module_meta->{release};
-                }
-            } else {
-                $self->chat("Searching $module ($version) on metacpan ...\n");
+            my $exact_version;
+            if (defined $version && (($exact_version) = $version =~ /^== (.+)$/)) {
+                $self->chat("Searching $module ($exact_version) on metacpan ...\n");
                 my $module_uri  = 'http://api.metacpan.org/module/_search?source=';
                 $module_uri .= $encode_json_body->({
                     filter => { and => [
                         { term => { 'module.name'    => $module  } },
-                        { term => { 'module.version' => $version } },
+                        { term => { 'module.version' => $exact_version } },
                     ] },
                     fields => [ 'release' ],
                 });
@@ -412,6 +405,14 @@ sub search_module {
                 my $module_meta = eval { JSON::PP::decode_json($module_json) };
                 if (defined $module_meta->{hits}->{hits}->[0]->{fields}->{release}) {
                     $release = $module_meta->{hits}->{hits}->[0]->{fields}->{release};
+                }
+            } else {
+                $self->chat("Searching $module on metacpan ...\n");
+                my $module_uri  = "http://api.metacpan.org/module/$module";
+                my $module_json = $self->get($module_uri);
+                my $module_meta = eval { JSON::PP::decode_json($module_json) };
+                if ($module_meta && $module_meta->{release}) {
+                    $release = $module_meta->{release};
                 }
             }
             my $dist_uri = "http://api.metacpan.org/release/_search?source=";
