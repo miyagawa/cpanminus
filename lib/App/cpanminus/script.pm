@@ -14,7 +14,7 @@ use Symbol ();
 use constant WIN32 => $^O eq 'MSWin32';
 use constant SUNOS => $^O eq 'solaris';
 
-our $VERSION = "1.5021";
+our $VERSION = "1.59_01";
 
 my $quote = WIN32 ? q/"/ : q/'/;
 
@@ -184,6 +184,20 @@ sub setup_verify {
     }
 }
 
+sub parse_module_args {
+    my($self, $module) = @_;
+
+    # Plack@1.2 -> Plack~"==1.2"
+    $module =~ s/@([v\d\._]+)$/~== $1/;
+
+    # Plack~1.20, DBI~"> 1.0, <= 2.0"
+    if ($module =~ /\~[v\d\._,<>= ]+$/) {
+        return split /\~/, $module, 2;
+    } else {
+        return $module, undef;
+    }
+}
+
 sub doit {
     my $self = shift;
 
@@ -209,7 +223,7 @@ sub doit {
             $module = join '::', grep { $_ } File::Spec->splitdir($dirs), $file;
         }
 
-        ($module, my $version) = split /\~/, $module, 2 if $module =~ /\~[v\d\._]+$/;
+        ($module, my $version) = $self->parse_module_args($module);
         if ($self->{skip_satisfied} or defined $version) {
             $self->check_libs;
             my($ok, $local) = $self->check_module($module, $version || 0);
@@ -343,11 +357,10 @@ sub search_mirror_index_file {
     return $found unless $self->{cascade_search};
 
     if ($found) {
-        if (!$version or
-            version->new($found->{module_version} || 0) >= version->new($version)) {
+        if ($self->satisfy_version($module, $found->{module_version}, $version)) {
             return $found;
         } else {
-            $self->chat("Found $module version $found->{module_version} < $version.\n");
+            $self->chat("Found $module $found->{module_version} which doesn't satisfy $version.\n");
         }
     }
 
@@ -1004,6 +1017,11 @@ sub install_module {
             $self->diag("$dist->{module} is up to date. ($local)\n", 1);
             return 1;
         }
+
+        unless ($self->satisfy_version($dist->{module}, $dist->{module_version}, $version)) {
+            $self->diag("Found $dist->{module} $dist->{module_version} which doesn't satisfy $version.\n");
+            return;
+        }
     }
 
     if ($dist->{dist} eq 'perl'){
@@ -1340,10 +1358,31 @@ sub check_module {
 
     if ($self->is_deprecated($meta)){
         return 0, $version;
-    } elsif (!$want_ver or $version >= version->new($want_ver)) {
+    } elsif ($self->satisfy_version($mod, $version, $want_ver)) {
         return 1, ($version || 'undef');
     } else {
         return 0, $version;
+    }
+}
+
+sub satisfy_version {
+    my($self, $mod, $version, $want_ver) = @_;
+
+    $want_ver = '0' unless defined($want_ver) && length($want_ver);
+
+    require CPAN::Meta::Requirements;
+    my $requirements = CPAN::Meta::Requirements->new;
+    $requirements->add_string_requirement($mod, $want_ver);
+    $requirements->accepts_module($mod, $version);
+}
+
+sub unsatisfy_how {
+    my($self, $ver, $want_ver) = @_;
+
+    if ($want_ver =~ /^[v0-9\.\_]+$/) {
+        return "$ver < $want_ver";
+    } else {
+        return "$ver doesn't satisfy $want_ver";
     }
 }
 
@@ -1380,7 +1419,7 @@ sub should_install {
     my($ok, $local) = $self->check_module($mod, $ver);
 
     if ($ok)       { $self->chat("Yes ($local)\n") }
-    elsif ($local) { $self->chat("No ($local < $ver)\n") }
+    elsif ($local) { $self->chat("No (" . $self->unsatisfy_how($local, $ver) . ")\n") }
     else           { $self->chat("No\n") }
 
     return $mod unless $ok;
