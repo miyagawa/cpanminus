@@ -1,5 +1,11 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.59_03 Fri Feb  1 10:42:57 PST 2013
+   [Improvements]
+      - Fix issues working with file:// URLs with drive letters on Win32 (A.J. Lucas) #180
+      - Fix home directory detection without HOME env on win32 (kmx, Christian Walde) #132
+      - Allow comment fields in 02packages file (Jeffrey Thalhammer) #187
+
 1.59_02 Thu Jan 31 19:09:43 PST 2013
    [New Features]
       - Added experimental @ shortcut to mean exact version e.g. cpanm DBI@1.20

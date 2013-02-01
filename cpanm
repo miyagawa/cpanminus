@@ -18,7 +18,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.59_02";
+  our $VERSION = "1.59_03";
   
   =head1 NAME
   
@@ -320,15 +320,30 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use constant WIN32 => $^O eq 'MSWin32';
   use constant SUNOS => $^O eq 'solaris';
   
-  our $VERSION = "1.59_02";
+  our $VERSION = "1.59_03";
   
   my $quote = WIN32 ? q/"/ : q/'/;
+  
+  sub determine_home {
+      my $class = shift;
+  
+      my $homedir = $ENV{HOME}
+        || eval { require File::HomeDir; File::HomeDir->my_home }
+        || join('', @ENV{qw(HOMEDRIVE HOMEPATH)}); # Win32
+  
+      if (WIN32) {
+          require Win32;
+          $homedir = Win32::GetShortPathName($homedir);
+      }
+  
+      return "$homedir/.cpanm";
+  }
   
   sub new {
       my $class = shift;
   
       bless {
-          home => "$ENV{HOME}/.cpanm",
+          home => $class->determine_home,
           cmd  => 'install',
           seen => {},
           notest => undef,
@@ -654,7 +669,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       open my $fh, '<', $file or return;
       my $found;
       while (<$fh>) {
-          if (m!^\Q$module\E\s+([\w\.]+)\s+(.*)!m) {
+          if (m!^\Q$module\E\s+([\w\.]+)\s+(\S*)!m) {
               $found = $self->cpan_module($module, $2, $1);
               last;
           }
@@ -940,8 +955,11 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   
   sub maybe_abs {
       my($self, $lib) = @_;
-      return $lib if $lib eq '_'; # special case: gh-113
-      $lib =~ /^[~\/]/ ? $lib : File::Spec->canonpath(Cwd::cwd . "/$lib");
+      if ($lib eq '_' or $lib =~ /^~/ or File::Spec->file_name_is_absolute($lib)) {
+          return $lib;
+      } else {
+          return File::Spec->canonpath(File::Spec->catdir(Cwd::cwd(), $lib));
+      }
   }
   
   sub bootstrap_local_lib {
@@ -2365,15 +2383,29 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   sub untar    { $_[0]->{_backends}{untar}->(@_) };
   sub unzip    { $_[0]->{_backends}{unzip}->(@_) };
   
+  sub uri_to_file {
+      my($self, $uri) = @_;
+  
+      # file:///path/to/file -> /path/to/file
+      # file://C:/path       -> C:/path
+      if ($uri =~ s!file:/+!!) {
+          $uri = "/$uri" unless $uri =~ m![a-zA-Z]:!;
+      }
+  
+      return $uri;
+  }
+  
   sub file_get {
       my($self, $uri) = @_;
-      open my $fh, "<$uri" or return;
+      my $file = $self->uri_to_file($uri);
+      open my $fh, "<$file" or return;
       join '', <$fh>;
   }
   
   sub file_mirror {
       my($self, $uri, $path) = @_;
-      File::Copy::copy($uri, $path);
+      my $file = $self->uri_to_file($uri);
+      File::Copy::copy($file, $path);
   }
   
   sub init_tools {
@@ -2412,14 +2444,14 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           $self->chat("You have $wget\n");
           $self->{_backends}{get} = sub {
               my($self, $uri) = @_;
-              return $self->file_get($uri) if $uri =~ s!^file:/+!/!;
+              return $self->file_get($uri) if $uri =~ m!^file:/+!;
               $self->safeexec( my $fh, $wget, $uri, ( $self->{verbose} ? () : '-q' ), '-O', '-' ) or die "wget $uri: $!";
               local $/;
               <$fh>;
           };
           $self->{_backends}{mirror} = sub {
               my($self, $uri, $path) = @_;
-              return $self->file_mirror($uri, $path) if $uri =~ s!^file:/+!/!;
+              return $self->file_mirror($uri, $path) if $uri =~ m!^file:/+!;
               $self->safeexec( my $fh, $wget, '--retry-connrefused', $uri, ( $self->{verbose} ? () : '-q' ), '-O', $path ) or die "wget $uri: $!";
               local $/;
               <$fh>;
@@ -2428,14 +2460,14 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           $self->chat("You have $curl\n");
           $self->{_backends}{get} = sub {
               my($self, $uri) = @_;
-              return $self->file_get($uri) if $uri =~ s!^file:/+!/!;
+              return $self->file_get($uri) if $uri =~ m!^file:/+!;
               $self->safeexec( my $fh, $curl, '-L', ( $self->{verbose} ? () : '-s' ), $uri ) or die "curl $uri: $!";
               local $/;
               <$fh>;
           };
           $self->{_backends}{mirror} = sub {
               my($self, $uri, $path) = @_;
-              return $self->file_mirror($uri, $path) if $uri =~ s!^file:/+!/!;
+              return $self->file_mirror($uri, $path) if $uri =~ m!^file:/+!;
               $self->safeexec( my $fh, $curl, '-L', $uri, ( $self->{verbose} ? () : '-s' ), '-#', '-o', $path ) or die "curl $uri: $!";
               local $/;
               <$fh>;
