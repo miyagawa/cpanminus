@@ -18,11 +18,17 @@ our $VERSION = "1.5021";
 
 my $quote = WIN32 ? q/"/ : q/'/;
 
+my $home = $ENV{HOME} || eval { require File::HomeDir; File::HomeDir->my_home } || join('', @ENV{qw(HOMEDRIVE HOMEPATH)});
+if (WIN32) {
+    require Win32;
+    $home = Win32::GetShortPathName($home); #avoid spaces in dirname
+}
+
 sub new {
     my $class = shift;
 
     bless {
-        home => "$ENV{HOME}/.cpanm",
+        home => "$home/.cpanm",
         cmd  => 'install',
         seen => {},
         notest => undef,
