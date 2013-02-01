@@ -348,7 +348,7 @@ sub search_mirror_index_file {
     open my $fh, '<', $file or return;
     my $found;
     while (<$fh>) {
-        if (m!^\Q$module\E\s+([\w\.]+)\s+(.*)!m) {
+        if (m!^\Q$module\E\s+([\w\.]+)\s+(\S*)!m) {
             $found = $self->cpan_module($module, $2, $1);
             last;
         }
