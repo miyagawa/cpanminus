@@ -184,6 +184,20 @@ sub setup_verify {
     }
 }
 
+sub parse_module_args {
+    my($self, $module) = @_;
+
+    # Plack@1.2 -> Plack~"==1.2"
+    $module =~ s/@([v\d\._]+)$/~== $1/;
+
+    # Plack~1.20, DBI~"> 1.0, <= 2.0"
+    if ($module =~ /\~[v\d\._,<>= ]+$/) {
+        return split /\~/, $module, 2;
+    } else {
+        return $module, undef;
+    }
+}
+
 sub doit {
     my $self = shift;
 
@@ -209,7 +223,7 @@ sub doit {
             $module = join '::', grep { $_ } File::Spec->splitdir($dirs), $file;
         }
 
-        ($module, my $version) = split /\~/, $module, 2 if $module =~ /\~[v\d\._]+$/;
+        ($module, my $version) = $self->parse_module_args($module);
         if ($self->{skip_satisfied} or defined $version) {
             $self->check_libs;
             my($ok, $local) = $self->check_module($module, $version || 0);
