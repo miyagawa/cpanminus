@@ -2072,21 +2072,21 @@ sub which {
     return;
 }
 
-sub get      {
+sub get {
     my($self, $uri) = @_;
     if ($uri =~ /^file:/) {
         $self->file_get($uri);
     } else {
-        $self->{_backends}{get}->($uri);
+        $self->{_backends}{get}->(@_);
     }
 }
 
-sub mirror   {
+sub mirror {
     my($self, $uri, $local) = @_;
     if ($uri =~ /^file:/) {
         $self->file_mirror($uri, $local);
     } else {
-        $self->{_backends}{mirror}->($uri, $local);
+        $self->{_backends}{mirror}->(@_);
     }
 }
 
