@@ -1,7 +1,7 @@
 
 package CPAN::DistnameInfo;
 
-$VERSION = "0.11";
+$VERSION = "0.12";
 use strict;
 
 sub distname_info {
@@ -30,6 +30,14 @@ sub distname_info {
     # where the V3_1_1 is part of the distname
     $dist .= $1;
     $version = $2;
+  }
+
+  if ($version =~ /(.+_.*)-(\d.*)/) {
+      # Catch names like Task-Deprecations5_14-1.00.tar.gz where the 5_14 is
+      # part of the distname. However, names like libao-perl_0.03-1.tar.gz
+      # should still have 0.03-1 as their version.
+      $dist .= $1;
+      $version = $2;
   }
 
   # Normalize the Dist.pm-1.23 convention which CGI.pm and

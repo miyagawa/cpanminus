@@ -1,9 +1,7 @@
 use strict;
 use warnings;
-package Version::Requirements;
-BEGIN {
-  $Version::Requirements::VERSION = '0.101020';
-}
+package CPAN::Meta::Requirements;
+our $VERSION = '2.122'; # VERSION
 # ABSTRACT: a set of version requirements for a CPAN dist
 
 
@@ -12,19 +10,50 @@ use Scalar::Util ();
 use version 0.77 (); # the ->parse method
 
 
+my @valid_options = qw( bad_version_hook );
+
 sub new {
-  my ($class) = @_;
-  return bless {} => $class;
+  my ($class, $options) = @_;
+  $options ||= {};
+  Carp::croak "Argument to $class\->new() must be a hash reference"
+    unless ref $options eq 'HASH';
+  my %self = map {; $_ => $options->{$_}} @valid_options;
+
+  return bless \%self => $class;
 }
 
 sub _version_object {
   my ($self, $version) = @_;
 
-  $version = (! defined $version)                ? version->parse(0)
+  my $vobj;
+
+  eval {
+    $vobj  = (! defined $version)                ? version->parse(0)
            : (! Scalar::Util::blessed($version)) ? version->parse($version)
            :                                       $version;
+  };
 
-  return $version;
+  if ( my $err = $@ ) {
+    my $hook = $self->{bad_version_hook};
+    $vobj = eval { $hook->($version) }
+      if ref $hook eq 'CODE';
+    unless (Scalar::Util::blessed($vobj) && $vobj->isa("version")) {
+      $err =~ s{ at .* line \d+.*$}{};
+      die "Can't convert '$version': $err";
+    }
+  }
+
+  # ensure no leading '.'
+  if ( $vobj =~ m{\A\.} ) {
+    $vobj = version->parse("0$vobj");
+  }
+
+  # ensure normal v-string form
+  if ( $vobj->is_qv ) {
+    $vobj = version->parse($vobj->normal);
+  }
+
+  return $vobj;
 }
 
 
@@ -88,6 +117,14 @@ sub clear_requirement {
 }
 
 
+sub requirements_for_module {
+  my ($self, $module) = @_;
+  my $entry = $self->__entry_for($module);
+  return unless $entry;
+  return $entry->as_string;
+}
+
+
 sub required_modules { keys %{ $_[0]{requirements} } }
 
 
@@ -109,7 +146,7 @@ sub __modify_entry_for {
   Carp::confess("can't add new requirements to finalized requirements")
     if $fin and not $old;
 
-  my $new = ($old || 'Version::Requirements::_Range::Range')
+  my $new = ($old || 'CPAN::Meta::Requirements::_Range::Range')
           ->$method($version);
 
   Carp::confess("can't modify finalized requirements")
@@ -155,25 +192,42 @@ my %methods_for_op = (
   '<'  => [ qw(add_maximum add_exclusion) ],
 );
 
+sub add_string_requirement {
+  my ($self, $module, $req) = @_;
+
+  Carp::confess("No requirement string provided for $module")
+    unless defined $req && length $req;
+
+  my @parts = split qr{\s*,\s*}, $req;
+
+
+  for my $part (@parts) {
+    my ($op, $ver) = $part =~ m{\A\s*(==|>=|>|<=|<|!=)\s*(.*)\z};
+
+    if (! defined $op) {
+      $self->add_minimum($module => $part);
+    } else {
+      Carp::confess("illegal requirement string: $req")
+        unless my $methods = $methods_for_op{ $op };
+
+      $self->$_($module => $ver) for @$methods;
+    }
+  }
+}
+
+
 sub from_string_hash {
   my ($class, $hash) = @_;
 
   my $self = $class->new;
 
   for my $module (keys %$hash) {
-    my @parts = split qr{\s*,\s*}, $hash->{ $module };
-    for my $part (@parts) {
-      my ($op, $ver) = split /\s+/, $part, 2;
-
-      if (! defined $ver) {
-        $self->add_minimum($module => $op);
-      } else {
-        Carp::confess("illegal requirement string: $hash->{ $module }")
-          unless my $methods = $methods_for_op{ $op };
-
-        $self->$_($module => $ver) for @$methods;
-      }
+    my $req = $hash->{$module};
+    unless ( defined $req && length $req ) {
+      $req = 0;
+      Carp::carp("Undefined requirement for $module treated as '0'");
     }
+    $self->add_string_requirement($module, $req);
   }
 
   return $self;
@@ -183,10 +237,7 @@ sub from_string_hash {
 
 {
   package
-    Version::Requirements::_Range::Exact;
-BEGIN {
-  $Version::Requirements::_Range::Exact::VERSION = '0.101020';
-}
+    CPAN::Meta::Requirements::_Range::Exact;
   sub _new     { bless { version => $_[1] } => $_[0] }
 
   sub _accepts { return $_[0]{version} == $_[1] }
@@ -230,10 +281,7 @@ BEGIN {
 
 {
   package
-    Version::Requirements::_Range::Range;
-BEGIN {
-  $Version::Requirements::_Range::Range::VERSION = '0.101020';
-}
+    CPAN::Meta::Requirements::_Range::Range;
 
   sub _self { ref($_[0]) ? $_[0] : (bless { } => $_[0]) }
 
@@ -301,7 +349,7 @@ BEGIN {
     Carp::confess("illegal requirements: exact specification outside of range")
       unless $self->_accepts($version);
 
-    return Version::Requirements::_Range::Exact->_new($version);
+    return CPAN::Meta::Requirements::_Range::Exact->_new($version);
   }
 
   sub _simplify {
@@ -312,7 +360,7 @@ BEGIN {
         Carp::confess("illegal requirements: excluded all values")
           if grep { $_ == $self->{minimum} } @{ $self->{exclusions} || [] };
 
-        return Version::Requirements::_Range::Exact->_new($self->{minimum})
+        return CPAN::Meta::Requirements::_Range::Exact->_new($self->{minimum})
       }
 
       Carp::confess("illegal requirements: minimum exceeds maximum")
@@ -382,6 +430,7 @@ BEGIN {
 }
 
 1;
+# vim: ts=2 sts=2 sw=2 et:
 
 __END__
 =pod

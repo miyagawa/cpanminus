@@ -1,5 +1,5 @@
 package App::cpanminus;
-our $VERSION = "1.5021";
+our $VERSION = "1.59_02";
 
 =head1 NAME
 
@@ -228,13 +228,7 @@ The standalone executable contains the following modules embedded.
 
 =item L<JSON::PP> Copyright 2007−2011 by Makamaka Hannyaharamitu
 
-=item L<CPAN::Meta> Copyright (c) 2010 by David Golden and Ricardo Signes
-
-=item L<Try::Tiny> Copyright (c) 2009 Yuval Kogman
-
-=item L<parent> Copyright (c) 2007-10 Max Maischein
-
-=item L<Version::Requirements> copyright (c) 2010 by Ricardo Signes
+=item L<CPAN::Meta> and L<CPAN::Meta::Requirements> Copyright (c) 2010 by David Golden and Ricardo Signes
 
 =item L<CPAN::Meta::YAML> copyright (c) 2010 by Adam Kennedy
 
