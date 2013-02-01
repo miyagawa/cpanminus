@@ -22,7 +22,7 @@ sub new {
     my $class = shift;
 
     bless {
-        home => "$ENV{HOME}/.cpanm",
+        home => (eval {require File::HomeDir} ? File::HomeDir->my_home : $ENV{HOME}) . "/.cpanm",
         cmd  => 'install',
         seen => {},
         notest => undef,
