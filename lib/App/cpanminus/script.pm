@@ -2077,15 +2077,29 @@ sub mirror   { $_[0]->{_backends}{mirror}->(@_) };
 sub untar    { $_[0]->{_backends}{untar}->(@_) };
 sub unzip    { $_[0]->{_backends}{unzip}->(@_) };
 
+sub uri_to_file {
+    my($self, $uri) = @_;
+
+    # file:///path/to/file -> /path/to/file
+    # file://C:/path       -> C:/path
+    if ($uri =~ s!file:/+!!) {
+        $uri = "/$uri" unless $uri =~ m![a-zA-Z]:!;
+    }
+
+    return $uri;
+}
+
 sub file_get {
     my($self, $uri) = @_;
-    open my $fh, "<$uri" or return;
+    my $file = $self->uri_to_file($uri);
+    open my $fh, "<$file" or return;
     join '', <$fh>;
 }
 
 sub file_mirror {
     my($self, $uri, $path) = @_;
-    File::Copy::copy($uri, $path);
+    my $file = $self->uri_to_file($uri);
+    File::Copy::copy($file, $path);
 }
 
 sub init_tools {
@@ -2124,14 +2138,14 @@ sub init_tools {
         $self->chat("You have $wget\n");
         $self->{_backends}{get} = sub {
             my($self, $uri) = @_;
-            return $self->file_get($uri) if $uri =~ s!^file:/+!/!;
+            return $self->file_get($uri) if $uri =~ m!^file:/+!;
             $self->safeexec( my $fh, $wget, $uri, ( $self->{verbose} ? () : '-q' ), '-O', '-' ) or die "wget $uri: $!";
             local $/;
             <$fh>;
         };
         $self->{_backends}{mirror} = sub {
             my($self, $uri, $path) = @_;
-            return $self->file_mirror($uri, $path) if $uri =~ s!^file:/+!/!;
+            return $self->file_mirror($uri, $path) if $uri =~ m!^file:/+!;
             $self->safeexec( my $fh, $wget, '--retry-connrefused', $uri, ( $self->{verbose} ? () : '-q' ), '-O', $path ) or die "wget $uri: $!";
             local $/;
             <$fh>;
@@ -2140,14 +2154,14 @@ sub init_tools {
         $self->chat("You have $curl\n");
         $self->{_backends}{get} = sub {
             my($self, $uri) = @_;
-            return $self->file_get($uri) if $uri =~ s!^file:/+!/!;
+            return $self->file_get($uri) if $uri =~ m!^file:/+!;
             $self->safeexec( my $fh, $curl, '-L', ( $self->{verbose} ? () : '-s' ), $uri ) or die "curl $uri: $!";
             local $/;
             <$fh>;
         };
         $self->{_backends}{mirror} = sub {
             my($self, $uri, $path) = @_;
-            return $self->file_mirror($uri, $path) if $uri =~ s!^file:/+!/!;
+            return $self->file_mirror($uri, $path) if $uri =~ m!^file:/+!;
             $self->safeexec( my $fh, $curl, '-L', $uri, ( $self->{verbose} ? () : '-s' ), '-#', '-o', $path ) or die "curl $uri: $!";
             local $/;
             <$fh>;
