@@ -17,7 +17,7 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
    [New Features]
       - Added a proper support for version range in MYMETA files using CPAN::Meta::Requirements
       - Skip installing modules when found versions from CPAN doesn't satisfy the requirement, rather
-        than proceeding as if it is ok. For instnacde, if a ditribution X requires Y >= 1.1 and Y on
+        than proceeding as if it is ok. For instance, if a ditribution X requires Y >= 1.1 and Y on
         CPAN (or your CPAN mirror) has 1.0, cpanm will just complain and stop installing it.
       - Better cpanfile end-to-end support
       - Upgraded fatpacked modules to the latest
