@@ -2152,45 +2152,57 @@ sub init_tools {
         };
     } elsif ($self->{try_wget} and my $wget = $self->which('wget')) {
         $self->chat("You have $wget\n");
+        my @common = (
+            '--user-agent', "cpanminus/$VERSION",
+            '--retry-connrefused',
+            ($self->{verbose} ? () : ('-q')),
+        );
         $self->{_backends}{get} = sub {
             my($self, $uri) = @_;
-            $self->safeexec( my $fh, $wget, $uri, ( $self->{verbose} ? () : '-q' ), '-O', '-' ) or die "wget $uri: $!";
+            $self->safeexec( my $fh, $wget, $uri, @common, '-O', '-' ) or die "wget $uri: $!";
             local $/;
             <$fh>;
         };
         $self->{_backends}{mirror} = sub {
             my($self, $uri, $path) = @_;
-            $self->safeexec( my $fh, $wget, '--retry-connrefused', $uri, ( $self->{verbose} ? () : '-q' ), '-O', $path ) or die "wget $uri: $!";
+            $self->safeexec( my $fh, $wget, $uri, @common, '-O', $path ) or die "wget $uri: $!";
             local $/;
             <$fh>;
         };
     } elsif ($self->{try_curl} and my $curl = $self->which('curl')) {
         $self->chat("You have $curl\n");
+        my @common = (
+            '--location',
+            '--user-agent', "cpanminus/$VERSION",
+            ($self->{verbose} ? () : '-s'),
+        );
         $self->{_backends}{get} = sub {
             my($self, $uri) = @_;
-            $self->safeexec( my $fh, $curl, '-L', ( $self->{verbose} ? () : '-s' ), $uri ) or die "curl $uri: $!";
+            $self->safeexec( my $fh, $curl, @common, $uri ) or die "curl $uri: $!";
             local $/;
             <$fh>;
         };
         $self->{_backends}{mirror} = sub {
             my($self, $uri, $path) = @_;
-            $self->safeexec( my $fh, $curl, '-L', $uri, ( $self->{verbose} ? () : '-s' ), '-#', '-o', $path ) or die "curl $uri: $!";
+            $self->safeexec( my $fh, $curl, @common, $uri, '-#', '-o', $path ) or die "curl $uri: $!";
             local $/;
             <$fh>;
         };
     } else {
         require HTTP::Tiny;
         $self->chat("Falling back to HTTP::Tiny $HTTP::Tiny::VERSION\n");
-
+        my %common = (
+            agent => "cpanminus/$VERSION",
+        );
         $self->{_backends}{get} = sub {
             my $self = shift;
-            my $res = HTTP::Tiny->new->get($_[0]);
+            my $res = HTTP::Tiny->new(%common)->get($_[0]);
             return unless $res->{success};
             return $res->{content};
         };
         $self->{_backends}{mirror} = sub {
             my $self = shift;
-            my $res = HTTP::Tiny->new->mirror(@_);
+            my $res = HTTP::Tiny->new(%common)->mirror(@_);
             return $res->{status};
         };
     }
