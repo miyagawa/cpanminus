@@ -1,5 +1,10 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.59_04 Sun Feb  3 09:04:12 PST 2013
+   [Improvements]
+      - Make file copy more reliable on Win32 (A.J. Lucas) #180
+      - Always send cpanminus User-Agent to the servers no matter which backend is used (curl, wget etc.)
+
 1.59_03 Fri Feb  1 10:42:57 PST 2013
    [Improvements]
       - Fix issues working with file:// URLs with drive letters on Win32 (A.J. Lucas) #180
