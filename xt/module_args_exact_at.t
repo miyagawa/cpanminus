@@ -22,7 +22,7 @@ my $local_lib = "$ENV{PERL_CPANM_HOME}/perl5";
     run "-L", $local_lib, 'Try::Tiny'; # pull latest from CPAN
 
     run "-L", $local_lib, '--skip-installed', 'Try::Tiny@0.11';
-    like last_build_log, qr/Searching Try::Tiny \(0.11\) on metacpan/;
+    like last_build_log, qr/Searching Try::Tiny \(== 0.11\) on metacpan/;
     unlike last_build_log, qr/Try::Tiny is up to date/;
 }
 

@@ -206,7 +206,7 @@ sub parse_module_args {
     $module =~ s/@([v\d\._]+)$/~== $1/;
 
     # Plack~1.20, DBI~"> 1.0, <= 2.0"
-    if ($module =~ /\~[v\d\._,<>= ]+$/) {
+    if ($module =~ /\~[v\d\._,\!<>= ]+$/) {
         return split /\~/, $module, 2;
     } else {
         return $module, undef;
@@ -382,9 +382,9 @@ sub search_mirror_index_file {
     return;
 }
 
-sub is_exact_version {
+sub with_version_range {
     my($self, $version) = @_;
-    defined($version) && $version =~ /^==/;
+    defined($version) && $version =~ /[<>=]/;
 }
 
 sub encode_json {
@@ -396,22 +396,68 @@ sub encode_json {
     $json;
 }
 
+# TODO extract this as a module?
+sub version_to_query {
+    my($self, $module, $version) = @_;
+
+    require CPAN::Meta::Requirements;
+
+    my $requirements = CPAN::Meta::Requirements->new;
+    $requirements->add_string_requirement($module, $version);
+
+    my $req = $requirements->requirements_for_module($module);
+
+    if ($req =~ s/^==\s*//) {
+        return {
+            term => { 'module.version' => $req },
+        };
+    } elsif ($req !~ /\s/) {
+        return {
+            range => { 'module.version' => { 'gte' => $req } },
+        };
+    } else {
+        my %ops = qw(< lt <= lte > gt >= gte);
+        my(%range, @exclusion);
+        my @requirements = split /,\s*/, $req;
+        for my $r (@requirements) {
+            if ($r =~ s/^([<>]=?)\s*//) {
+                $range{$ops{$1}} = $r;
+            } elsif ($r =~ s/\!=\s*//) {
+                push @exclusion, $r;
+            }
+        }
+
+        my @filters= (
+            { range => { 'module.version' => \%range } },
+        );
+
+        if (@exclusion) {
+            push @filters, {
+                not => { or => [ map { +{ term => { 'module.version' => $_ } } } @exclusion ] },
+            };
+        }
+
+        return @filters;
+    }
+}
+
 sub search_metacpan {
-    my($self, $module, $version, $exact) = @_;
+    my($self, $module, $version, $range) = @_;
 
     require JSON::PP;
 
     my $release;
-    if ($exact) {
-        $version =~ s/^== *//;
+    if ($range) {
         $self->chat("Searching $module ($version) on metacpan ...\n");
         my $module_uri = "http://api.metacpan.org/module/_search?source=";
         $module_uri .= $self->encode_json({
+            query => { match_all => {} },
             filter => { and => [
                 { term => { 'module.authorized' => JSON::PP::true() } },
                 { term => { 'module.name'    => $module } },
-                { term => { 'module.version' => $version } },
+                $self->version_to_query($module, $version),
             ] },
+            sort => { 'date' => 'desc' },  #XXX
             fields => [ 'release' ],
         });
 
@@ -455,16 +501,16 @@ sub search_metacpan {
 sub search_database {
     my($self, $module, $version) = @_;
 
-    my $exact_search;
-    if ($self->is_exact_version($version)) {
-        $exact_search = 1;
+    my $range_search;
+    if ($self->with_version_range($version)) {
+        $range_search = 1;
         $self->{metacpan} = 1; # enable releases search
     }
 
     my $found;
 
     if ($self->{metacpan}) {
-        $found = $self->search_metacpan($module, $version, $exact_search) and return $found;
+        $found = $self->search_metacpan($module, $version, $range_search) and return $found;
     }
 
     $found = $self->search_cpanmetadb($module, $version) and return $found;
@@ -1078,7 +1124,7 @@ sub install_module {
     $self->setup_module_build_patch unless $self->{pod2man};
 
     if ($dist->{module}) {
-        unless ($self->is_exact_version($version)) {
+        unless ($self->with_version_range($version)) {
             my($ok, $local) = $self->check_module($dist->{module}, $dist->{module_version} || 0);
             if ($self->{skip_installed} && $ok) {
                 $self->diag("$dist->{module} is up to date. ($local)\n", 1);

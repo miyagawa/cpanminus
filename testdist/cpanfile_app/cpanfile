@@ -1,2 +1,7 @@
-requires 'Hash::MultiValue', 0.10;
-test_requires 'Test::Warn';
+requires 'Hash::MultiValue', '== 0.10';
+requires 'Try::Tiny', '>= 0.07, < 0.12';
+
+on test => sub {
+    requires 'Test::Warn';
+};
+
