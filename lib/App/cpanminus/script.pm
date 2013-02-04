@@ -457,8 +457,7 @@ sub search_metacpan {
                 { term => { 'module.name'    => $module } },
                 $self->version_to_query($module, $version),
             ] },
-            # version is a multi-value string and doesn't allow sort on metacpan
-            sort => { 'date' => 'desc' },
+            sort => { 'module.version_numified' => 'desc' },
             fields => [ 'release' ],
         });
 
