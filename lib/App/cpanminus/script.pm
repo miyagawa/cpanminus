@@ -457,7 +457,8 @@ sub search_metacpan {
                 { term => { 'module.name'    => $module } },
                 $self->version_to_query($module, $version),
             ] },
-            sort => { 'date' => 'desc' },  #XXX
+            # version is a multi-value string and doesn't allow sort on metacpan
+            sort => { 'date' => 'desc' },
             fields => [ 'release' ],
         });
 
@@ -470,6 +471,11 @@ sub search_metacpan {
         my $module_json = $self->get($module_uri);
         my $module_meta = eval { JSON::PP::decode_json($module_json) };
         $release = $module_meta->{release} if $module_meta;
+    }
+
+    unless ($release) {
+        $self->chat("! Could not find a release matching $module ($version) on MetaCPAN.\n");
+        return;
     }
 
     my $dist_uri = "http://api.metacpan.org/release/_search?source=";
@@ -496,6 +502,7 @@ sub search_metacpan {
     }
 
     $self->diag_fail("Finding $module on metacpan failed.");
+    return;
 }
 
 sub search_database {

@@ -12,4 +12,8 @@ run "-L", $local_lib, 'Try::Tiny'; # pull latest from CPAN
 run "-L", $local_lib, '--notest', 'Try::Tiny~<0.08,!=0.07';
 like last_build_log, qr/installed Try-Tiny-0.06/;
 
+run "-L", $local_lib, 'Try::Tiny~>0.06, <0.08,!=0.07';
+like last_build_log, qr/Could not find a release .* on MetaCPAN/;
+like last_build_log, qr/doesn't satisfy/;
+
 done_testing;
