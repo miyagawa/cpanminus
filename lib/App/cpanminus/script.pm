@@ -413,7 +413,7 @@ sub version_to_query {
         };
     } elsif ($req !~ /\s/) {
         return {
-            range => { 'module.version' => { 'gte' => $req } },
+            range => { 'module.version_numified' => { 'gte' => $self->numify_ver($req) } },
         };
     } else {
         my %ops = qw(< lt <= lte > gt >= gte);
@@ -421,24 +421,29 @@ sub version_to_query {
         my @requirements = split /,\s*/, $req;
         for my $r (@requirements) {
             if ($r =~ s/^([<>]=?)\s*//) {
-                $range{$ops{$1}} = $r;
+                $range{$ops{$1}} = $self->numify_ver($r);
             } elsif ($r =~ s/\!=\s*//) {
-                push @exclusion, $r;
+                push @exclusion, $self->numify_ver($r);
             }
         }
 
         my @filters= (
-            { range => { 'module.version' => \%range } },
+            { range => { 'module.version_numified' => \%range } },
         );
 
         if (@exclusion) {
             push @filters, {
-                not => { or => [ map { +{ term => { 'module.version' => $_ } } } @exclusion ] },
+                not => { or => [ map { +{ term => { 'module.version_numified' => $self->numify_ver($_) } } } @exclusion ] },
             };
         }
 
         return @filters;
     }
+}
+
+sub numify_ver {
+    my($self, $ver) = @_;
+    version->new($ver)->numify;
 }
 
 sub search_metacpan {
