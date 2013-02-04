@@ -1462,8 +1462,7 @@ sub is_deprecated {
         Module::CoreList::is_deprecated($meta->{module});
     };
 
-    return unless $deprecated;
-    return $self->loaded_from_perl_lib($meta);
+    return $deprecated && $self->loaded_from_perl_lib($meta);
 }
 
 sub loaded_from_perl_lib {
