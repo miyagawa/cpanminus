@@ -1,5 +1,11 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.59_05 Mon Feb  4 11:49:40 PST 2013
+   [New Features]
+      - Support version ranges in command args and cpanfile queried agsinst MetaCPAN
+        with the proper version range query to get the best version that satisfies
+        the requirements. Huge thanks to #metacpan guys
+
 1.59_04 Sun Feb  3 09:04:12 PST 2013
    [Improvements]
       - Make file copy more reliable on Win32 (A.J. Lucas) #180
