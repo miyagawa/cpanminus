@@ -18,7 +18,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.59_03";
+  our $VERSION = "1.59_05";
   
   =head1 NAME
   
@@ -320,7 +320,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use constant WIN32 => $^O eq 'MSWin32';
   use constant SUNOS => $^O eq 'solaris';
   
-  our $VERSION = "1.59_03";
+  our $VERSION = "1.59_05";
   
   my $quote = WIN32 ? q/"/ : q/'/;
   
@@ -512,7 +512,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       $module =~ s/@([v\d\._]+)$/~== $1/;
   
       # Plack~1.20, DBI~"> 1.0, <= 2.0"
-      if ($module =~ /\~[v\d\._,<>= ]+$/) {
+      if ($module =~ /\~[v\d\._,\!<>= ]+$/) {
           return split /\~/, $module, 2;
       } else {
           return $module, undef;
@@ -688,9 +688,9 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       return;
   }
   
-  sub is_exact_version {
+  sub with_version_range {
       my($self, $version) = @_;
-      defined($version) && $version =~ /^==/;
+      defined($version) && $version =~ /[<>=]/;
   }
   
   sub encode_json {
@@ -702,22 +702,73 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       $json;
   }
   
+  # TODO extract this as a module?
+  sub version_to_query {
+      my($self, $module, $version) = @_;
+  
+      require CPAN::Meta::Requirements;
+  
+      my $requirements = CPAN::Meta::Requirements->new;
+      $requirements->add_string_requirement($module, $version);
+  
+      my $req = $requirements->requirements_for_module($module);
+  
+      if ($req =~ s/^==\s*//) {
+          return {
+              term => { 'module.version' => $req },
+          };
+      } elsif ($req !~ /\s/) {
+          return {
+              range => { 'module.version_numified' => { 'gte' => $self->numify_ver($req) } },
+          };
+      } else {
+          my %ops = qw(< lt <= lte > gt >= gte);
+          my(%range, @exclusion);
+          my @requirements = split /,\s*/, $req;
+          for my $r (@requirements) {
+              if ($r =~ s/^([<>]=?)\s*//) {
+                  $range{$ops{$1}} = $self->numify_ver($r);
+              } elsif ($r =~ s/\!=\s*//) {
+                  push @exclusion, $self->numify_ver($r);
+              }
+          }
+  
+          my @filters= (
+              { range => { 'module.version_numified' => \%range } },
+          );
+  
+          if (@exclusion) {
+              push @filters, {
+                  not => { or => [ map { +{ term => { 'module.version_numified' => $self->numify_ver($_) } } } @exclusion ] },
+              };
+          }
+  
+          return @filters;
+      }
+  }
+  
+  sub numify_ver {
+      my($self, $ver) = @_;
+      version->new($ver)->numify;
+  }
+  
   sub search_metacpan {
-      my($self, $module, $version, $exact) = @_;
+      my($self, $module, $version, $range) = @_;
   
       require JSON::PP;
   
       my $release;
-      if ($exact) {
-          $version =~ s/^== *//;
+      if ($range) {
           $self->chat("Searching $module ($version) on metacpan ...\n");
           my $module_uri = "http://api.metacpan.org/module/_search?source=";
           $module_uri .= $self->encode_json({
+              query => { match_all => {} },
               filter => { and => [
                   { term => { 'module.authorized' => JSON::PP::true() } },
                   { term => { 'module.name'    => $module } },
-                  { term => { 'module.version' => $version } },
+                  $self->version_to_query($module, $version),
               ] },
+              sort => { 'module.version_numified' => 'desc' },
               fields => [ 'release' ],
           });
   
@@ -730,6 +781,11 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           my $module_json = $self->get($module_uri);
           my $module_meta = eval { JSON::PP::decode_json($module_json) };
           $release = $module_meta->{release} if $module_meta;
+      }
+  
+      unless ($release) {
+          $self->chat("! Could not find a release matching $module ($version) on MetaCPAN.\n");
+          return;
       }
   
       my $dist_uri = "http://api.metacpan.org/release/_search?source=";
@@ -756,21 +812,22 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       }
   
       $self->diag_fail("Finding $module on metacpan failed.");
+      return;
   }
   
   sub search_database {
       my($self, $module, $version) = @_;
   
-      my $exact_search;
-      if ($self->is_exact_version($version)) {
-          $exact_search = 1;
+      my $range_search;
+      if ($self->with_version_range($version)) {
+          $range_search = 1;
           $self->{metacpan} = 1; # enable releases search
       }
   
       my $found;
   
       if ($self->{metacpan}) {
-          $found = $self->search_metacpan($module, $version, $exact_search) and return $found;
+          $found = $self->search_metacpan($module, $version, $range_search) and return $found;
       }
   
       $found = $self->search_cpanmetadb($module, $version) and return $found;
@@ -1384,7 +1441,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       $self->setup_module_build_patch unless $self->{pod2man};
   
       if ($dist->{module}) {
-          unless ($self->is_exact_version($version)) {
+          unless ($self->with_version_range($version)) {
               my($ok, $local) = $self->check_module($dist->{module}, $dist->{module_version} || 0);
               if ($self->{skip_installed} && $ok) {
                   $self->diag("$dist->{module} is up to date. ($local)\n", 1);
@@ -1768,8 +1825,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           Module::CoreList::is_deprecated($meta->{module});
       };
   
-      return unless $deprecated;
-      return $self->loaded_from_perl_lib($meta);
+      return $deprecated && $self->loaded_from_perl_lib($meta);
   }
   
   sub loaded_from_perl_lib {
@@ -2378,8 +2434,24 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       return;
   }
   
-  sub get      { $_[0]->{_backends}{get}->(@_) };
-  sub mirror   { $_[0]->{_backends}{mirror}->(@_) };
+  sub get {
+      my($self, $uri) = @_;
+      if ($uri =~ /^file:/) {
+          $self->file_get($uri);
+      } else {
+          $self->{_backends}{get}->(@_);
+      }
+  }
+  
+  sub mirror {
+      my($self, $uri, $local) = @_;
+      if ($uri =~ /^file:/) {
+          $self->file_mirror($uri, $local);
+      } else {
+          $self->{_backends}{mirror}->(@_);
+      }
+  }
+  
   sub untar    { $_[0]->{_backends}{untar}->(@_) };
   sub unzip    { $_[0]->{_backends}{unzip}->(@_) };
   
@@ -2442,49 +2514,57 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           };
       } elsif ($self->{try_wget} and my $wget = $self->which('wget')) {
           $self->chat("You have $wget\n");
+          my @common = (
+              '--user-agent', "cpanminus/$VERSION",
+              '--retry-connrefused',
+              ($self->{verbose} ? () : ('-q')),
+          );
           $self->{_backends}{get} = sub {
               my($self, $uri) = @_;
-              return $self->file_get($uri) if $uri =~ m!^file:/+!;
-              $self->safeexec( my $fh, $wget, $uri, ( $self->{verbose} ? () : '-q' ), '-O', '-' ) or die "wget $uri: $!";
+              $self->safeexec( my $fh, $wget, $uri, @common, '-O', '-' ) or die "wget $uri: $!";
               local $/;
               <$fh>;
           };
           $self->{_backends}{mirror} = sub {
               my($self, $uri, $path) = @_;
-              return $self->file_mirror($uri, $path) if $uri =~ m!^file:/+!;
-              $self->safeexec( my $fh, $wget, '--retry-connrefused', $uri, ( $self->{verbose} ? () : '-q' ), '-O', $path ) or die "wget $uri: $!";
+              $self->safeexec( my $fh, $wget, $uri, @common, '-O', $path ) or die "wget $uri: $!";
               local $/;
               <$fh>;
           };
       } elsif ($self->{try_curl} and my $curl = $self->which('curl')) {
           $self->chat("You have $curl\n");
+          my @common = (
+              '--location',
+              '--user-agent', "cpanminus/$VERSION",
+              ($self->{verbose} ? () : '-s'),
+          );
           $self->{_backends}{get} = sub {
               my($self, $uri) = @_;
-              return $self->file_get($uri) if $uri =~ m!^file:/+!;
-              $self->safeexec( my $fh, $curl, '-L', ( $self->{verbose} ? () : '-s' ), $uri ) or die "curl $uri: $!";
+              $self->safeexec( my $fh, $curl, @common, $uri ) or die "curl $uri: $!";
               local $/;
               <$fh>;
           };
           $self->{_backends}{mirror} = sub {
               my($self, $uri, $path) = @_;
-              return $self->file_mirror($uri, $path) if $uri =~ m!^file:/+!;
-              $self->safeexec( my $fh, $curl, '-L', $uri, ( $self->{verbose} ? () : '-s' ), '-#', '-o', $path ) or die "curl $uri: $!";
+              $self->safeexec( my $fh, $curl, @common, $uri, '-#', '-o', $path ) or die "curl $uri: $!";
               local $/;
               <$fh>;
           };
       } else {
           require HTTP::Tiny;
           $self->chat("Falling back to HTTP::Tiny $HTTP::Tiny::VERSION\n");
-  
+          my %common = (
+              agent => "cpanminus/$VERSION",
+          );
           $self->{_backends}{get} = sub {
               my $self = shift;
-              my $res = HTTP::Tiny->new->get($_[0]);
+              my $res = HTTP::Tiny->new(%common)->get($_[0]);
               return unless $res->{success};
               return $res->{content};
           };
           $self->{_backends}{mirror} = sub {
               my $self = shift;
-              my $res = HTTP::Tiny->new->mirror(@_);
+              my $res = HTTP::Tiny->new(%common)->mirror(@_);
               return $res->{status};
           };
       }
