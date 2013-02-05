@@ -11,4 +11,7 @@ run "-L", $local_lib, "--mirror-index", "xt/mirror.txt", "-n", "--mirror-only", 
 unlike last_build_log, qr/Found URI::Escape version 1.60 < 3/;
 like last_build_log, qr/installed URI-1.60/;
 
+run "-L", $local_lib, "--mirror-index", "xt/mirror.txt", "--mirror-only", "TimeDate";
+like last_build_log, qr/installed TimeDate-1.20/;
+
 done_testing;
