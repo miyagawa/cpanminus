@@ -2,6 +2,7 @@ package App::cpanminus::script;
 use strict;
 use Config;
 use Cwd ();
+use App::cpanminus;
 use File::Basename ();
 use File::Find ();
 use File::Path ();
@@ -14,7 +15,7 @@ use Symbol ();
 use constant WIN32 => $^O eq 'MSWin32';
 use constant SUNOS => $^O eq 'solaris';
 
-our $VERSION = "1.59_05";
+our $VERSION = $App::cpanminus::VERSION;
 
 my $quote = WIN32 ? q/"/ : q/'/;
 
