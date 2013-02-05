@@ -528,7 +528,6 @@ sub search_database {
     }
 
     $found = $self->search_cpanmetadb($module, $version) and return $found;
-    $found = $self->search_sco($module, $version) and return $found;
 }
 
 sub search_cpanmetadb {
@@ -544,20 +543,6 @@ sub search_cpanmetadb {
     }
 
     $self->diag_fail("Finding $module on cpanmetadb failed.");
-    return;
-}
-
-sub search_sco {
-    my($self, $module, $version) = @_;
-
-    $self->chat("Searching $module on search.cpan.org ...\n");
-    my $uri  = "http://search.cpan.org/perldoc?$module";
-    my $html = $self->get($uri);
-    $html =~ m!<a href="/CPAN/authors/id/(.*?\.(?:tar\.gz|tgz|tar\.bz2|zip))">!
-      and return $self->cpan_module($module, $1);
-
-    $self->diag_fail("Finding $module on search.cpan.org failed.");
-
     return;
 }
 
