@@ -112,7 +112,7 @@ sub parse_options {
         },
         'mirror=s@' => $self->{mirrors},
         'mirror-only!' => \$self->{mirror_only},
-        'mirror-index=s'  => sub { $self->{mirror_index} = $_[1]; $self->{mirror_only} = 1 },
+        'mirror-index=s'  => \$self->{mirror_index},
         'cascade-search!' => \$self->{cascade_search},
         'prompt!'   => \$self->{prompt},
         'installdeps' => \$self->{installdeps},
