@@ -452,9 +452,10 @@ sub search_metacpan {
     require JSON::PP;
 
     my $release;
+    my $metacpan_uri = 'http://api.metacpan.org/v0';
     if ($range) {
         $self->chat("Searching $module ($version) on metacpan ...\n");
-        my $module_uri = "http://api.metacpan.org/module/_search?source=";
+        my $module_uri = "$metacpan_uri/module/_search?source=";
         $module_uri .= $self->encode_json({
             query => { match_all => {} },
             filter => { and => [
@@ -471,7 +472,7 @@ sub search_metacpan {
         $release = $module_meta->{hits}{hits}[0]{fields}{release} if $module_meta;
     } else {
         $self->chat("Searching $module on metacpan ...\n");
-        my $module_uri  = "http://api.metacpan.org/module/$module";
+        my $module_uri  = "$metacpan_uri/module/$module";
         my $module_json = $self->get($module_uri);
         my $module_meta = eval { JSON::PP::decode_json($module_json) };
         $release = $module_meta->{release} if $module_meta;
@@ -482,7 +483,7 @@ sub search_metacpan {
         return;
     }
 
-    my $dist_uri = "http://api.metacpan.org/release/_search?source=";
+    my $dist_uri = "$metacpan_uri/release/_search?source=";
     $dist_uri .= $self->encode_json({
         filter => {
             term => { 'release.name' => $release },
