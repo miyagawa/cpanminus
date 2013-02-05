@@ -192,11 +192,6 @@ shell aliases, like:
 B<EXPERIMENTAL>: Specifies the file path to C<02packages.details.txt>
 for module search index.
 
-=item --metacpan
-
-B<EXPERIMENTAL>: Use L<http://api.metacpan.org/> API for module lookup instead of
-L<http://cpanmetadb.plackperl.org/>.
-    
 =item --prompt
 
 Prompts when a test fails so that you can skip, force install, retry
