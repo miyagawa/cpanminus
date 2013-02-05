@@ -461,7 +461,8 @@ sub search_metacpan {
             query => { match_all => {} },
             filter => { and => [
                 { term => { 'module.authorized' => JSON::PP::true() } },
-                { term => { 'module.name'    => $module } },
+                { term => { 'module.name' => $module } },
+                { term => { 'maturity' => 'released' } }, # 'module.maturity' doesn't seem to work
                 $self->version_to_query($module, $version),
             ] },
             sort => { 'module.version_numified' => 'desc' },
