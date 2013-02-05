@@ -240,7 +240,7 @@ sub doit {
         }
 
         ($module, my $version) = $self->parse_module_args($module);
-        if ($self->{skip_satisfied} or defined $version) {
+        if ($self->{skip_satisfied}) {
             $self->check_libs;
             my($ok, $local) = $self->check_module($module, $version || 0);
             if ($ok) {

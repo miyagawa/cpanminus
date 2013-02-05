@@ -344,8 +344,7 @@ C<--skip-installed> but while C<--skip-installed> checks if the
 I<latest> version of CPAN is installed, C<--skip-satisfied> checks if
 a requested version (or not, which means any version) is installed.
 
-Defaults to false for bare module names, but if you specify versions
-with C<~>, it will always skip satisfied requirements.
+Defaults to false.
 
 =item --verify
 
