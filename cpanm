@@ -18,7 +18,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.59_05";
+  our $VERSION = "1.59_06";
   
   =head1 NAME
   
@@ -308,6 +308,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use strict;
   use Config;
   use Cwd ();
+  use App::cpanminus;
   use File::Basename ();
   use File::Find ();
   use File::Path ();
@@ -320,7 +321,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use constant WIN32 => $^O eq 'MSWin32';
   use constant SUNOS => $^O eq 'solaris';
   
-  our $VERSION = "1.59_05";
+  our $VERSION = $App::cpanminus::VERSION;
   
   my $quote = WIN32 ? q/"/ : q/'/;
   
@@ -418,7 +419,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           },
           'mirror=s@' => $self->{mirrors},
           'mirror-only!' => \$self->{mirror_only},
-          'mirror-index=s'  => sub { $self->{mirror_index} = $_[1]; $self->{mirror_only} = 1 },
+          'mirror-index=s'  => \$self->{mirror_index},
           'cascade-search!' => \$self->{cascade_search},
           'prompt!'   => \$self->{prompt},
           'installdeps' => \$self->{installdeps},
@@ -758,9 +759,10 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       require JSON::PP;
   
       my $release;
+      my $metacpan_uri = 'http://api.metacpan.org/v0';
       if ($range) {
           $self->chat("Searching $module ($version) on metacpan ...\n");
-          my $module_uri = "http://api.metacpan.org/module/_search?source=";
+          my $module_uri = "$metacpan_uri/module/_search?source=";
           $module_uri .= $self->encode_json({
               query => { match_all => {} },
               filter => { and => [
@@ -777,7 +779,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           $release = $module_meta->{hits}{hits}[0]{fields}{release} if $module_meta;
       } else {
           $self->chat("Searching $module on metacpan ...\n");
-          my $module_uri  = "http://api.metacpan.org/module/$module";
+          my $module_uri  = "$metacpan_uri/module/$module";
           my $module_json = $self->get($module_uri);
           my $module_meta = eval { JSON::PP::decode_json($module_json) };
           $release = $module_meta->{release} if $module_meta;
@@ -788,7 +790,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           return;
       }
   
-      my $dist_uri = "http://api.metacpan.org/release/_search?source=";
+      my $dist_uri = "$metacpan_uri/release/_search?source=";
       $dist_uri .= $self->encode_json({
           filter => {
               term => { 'release.name' => $release },

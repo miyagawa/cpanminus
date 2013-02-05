@@ -1,5 +1,12 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.59_06 Tue Feb  5 12:36:00 PST 2013
+   [Incompatible Changes]
+      - --mirror-index option doesn't automatically assume --mirror-only
+
+   [Improvements]
+      - Use versioned MetaCPAN API endpoint (oalders)
+
 1.59_05 Mon Feb  4 11:49:40 PST 2013
    [New Features]
       - Support version ranges in command args and cpanfile queried agsinst MetaCPAN
