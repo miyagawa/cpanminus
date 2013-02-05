@@ -138,6 +138,7 @@ sub parse_options {
             $self->{save_dists} = $self->maybe_abs($_[1]);
         },
         'skip-configure!' => \$self->{skip_configure},
+        'dev!'       => \$self->{dev_release},
         'metacpan'   => sub {}, # backward compat
     );
 
@@ -404,7 +405,7 @@ sub version_to_query {
     require CPAN::Meta::Requirements;
 
     my $requirements = CPAN::Meta::Requirements->new;
-    $requirements->add_string_requirement($module, $version);
+    $requirements->add_string_requirement($module, $version || '0');
 
     my $req = $requirements->requirements_for_module($module);
 
@@ -447,6 +448,18 @@ sub numify_ver {
     version->new($ver)->numify;
 }
 
+sub maturity_query {
+    my($self, $module, $version) = @_;
+
+    # TODO: might be better dev release can be enabled per dist
+    if ($self->{dev_release}) {
+        return;
+    } else {
+        # 'module.maturity' doesn't seem to work
+        return { term => { 'maturity' => 'released' } };
+    }
+}
+
 sub search_metacpan {
     my($self, $module, $version, $range) = @_;
 
@@ -454,7 +467,7 @@ sub search_metacpan {
 
     my $release;
     my $metacpan_uri = 'http://api.metacpan.org/v0';
-    if ($range) {
+    if ($range or $self->{dev_release}) {
         $self->chat("Searching $module ($version) on metacpan ...\n");
         my $module_uri = "$metacpan_uri/module/_search?source=";
         $module_uri .= $self->encode_json({
@@ -462,7 +475,7 @@ sub search_metacpan {
             filter => { and => [
                 { term => { 'module.authorized' => JSON::PP::true() } },
                 { term => { 'module.name' => $module } },
-                { term => { 'maturity' => 'released' } }, # 'module.maturity' doesn't seem to work
+                $self->maturity_query($module, $version),
                 $self->version_to_query($module, $version),
             ] },
             sort => { 'module.version_numified' => 'desc' },

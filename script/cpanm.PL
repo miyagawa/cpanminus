@@ -201,6 +201,10 @@ one of the dependency failed if you want to proceed the installation.
 Defaults to false, and you can say C<--no-prompt> to override if it's
 set in the default options in C<PERL_CPANM_OPT>.
 
+=item --dev
+
+B<EXPERIMENTAL>: search for a newer developer release as well. Defaults to false.
+
 =item --reinstall
 
 cpanm, when given a module name in the command line (i.e. C<cpanm
