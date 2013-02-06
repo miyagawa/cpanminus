@@ -1,13 +1,17 @@
 package xt::Run;
 use strict;
 use base qw(Exporter);
-our @EXPORT = qw(run last_build_log);
+our @EXPORT = qw(run run_L last_build_log);
 
 use Capture::Tiny qw(capture);
 use File::Temp qw(tempdir);
 
 delete $ENV{PERL_CPANM_OPT};
 $ENV{PERL_CPANM_HOME} = tempdir(CLEANUP => 1);
+
+sub run_L {
+    run("-L", "$ENV{PERL_CPANM_HOME}/perl5", @_);
+}
 
 sub run {
     my @args = @_;

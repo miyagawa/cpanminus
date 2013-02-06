@@ -5,7 +5,7 @@ use Config;
 use xt::Run;
 
 my $local_lib = "$ENV{PERL_CPANM_HOME}/perl5";
-run "-L", $local_lib, "MIYAGAWA/Hash-MultiValue-0.10.tar.gz";
+run_L "MIYAGAWA/Hash-MultiValue-0.10.tar.gz";
 
 my $dist = (last_build_log =~ /Configuring (Hash-\S+)/)[0];
 
