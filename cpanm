@@ -18,7 +18,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.59_06";
+  our $VERSION = "1.59_07";
   
   =head1 NAME
   
@@ -135,8 +135,8 @@ $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   
   It queries the CPAN Meta DB site at L<http://cpanmetadb.plackperl.org/>.
   The site is updated at least every hour to reflect the latest changes
-  from fast syncing mirrors. The script then also falls back
-  to scrape the site L<http://search.cpan.org/>.
+  from fast syncing mirrors. The script then also falls back to query the
+  module at L<http://metacpan.org/> using its wonderful API.
   
   Fetched files are unpacked in C<~/.cpanm> and automatically cleaned up
   periodically.  You can configure the location of this with the
@@ -444,7 +444,8 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
               $self->{save_dists} = $self->maybe_abs($_[1]);
           },
           'skip-configure!' => \$self->{skip_configure},
-          'metacpan'   => \$self->{metacpan},
+          'dev!'       => \$self->{dev_release},
+          'metacpan'   => sub {}, # backward compat
       );
   
       if (!@ARGV && $0 ne '-' && !-t STDIN){ # e.g. # cpanm < author/requires.cpanm
@@ -546,7 +547,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           }
   
           ($module, my $version) = $self->parse_module_args($module);
-          if ($self->{skip_satisfied} or defined $version) {
+          if ($self->{skip_satisfied}) {
               $self->check_libs;
               my($ok, $local) = $self->check_module($module, $version || 0);
               if ($ok) {
@@ -710,7 +711,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       require CPAN::Meta::Requirements;
   
       my $requirements = CPAN::Meta::Requirements->new;
-      $requirements->add_string_requirement($module, $version);
+      $requirements->add_string_requirement($module, $version || '0');
   
       my $req = $requirements->requirements_for_module($module);
   
@@ -753,6 +754,18 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       version->new($ver)->numify;
   }
   
+  sub maturity_query {
+      my($self, $module, $version) = @_;
+  
+      # TODO: might be better dev release can be enabled per dist
+      if ($self->{dev_release}) {
+          return;
+      } else {
+          # 'module.maturity' doesn't seem to work
+          return { term => { 'maturity' => 'released' } };
+      }
+  }
+  
   sub search_metacpan {
       my($self, $module, $version, $range) = @_;
   
@@ -760,14 +773,15 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   
       my $release;
       my $metacpan_uri = 'http://api.metacpan.org/v0';
-      if ($range) {
+      if ($range or $self->{dev_release}) {
           $self->chat("Searching $module ($version) on metacpan ...\n");
           my $module_uri = "$metacpan_uri/module/_search?source=";
           $module_uri .= $self->encode_json({
               query => { match_all => {} },
               filter => { and => [
                   { term => { 'module.authorized' => JSON::PP::true() } },
-                  { term => { 'module.name'    => $module } },
+                  { term => { 'module.name' => $module } },
+                  $self->maturity_query($module, $version),
                   $self->version_to_query($module, $version),
               ] },
               sort => { 'module.version_numified' => 'desc' },
@@ -820,20 +834,15 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   sub search_database {
       my($self, $module, $version) = @_;
   
-      my $range_search;
-      if ($self->with_version_range($version)) {
-          $range_search = 1;
-          $self->{metacpan} = 1; # enable releases search
-      }
-  
       my $found;
   
-      if ($self->{metacpan}) {
-          $found = $self->search_metacpan($module, $version, $range_search) and return $found;
+      if ($self->with_version_range($version)) {
+          $found = $self->search_metacpan($module, $version, 1) and return $found;
+          $found = $self->search_cpanmetadb($module, $version)  and return $found;
+      } else {
+          $found = $self->search_cpanmetadb($module, $version) and return $found;
+          $found = $self->search_metacpan($module, $version)   and return $found;
       }
-  
-      $found = $self->search_cpanmetadb($module, $version) and return $found;
-      $found = $self->search_sco($module, $version) and return $found;
   }
   
   sub search_cpanmetadb {
@@ -849,20 +858,6 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       }
   
       $self->diag_fail("Finding $module on cpanmetadb failed.");
-      return;
-  }
-  
-  sub search_sco {
-      my($self, $module, $version) = @_;
-  
-      $self->chat("Searching $module on search.cpan.org ...\n");
-      my $uri  = "http://search.cpan.org/perldoc?$module";
-      my $html = $self->get($uri);
-      $html =~ m!<a href="/CPAN/authors/id/(.*?\.(?:tar\.gz|tgz|tar\.bz2|zip))">!
-        and return $self->cpan_module($module, $1);
-  
-      $self->diag_fail("Finding $module on search.cpan.org failed.");
-  
       return;
   }
   
@@ -9616,11 +9611,6 @@ shell aliases, like:
 B<EXPERIMENTAL>: Specifies the file path to C<02packages.details.txt>
 for module search index.
 
-=item --metacpan
-
-B<EXPERIMENTAL>: Use L<http://api.metacpan.org/> API for module lookup instead of
-L<http://cpanmetadb.plackperl.org/>.
-    
 =item --prompt
 
 Prompts when a test fails so that you can skip, force install, retry
@@ -9629,6 +9619,10 @@ one of the dependency failed if you want to proceed the installation.
 
 Defaults to false, and you can say C<--no-prompt> to override if it's
 set in the default options in C<PERL_CPANM_OPT>.
+
+=item --dev
+
+B<EXPERIMENTAL>: search for a newer developer release as well. Defaults to false.
 
 =item --reinstall
 
@@ -9768,8 +9762,7 @@ C<--skip-installed> but while C<--skip-installed> checks if the
 I<latest> version of CPAN is installed, C<--skip-satisfied> checks if
 a requested version (or not, which means any version) is installed.
 
-Defaults to false for bare module names, but if you specify versions
-with C<~>, it will always skip satisfied requirements.
+Defaults to false.
 
 =item --verify
 

@@ -1,5 +1,20 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.59_07 Wed Feb  6 11:08:05 PST 2013
+   [Incompatible Changes]
+      - Disable implicit --skip-satisfied auto conversion with version specification
+      - Do not fallback to search.cpan.org scraping anymore. This means some of the bogus
+        search that doesn't match package name on PAUSE but returns a hit on search.cpan.org
+        can't be installed anymore. You have to use the right package name for it.
+      - Enable MetaCPAN search by default. --metacpan option is deprecated
+
+   [New Features]
+      - EXPERIMENTAL: --dev option to enable including developer release for searching
+        against MetaCPAN
+
+   [Improvements]
+      - Improve MetaCPAN query to search stable releases, unless developer release is requested
+
 1.59_06 Tue Feb  5 12:36:00 PST 2013
    [Incompatible Changes]
       - --mirror-index option doesn't automatically assume --mirror-only
