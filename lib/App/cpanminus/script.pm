@@ -461,13 +461,13 @@ sub maturity_query {
 }
 
 sub search_metacpan {
-    my($self, $module, $version, $range) = @_;
+    my($self, $module, $version, $range_query) = @_;
 
     require JSON::PP;
 
     my $release;
     my $metacpan_uri = 'http://api.metacpan.org/v0';
-    if ($range or $self->{dev_release}) {
+    if ($range_query) {
         $self->chat("Searching $module ($version) on metacpan ...\n");
         my $module_uri = "$metacpan_uri/module/_search?source=";
         $module_uri .= $self->encode_json({
@@ -530,7 +530,7 @@ sub search_database {
 
     my $found;
 
-    if ($self->with_version_range($version)) {
+    if ($self->with_version_range($version) or $self->{dev_release}) {
         $found = $self->search_metacpan($module, $version, 1) and return $found;
         $found = $self->search_cpanmetadb($module, $version)  and return $found;
     } else {
