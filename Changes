@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.59_08 Wed Feb  6 11:25:45 PST 2013
+   [Bug Fixes]
+      - Prioritize MetaCPAN when --dev option is enabled, for real
+
 1.59_07 Wed Feb  6 11:08:05 PST 2013
    [Incompatible Changes]
       - Disable implicit --skip-satisfied auto conversion with version specification

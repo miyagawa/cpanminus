@@ -18,7 +18,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.59_07";
+  our $VERSION = "1.59_08";
   
   =head1 NAME
   
@@ -767,13 +767,13 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   }
   
   sub search_metacpan {
-      my($self, $module, $version, $range) = @_;
+      my($self, $module, $version, $range_query) = @_;
   
       require JSON::PP;
   
       my $release;
       my $metacpan_uri = 'http://api.metacpan.org/v0';
-      if ($range or $self->{dev_release}) {
+      if ($range_query) {
           $self->chat("Searching $module ($version) on metacpan ...\n");
           my $module_uri = "$metacpan_uri/module/_search?source=";
           $module_uri .= $self->encode_json({
@@ -836,7 +836,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   
       my $found;
   
-      if ($self->with_version_range($version)) {
+      if ($self->with_version_range($version) or $self->{dev_release}) {
           $found = $self->search_metacpan($module, $version, 1) and return $found;
           $found = $self->search_cpanmetadb($module, $version)  and return $found;
       } else {
