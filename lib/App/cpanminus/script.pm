@@ -28,7 +28,7 @@ sub determine_home {
       || join('', @ENV{qw(HOMEDRIVE HOMEPATH)}); # Win32
 
     if (WIN32) {
-        require Win32;
+        require Win32; # no fatpack
         $homedir = Win32::GetShortPathName($homedir);
     }
 
@@ -1275,7 +1275,7 @@ sub unpack {
 sub verify_checksums_signature {
     my($self, $chk_file) = @_;
 
-    require Module::Signature;
+    require Module::Signature; # no fatpack
 
     $self->chat("Verifying the signature of CHECKSUMS\n");
 
@@ -1327,7 +1327,7 @@ sub verify_checksum {
     my $data = join '', <$fh>;
     $data =~ s/\015?\012/\n/g;
 
-    require Safe;
+    require Safe; # no fatpack
     my $chksum = Safe->new->reval($data);
 
     if (!ref $chksum or ref $chksum ne 'HASH') {
@@ -1352,7 +1352,7 @@ sub verify_checksum {
 sub sha1_for {
     my($self, $file) = @_;
 
-    require Digest::SHA;
+    require Digest::SHA; # no fatpack
 
     open my $fh, "<", $file or die "$file: $!";
     my $dg = Digest::SHA->new(256);
@@ -1517,7 +1517,7 @@ sub check_module {
     # might be newer than (or actually wasn't core at) the version
     # that is shipped with the current perl
     if ($self->{self_contained} && $self->loaded_from_perl_lib($meta)) {
-        require Module::CoreList;
+        require Module::CoreList; # no fatpack
         unless (exists $Module::CoreList::version{$]+0}{$mod}) {
             return 0, undef;
         }
@@ -1560,7 +1560,7 @@ sub is_deprecated {
     my($self, $meta) = @_;
 
     my $deprecated = eval {
-        require Module::CoreList;
+        require Module::CoreList; # no fatpack
         Module::CoreList::is_deprecated($meta->{module});
     };
 
@@ -2123,7 +2123,7 @@ sub dump_scandeps {
         require JSON::PP;
         print JSON::PP::encode_json($self->{scandeps_tree});
     } elsif ($self->{format} eq 'yaml') {
-        require YAML;
+        require YAML; # no fatpack
         print YAML::Dump($self->{scandeps_tree});
     } else {
         $self->diag("Unknown format: $self->{format}\n");
