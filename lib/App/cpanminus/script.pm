@@ -504,9 +504,8 @@ sub search_metacpan {
     if ($match) {
         $release = $match->{release};
         if (ref $match->{'module.version'} eq 'ARRAY') {
-            my %modules;
-            @modules{@{$match->{'module.name'}}} = @{$match->{'module.version'}};
-            $module_version = $modules{$module};
+            my $score = $module_meta->{hits}{hits}[0]{_score};
+            $module_version = (grep { $self->numify_ver($_) == $score } @{$match->{'module.version'}})[0];
         } else {
             $module_version = $match->{'module.version'};
         }

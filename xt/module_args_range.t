@@ -20,6 +20,9 @@ like last_build_log, qr/Could not find a release matching CPAN::Test::Dummy::Mul
 run '--metacpan', 'CPAN::Test::Dummy::MultiPkgVer::Inner~0.10';
 like last_build_log, qr/installed CPAN-Test-Dummy-MultiPkgVer-0\.01/;
 
+run 'CPAN::Test::Dummy::MultiPkgVer~==0.01';
+like last_build_log, qr/installed CPAN-Test-Dummy-MultiPkgVer-0\.01/;
+
 # range for v-strings
 run 'App::ForkProve~>= v0.4.0, < v0.5.0';
 like last_build_log, qr/installed forkprove-v0\.4\./;
