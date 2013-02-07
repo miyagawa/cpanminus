@@ -461,36 +461,48 @@ sub maturity_query {
 }
 
 sub search_metacpan {
-    my($self, $module, $version, $range_query) = @_;
+    my($self, $module, $version) = @_;
 
     require JSON::PP;
 
-    my $release;
     my $metacpan_uri = 'http://api.metacpan.org/v0';
-    if ($range_query) {
-        $self->chat("Searching $module ($version) on metacpan ...\n");
-        my $module_uri = "$metacpan_uri/module/_search?source=";
-        $module_uri .= $self->encode_json({
-            query => { match_all => {} },
-            filter => { and => [
-                { term => { 'module.authorized' => JSON::PP::true() } },
-                { term => { 'module.name' => $module } },
-                $self->maturity_query($module, $version),
-                $self->version_to_query($module, $version),
-            ] },
-            sort => { 'module.version_numified' => 'desc' },
-            fields => [ 'release' ],
-        });
 
-        my $module_json = $self->get($module_uri);
-        my $module_meta = eval { JSON::PP::decode_json($module_json) };
-        $release = $module_meta->{hits}{hits}[0]{fields}{release} if $module_meta;
-    } else {
-        $self->chat("Searching $module on metacpan ...\n");
-        my $module_uri  = "$metacpan_uri/module/$module";
-        my $module_json = $self->get($module_uri);
-        my $module_meta = eval { JSON::PP::decode_json($module_json) };
-        $release = $module_meta->{release} if $module_meta;
+    $self->chat("Searching $module ($version) on metacpan ...\n");
+    my $module_uri = "$metacpan_uri/file/_search?source=";
+    $module_uri .= $self->encode_json({
+        query => { nested => {
+            score_mode => 'max',
+            path => 'module',
+            query => { custom_score => {
+                script => "doc['module.version_numified'].value",
+                query => { constant_score => {
+                    filter => { and => [
+                        { term => { 'module.authorized' => JSON::PP::true() } },
+                        { term => { 'module.name' => $module } },
+# XXX                        $self->maturity_query($module, $version),
+                        $self->version_to_query($module, $version),
+                    ] }
+                } },
+            } },
+        } },
+#        sort => { 'module.version_numified' => 'desc' },
+        fields => [ 'release', 'module.name', 'module.version' ],
+    });
+
+    my($release, $module_version);
+
+    my $module_json = $self->get($module_uri);
+    my $module_meta = eval { JSON::PP::decode_json($module_json) };
+    my $match = $module_meta ? $module_meta->{hits}{hits}[0]{fields} : undef;
+    if ($match) {
+        $release = $match->{release};
+        if (ref $match->{'module.version'} eq 'ARRAY') {
+            my %modules;
+            @modules{@{$match->{'module.name'}}} = @{$match->{'module.version'}};
+            $module_version = $modules{$module};
+        } else {
+            $module_version = $match->{'module.version'};
+        }
     }
 
     unless ($release) {
@@ -503,7 +515,7 @@ sub search_metacpan {
         filter => {
             term => { 'release.name' => $release },
         },
-        fields => [ 'download_url', 'stat', 'version' ],
+        fields => [ 'download_url', 'stat' ],
     });
 
     my $dist_json = $self->get($dist_uri);
@@ -518,7 +530,7 @@ sub search_metacpan {
         if ($dist_meta->{stat}->{mtime} > time()-24*60*60) {
             $self->{mirrors} = ['http://cpan.metacpan.org'];
         }
-        return $self->cpan_module($module, $distfile, $dist_meta->{version});
+        return $self->cpan_module($module, $distfile, $module_version);
     }
 
     $self->diag_fail("Finding $module on metacpan failed.");
