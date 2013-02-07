@@ -228,9 +228,7 @@ The standalone executable contains the following modules embedded.
 
 =item L<JSON::PP> Copyright 2007−2011 by Makamaka Hannyaharamitu
 
-=item L<CPAN::Meta> and L<CPAN::Meta::Requirements> Copyright (c) 2010 by David Golden and Ricardo Signes
-
-=item L<CPAN::Meta::YAML> copyright (c) 2010 by Adam Kennedy
+=item L<CPAN::Meta::Requirements> Copyright (c) 2010 by David Golden and Ricardo Signes
 
 =back
 
