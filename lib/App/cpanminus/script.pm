@@ -448,15 +448,19 @@ sub numify_ver {
     version->new($ver)->numify;
 }
 
-sub maturity_query {
-    my($self, $module, $version) = @_;
+sub maturity_filter {
+    my($self, $query, $module, $version) = @_;
 
     # TODO: might be better dev release can be enabled per dist
     if ($self->{dev_release}) {
-        return;
+        return $query;
     } else {
-        # 'module.maturity' doesn't seem to work
-        return { term => { 'maturity' => 'released' } };
+        return {
+            filtered => {
+                filter => { term => { maturity => 'released' } },
+                query => $query,
+            }
+        };
     }
 }
 
@@ -465,27 +469,30 @@ sub search_metacpan {
 
     require JSON::PP;
 
+    $self->chat("Searching $module ($version) on metacpan ...\n");
+
     my $metacpan_uri = 'http://api.metacpan.org/v0';
 
-    $self->chat("Searching $module ($version) on metacpan ...\n");
-    my $module_uri = "$metacpan_uri/file/_search?source=";
-    $module_uri .= $self->encode_json({
-        query => { nested => {
-            score_mode => 'max',
-            path => 'module',
-            query => { custom_score => {
-                script => "doc['module.version_numified'].value",
-                query => { constant_score => {
-                    filter => { and => [
-                        { term => { 'module.authorized' => JSON::PP::true() } },
-                        { term => { 'module.name' => $module } },
-# XXX                        $self->maturity_query($module, $version),
-                        $self->version_to_query($module, $version),
-                    ] }
-                } },
+    my $query = { nested => {
+        score_mode => 'max',
+        path => 'module',
+        query => { custom_score => {
+            script => "doc['module.version_numified'].value",
+            query => { constant_score => {
+                filter => { and => [
+                    { term => { 'module.authorized' => JSON::PP::true() } },
+                    { term => { 'module.name' => $module } },
+                    $self->version_to_query($module, $version),
+                ] }
             } },
         } },
-#        sort => { 'module.version_numified' => 'desc' },
+    } };
+
+    $query = $self->maturity_filter($query, $module, $version);
+
+    my $module_uri = "$metacpan_uri/file/_search?source=";
+    $module_uri .= $self->encode_json({
+        query => $query,
         fields => [ 'release', 'module.name', 'module.version' ],
     });
 
