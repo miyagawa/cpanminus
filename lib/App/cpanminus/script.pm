@@ -139,7 +139,7 @@ sub parse_options {
         },
         'skip-configure!' => \$self->{skip_configure},
         'dev!'       => \$self->{dev_release},
-        'metacpan'   => sub {}, # backward compat
+        'metacpan!'  => \$self->{metacpan},
     );
 
     if (!@ARGV && $0 ne '-' && !-t STDIN){ # e.g. # cpanm < author/requires.cpanm
@@ -529,10 +529,11 @@ sub search_database {
     my($self, $module, $version) = @_;
 
     my $found;
+    my $range = ($self->with_version_range($version) || $self->{dev_release});
 
-    if ($self->with_version_range($version) or $self->{dev_release}) {
-        $found = $self->search_metacpan($module, $version, 1) and return $found;
-        $found = $self->search_cpanmetadb($module, $version)  and return $found;
+    if ($range or $self->{metacpan}) {
+        $found = $self->search_metacpan($module, $version)   and return $found;
+        $found = $self->search_cpanmetadb($module, $version) and return $found;
     } else {
         $found = $self->search_cpanmetadb($module, $version) and return $found;
         $found = $self->search_metacpan($module, $version)   and return $found;
