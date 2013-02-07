@@ -8,6 +8,7 @@ use File::Find ();
 use File::Path ();
 use File::Spec ();
 use File::Copy ();
+use File::Temp ();
 use Getopt::Long ();
 use Parse::CPAN::Meta;
 use Symbol ();
@@ -1407,6 +1408,11 @@ sub resolve_name {
         };
     }
 
+    # Git
+    if ($module =~ /(^git:|\.git$)/) {
+        return $self->git_uri($module);
+    }
+
     # cpan URI
     if ($module =~ s!^cpan:///distfile/!!) {
         return $self->cpan_dist($module);
@@ -1455,6 +1461,29 @@ sub cpan_dist {
         $d->properties,
         source  => 'cpan',
         uris    => $url,
+    };
+}
+
+sub git_uri {
+    my ($self, $uri) = @_;
+
+    my $dh  = File::Temp->newdir(CLEANUP => 1);
+    my $dir = Cwd::abs_path($dh->dirname);
+
+    $self->diag_progress("Cloning $uri");
+    $self->run("git clone $uri $dir");
+
+    unless (-e "$dir/.git") {
+        $self->diag_fail("Failed cloning git repository $uri");
+        return;
+    }
+
+    $self->diag_ok;
+
+    return {
+        source => 'local',
+        dir    => $dir,
+        handle => $dh,
     };
 }
 
