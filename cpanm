@@ -18,7 +18,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.59_08";
+  our $VERSION = "1.59_09";
   
   =head1 NAME
   
@@ -445,7 +445,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           },
           'skip-configure!' => \$self->{skip_configure},
           'dev!'       => \$self->{dev_release},
-          'metacpan'   => sub {}, # backward compat
+          'metacpan!'  => \$self->{metacpan},
       );
   
       if (!@ARGV && $0 ne '-' && !-t STDIN){ # e.g. # cpanm < author/requires.cpanm
@@ -754,49 +754,67 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       version->new($ver)->numify;
   }
   
-  sub maturity_query {
-      my($self, $module, $version) = @_;
+  sub maturity_filter {
+      my($self, $query, $module, $version) = @_;
   
       # TODO: might be better dev release can be enabled per dist
       if ($self->{dev_release}) {
-          return;
+          return $query;
       } else {
-          # 'module.maturity' doesn't seem to work
-          return { term => { 'maturity' => 'released' } };
+          return {
+              filtered => {
+                  filter => { term => { maturity => 'released' } },
+                  query => $query,
+              }
+          };
       }
   }
   
   sub search_metacpan {
-      my($self, $module, $version, $range_query) = @_;
+      my($self, $module, $version) = @_;
   
       require JSON::PP;
   
-      my $release;
-      my $metacpan_uri = 'http://api.metacpan.org/v0';
-      if ($range_query) {
-          $self->chat("Searching $module ($version) on metacpan ...\n");
-          my $module_uri = "$metacpan_uri/module/_search?source=";
-          $module_uri .= $self->encode_json({
-              query => { match_all => {} },
-              filter => { and => [
-                  { term => { 'module.authorized' => JSON::PP::true() } },
-                  { term => { 'module.name' => $module } },
-                  $self->maturity_query($module, $version),
-                  $self->version_to_query($module, $version),
-              ] },
-              sort => { 'module.version_numified' => 'desc' },
-              fields => [ 'release' ],
-          });
+      $self->chat("Searching $module ($version) on metacpan ...\n");
   
-          my $module_json = $self->get($module_uri);
-          my $module_meta = eval { JSON::PP::decode_json($module_json) };
-          $release = $module_meta->{hits}{hits}[0]{fields}{release} if $module_meta;
-      } else {
-          $self->chat("Searching $module on metacpan ...\n");
-          my $module_uri  = "$metacpan_uri/module/$module";
-          my $module_json = $self->get($module_uri);
-          my $module_meta = eval { JSON::PP::decode_json($module_json) };
-          $release = $module_meta->{release} if $module_meta;
+      my $metacpan_uri = 'http://api.metacpan.org/v0';
+  
+      my $query = { nested => {
+          score_mode => 'max',
+          path => 'module',
+          query => { custom_score => {
+              script => "doc['module.version_numified'].value",
+              query => { constant_score => {
+                  filter => { and => [
+                      { term => { 'module.authorized' => JSON::PP::true() } },
+                      { term => { 'module.name' => $module } },
+                      $self->version_to_query($module, $version),
+                  ] }
+              } },
+          } },
+      } };
+  
+      $query = $self->maturity_filter($query, $module, $version);
+  
+      my $module_uri = "$metacpan_uri/file/_search?source=";
+      $module_uri .= $self->encode_json({
+          query => $query,
+          fields => [ 'release', 'module.name', 'module.version' ],
+      });
+  
+      my($release, $module_version);
+  
+      my $module_json = $self->get($module_uri);
+      my $module_meta = eval { JSON::PP::decode_json($module_json) };
+      my $match = $module_meta ? $module_meta->{hits}{hits}[0]{fields} : undef;
+      if ($match) {
+          $release = $match->{release};
+          if (ref $match->{'module.version'} eq 'ARRAY') {
+              my $score = $module_meta->{hits}{hits}[0]{_score};
+              $module_version = (grep { $self->numify_ver($_) == $score } @{$match->{'module.version'}})[0];
+          } else {
+              $module_version = $match->{'module.version'};
+          }
       }
   
       unless ($release) {
@@ -809,7 +827,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           filter => {
               term => { 'release.name' => $release },
           },
-          fields => [ 'download_url', 'stat', 'version' ],
+          fields => [ 'download_url', 'stat' ],
       });
   
       my $dist_json = $self->get($dist_uri);
@@ -824,7 +842,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           if ($dist_meta->{stat}->{mtime} > time()-24*60*60) {
               $self->{mirrors} = ['http://cpan.metacpan.org'];
           }
-          return $self->cpan_module($module, $distfile, $dist_meta->{version});
+          return $self->cpan_module($module, $distfile, $module_version);
       }
   
       $self->diag_fail("Finding $module on metacpan failed.");
@@ -835,10 +853,11 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       my($self, $module, $version) = @_;
   
       my $found;
+      my $range = ($self->with_version_range($version) || $self->{dev_release});
   
-      if ($self->with_version_range($version) or $self->{dev_release}) {
-          $found = $self->search_metacpan($module, $version, 1) and return $found;
-          $found = $self->search_cpanmetadb($module, $version)  and return $found;
+      if ($range or $self->{metacpan}) {
+          $found = $self->search_metacpan($module, $version)   and return $found;
+          $found = $self->search_cpanmetadb($module, $version) and return $found;
       } else {
           $found = $self->search_cpanmetadb($module, $version) and return $found;
           $found = $self->search_metacpan($module, $version)   and return $found;

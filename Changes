@@ -1,5 +1,13 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.59_09 Thu Feb  7 01:55:48 PST 2013
+   [Improvements]
+      - Keep --metacpan option boolean option, and it lets you prefer MetaCPAN over
+        CPANMetaDB for all queries
+      - Improved MetaCPAN queries in case a release have multiple modules with different
+        versions. Also fixed a bug where it tried to extract distribution version as a
+        module version in some cases
+
 1.59_08 Wed Feb  6 11:25:45 PST 2013
    [Bug Fixes]
       - Prioritize MetaCPAN when --dev option is enabled, for real
