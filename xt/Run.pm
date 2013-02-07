@@ -6,6 +6,8 @@ our @EXPORT = qw(run run_L last_build_log);
 use Capture::Tiny qw(capture);
 use File::Temp qw(tempdir);
 
+my $executable = $ENV{FATPACKED_TEST} ? './cpanm' : './script/cpanm.PL';
+
 delete $ENV{PERL_CPANM_OPT};
 $ENV{PERL_CPANM_HOME} = tempdir(CLEANUP => 1);
 
@@ -17,7 +19,7 @@ sub run {
     my @args = @_;
     my @notest = $ENV{NOTEST} ? ("--notest") : ();
     my($stdout, $stderr, $exit) = capture {
-        system($^X, "./script/cpanm.PL", @notest, "--quiet", "--reinstall", @args);
+        system($^X, $executable, @notest, "--quiet", "--reinstall", @args);
     };
     ::diag($stderr) if $stderr;
     return wantarray ? ($stdout, $stderr, $exit) : $stdout;
