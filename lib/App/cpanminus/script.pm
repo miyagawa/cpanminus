@@ -1454,8 +1454,15 @@ sub git_uri {
     my $dh  = File::Temp->newdir(CLEANUP => 1);
     my $dir = Cwd::abs_path($dh->dirname);
 
-    my $cmd = "git clone $uri $dir";
-    $self->run($cmd);
+    $self->diag_progress("Cloning $uri");
+    $self->run("git clone $uri $dir");
+
+    unless (-e "$dir/.git") {
+        $self->diag_fail("Failed cloning git repository $uri");
+        return;
+    }
+
+    $self->diag_ok;
 
     return {
         source => 'local',
