@@ -18,7 +18,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.59_09";
+  our $VERSION = "1.59_10";
   
   =head1 NAME
   
@@ -247,9 +247,7 @@ $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   
   =item L<JSON::PP> Copyright 2007−2011 by Makamaka Hannyaharamitu
   
-  =item L<CPAN::Meta> and L<CPAN::Meta::Requirements> Copyright (c) 2010 by David Golden and Ricardo Signes
-  
-  =item L<CPAN::Meta::YAML> copyright (c) 2010 by Adam Kennedy
+  =item L<CPAN::Meta::Requirements> Copyright (c) 2010 by David Golden and Ricardo Signes
   
   =back
   
@@ -314,6 +312,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   use File::Path ();
   use File::Spec ();
   use File::Copy ();
+  use File::Temp ();
   use Getopt::Long ();
   use Parse::CPAN::Meta;
   use Symbol ();
@@ -333,7 +332,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
         || join('', @ENV{qw(HOMEDRIVE HOMEPATH)}); # Win32
   
       if (WIN32) {
-          require Win32;
+          require Win32; # no fatpack
           $homedir = Win32::GetShortPathName($homedir);
       }
   
@@ -755,18 +754,13 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   }
   
   sub maturity_filter {
-      my($self, $query, $module, $version) = @_;
+      my($self, $module, $version) = @_;
   
       # TODO: might be better dev release can be enabled per dist
       if ($self->{dev_release}) {
-          return $query;
+          return;
       } else {
-          return {
-              filtered => {
-                  filter => { term => { maturity => 'released' } },
-                  query => $query,
-              }
-          };
+          return { term => { maturity => 'released' } };
       }
   }
   
@@ -779,27 +773,32 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   
       my $metacpan_uri = 'http://api.metacpan.org/v0';
   
-      my $query = { nested => {
-          score_mode => 'max',
-          path => 'module',
-          query => { custom_score => {
-              script => "doc['module.version_numified'].value",
-              query => { constant_score => {
-                  filter => { and => [
-                      { term => { 'module.authorized' => JSON::PP::true() } },
-                      { term => { 'module.name' => $module } },
-                      $self->version_to_query($module, $version),
-                  ] }
+      my $query = { filtered => {
+          filter => { and => [
+              { not => { term => { status => 'backpan' } } },
+              $self->maturity_filter($module, $version)
+          ] },
+          query => { nested => {
+              score_mode => 'max',
+              path => 'module',
+              query => { custom_score => {
+                  script => "doc['module.version_numified'].value",
+                  query => { constant_score => {
+                      filter => { and => [
+                          { term => { 'module.authorized' => JSON::PP::true() } },
+                          { term => { 'module.indexed' => JSON::PP::true() } },
+                          { term => { 'module.name' => $module } },
+                          $self->version_to_query($module, $version),
+                      ] }
+                  } },
               } },
           } },
       } };
   
-      $query = $self->maturity_filter($query, $module, $version);
-  
       my $module_uri = "$metacpan_uri/file/_search?source=";
       $module_uri .= $self->encode_json({
           query => $query,
-          fields => [ 'release', 'module.name', 'module.version' ],
+          fields => [ 'release', 'module' ],
       });
   
       my($release, $module_version);
@@ -809,12 +808,8 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       my $match = $module_meta ? $module_meta->{hits}{hits}[0]{fields} : undef;
       if ($match) {
           $release = $match->{release};
-          if (ref $match->{'module.version'} eq 'ARRAY') {
-              my $score = $module_meta->{hits}{hits}[0]{_score};
-              $module_version = (grep { $self->numify_ver($_) == $score } @{$match->{'module.version'}})[0];
-          } else {
-              $module_version = $match->{'module.version'};
-          }
+          my $module_matched = (grep { $_->{name} eq $module } @{$match->{module}})[0];
+          $module_version = $module_matched->{version};
       }
   
       unless ($release) {
@@ -1580,7 +1575,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   sub verify_checksums_signature {
       my($self, $chk_file) = @_;
   
-      require Module::Signature;
+      require Module::Signature; # no fatpack
   
       $self->chat("Verifying the signature of CHECKSUMS\n");
   
@@ -1632,7 +1627,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       my $data = join '', <$fh>;
       $data =~ s/\015?\012/\n/g;
   
-      require Safe;
+      require Safe; # no fatpack
       my $chksum = Safe->new->reval($data);
   
       if (!ref $chksum or ref $chksum ne 'HASH') {
@@ -1657,7 +1652,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   sub sha1_for {
       my($self, $file) = @_;
   
-      require Digest::SHA;
+      require Digest::SHA; # no fatpack
   
       open my $fh, "<", $file or die "$file: $!";
       my $dg = Digest::SHA->new(256);
@@ -1713,6 +1708,11 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           };
       }
   
+      # Git
+      if ($module =~ /(^git:|\.git$)/) {
+          return $self->git_uri($module);
+      }
+  
       # cpan URI
       if ($module =~ s!^cpan:///distfile/!!) {
           return $self->cpan_dist($module);
@@ -1764,6 +1764,29 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       };
   }
   
+  sub git_uri {
+      my ($self, $uri) = @_;
+  
+      my $dh  = File::Temp->newdir(CLEANUP => 1);
+      my $dir = Cwd::abs_path($dh->dirname);
+  
+      $self->diag_progress("Cloning $uri");
+      $self->run("git clone $uri $dir");
+  
+      unless (-e "$dir/.git") {
+          $self->diag_fail("Failed cloning git repository $uri");
+          return;
+      }
+  
+      $self->diag_ok;
+  
+      return {
+          source => 'local',
+          dir    => $dir,
+          handle => $dh,
+      };
+  }
+  
   sub setup_module_build_patch {
       my $self = shift;
   
@@ -1794,7 +1817,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       # might be newer than (or actually wasn't core at) the version
       # that is shipped with the current perl
       if ($self->{self_contained} && $self->loaded_from_perl_lib($meta)) {
-          require Module::CoreList;
+          require Module::CoreList; # no fatpack
           unless (exists $Module::CoreList::version{$]+0}{$mod}) {
               return 0, undef;
           }
@@ -1837,7 +1860,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       my($self, $meta) = @_;
   
       my $deprecated = eval {
-          require Module::CoreList;
+          require Module::CoreList; # no fatpack
           Module::CoreList::is_deprecated($meta->{module});
       };
   
@@ -2400,7 +2423,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           require JSON::PP;
           print JSON::PP::encode_json($self->{scandeps_tree});
       } elsif ($self->{format} eq 'yaml') {
-          require YAML;
+          require YAML; # no fatpack
           print YAML::Dump($self->{scandeps_tree});
       } else {
           $self->diag("Unknown format: $self->{format}\n");
@@ -2867,1838 +2890,6 @@ $fatpacked{"CPAN/DistnameInfo.pm"} = <<'CPAN_DISTNAMEINFO';
   
 CPAN_DISTNAMEINFO
 
-$fatpacked{"CPAN/Meta.pm"} = <<'CPAN_META';
-  use 5.006;
-  use strict;
-  use warnings;
-  package CPAN::Meta;
-  our $VERSION = '2.120921'; # VERSION
-  
-  
-  use Carp qw(carp croak);
-  use CPAN::Meta::Feature;
-  use CPAN::Meta::Prereqs;
-  use CPAN::Meta::Converter;
-  use CPAN::Meta::Validator;
-  use Parse::CPAN::Meta 1.4403 ();
-  
-  BEGIN { *_dclone = \&CPAN::Meta::Converter::_dclone }
-  
-  
-  BEGIN {
-    my @STRING_READERS = qw(
-      abstract
-      description
-      dynamic_config
-      generated_by
-      name
-      release_status
-      version
-    );
-  
-    no strict 'refs';
-    for my $attr (@STRING_READERS) {
-      *$attr = sub { $_[0]{ $attr } };
-    }
-  }
-  
-  
-  BEGIN {
-    my @LIST_READERS = qw(
-      author
-      keywords
-      license
-    );
-  
-    no strict 'refs';
-    for my $attr (@LIST_READERS) {
-      *$attr = sub {
-        my $value = $_[0]{ $attr };
-        croak "$attr must be called in list context"
-          unless wantarray;
-        return @{ _dclone($value) } if ref $value;
-        return $value;
-      };
-    }
-  }
-  
-  sub authors  { $_[0]->author }
-  sub licenses { $_[0]->license }
-  
-  
-  BEGIN {
-    my @MAP_READERS = qw(
-      meta-spec
-      resources
-      provides
-      no_index
-  
-      prereqs
-      optional_features
-    );
-  
-    no strict 'refs';
-    for my $attr (@MAP_READERS) {
-      (my $subname = $attr) =~ s/-/_/;
-      *$subname = sub {
-        my $value = $_[0]{ $attr };
-        return _dclone($value) if $value;
-        return {};
-      };
-    }
-  }
-  
-  
-  sub custom_keys {
-    return grep { /^x_/i } keys %{$_[0]};
-  }
-  
-  sub custom {
-    my ($self, $attr) = @_;
-    my $value = $self->{$attr};
-    return _dclone($value) if ref $value;
-    return $value;
-  }
-  
-  
-  sub _new {
-    my ($class, $struct, $options) = @_;
-    my $self;
-  
-    if ( $options->{lazy_validation} ) {
-      # try to convert to a valid structure; if succeeds, then return it
-      my $cmc = CPAN::Meta::Converter->new( $struct );
-      $self = $cmc->convert( version => 2 ); # valid or dies
-      return bless $self, $class;
-    }
-    else {
-      # validate original struct
-      my $cmv = CPAN::Meta::Validator->new( $struct );
-      unless ( $cmv->is_valid) {
-        die "Invalid metadata structure. Errors: "
-          . join(", ", $cmv->errors) . "\n";
-      }
-    }
-  
-    # up-convert older spec versions
-    my $version = $struct->{'meta-spec'}{version} || '1.0';
-    if ( $version == 2 ) {
-      $self = $struct;
-    }
-    else {
-      my $cmc = CPAN::Meta::Converter->new( $struct );
-      $self = $cmc->convert( version => 2 );
-    }
-  
-    return bless $self, $class;
-  }
-  
-  sub new {
-    my ($class, $struct, $options) = @_;
-    my $self = eval { $class->_new($struct, $options) };
-    croak($@) if $@;
-    return $self;
-  }
-  
-  
-  sub create {
-    my ($class, $struct, $options) = @_;
-    my $version = __PACKAGE__->VERSION || 2;
-    $struct->{generated_by} ||= __PACKAGE__ . " version $version" ;
-    $struct->{'meta-spec'}{version} ||= int($version);
-    my $self = eval { $class->_new($struct, $options) };
-    croak ($@) if $@;
-    return $self;
-  }
-  
-  
-  sub load_file {
-    my ($class, $file, $options) = @_;
-    $options->{lazy_validation} = 1 unless exists $options->{lazy_validation};
-  
-    croak "load_file() requires a valid, readable filename"
-      unless -r $file;
-  
-    my $self;
-    eval {
-      my $struct = Parse::CPAN::Meta->load_file( $file );
-      $self = $class->_new($struct, $options);
-    };
-    croak($@) if $@;
-    return $self;
-  }
-  
-  
-  sub load_yaml_string {
-    my ($class, $yaml, $options) = @_;
-    $options->{lazy_validation} = 1 unless exists $options->{lazy_validation};
-  
-    my $self;
-    eval {
-      my ($struct) = Parse::CPAN::Meta->load_yaml_string( $yaml );
-      $self = $class->_new($struct, $options);
-    };
-    croak($@) if $@;
-    return $self;
-  }
-  
-  
-  sub load_json_string {
-    my ($class, $json, $options) = @_;
-    $options->{lazy_validation} = 1 unless exists $options->{lazy_validation};
-  
-    my $self;
-    eval {
-      my $struct = Parse::CPAN::Meta->load_json_string( $json );
-      $self = $class->_new($struct, $options);
-    };
-    croak($@) if $@;
-    return $self;
-  }
-  
-  
-  sub save {
-    my ($self, $file, $options) = @_;
-  
-    my $version = $options->{version} || '2';
-    my $layer = $] ge '5.008001' ? ':utf8' : '';
-  
-    if ( $version ge '2' ) {
-      carp "'$file' should end in '.json'"
-        unless $file =~ m{\.json$};
-    }
-    else {
-      carp "'$file' should end in '.yml'"
-        unless $file =~ m{\.yml$};
-    }
-  
-    my $data = $self->as_string( $options );
-    open my $fh, ">$layer", $file
-      or die "Error opening '$file' for writing: $!\n";
-  
-    print {$fh} $data;
-    close $fh
-      or die "Error closing '$file': $!\n";
-  
-    return 1;
-  }
-  
-  
-  sub meta_spec_version {
-    my ($self) = @_;
-    return $self->meta_spec->{version};
-  }
-  
-  
-  sub effective_prereqs {
-    my ($self, $features) = @_;
-    $features ||= [];
-  
-    my $prereq = CPAN::Meta::Prereqs->new($self->prereqs);
-  
-    return $prereq unless @$features;
-  
-    my @other = map {; $self->feature($_)->prereqs } @$features;
-  
-    return $prereq->with_merged_prereqs(\@other);
-  }
-  
-  
-  sub should_index_file {
-    my ($self, $filename) = @_;
-  
-    for my $no_index_file (@{ $self->no_index->{file} || [] }) {
-      return if $filename eq $no_index_file;
-    }
-  
-    for my $no_index_dir (@{ $self->no_index->{directory} }) {
-      $no_index_dir =~ s{$}{/} unless $no_index_dir =~ m{/\z};
-      return if index($filename, $no_index_dir) == 0;
-    }
-  
-    return 1;
-  }
-  
-  
-  sub should_index_package {
-    my ($self, $package) = @_;
-  
-    for my $no_index_pkg (@{ $self->no_index->{package} || [] }) {
-      return if $package eq $no_index_pkg;
-    }
-  
-    for my $no_index_ns (@{ $self->no_index->{namespace} }) {
-      return if index($package, "${no_index_ns}::") == 0;
-    }
-  
-    return 1;
-  }
-  
-  
-  sub features {
-    my ($self) = @_;
-  
-    my $opt_f = $self->optional_features;
-    my @features = map {; CPAN::Meta::Feature->new($_ => $opt_f->{ $_ }) }
-                   keys %$opt_f;
-  
-    return @features;
-  }
-  
-  
-  sub feature {
-    my ($self, $ident) = @_;
-  
-    croak "no feature named $ident"
-      unless my $f = $self->optional_features->{ $ident };
-  
-    return CPAN::Meta::Feature->new($ident, $f);
-  }
-  
-  
-  sub as_struct {
-    my ($self, $options) = @_;
-    my $struct = _dclone($self);
-    if ( $options->{version} ) {
-      my $cmc = CPAN::Meta::Converter->new( $struct );
-      $struct = $cmc->convert( version => $options->{version} );
-    }
-    return $struct;
-  }
-  
-  
-  sub as_string {
-    my ($self, $options) = @_;
-  
-    my $version = $options->{version} || '2';
-  
-    my $struct;
-    if ( $self->meta_spec_version ne $version ) {
-      my $cmc = CPAN::Meta::Converter->new( $self->as_struct );
-      $struct = $cmc->convert( version => $version );
-    }
-    else {
-      $struct = $self->as_struct;
-    }
-  
-    my ($data, $backend);
-    if ( $version ge '2' ) {
-      $backend = Parse::CPAN::Meta->json_backend();
-      $data = $backend->new->pretty->canonical->encode($struct);
-    }
-    else {
-      $backend = Parse::CPAN::Meta->yaml_backend();
-      $data = eval { no strict 'refs'; &{"$backend\::Dump"}($struct) };
-      if ( $@ ) {
-        croak $backend->can('errstr') ? $backend->errstr : $@
-      }
-    }
-  
-    return $data;
-  }
-  
-  # Used by JSON::PP, etc. for "convert_blessed"
-  sub TO_JSON {
-    return { %{ $_[0] } };
-  }
-  
-  1;
-  
-  # ABSTRACT: the distribution metadata for a CPAN dist
-  
-  
-  
-  
-  __END__
-  
-  
-CPAN_META
-
-$fatpacked{"CPAN/Meta/Converter.pm"} = <<'CPAN_META_CONVERTER';
-  use 5.006;
-  use strict;
-  use warnings;
-  package CPAN::Meta::Converter;
-  our $VERSION = '2.120921'; # VERSION
-  
-  
-  use CPAN::Meta::Validator;
-  use CPAN::Meta::Requirements;
-  use version 0.88 ();
-  use Parse::CPAN::Meta 1.4400 ();
-  
-  sub _dclone {
-    my $ref = shift;
-  
-    # if an object is in the data structure and doesn't specify how to
-    # turn itself into JSON, we just stringify the object.  That does the
-    # right thing for typical things that might be there, like version objects,
-    # Path::Class objects, etc.
-    no warnings 'once';
-    local *UNIVERSAL::TO_JSON = sub { return "$_[0]" };
-  
-    my $backend = Parse::CPAN::Meta->json_backend();
-    return $backend->new->utf8->decode(
-      $backend->new->utf8->allow_blessed->convert_blessed->encode($ref)
-    );
-  }
-  
-  my %known_specs = (
-      '2'   => 'http://search.cpan.org/perldoc?CPAN::Meta::Spec',
-      '1.4' => 'http://module-build.sourceforge.net/META-spec-v1.4.html',
-      '1.3' => 'http://module-build.sourceforge.net/META-spec-v1.3.html',
-      '1.2' => 'http://module-build.sourceforge.net/META-spec-v1.2.html',
-      '1.1' => 'http://module-build.sourceforge.net/META-spec-v1.1.html',
-      '1.0' => 'http://module-build.sourceforge.net/META-spec-v1.0.html'
-  );
-  
-  my @spec_list = sort { $a <=> $b } keys %known_specs;
-  my ($LOWEST, $HIGHEST) = @spec_list[0,-1];
-  
-  #--------------------------------------------------------------------------#
-  # converters
-  #
-  # called as $converter->($element, $field_name, $full_meta, $to_version)
-  #
-  # defined return value used for field
-  # undef return value means field is skipped
-  #--------------------------------------------------------------------------#
-  
-  sub _keep { $_[0] }
-  
-  sub _keep_or_one { defined($_[0]) ? $_[0] : 1 }
-  
-  sub _keep_or_zero { defined($_[0]) ? $_[0] : 0 }
-  
-  sub _keep_or_unknown { defined($_[0]) && length($_[0]) ? $_[0] : "unknown" }
-  
-  sub _generated_by {
-    my $gen = shift;
-    my $sig = __PACKAGE__ . " version " . (__PACKAGE__->VERSION || "<dev>");
-  
-    return $sig unless defined $gen and length $gen;
-    return $gen if $gen =~ /(, )\Q$sig/;
-    return "$gen, $sig";
-  }
-  
-  sub _listify { ! defined $_[0] ? undef : ref $_[0] eq 'ARRAY' ? $_[0] : [$_[0]] }
-  
-  sub _prefix_custom {
-    my $key = shift;
-    $key =~ s/^(?!x_)   # Unless it already starts with x_
-               (?:x-?)? # Remove leading x- or x (if present)
-             /x_/ix;    # and prepend x_
-    return $key;
-  }
-  
-  sub _ucfirst_custom {
-    my $key = shift;
-    $key = ucfirst $key unless $key =~ /[A-Z]/;
-    return $key;
-  }
-  
-  sub _change_meta_spec {
-    my ($element, undef, undef, $version) = @_;
-    $element->{version} = $version;
-    $element->{url} = $known_specs{$version};
-    return $element;
-  }
-  
-  my @valid_licenses_1 = (
-    'perl',
-    'gpl',
-    'apache',
-    'artistic',
-    'artistic_2',
-    'lgpl',
-    'bsd',
-    'gpl',
-    'mit',
-    'mozilla',
-    'open_source',
-    'unrestricted',
-    'restrictive',
-    'unknown',
-  );
-  
-  my %license_map_1 = (
-    ( map { $_ => $_ } @valid_licenses_1 ),
-    artistic2 => 'artistic_2',
-  );
-  
-  sub _license_1 {
-    my ($element) = @_;
-    return 'unknown' unless defined $element;
-    if ( $license_map_1{lc $element} ) {
-      return $license_map_1{lc $element};
-    }
-    return 'unknown';
-  }
-  
-  my @valid_licenses_2 = qw(
-    agpl_3
-    apache_1_1
-    apache_2_0
-    artistic_1
-    artistic_2
-    bsd
-    freebsd
-    gfdl_1_2
-    gfdl_1_3
-    gpl_1
-    gpl_2
-    gpl_3
-    lgpl_2_1
-    lgpl_3_0
-    mit
-    mozilla_1_0
-    mozilla_1_1
-    openssl
-    perl_5
-    qpl_1_0
-    ssleay
-    sun
-    zlib
-    open_source
-    restricted
-    unrestricted
-    unknown
-  );
-  
-  # The "old" values were defined by Module::Build, and were often vague.  I have
-  # made the decisions below based on reading Module::Build::API and how clearly
-  # it specifies the version of the license.
-  my %license_map_2 = (
-    (map { $_ => $_ } @valid_licenses_2),
-    apache      => 'apache_2_0',  # clearly stated as 2.0
-    artistic    => 'artistic_1',  # clearly stated as 1
-    artistic2   => 'artistic_2',  # clearly stated as 2
-    gpl         => 'open_source', # we don't know which GPL; punt
-    lgpl        => 'open_source', # we don't know which LGPL; punt
-    mozilla     => 'open_source', # we don't know which MPL; punt
-    perl        => 'perl_5',      # clearly Perl 5
-    restrictive => 'restricted',
-  );
-  
-  sub _license_2 {
-    my ($element) = @_;
-    return [ 'unknown' ] unless defined $element;
-    $element = [ $element ] unless ref $element eq 'ARRAY';
-    my @new_list;
-    for my $lic ( @$element ) {
-      next unless defined $lic;
-      if ( my $new = $license_map_2{lc $lic} ) {
-        push @new_list, $new;
-      }
-    }
-    return @new_list ? \@new_list : [ 'unknown' ];
-  }
-  
-  my %license_downgrade_map = qw(
-    agpl_3            open_source
-    apache_1_1        apache
-    apache_2_0        apache
-    artistic_1        artistic
-    artistic_2        artistic_2
-    bsd               bsd
-    freebsd           open_source
-    gfdl_1_2          open_source
-    gfdl_1_3          open_source
-    gpl_1             gpl
-    gpl_2             gpl
-    gpl_3             gpl
-    lgpl_2_1          lgpl
-    lgpl_3_0          lgpl
-    mit               mit
-    mozilla_1_0       mozilla
-    mozilla_1_1       mozilla
-    openssl           open_source
-    perl_5            perl
-    qpl_1_0           open_source
-    ssleay            open_source
-    sun               open_source
-    zlib              open_source
-    open_source       open_source
-    restricted        restrictive
-    unrestricted      unrestricted
-    unknown           unknown
-  );
-  
-  sub _downgrade_license {
-    my ($element) = @_;
-    if ( ! defined $element ) {
-      return "unknown";
-    }
-    elsif( ref $element eq 'ARRAY' ) {
-      if ( @$element == 1 ) {
-        return $license_downgrade_map{$element->[0]} || "unknown";
-      }
-    }
-    elsif ( ! ref $element ) {
-      return $license_downgrade_map{$element} || "unknown";
-    }
-    return "unknown";
-  }
-  
-  my $no_index_spec_1_2 = {
-    'file' => \&_listify,
-    'dir' => \&_listify,
-    'package' => \&_listify,
-    'namespace' => \&_listify,
-  };
-  
-  my $no_index_spec_1_3 = {
-    'file' => \&_listify,
-    'directory' => \&_listify,
-    'package' => \&_listify,
-    'namespace' => \&_listify,
-  };
-  
-  my $no_index_spec_2 = {
-    'file' => \&_listify,
-    'directory' => \&_listify,
-    'package' => \&_listify,
-    'namespace' => \&_listify,
-    ':custom'  => \&_prefix_custom,
-  };
-  
-  sub _no_index_1_2 {
-    my (undef, undef, $meta) = @_;
-    my $no_index = $meta->{no_index} || $meta->{private};
-    return unless $no_index;
-  
-    # cleanup wrong format
-    if ( ! ref $no_index ) {
-      my $item = $no_index;
-      $no_index = { dir => [ $item ], file => [ $item ] };
-    }
-    elsif ( ref $no_index eq 'ARRAY' ) {
-      my $list = $no_index;
-      $no_index = { dir => [ @$list ], file => [ @$list ] };
-    }
-  
-    # common mistake: files -> file
-    if ( exists $no_index->{files} ) {
-      $no_index->{file} = delete $no_index->{file};
-    }
-    # common mistake: modules -> module
-    if ( exists $no_index->{modules} ) {
-      $no_index->{module} = delete $no_index->{module};
-    }
-    return _convert($no_index, $no_index_spec_1_2);
-  }
-  
-  sub _no_index_directory {
-    my ($element, $key, $meta, $version) = @_;
-    return unless $element;
-  
-    # cleanup wrong format
-    if ( ! ref $element ) {
-      my $item = $element;
-      $element = { directory => [ $item ], file => [ $item ] };
-    }
-    elsif ( ref $element eq 'ARRAY' ) {
-      my $list = $element;
-      $element = { directory => [ @$list ], file => [ @$list ] };
-    }
-  
-    if ( exists $element->{dir} ) {
-      $element->{directory} = delete $element->{dir};
-    }
-    # common mistake: files -> file
-    if ( exists $element->{files} ) {
-      $element->{file} = delete $element->{file};
-    }
-    # common mistake: modules -> module
-    if ( exists $element->{modules} ) {
-      $element->{module} = delete $element->{module};
-    }
-    my $spec = $version == 2 ? $no_index_spec_2 : $no_index_spec_1_3;
-    return _convert($element, $spec);
-  }
-  
-  sub _is_module_name {
-    my $mod = shift;
-    return unless defined $mod && length $mod;
-    return $mod =~ m{^[A-Za-z][A-Za-z0-9_]*(?:::[A-Za-z0-9_]+)*$};
-  }
-  
-  sub _clean_version {
-    my ($element, $key, $meta, $to_version) = @_;
-    return 0 if ! defined $element;
-  
-    $element =~ s{^\s*}{};
-    $element =~ s{\s*$}{};
-    $element =~ s{^\.}{0.};
-  
-    return 0 if ! length $element;
-    return 0 if ( $element eq 'undef' || $element eq '<undef>' );
-  
-    my $v = eval { version->new($element) };
-    # XXX check defined $v and not just $v because version objects leak memory
-    # in boolean context -- dagolden, 2012-02-03
-    if ( defined $v ) {
-      return $v->is_qv ? $v->normal : $element;
-    }
-    else {
-      return 0;
-    }
-  }
-  
-  sub _bad_version_hook {
-    my ($v) = @_;
-    $v =~ s{[a-z]+$}{}; # strip trailing alphabetics
-    my $vobj = eval { version->parse($v) };
-    return defined($vobj) ? $vobj : version->parse(0); # or give up
-  }
-  
-  sub _version_map {
-    my ($element) = @_;
-    return unless defined $element;
-    if ( ref $element eq 'HASH' ) {
-      # XXX turn this into CPAN::Meta::Requirements with bad version hook
-      # and then turn it back into a hash
-      my $new_map = CPAN::Meta::Requirements->new(
-        { bad_version_hook => sub { version->new(0) } } # punt
-      );
-      while ( my ($k,$v) = each %$element ) {
-        next unless _is_module_name($k);
-        if ( !defined($v) || !length($v) || $v eq 'undef' || $v eq '<undef>'  ) {
-          $v = 0;
-        }
-        # some weird, old META have bad yml with module => module
-        # so check if value is like a module name and not like a version
-        if ( _is_module_name($v) && ! version::is_lax($v) ) {
-          $new_map->add_minimum($k => 0);
-          $new_map->add_minimum($v => 0);
-        }
-        $new_map->add_string_requirement($k => $v);
-      }
-      return $new_map->as_string_hash;
-    }
-    elsif ( ref $element eq 'ARRAY' ) {
-      my $hashref = { map { $_ => 0 } @$element };
-      return _version_map($hashref); # cleanup any weird stuff
-    }
-    elsif ( ref $element eq '' && length $element ) {
-      return { $element => 0 }
-    }
-    return;
-  }
-  
-  sub _prereqs_from_1 {
-    my (undef, undef, $meta) = @_;
-    my $prereqs = {};
-    for my $phase ( qw/build configure/ ) {
-      my $key = "${phase}_requires";
-      $prereqs->{$phase}{requires} = _version_map($meta->{$key})
-        if $meta->{$key};
-    }
-    for my $rel ( qw/requires recommends conflicts/ ) {
-      $prereqs->{runtime}{$rel} = _version_map($meta->{$rel})
-        if $meta->{$rel};
-    }
-    return $prereqs;
-  }
-  
-  my $prereqs_spec = {
-    configure => \&_prereqs_rel,
-    build     => \&_prereqs_rel,
-    test      => \&_prereqs_rel,
-    runtime   => \&_prereqs_rel,
-    develop   => \&_prereqs_rel,
-    ':custom'  => \&_prefix_custom,
-  };
-  
-  my $relation_spec = {
-    requires   => \&_version_map,
-    recommends => \&_version_map,
-    suggests   => \&_version_map,
-    conflicts  => \&_version_map,
-    ':custom'  => \&_prefix_custom,
-  };
-  
-  sub _cleanup_prereqs {
-    my ($prereqs, $key, $meta, $to_version) = @_;
-    return unless $prereqs && ref $prereqs eq 'HASH';
-    return _convert( $prereqs, $prereqs_spec, $to_version );
-  }
-  
-  sub _prereqs_rel {
-    my ($relation, $key, $meta, $to_version) = @_;
-    return unless $relation && ref $relation eq 'HASH';
-    return _convert( $relation, $relation_spec, $to_version );
-  }
-  
-  
-  BEGIN {
-    my @old_prereqs = qw(
-      requires
-      configure_requires
-      recommends
-      conflicts
-    );
-  
-    for ( @old_prereqs ) {
-      my $sub = "_get_$_";
-      my ($phase,$type) = split qr/_/, $_;
-      if ( ! defined $type ) {
-        $type = $phase;
-        $phase = 'runtime';
-      }
-      no strict 'refs';
-      *{$sub} = sub { _extract_prereqs($_[2]->{prereqs},$phase,$type) };
-    }
-  }
-  
-  sub _get_build_requires {
-    my ($data, $key, $meta) = @_;
-  
-    my $test_h  = _extract_prereqs($_[2]->{prereqs}, qw(test  requires)) || {};
-    my $build_h = _extract_prereqs($_[2]->{prereqs}, qw(build requires)) || {};
-  
-    my $test_req  = CPAN::Meta::Requirements->from_string_hash($test_h);
-    my $build_req = CPAN::Meta::Requirements->from_string_hash($build_h);
-  
-    $test_req->add_requirements($build_req)->as_string_hash;
-  }
-  
-  sub _extract_prereqs {
-    my ($prereqs, $phase, $type) = @_;
-    return unless ref $prereqs eq 'HASH';
-    return scalar _version_map($prereqs->{$phase}{$type});
-  }
-  
-  sub _downgrade_optional_features {
-    my (undef, undef, $meta) = @_;
-    return unless exists $meta->{optional_features};
-    my $origin = $meta->{optional_features};
-    my $features = {};
-    for my $name ( keys %$origin ) {
-      $features->{$name} = {
-        description => $origin->{$name}{description},
-        requires => _extract_prereqs($origin->{$name}{prereqs},'runtime','requires'),
-        configure_requires => _extract_prereqs($origin->{$name}{prereqs},'runtime','configure_requires'),
-        build_requires => _extract_prereqs($origin->{$name}{prereqs},'runtime','build_requires'),
-        recommends => _extract_prereqs($origin->{$name}{prereqs},'runtime','recommends'),
-        conflicts => _extract_prereqs($origin->{$name}{prereqs},'runtime','conflicts'),
-      };
-      for my $k (keys %{$features->{$name}} ) {
-        delete $features->{$name}{$k} unless defined $features->{$name}{$k};
-      }
-    }
-    return $features;
-  }
-  
-  sub _upgrade_optional_features {
-    my (undef, undef, $meta) = @_;
-    return unless exists $meta->{optional_features};
-    my $origin = $meta->{optional_features};
-    my $features = {};
-    for my $name ( keys %$origin ) {
-      $features->{$name} = {
-        description => $origin->{$name}{description},
-        prereqs => _prereqs_from_1(undef, undef, $origin->{$name}),
-      };
-      delete $features->{$name}{prereqs}{configure};
-    }
-    return $features;
-  }
-  
-  my $optional_features_2_spec = {
-    description => \&_keep,
-    prereqs => \&_cleanup_prereqs,
-    ':custom'  => \&_prefix_custom,
-  };
-  
-  sub _feature_2 {
-    my ($element, $key, $meta, $to_version) = @_;
-    return unless $element && ref $element eq 'HASH';
-    _convert( $element, $optional_features_2_spec, $to_version );
-  }
-  
-  sub _cleanup_optional_features_2 {
-    my ($element, $key, $meta, $to_version) = @_;
-    return unless $element && ref $element eq 'HASH';
-    my $new_data = {};
-    for my $k ( keys %$element ) {
-      $new_data->{$k} = _feature_2( $element->{$k}, $k, $meta, $to_version );
-    }
-    return unless keys %$new_data;
-    return $new_data;
-  }
-  
-  sub _optional_features_1_4 {
-    my ($element) = @_;
-    return unless $element;
-    $element = _optional_features_as_map($element);
-    for my $name ( keys %$element ) {
-      for my $drop ( qw/requires_packages requires_os excluded_os/ ) {
-        delete $element->{$name}{$drop};
-      }
-    }
-    return $element;
-  }
-  
-  sub _optional_features_as_map {
-    my ($element) = @_;
-    return unless $element;
-    if ( ref $element eq 'ARRAY' ) {
-      my %map;
-      for my $feature ( @$element ) {
-        my (@parts) = %$feature;
-        $map{$parts[0]} = $parts[1];
-      }
-      $element = \%map;
-    }
-    return $element;
-  }
-  
-  sub _is_urlish { defined $_[0] && $_[0] =~ m{\A[-+.a-z0-9]+:.+}i }
-  
-  sub _url_or_drop {
-    my ($element) = @_;
-    return $element if _is_urlish($element);
-    return;
-  }
-  
-  sub _url_list {
-    my ($element) = @_;
-    return unless $element;
-    $element = _listify( $element );
-    $element = [ grep { _is_urlish($_) } @$element ];
-    return unless @$element;
-    return $element;
-  }
-  
-  sub _author_list {
-    my ($element) = @_;
-    return [ 'unknown' ] unless $element;
-    $element = _listify( $element );
-    $element = [ map { defined $_ && length $_ ? $_ : 'unknown' } @$element ];
-    return [ 'unknown' ] unless @$element;
-    return $element;
-  }
-  
-  my $resource2_upgrade = {
-    license    => sub { return _is_urlish($_[0]) ? _listify( $_[0] ) : undef },
-    homepage   => \&_url_or_drop,
-    bugtracker => sub {
-      my ($item) = @_;
-      return unless $item;
-      if ( $item =~ m{^mailto:(.*)$} ) { return { mailto => $1 } }
-      elsif( _is_urlish($item) ) { return { web => $item } }
-      else { return }
-    },
-    repository => sub { return _is_urlish($_[0]) ? { url => $_[0] } : undef },
-    ':custom'  => \&_prefix_custom,
-  };
-  
-  sub _upgrade_resources_2 {
-    my (undef, undef, $meta, $version) = @_;
-    return unless exists $meta->{resources};
-    return _convert($meta->{resources}, $resource2_upgrade);
-  }
-  
-  my $bugtracker2_spec = {
-    web => \&_url_or_drop,
-    mailto => \&_keep,
-    ':custom'  => \&_prefix_custom,
-  };
-  
-  sub _repo_type {
-    my ($element, $key, $meta, $to_version) = @_;
-    return $element if defined $element;
-    return unless exists $meta->{url};
-    my $repo_url = $meta->{url};
-    for my $type ( qw/git svn/ ) {
-      return $type if $repo_url =~ m{\A$type};
-    }
-    return;
-  }
-  
-  my $repository2_spec = {
-    web => \&_url_or_drop,
-    url => \&_url_or_drop,
-    type => \&_repo_type,
-    ':custom'  => \&_prefix_custom,
-  };
-  
-  my $resources2_cleanup = {
-    license    => \&_url_list,
-    homepage   => \&_url_or_drop,
-    bugtracker => sub { ref $_[0] ? _convert( $_[0], $bugtracker2_spec ) : undef },
-    repository => sub { my $data = shift; ref $data ? _convert( $data, $repository2_spec ) : undef },
-    ':custom'  => \&_prefix_custom,
-  };
-  
-  sub _cleanup_resources_2 {
-    my ($resources, $key, $meta, $to_version) = @_;
-    return unless $resources && ref $resources eq 'HASH';
-    return _convert($resources, $resources2_cleanup, $to_version);
-  }
-  
-  my $resource1_spec = {
-    license    => \&_url_or_drop,
-    homepage   => \&_url_or_drop,
-    bugtracker => \&_url_or_drop,
-    repository => \&_url_or_drop,
-    ':custom'  => \&_keep,
-  };
-  
-  sub _resources_1_3 {
-    my (undef, undef, $meta, $version) = @_;
-    return unless exists $meta->{resources};
-    return _convert($meta->{resources}, $resource1_spec);
-  }
-  
-  *_resources_1_4 = *_resources_1_3;
-  
-  sub _resources_1_2 {
-    my (undef, undef, $meta) = @_;
-    my $resources = $meta->{resources} || {};
-    if ( $meta->{license_url} && ! $resources->{license} ) {
-      $resources->{license} = $meta->license_url
-        if _is_urlish($meta->{license_url});
-    }
-    return unless keys %$resources;
-    return _convert($resources, $resource1_spec);
-  }
-  
-  my $resource_downgrade_spec = {
-    license    => sub { return ref $_[0] ? $_[0]->[0] : $_[0] },
-    homepage   => \&_url_or_drop,
-    bugtracker => sub { return $_[0]->{web} },
-    repository => sub { return $_[0]->{url} || $_[0]->{web} },
-    ':custom'  => \&_ucfirst_custom,
-  };
-  
-  sub _downgrade_resources {
-    my (undef, undef, $meta, $version) = @_;
-    return unless exists $meta->{resources};
-    return _convert($meta->{resources}, $resource_downgrade_spec);
-  }
-  
-  sub _release_status {
-    my ($element, undef, $meta) = @_;
-    return $element if $element && $element =~ m{\A(?:stable|testing|unstable)\z};
-    return _release_status_from_version(undef, undef, $meta);
-  }
-  
-  sub _release_status_from_version {
-    my (undef, undef, $meta) = @_;
-    my $version = $meta->{version} || '';
-    return ( $version =~ /_/ ) ? 'testing' : 'stable';
-  }
-  
-  my $provides_spec = {
-    file => \&_keep,
-    version => \&_clean_version,
-  };
-  
-  my $provides_spec_2 = {
-    file => \&_keep,
-    version => \&_clean_version,
-    ':custom'  => \&_prefix_custom,
-  };
-  
-  sub _provides {
-    my ($element, $key, $meta, $to_version) = @_;
-    return unless defined $element && ref $element eq 'HASH';
-    my $spec = $to_version == 2 ? $provides_spec_2 : $provides_spec;
-    my $new_data = {};
-    for my $k ( keys %$element ) {
-      $new_data->{$k} = _convert($element->{$k}, $spec, $to_version);
-    }
-    return $new_data;
-  }
-  
-  sub _convert {
-    my ($data, $spec, $to_version) = @_;
-  
-    my $new_data = {};
-    for my $key ( keys %$spec ) {
-      next if $key eq ':custom' || $key eq ':drop';
-      next unless my $fcn = $spec->{$key};
-      die "spec for '$key' is not a coderef"
-        unless ref $fcn && ref $fcn eq 'CODE';
-      my $new_value = $fcn->($data->{$key}, $key, $data, $to_version);
-      $new_data->{$key} = $new_value if defined $new_value;
-    }
-  
-    my $drop_list   = $spec->{':drop'};
-    my $customizer  = $spec->{':custom'} || \&_keep;
-  
-    for my $key ( keys %$data ) {
-      next if $drop_list && grep { $key eq $_ } @$drop_list;
-      next if exists $spec->{$key}; # we handled it
-      $new_data->{ $customizer->($key) } = $data->{$key};
-    }
-  
-    return $new_data;
-  }
-  
-  #--------------------------------------------------------------------------#
-  # define converters for each conversion
-  #--------------------------------------------------------------------------#
-  
-  # each converts from prior version
-  # special ":custom" field is used for keys not recognized in spec
-  my %up_convert = (
-    '2-from-1.4' => {
-      # PRIOR MANDATORY
-      'abstract'            => \&_keep_or_unknown,
-      'author'              => \&_author_list,
-      'generated_by'        => \&_generated_by,
-      'license'             => \&_license_2,
-      'meta-spec'           => \&_change_meta_spec,
-      'name'                => \&_keep,
-      'version'             => \&_keep,
-      # CHANGED TO MANDATORY
-      'dynamic_config'      => \&_keep_or_one,
-      # ADDED MANDATORY
-      'release_status'      => \&_release_status_from_version,
-      # PRIOR OPTIONAL
-      'keywords'            => \&_keep,
-      'no_index'            => \&_no_index_directory,
-      'optional_features'   => \&_upgrade_optional_features,
-      'provides'            => \&_provides,
-      'resources'           => \&_upgrade_resources_2,
-      # ADDED OPTIONAL
-      'description'         => \&_keep,
-      'prereqs'             => \&_prereqs_from_1,
-  
-      # drop these deprecated fields, but only after we convert
-      ':drop' => [ qw(
-          build_requires
-          configure_requires
-          conflicts
-          distribution_type
-          license_url
-          private
-          recommends
-          requires
-      ) ],
-  
-      # other random keys need x_ prefixing
-      ':custom'              => \&_prefix_custom,
-    },
-    '1.4-from-1.3' => {
-      # PRIOR MANDATORY
-      'abstract'            => \&_keep_or_unknown,
-      'author'              => \&_author_list,
-      'generated_by'        => \&_generated_by,
-      'license'             => \&_license_1,
-      'meta-spec'           => \&_change_meta_spec,
-      'name'                => \&_keep,
-      'version'             => \&_keep,
-      # PRIOR OPTIONAL
-      'build_requires'      => \&_version_map,
-      'conflicts'           => \&_version_map,
-      'distribution_type'   => \&_keep,
-      'dynamic_config'      => \&_keep_or_one,
-      'keywords'            => \&_keep,
-      'no_index'            => \&_no_index_directory,
-      'optional_features'   => \&_optional_features_1_4,
-      'provides'            => \&_provides,
-      'recommends'          => \&_version_map,
-      'requires'            => \&_version_map,
-      'resources'           => \&_resources_1_4,
-      # ADDED OPTIONAL
-      'configure_requires'  => \&_keep,
-  
-      # drop these deprecated fields, but only after we convert
-      ':drop' => [ qw(
-        license_url
-        private
-      )],
-  
-      # other random keys are OK if already valid
-      ':custom'              => \&_keep
-    },
-    '1.3-from-1.2' => {
-      # PRIOR MANDATORY
-      'abstract'            => \&_keep_or_unknown,
-      'author'              => \&_author_list,
-      'generated_by'        => \&_generated_by,
-      'license'             => \&_license_1,
-      'meta-spec'           => \&_change_meta_spec,
-      'name'                => \&_keep,
-      'version'             => \&_keep,
-      # PRIOR OPTIONAL
-      'build_requires'      => \&_version_map,
-      'conflicts'           => \&_version_map,
-      'distribution_type'   => \&_keep,
-      'dynamic_config'      => \&_keep_or_one,
-      'keywords'            => \&_keep,
-      'no_index'            => \&_no_index_directory,
-      'optional_features'   => \&_optional_features_as_map,
-      'provides'            => \&_provides,
-      'recommends'          => \&_version_map,
-      'requires'            => \&_version_map,
-      'resources'           => \&_resources_1_3,
-  
-      # drop these deprecated fields, but only after we convert
-      ':drop' => [ qw(
-        license_url
-        private
-      )],
-  
-      # other random keys are OK if already valid
-      ':custom'              => \&_keep
-    },
-    '1.2-from-1.1' => {
-      # PRIOR MANDATORY
-      'version'             => \&_keep,
-      # CHANGED TO MANDATORY
-      'license'             => \&_license_1,
-      'name'                => \&_keep,
-      'generated_by'        => \&_generated_by,
-      # ADDED MANDATORY
-      'abstract'            => \&_keep_or_unknown,
-      'author'              => \&_author_list,
-      'meta-spec'           => \&_change_meta_spec,
-      # PRIOR OPTIONAL
-      'build_requires'      => \&_version_map,
-      'conflicts'           => \&_version_map,
-      'distribution_type'   => \&_keep,
-      'dynamic_config'      => \&_keep_or_one,
-      'recommends'          => \&_version_map,
-      'requires'            => \&_version_map,
-      # ADDED OPTIONAL
-      'keywords'            => \&_keep,
-      'no_index'            => \&_no_index_1_2,
-      'optional_features'   => \&_optional_features_as_map,
-      'provides'            => \&_provides,
-      'resources'           => \&_resources_1_2,
-  
-      # drop these deprecated fields, but only after we convert
-      ':drop' => [ qw(
-        license_url
-        private
-      )],
-  
-      # other random keys are OK if already valid
-      ':custom'              => \&_keep
-    },
-    '1.1-from-1.0' => {
-      # CHANGED TO MANDATORY
-      'version'             => \&_keep,
-      # IMPLIED MANDATORY
-      'name'                => \&_keep,
-      # PRIOR OPTIONAL
-      'build_requires'      => \&_version_map,
-      'conflicts'           => \&_version_map,
-      'distribution_type'   => \&_keep,
-      'dynamic_config'      => \&_keep_or_one,
-      'generated_by'        => \&_generated_by,
-      'license'             => \&_license_1,
-      'recommends'          => \&_version_map,
-      'requires'            => \&_version_map,
-      # ADDED OPTIONAL
-      'license_url'         => \&_url_or_drop,
-      'private'             => \&_keep,
-  
-      # other random keys are OK if already valid
-      ':custom'              => \&_keep
-    },
-  );
-  
-  my %down_convert = (
-    '1.4-from-2' => {
-      # MANDATORY
-      'abstract'            => \&_keep_or_unknown,
-      'author'              => \&_author_list,
-      'generated_by'        => \&_generated_by,
-      'license'             => \&_downgrade_license,
-      'meta-spec'           => \&_change_meta_spec,
-      'name'                => \&_keep,
-      'version'             => \&_keep,
-      # OPTIONAL
-      'build_requires'      => \&_get_build_requires,
-      'configure_requires'  => \&_get_configure_requires,
-      'conflicts'           => \&_get_conflicts,
-      'distribution_type'   => \&_keep,
-      'dynamic_config'      => \&_keep_or_one,
-      'keywords'            => \&_keep,
-      'no_index'            => \&_no_index_directory,
-      'optional_features'   => \&_downgrade_optional_features,
-      'provides'            => \&_provides,
-      'recommends'          => \&_get_recommends,
-      'requires'            => \&_get_requires,
-      'resources'           => \&_downgrade_resources,
-  
-      # drop these unsupported fields (after conversion)
-      ':drop' => [ qw(
-        description
-        prereqs
-        release_status
-      )],
-  
-      # custom keys will be left unchanged
-      ':custom'              => \&_keep
-    },
-    '1.3-from-1.4' => {
-      # MANDATORY
-      'abstract'            => \&_keep_or_unknown,
-      'author'              => \&_author_list,
-      'generated_by'        => \&_generated_by,
-      'license'             => \&_license_1,
-      'meta-spec'           => \&_change_meta_spec,
-      'name'                => \&_keep,
-      'version'             => \&_keep,
-      # OPTIONAL
-      'build_requires'      => \&_version_map,
-      'conflicts'           => \&_version_map,
-      'distribution_type'   => \&_keep,
-      'dynamic_config'      => \&_keep_or_one,
-      'keywords'            => \&_keep,
-      'no_index'            => \&_no_index_directory,
-      'optional_features'   => \&_optional_features_as_map,
-      'provides'            => \&_provides,
-      'recommends'          => \&_version_map,
-      'requires'            => \&_version_map,
-      'resources'           => \&_resources_1_3,
-  
-      # drop these unsupported fields, but only after we convert
-      ':drop' => [ qw(
-        configure_requires
-      )],
-  
-      # other random keys are OK if already valid
-      ':custom'              => \&_keep,
-    },
-    '1.2-from-1.3' => {
-      # MANDATORY
-      'abstract'            => \&_keep_or_unknown,
-      'author'              => \&_author_list,
-      'generated_by'        => \&_generated_by,
-      'license'             => \&_license_1,
-      'meta-spec'           => \&_change_meta_spec,
-      'name'                => \&_keep,
-      'version'             => \&_keep,
-      # OPTIONAL
-      'build_requires'      => \&_version_map,
-      'conflicts'           => \&_version_map,
-      'distribution_type'   => \&_keep,
-      'dynamic_config'      => \&_keep_or_one,
-      'keywords'            => \&_keep,
-      'no_index'            => \&_no_index_1_2,
-      'optional_features'   => \&_optional_features_as_map,
-      'provides'            => \&_provides,
-      'recommends'          => \&_version_map,
-      'requires'            => \&_version_map,
-      'resources'           => \&_resources_1_3,
-  
-      # other random keys are OK if already valid
-      ':custom'              => \&_keep,
-    },
-    '1.1-from-1.2' => {
-      # MANDATORY
-      'version'             => \&_keep,
-      # IMPLIED MANDATORY
-      'name'                => \&_keep,
-      'meta-spec'           => \&_change_meta_spec,
-      # OPTIONAL
-      'build_requires'      => \&_version_map,
-      'conflicts'           => \&_version_map,
-      'distribution_type'   => \&_keep,
-      'dynamic_config'      => \&_keep_or_one,
-      'generated_by'        => \&_generated_by,
-      'license'             => \&_license_1,
-      'private'             => \&_keep,
-      'recommends'          => \&_version_map,
-      'requires'            => \&_version_map,
-  
-      # drop unsupported fields
-      ':drop' => [ qw(
-        abstract
-        author
-        provides
-        no_index
-        keywords
-        resources
-      )],
-  
-      # other random keys are OK if already valid
-      ':custom'              => \&_keep,
-    },
-    '1.0-from-1.1' => {
-      # IMPLIED MANDATORY
-      'name'                => \&_keep,
-      'meta-spec'           => \&_change_meta_spec,
-      'version'             => \&_keep,
-      # PRIOR OPTIONAL
-      'build_requires'      => \&_version_map,
-      'conflicts'           => \&_version_map,
-      'distribution_type'   => \&_keep,
-      'dynamic_config'      => \&_keep_or_one,
-      'generated_by'        => \&_generated_by,
-      'license'             => \&_license_1,
-      'recommends'          => \&_version_map,
-      'requires'            => \&_version_map,
-  
-      # other random keys are OK if already valid
-      ':custom'              => \&_keep,
-    },
-  );
-  
-  my %cleanup = (
-    '2' => {
-      # PRIOR MANDATORY
-      'abstract'            => \&_keep_or_unknown,
-      'author'              => \&_author_list,
-      'generated_by'        => \&_generated_by,
-      'license'             => \&_license_2,
-      'meta-spec'           => \&_change_meta_spec,
-      'name'                => \&_keep,
-      'version'             => \&_keep,
-      # CHANGED TO MANDATORY
-      'dynamic_config'      => \&_keep_or_one,
-      # ADDED MANDATORY
-      'release_status'      => \&_release_status,
-      # PRIOR OPTIONAL
-      'keywords'            => \&_keep,
-      'no_index'            => \&_no_index_directory,
-      'optional_features'   => \&_cleanup_optional_features_2,
-      'provides'            => \&_provides,
-      'resources'           => \&_cleanup_resources_2,
-      # ADDED OPTIONAL
-      'description'         => \&_keep,
-      'prereqs'             => \&_cleanup_prereqs,
-  
-      # drop these deprecated fields, but only after we convert
-      ':drop' => [ qw(
-          build_requires
-          configure_requires
-          conflicts
-          distribution_type
-          license_url
-          private
-          recommends
-          requires
-      ) ],
-  
-      # other random keys need x_ prefixing
-      ':custom'              => \&_prefix_custom,
-    },
-    '1.4' => {
-      # PRIOR MANDATORY
-      'abstract'            => \&_keep_or_unknown,
-      'author'              => \&_author_list,
-      'generated_by'        => \&_generated_by,
-      'license'             => \&_license_1,
-      'meta-spec'           => \&_change_meta_spec,
-      'name'                => \&_keep,
-      'version'             => \&_keep,
-      # PRIOR OPTIONAL
-      'build_requires'      => \&_version_map,
-      'conflicts'           => \&_version_map,
-      'distribution_type'   => \&_keep,
-      'dynamic_config'      => \&_keep_or_one,
-      'keywords'            => \&_keep,
-      'no_index'            => \&_no_index_directory,
-      'optional_features'   => \&_optional_features_1_4,
-      'provides'            => \&_provides,
-      'recommends'          => \&_version_map,
-      'requires'            => \&_version_map,
-      'resources'           => \&_resources_1_4,
-      # ADDED OPTIONAL
-      'configure_requires'  => \&_keep,
-  
-      # other random keys are OK if already valid
-      ':custom'             => \&_keep
-    },
-    '1.3' => {
-      # PRIOR MANDATORY
-      'abstract'            => \&_keep_or_unknown,
-      'author'              => \&_author_list,
-      'generated_by'        => \&_generated_by,
-      'license'             => \&_license_1,
-      'meta-spec'           => \&_change_meta_spec,
-      'name'                => \&_keep,
-      'version'             => \&_keep,
-      # PRIOR OPTIONAL
-      'build_requires'      => \&_version_map,
-      'conflicts'           => \&_version_map,
-      'distribution_type'   => \&_keep,
-      'dynamic_config'      => \&_keep_or_one,
-      'keywords'            => \&_keep,
-      'no_index'            => \&_no_index_directory,
-      'optional_features'   => \&_optional_features_as_map,
-      'provides'            => \&_provides,
-      'recommends'          => \&_version_map,
-      'requires'            => \&_version_map,
-      'resources'           => \&_resources_1_3,
-  
-      # other random keys are OK if already valid
-      ':custom'             => \&_keep
-    },
-    '1.2' => {
-      # PRIOR MANDATORY
-      'version'             => \&_keep,
-      # CHANGED TO MANDATORY
-      'license'             => \&_license_1,
-      'name'                => \&_keep,
-      'generated_by'        => \&_generated_by,
-      # ADDED MANDATORY
-      'abstract'            => \&_keep_or_unknown,
-      'author'              => \&_author_list,
-      'meta-spec'           => \&_change_meta_spec,
-      # PRIOR OPTIONAL
-      'build_requires'      => \&_version_map,
-      'conflicts'           => \&_version_map,
-      'distribution_type'   => \&_keep,
-      'dynamic_config'      => \&_keep_or_one,
-      'recommends'          => \&_version_map,
-      'requires'            => \&_version_map,
-      # ADDED OPTIONAL
-      'keywords'            => \&_keep,
-      'no_index'            => \&_no_index_1_2,
-      'optional_features'   => \&_optional_features_as_map,
-      'provides'            => \&_provides,
-      'resources'           => \&_resources_1_2,
-  
-      # other random keys are OK if already valid
-      ':custom'             => \&_keep
-    },
-    '1.1' => {
-      # CHANGED TO MANDATORY
-      'version'             => \&_keep,
-      # IMPLIED MANDATORY
-      'name'                => \&_keep,
-      'meta-spec'           => \&_change_meta_spec,
-      # PRIOR OPTIONAL
-      'build_requires'      => \&_version_map,
-      'conflicts'           => \&_version_map,
-      'distribution_type'   => \&_keep,
-      'dynamic_config'      => \&_keep_or_one,
-      'generated_by'        => \&_generated_by,
-      'license'             => \&_license_1,
-      'recommends'          => \&_version_map,
-      'requires'            => \&_version_map,
-      # ADDED OPTIONAL
-      'license_url'         => \&_url_or_drop,
-      'private'             => \&_keep,
-  
-      # other random keys are OK if already valid
-      ':custom'             => \&_keep
-    },
-    '1.0' => {
-      # IMPLIED MANDATORY
-      'name'                => \&_keep,
-      'meta-spec'           => \&_change_meta_spec,
-      'version'             => \&_keep,
-      # IMPLIED OPTIONAL
-      'build_requires'      => \&_version_map,
-      'conflicts'           => \&_version_map,
-      'distribution_type'   => \&_keep,
-      'dynamic_config'      => \&_keep_or_one,
-      'generated_by'        => \&_generated_by,
-      'license'             => \&_license_1,
-      'recommends'          => \&_version_map,
-      'requires'            => \&_version_map,
-  
-      # other random keys are OK if already valid
-      ':custom'             => \&_keep,
-    },
-  );
-  
-  #--------------------------------------------------------------------------#
-  # Code
-  #--------------------------------------------------------------------------#
-  
-  
-  sub new {
-    my ($class,$data) = @_;
-  
-    # create an attributes hash
-    my $self = {
-      'data'    => $data,
-      'spec'    => $data->{'meta-spec'}{'version'} || "1.0",
-    };
-  
-    # create the object
-    return bless $self, $class;
-  }
-  
-  
-  sub convert {
-    my ($self, %args) = @_;
-    my $args = { %args };
-  
-    my $new_version = $args->{version} || $HIGHEST;
-  
-    my ($old_version) = $self->{spec};
-    my $converted = _dclone($self->{data});
-  
-    if ( $old_version == $new_version ) {
-      $converted = _convert( $converted, $cleanup{$old_version}, $old_version );
-      my $cmv = CPAN::Meta::Validator->new( $converted );
-      unless ( $cmv->is_valid ) {
-        my $errs = join("\n", $cmv->errors);
-        die "Failed to clean-up $old_version metadata. Errors:\n$errs\n";
-      }
-      return $converted;
-    }
-    elsif ( $old_version > $new_version )  {
-      my @vers = sort { $b <=> $a } keys %known_specs;
-      for my $i ( 0 .. $#vers-1 ) {
-        next if $vers[$i] > $old_version;
-        last if $vers[$i+1] < $new_version;
-        my $spec_string = "$vers[$i+1]-from-$vers[$i]";
-        $converted = _convert( $converted, $down_convert{$spec_string}, $vers[$i+1] );
-        my $cmv = CPAN::Meta::Validator->new( $converted );
-        unless ( $cmv->is_valid ) {
-          my $errs = join("\n", $cmv->errors);
-          die "Failed to downconvert metadata to $vers[$i+1]. Errors:\n$errs\n";
-        }
-      }
-      return $converted;
-    }
-    else {
-      my @vers = sort { $a <=> $b } keys %known_specs;
-      for my $i ( 0 .. $#vers-1 ) {
-        next if $vers[$i] < $old_version;
-        last if $vers[$i+1] > $new_version;
-        my $spec_string = "$vers[$i+1]-from-$vers[$i]";
-        $converted = _convert( $converted, $up_convert{$spec_string}, $vers[$i+1] );
-        my $cmv = CPAN::Meta::Validator->new( $converted );
-        unless ( $cmv->is_valid ) {
-          my $errs = join("\n", $cmv->errors);
-          die "Failed to upconvert metadata to $vers[$i+1]. Errors:\n$errs\n";
-        }
-      }
-      return $converted;
-    }
-  }
-  
-  1;
-  
-  # ABSTRACT: Convert CPAN distribution metadata structures
-  
-  
-  
-  
-  __END__
-  
-  
-CPAN_META_CONVERTER
-
-$fatpacked{"CPAN/Meta/Feature.pm"} = <<'CPAN_META_FEATURE';
-  use 5.006;
-  use strict;
-  use warnings;
-  package CPAN::Meta::Feature;
-  our $VERSION = '2.120921'; # VERSION
-  
-  use CPAN::Meta::Prereqs;
-  
-  
-  sub new {
-    my ($class, $identifier, $spec) = @_;
-  
-    my %guts = (
-      identifier  => $identifier,
-      description => $spec->{description},
-      prereqs     => CPAN::Meta::Prereqs->new($spec->{prereqs}),
-    );
-  
-    bless \%guts => $class;
-  }
-  
-  
-  sub identifier  { $_[0]{identifier}  }
-  
-  
-  sub description { $_[0]{description} }
-  
-  
-  sub prereqs     { $_[0]{prereqs} }
-  
-  1;
-  
-  # ABSTRACT: an optional feature provided by a CPAN distribution
-  
-  
-  
-  
-  __END__
-  
-  
-  
-CPAN_META_FEATURE
-
-$fatpacked{"CPAN/Meta/History.pm"} = <<'CPAN_META_HISTORY';
-  # vi:tw=72
-  use 5.006;
-  use strict;
-  use warnings;
-  package CPAN::Meta::History;
-  our $VERSION = '2.120921'; # VERSION
-  
-  1;
-  
-  # ABSTRACT: history of CPAN Meta Spec changes
-  
-  
-  
-  __END__
-  =pod
-  
-CPAN_META_HISTORY
-
-$fatpacked{"CPAN/Meta/Prereqs.pm"} = <<'CPAN_META_PREREQS';
-  use 5.006;
-  use strict;
-  use warnings;
-  package CPAN::Meta::Prereqs;
-  our $VERSION = '2.120921'; # VERSION
-  
-  
-  use Carp qw(confess);
-  use Scalar::Util qw(blessed);
-  use CPAN::Meta::Requirements 2.121;
-  
-  
-  sub __legal_phases { qw(configure build test runtime develop)   }
-  sub __legal_types  { qw(requires recommends suggests conflicts) }
-  
-  # expect a prereq spec from META.json -- rjbs, 2010-04-11
-  sub new {
-    my ($class, $prereq_spec) = @_;
-    $prereq_spec ||= {};
-  
-    my %is_legal_phase = map {; $_ => 1 } $class->__legal_phases;
-    my %is_legal_type  = map {; $_ => 1 } $class->__legal_types;
-  
-    my %guts;
-    PHASE: for my $phase (keys %$prereq_spec) {
-      next PHASE unless $phase =~ /\Ax_/i or $is_legal_phase{$phase};
-  
-      my $phase_spec = $prereq_spec->{ $phase };
-      next PHASE unless keys %$phase_spec;
-  
-      TYPE: for my $type (keys %$phase_spec) {
-        next TYPE unless $type =~ /\Ax_/i or $is_legal_type{$type};
-  
-        my $spec = $phase_spec->{ $type };
-  
-        next TYPE unless keys %$spec;
-  
-        $guts{prereqs}{$phase}{$type} = CPAN::Meta::Requirements->from_string_hash(
-          $spec
-        );
-      }
-    }
-  
-    return bless \%guts => $class;
-  }
-  
-  
-  sub requirements_for {
-    my ($self, $phase, $type) = @_;
-  
-    confess "requirements_for called without phase" unless defined $phase;
-    confess "requirements_for called without type"  unless defined $type;
-  
-    unless ($phase =~ /\Ax_/i or grep { $phase eq $_ } $self->__legal_phases) {
-      confess "requested requirements for unknown phase: $phase";
-    }
-  
-    unless ($type =~ /\Ax_/i or grep { $type eq $_ } $self->__legal_types) {
-      confess "requested requirements for unknown type: $type";
-    }
-  
-    my $req = ($self->{prereqs}{$phase}{$type} ||= CPAN::Meta::Requirements->new);
-  
-    $req->finalize if $self->is_finalized;
-  
-    return $req;
-  }
-  
-  
-  sub with_merged_prereqs {
-    my ($self, $other) = @_;
-  
-    my @other = blessed($other) ? $other : @$other;
-  
-    my @prereq_objs = ($self, @other);
-  
-    my %new_arg;
-  
-    for my $phase ($self->__legal_phases) {
-      for my $type ($self->__legal_types) {
-        my $req = CPAN::Meta::Requirements->new;
-  
-        for my $prereq (@prereq_objs) {
-          my $this_req = $prereq->requirements_for($phase, $type);
-          next unless $this_req->required_modules;
-  
-          $req->add_requirements($this_req);
-        }
-  
-        next unless $req->required_modules;
-  
-        $new_arg{ $phase }{ $type } = $req->as_string_hash;
-      }
-    }
-  
-    return (ref $self)->new(\%new_arg);
-  }
-  
-  
-  sub as_string_hash {
-    my ($self) = @_;
-  
-    my %hash;
-  
-    for my $phase ($self->__legal_phases) {
-      for my $type ($self->__legal_types) {
-        my $req = $self->requirements_for($phase, $type);
-        next unless $req->required_modules;
-  
-        $hash{ $phase }{ $type } = $req->as_string_hash;
-      }
-    }
-  
-    return \%hash;
-  }
-  
-  
-  sub is_finalized { $_[0]{finalized} }
-  
-  
-  sub finalize {
-    my ($self) = @_;
-  
-    $self->{finalized} = 1;
-  
-    for my $phase (keys %{ $self->{prereqs} }) {
-      $_->finalize for values %{ $self->{prereqs}{$phase} };
-    }
-  }
-  
-  
-  sub clone {
-    my ($self) = @_;
-  
-    my $clone = (ref $self)->new( $self->as_string_hash );
-  }
-  
-  1;
-  
-  # ABSTRACT: a set of distribution prerequisites by phase and type
-  
-  
-  
-  
-  __END__
-  
-  
-  
-CPAN_META_PREREQS
-
 $fatpacked{"CPAN/Meta/Requirements.pm"} = <<'CPAN_META_REQUIREMENTS';
   use strict;
   use warnings;
@@ -5138,865 +3329,6 @@ $fatpacked{"CPAN/Meta/Requirements.pm"} = <<'CPAN_META_REQUIREMENTS';
   =pod
   
 CPAN_META_REQUIREMENTS
-
-$fatpacked{"CPAN/Meta/Spec.pm"} = <<'CPAN_META_SPEC';
-  # vi:tw=72
-  use 5.006;
-  use strict;
-  use warnings;
-  package CPAN::Meta::Spec;
-  our $VERSION = '2.120921'; # VERSION
-  
-  1;
-  
-  # ABSTRACT: specification for CPAN distribution metadata
-  
-  
-  
-  __END__
-  =pod
-  
-CPAN_META_SPEC
-
-$fatpacked{"CPAN/Meta/Validator.pm"} = <<'CPAN_META_VALIDATOR';
-  use 5.006;
-  use strict;
-  use warnings;
-  package CPAN::Meta::Validator;
-  our $VERSION = '2.120921'; # VERSION
-  
-  
-  #--------------------------------------------------------------------------#
-  # This code copied and adapted from Test::CPAN::Meta
-  # by Barbie, <barbie@cpan.org> for Miss Barbell Productions,
-  # L<http://www.missbarbell.co.uk>
-  #--------------------------------------------------------------------------#
-  
-  #--------------------------------------------------------------------------#
-  # Specification Definitions
-  #--------------------------------------------------------------------------#
-  
-  my %known_specs = (
-      '1.4' => 'http://module-build.sourceforge.net/META-spec-v1.4.html',
-      '1.3' => 'http://module-build.sourceforge.net/META-spec-v1.3.html',
-      '1.2' => 'http://module-build.sourceforge.net/META-spec-v1.2.html',
-      '1.1' => 'http://module-build.sourceforge.net/META-spec-v1.1.html',
-      '1.0' => 'http://module-build.sourceforge.net/META-spec-v1.0.html'
-  );
-  my %known_urls = map {$known_specs{$_} => $_} keys %known_specs;
-  
-  my $module_map1 = { 'map' => { ':key' => { name => \&module, value => \&exversion } } };
-  
-  my $module_map2 = { 'map' => { ':key' => { name => \&module, value => \&version   } } };
-  
-  my $no_index_2 = {
-      'map'       => { file       => { list => { value => \&string } },
-                       directory  => { list => { value => \&string } },
-                       'package'  => { list => { value => \&string } },
-                       namespace  => { list => { value => \&string } },
-                      ':key'      => { name => \&custom_2, value => \&anything },
-      }
-  };
-  
-  my $no_index_1_3 = {
-      'map'       => { file       => { list => { value => \&string } },
-                       directory  => { list => { value => \&string } },
-                       'package'  => { list => { value => \&string } },
-                       namespace  => { list => { value => \&string } },
-                       ':key'     => { name => \&string, value => \&anything },
-      }
-  };
-  
-  my $no_index_1_2 = {
-      'map'       => { file       => { list => { value => \&string } },
-                       dir        => { list => { value => \&string } },
-                       'package'  => { list => { value => \&string } },
-                       namespace  => { list => { value => \&string } },
-                       ':key'     => { name => \&string, value => \&anything },
-      }
-  };
-  
-  my $no_index_1_1 = {
-      'map'       => { ':key'     => { name => \&string, list => { value => \&string } },
-      }
-  };
-  
-  my $prereq_map = {
-    map => {
-      ':key' => {
-        name => \&phase,
-        'map' => {
-          ':key'  => {
-            name => \&relation,
-            %$module_map1,
-          },
-        },
-      }
-    },
-  };
-  
-  my %definitions = (
-    '2' => {
-      # REQUIRED
-      'abstract'            => { mandatory => 1, value => \&string  },
-      'author'              => { mandatory => 1, lazylist => { value => \&string } },
-      'dynamic_config'      => { mandatory => 1, value => \&boolean },
-      'generated_by'        => { mandatory => 1, value => \&string  },
-      'license'             => { mandatory => 1, lazylist => { value => \&license } },
-      'meta-spec' => {
-        mandatory => 1,
-        'map' => {
-          version => { mandatory => 1, value => \&version},
-          url     => { value => \&url },
-          ':key' => { name => \&custom_2, value => \&anything },
-        }
-      },
-      'name'                => { mandatory => 1, value => \&string  },
-      'release_status'      => { mandatory => 1, value => \&release_status },
-      'version'             => { mandatory => 1, value => \&version },
-  
-      # OPTIONAL
-      'description' => { value => \&string },
-      'keywords'    => { lazylist => { value => \&string } },
-      'no_index'    => $no_index_2,
-      'optional_features'   => {
-        'map'       => {
-          ':key'  => {
-            name => \&string,
-            'map'   => {
-              description        => { value => \&string },
-              prereqs => $prereq_map,
-              ':key' => { name => \&custom_2, value => \&anything },
-            }
-          }
-        }
-      },
-      'prereqs' => $prereq_map,
-      'provides'    => {
-        'map'       => {
-          ':key' => {
-            name  => \&module,
-            'map' => {
-              file    => { mandatory => 1, value => \&file },
-              version => { value => \&version },
-              ':key' => { name => \&custom_2, value => \&anything },
-            }
-          }
-        }
-      },
-      'resources'   => {
-        'map'       => {
-          license    => { lazylist => { value => \&url } },
-          homepage   => { value => \&url },
-          bugtracker => {
-            'map' => {
-              web => { value => \&url },
-              mailto => { value => \&string},
-              ':key' => { name => \&custom_2, value => \&anything },
-            }
-          },
-          repository => {
-            'map' => {
-              web => { value => \&url },
-              url => { value => \&url },
-              type => { value => \&string },
-              ':key' => { name => \&custom_2, value => \&anything },
-            }
-          },
-          ':key'     => { value => \&string, name => \&custom_2 },
-        }
-      },
-  
-      # CUSTOM -- additional user defined key/value pairs
-      # note we can only validate the key name, as the structure is user defined
-      ':key'        => { name => \&custom_2, value => \&anything },
-    },
-  
-  '1.4' => {
-    'meta-spec'           => {
-      mandatory => 1,
-      'map' => {
-        version => { mandatory => 1, value => \&version},
-        url     => { mandatory => 1, value => \&urlspec },
-        ':key'  => { name => \&string, value => \&anything },
-      },
-    },
-  
-    'name'                => { mandatory => 1, value => \&string  },
-    'version'             => { mandatory => 1, value => \&version },
-    'abstract'            => { mandatory => 1, value => \&string  },
-    'author'              => { mandatory => 1, list  => { value => \&string } },
-    'license'             => { mandatory => 1, value => \&license },
-    'generated_by'        => { mandatory => 1, value => \&string  },
-  
-    'distribution_type'   => { value => \&string  },
-    'dynamic_config'      => { value => \&boolean },
-  
-    'requires'            => $module_map1,
-    'recommends'          => $module_map1,
-    'build_requires'      => $module_map1,
-    'configure_requires'  => $module_map1,
-    'conflicts'           => $module_map2,
-  
-    'optional_features'   => {
-      'map'       => {
-          ':key'  => { name => \&string,
-              'map'   => { description        => { value => \&string },
-                           requires           => $module_map1,
-                           recommends         => $module_map1,
-                           build_requires     => $module_map1,
-                           conflicts          => $module_map2,
-                           ':key'  => { name => \&string, value => \&anything },
-              }
-          }
-       }
-    },
-  
-    'provides'    => {
-      'map'       => {
-        ':key' => { name  => \&module,
-          'map' => {
-            file    => { mandatory => 1, value => \&file },
-            version => { value => \&version },
-            ':key'  => { name => \&string, value => \&anything },
-          }
-        }
-      }
-    },
-  
-    'no_index'    => $no_index_1_3,
-    'private'     => $no_index_1_3,
-  
-    'keywords'    => { list => { value => \&string } },
-  
-    'resources'   => {
-      'map'       => { license    => { value => \&url },
-                       homepage   => { value => \&url },
-                       bugtracker => { value => \&url },
-                       repository => { value => \&url },
-                       ':key'     => { value => \&string, name => \&custom_1 },
-      }
-    },
-  
-    # additional user defined key/value pairs
-    # note we can only validate the key name, as the structure is user defined
-    ':key'        => { name => \&string, value => \&anything },
-  },
-  
-  '1.3' => {
-    'meta-spec'           => {
-      mandatory => 1,
-      'map' => {
-        version => { mandatory => 1, value => \&version},
-        url     => { mandatory => 1, value => \&urlspec },
-        ':key'  => { name => \&string, value => \&anything },
-      },
-    },
-  
-    'name'                => { mandatory => 1, value => \&string  },
-    'version'             => { mandatory => 1, value => \&version },
-    'abstract'            => { mandatory => 1, value => \&string  },
-    'author'              => { mandatory => 1, list  => { value => \&string } },
-    'license'             => { mandatory => 1, value => \&license },
-    'generated_by'        => { mandatory => 1, value => \&string  },
-  
-    'distribution_type'   => { value => \&string  },
-    'dynamic_config'      => { value => \&boolean },
-  
-    'requires'            => $module_map1,
-    'recommends'          => $module_map1,
-    'build_requires'      => $module_map1,
-    'conflicts'           => $module_map2,
-  
-    'optional_features'   => {
-      'map'       => {
-          ':key'  => { name => \&string,
-              'map'   => { description        => { value => \&string },
-                           requires           => $module_map1,
-                           recommends         => $module_map1,
-                           build_requires     => $module_map1,
-                           conflicts          => $module_map2,
-                           ':key'  => { name => \&string, value => \&anything },
-              }
-          }
-       }
-    },
-  
-    'provides'    => {
-      'map'       => {
-        ':key' => { name  => \&module,
-          'map' => {
-            file    => { mandatory => 1, value => \&file },
-            version => { value => \&version },
-            ':key'  => { name => \&string, value => \&anything },
-          }
-        }
-      }
-    },
-  
-  
-    'no_index'    => $no_index_1_3,
-    'private'     => $no_index_1_3,
-  
-    'keywords'    => { list => { value => \&string } },
-  
-    'resources'   => {
-      'map'       => { license    => { value => \&url },
-                       homepage   => { value => \&url },
-                       bugtracker => { value => \&url },
-                       repository => { value => \&url },
-                       ':key'     => { value => \&string, name => \&custom_1 },
-      }
-    },
-  
-    # additional user defined key/value pairs
-    # note we can only validate the key name, as the structure is user defined
-    ':key'        => { name => \&string, value => \&anything },
-  },
-  
-  # v1.2 is misleading, it seems to assume that a number of fields where created
-  # within v1.1, when they were created within v1.2. This may have been an
-  # original mistake, and that a v1.1 was retro fitted into the timeline, when
-  # v1.2 was originally slated as v1.1. But I could be wrong ;)
-  '1.2' => {
-    'meta-spec'           => {
-      mandatory => 1,
-      'map' => {
-        version => { mandatory => 1, value => \&version},
-        url     => { mandatory => 1, value => \&urlspec },
-        ':key'  => { name => \&string, value => \&anything },
-      },
-    },
-  
-  
-    'name'                => { mandatory => 1, value => \&string  },
-    'version'             => { mandatory => 1, value => \&version },
-    'license'             => { mandatory => 1, value => \&license },
-    'generated_by'        => { mandatory => 1, value => \&string  },
-    'author'              => { mandatory => 1, list => { value => \&string } },
-    'abstract'            => { mandatory => 1, value => \&string  },
-  
-    'distribution_type'   => { value => \&string  },
-    'dynamic_config'      => { value => \&boolean },
-  
-    'keywords'            => { list => { value => \&string } },
-  
-    'private'             => $no_index_1_2,
-    '$no_index'           => $no_index_1_2,
-  
-    'requires'            => $module_map1,
-    'recommends'          => $module_map1,
-    'build_requires'      => $module_map1,
-    'conflicts'           => $module_map2,
-  
-    'optional_features'   => {
-      'map'       => {
-          ':key'  => { name => \&string,
-              'map'   => { description        => { value => \&string },
-                           requires           => $module_map1,
-                           recommends         => $module_map1,
-                           build_requires     => $module_map1,
-                           conflicts          => $module_map2,
-                           ':key'  => { name => \&string, value => \&anything },
-              }
-          }
-       }
-    },
-  
-    'provides'    => {
-      'map'       => {
-        ':key' => { name  => \&module,
-          'map' => {
-            file    => { mandatory => 1, value => \&file },
-            version => { value => \&version },
-            ':key'  => { name => \&string, value => \&anything },
-          }
-        }
-      }
-    },
-  
-    'resources'   => {
-      'map'       => { license    => { value => \&url },
-                       homepage   => { value => \&url },
-                       bugtracker => { value => \&url },
-                       repository => { value => \&url },
-                       ':key'     => { value => \&string, name => \&custom_1 },
-      }
-    },
-  
-    # additional user defined key/value pairs
-    # note we can only validate the key name, as the structure is user defined
-    ':key'        => { name => \&string, value => \&anything },
-  },
-  
-  # note that the 1.1 spec only specifies 'version' as mandatory
-  '1.1' => {
-    'name'                => { value => \&string  },
-    'version'             => { mandatory => 1, value => \&version },
-    'license'             => { value => \&license },
-    'generated_by'        => { value => \&string  },
-  
-    'license_uri'         => { value => \&url },
-    'distribution_type'   => { value => \&string  },
-    'dynamic_config'      => { value => \&boolean },
-  
-    'private'             => $no_index_1_1,
-  
-    'requires'            => $module_map1,
-    'recommends'          => $module_map1,
-    'build_requires'      => $module_map1,
-    'conflicts'           => $module_map2,
-  
-    # additional user defined key/value pairs
-    # note we can only validate the key name, as the structure is user defined
-    ':key'        => { name => \&string, value => \&anything },
-  },
-  
-  # note that the 1.0 spec doesn't specify optional or mandatory fields
-  # but we will treat version as mandatory since otherwise META 1.0 is
-  # completely arbitrary and pointless
-  '1.0' => {
-    'name'                => { value => \&string  },
-    'version'             => { mandatory => 1, value => \&version },
-    'license'             => { value => \&license },
-    'generated_by'        => { value => \&string  },
-  
-    'license_uri'         => { value => \&url },
-    'distribution_type'   => { value => \&string  },
-    'dynamic_config'      => { value => \&boolean },
-  
-    'requires'            => $module_map1,
-    'recommends'          => $module_map1,
-    'build_requires'      => $module_map1,
-    'conflicts'           => $module_map2,
-  
-    # additional user defined key/value pairs
-    # note we can only validate the key name, as the structure is user defined
-    ':key'        => { name => \&string, value => \&anything },
-  },
-  );
-  
-  #--------------------------------------------------------------------------#
-  # Code
-  #--------------------------------------------------------------------------#
-  
-  
-  sub new {
-    my ($class,$data) = @_;
-  
-    # create an attributes hash
-    my $self = {
-      'data'    => $data,
-      'spec'    => $data->{'meta-spec'}{'version'} || "1.0",
-      'errors'  => undef,
-    };
-  
-    # create the object
-    return bless $self, $class;
-  }
-  
-  
-  sub is_valid {
-      my $self = shift;
-      my $data = $self->{data};
-      my $spec_version = $self->{spec};
-      $self->check_map($definitions{$spec_version},$data);
-      return ! $self->errors;
-  }
-  
-  
-  sub errors {
-      my $self = shift;
-      return ()   unless(defined $self->{errors});
-      return @{$self->{errors}};
-  }
-  
-  
-  my $spec_error = "Missing validation action in specification. "
-    . "Must be one of 'map', 'list', 'lazylist', or 'value'";
-  
-  sub check_map {
-      my ($self,$spec,$data) = @_;
-  
-      if(ref($spec) ne 'HASH') {
-          $self->_error( "Unknown META specification, cannot validate." );
-          return;
-      }
-  
-      if(ref($data) ne 'HASH') {
-          $self->_error( "Expected a map structure from string or file." );
-          return;
-      }
-  
-      for my $key (keys %$spec) {
-          next    unless($spec->{$key}->{mandatory});
-          next    if(defined $data->{$key});
-          push @{$self->{stack}}, $key;
-          $self->_error( "Missing mandatory field, '$key'" );
-          pop @{$self->{stack}};
-      }
-  
-      for my $key (keys %$data) {
-          push @{$self->{stack}}, $key;
-          if($spec->{$key}) {
-              if($spec->{$key}{value}) {
-                  $spec->{$key}{value}->($self,$key,$data->{$key});
-              } elsif($spec->{$key}{'map'}) {
-                  $self->check_map($spec->{$key}{'map'},$data->{$key});
-              } elsif($spec->{$key}{'list'}) {
-                  $self->check_list($spec->{$key}{'list'},$data->{$key});
-              } elsif($spec->{$key}{'lazylist'}) {
-                  $self->check_lazylist($spec->{$key}{'lazylist'},$data->{$key});
-              } else {
-                  $self->_error( "$spec_error for '$key'" );
-              }
-  
-          } elsif ($spec->{':key'}) {
-              $spec->{':key'}{name}->($self,$key,$key);
-              if($spec->{':key'}{value}) {
-                  $spec->{':key'}{value}->($self,$key,$data->{$key});
-              } elsif($spec->{':key'}{'map'}) {
-                  $self->check_map($spec->{':key'}{'map'},$data->{$key});
-              } elsif($spec->{':key'}{'list'}) {
-                  $self->check_list($spec->{':key'}{'list'},$data->{$key});
-              } elsif($spec->{':key'}{'lazylist'}) {
-                  $self->check_lazylist($spec->{':key'}{'lazylist'},$data->{$key});
-              } else {
-                  $self->_error( "$spec_error for ':key'" );
-              }
-  
-  
-          } else {
-              $self->_error( "Unknown key, '$key', found in map structure" );
-          }
-          pop @{$self->{stack}};
-      }
-  }
-  
-  # if it's a string, make it into a list and check the list
-  sub check_lazylist {
-      my ($self,$spec,$data) = @_;
-  
-      if ( defined $data && ! ref($data) ) {
-        $data = [ $data ];
-      }
-  
-      $self->check_list($spec,$data);
-  }
-  
-  sub check_list {
-      my ($self,$spec,$data) = @_;
-  
-      if(ref($data) ne 'ARRAY') {
-          $self->_error( "Expected a list structure" );
-          return;
-      }
-  
-      if(defined $spec->{mandatory}) {
-          if(!defined $data->[0]) {
-              $self->_error( "Missing entries from mandatory list" );
-          }
-      }
-  
-      for my $value (@$data) {
-          push @{$self->{stack}}, $value || "<undef>";
-          if(defined $spec->{value}) {
-              $spec->{value}->($self,'list',$value);
-          } elsif(defined $spec->{'map'}) {
-              $self->check_map($spec->{'map'},$value);
-          } elsif(defined $spec->{'list'}) {
-              $self->check_list($spec->{'list'},$value);
-          } elsif(defined $spec->{'lazylist'}) {
-              $self->check_lazylist($spec->{'lazylist'},$value);
-          } elsif ($spec->{':key'}) {
-              $self->check_map($spec,$value);
-          } else {
-            $self->_error( "$spec_error associated with '$self->{stack}[-2]'" );
-          }
-          pop @{$self->{stack}};
-      }
-  }
-  
-  
-  sub header {
-      my ($self,$key,$value) = @_;
-      if(defined $value) {
-          return 1    if($value && $value =~ /^--- #YAML:1.0/);
-      }
-      $self->_error( "file does not have a valid YAML header." );
-      return 0;
-  }
-  
-  sub release_status {
-    my ($self,$key,$value) = @_;
-    if(defined $value) {
-      my $version = $self->{data}{version} || '';
-      if ( $version =~ /_/ ) {
-        return 1 if ( $value =~ /\A(?:testing|unstable)\z/ );
-        $self->_error( "'$value' for '$key' is invalid for version '$version'" );
-      }
-      else {
-        return 1 if ( $value =~ /\A(?:stable|testing|unstable)\z/ );
-        $self->_error( "'$value' for '$key' is invalid" );
-      }
-    }
-    else {
-      $self->_error( "'$key' is not defined" );
-    }
-    return 0;
-  }
-  
-  # _uri_split taken from URI::Split by Gisle Aas, Copyright 2003
-  sub _uri_split {
-       return $_[0] =~ m,(?:([^:/?#]+):)?(?://([^/?#]*))?([^?#]*)(?:\?([^#]*))?(?:#(.*))?,;
-  }
-  
-  sub url {
-      my ($self,$key,$value) = @_;
-      if(defined $value) {
-        my ($scheme, $auth, $path, $query, $frag) = _uri_split($value);
-        unless ( defined $scheme && length $scheme ) {
-          $self->_error( "'$value' for '$key' does not have a URL scheme" );
-          return 0;
-        }
-        unless ( defined $auth && length $auth ) {
-          $self->_error( "'$value' for '$key' does not have a URL authority" );
-          return 0;
-        }
-        return 1;
-      }
-      $value ||= '';
-      $self->_error( "'$value' for '$key' is not a valid URL." );
-      return 0;
-  }
-  
-  sub urlspec {
-      my ($self,$key,$value) = @_;
-      if(defined $value) {
-          return 1    if($value && $known_specs{$self->{spec}} eq $value);
-          if($value && $known_urls{$value}) {
-              $self->_error( 'META specification URL does not match version' );
-              return 0;
-          }
-      }
-      $self->_error( 'Unknown META specification' );
-      return 0;
-  }
-  
-  sub anything { return 1 }
-  
-  sub string {
-      my ($self,$key,$value) = @_;
-      if(defined $value) {
-          return 1    if($value || $value =~ /^0$/);
-      }
-      $self->_error( "value is an undefined string" );
-      return 0;
-  }
-  
-  sub string_or_undef {
-      my ($self,$key,$value) = @_;
-      return 1    unless(defined $value);
-      return 1    if($value || $value =~ /^0$/);
-      $self->_error( "No string defined for '$key'" );
-      return 0;
-  }
-  
-  sub file {
-      my ($self,$key,$value) = @_;
-      return 1    if(defined $value);
-      $self->_error( "No file defined for '$key'" );
-      return 0;
-  }
-  
-  sub exversion {
-      my ($self,$key,$value) = @_;
-      if(defined $value && ($value || $value =~ /0/)) {
-          my $pass = 1;
-          for(split(",",$value)) { $self->version($key,$_) or ($pass = 0); }
-          return $pass;
-      }
-      $value = '<undef>'  unless(defined $value);
-      $self->_error( "'$value' for '$key' is not a valid version." );
-      return 0;
-  }
-  
-  sub version {
-      my ($self,$key,$value) = @_;
-      if(defined $value) {
-          return 0    unless($value || $value =~ /0/);
-          return 1    if($value =~ /^\s*((<|<=|>=|>|!=|==)\s*)?v?\d+((\.\d+((_|\.)\d+)?)?)/);
-      } else {
-          $value = '<undef>';
-      }
-      $self->_error( "'$value' for '$key' is not a valid version." );
-      return 0;
-  }
-  
-  sub boolean {
-      my ($self,$key,$value) = @_;
-      if(defined $value) {
-          return 1    if($value =~ /^(0|1|true|false)$/);
-      } else {
-          $value = '<undef>';
-      }
-      $self->_error( "'$value' for '$key' is not a boolean value." );
-      return 0;
-  }
-  
-  my %v1_licenses = (
-      'perl'         => 'http://dev.perl.org/licenses/',
-      'gpl'          => 'http://www.opensource.org/licenses/gpl-license.php',
-      'apache'       => 'http://apache.org/licenses/LICENSE-2.0',
-      'artistic'     => 'http://opensource.org/licenses/artistic-license.php',
-      'artistic_2'   => 'http://opensource.org/licenses/artistic-license-2.0.php',
-      'lgpl'         => 'http://www.opensource.org/licenses/lgpl-license.php',
-      'bsd'          => 'http://www.opensource.org/licenses/bsd-license.php',
-      'gpl'          => 'http://www.opensource.org/licenses/gpl-license.php',
-      'mit'          => 'http://opensource.org/licenses/mit-license.php',
-      'mozilla'      => 'http://opensource.org/licenses/mozilla1.1.php',
-      'open_source'  => undef,
-      'unrestricted' => undef,
-      'restrictive'  => undef,
-      'unknown'      => undef,
-  );
-  
-  my %v2_licenses = map { $_ => 1 } qw(
-    agpl_3
-    apache_1_1
-    apache_2_0
-    artistic_1
-    artistic_2
-    bsd
-    freebsd
-    gfdl_1_2
-    gfdl_1_3
-    gpl_1
-    gpl_2
-    gpl_3
-    lgpl_2_1
-    lgpl_3_0
-    mit
-    mozilla_1_0
-    mozilla_1_1
-    openssl
-    perl_5
-    qpl_1_0
-    ssleay
-    sun
-    zlib
-    open_source
-    restricted
-    unrestricted
-    unknown
-  );
-  
-  sub license {
-      my ($self,$key,$value) = @_;
-      my $licenses = $self->{spec} < 2 ? \%v1_licenses : \%v2_licenses;
-      if(defined $value) {
-          return 1    if($value && exists $licenses->{$value});
-      } else {
-          $value = '<undef>';
-      }
-      $self->_error( "License '$value' is invalid" );
-      return 0;
-  }
-  
-  sub custom_1 {
-      my ($self,$key) = @_;
-      if(defined $key) {
-          # a valid user defined key should be alphabetic
-          # and contain at least one capital case letter.
-          return 1    if($key && $key =~ /^[_a-z]+$/i && $key =~ /[A-Z]/);
-      } else {
-          $key = '<undef>';
-      }
-      $self->_error( "Custom resource '$key' must be in CamelCase." );
-      return 0;
-  }
-  
-  sub custom_2 {
-      my ($self,$key) = @_;
-      if(defined $key) {
-          return 1    if($key && $key =~ /^x_/i);  # user defined
-      } else {
-          $key = '<undef>';
-      }
-      $self->_error( "Custom key '$key' must begin with 'x_' or 'X_'." );
-      return 0;
-  }
-  
-  sub identifier {
-      my ($self,$key) = @_;
-      if(defined $key) {
-          return 1    if($key && $key =~ /^([a-z][_a-z]+)$/i);    # spec 2.0 defined
-      } else {
-          $key = '<undef>';
-      }
-      $self->_error( "Key '$key' is not a legal identifier." );
-      return 0;
-  }
-  
-  sub module {
-      my ($self,$key) = @_;
-      if(defined $key) {
-          return 1    if($key && $key =~ /^[A-Za-z0-9_]+(::[A-Za-z0-9_]+)*$/);
-      } else {
-          $key = '<undef>';
-      }
-      $self->_error( "Key '$key' is not a legal module name." );
-      return 0;
-  }
-  
-  my @valid_phases = qw/ configure build test runtime develop /;
-  sub phase {
-      my ($self,$key) = @_;
-      if(defined $key) {
-          return 1 if( length $key && grep { $key eq $_ } @valid_phases );
-          return 1 if $key =~ /x_/i;
-      } else {
-          $key = '<undef>';
-      }
-      $self->_error( "Key '$key' is not a legal phase." );
-      return 0;
-  }
-  
-  my @valid_relations = qw/ requires recommends suggests conflicts /;
-  sub relation {
-      my ($self,$key) = @_;
-      if(defined $key) {
-          return 1 if( length $key && grep { $key eq $_ } @valid_relations );
-          return 1 if $key =~ /x_/i;
-      } else {
-          $key = '<undef>';
-      }
-      $self->_error( "Key '$key' is not a legal prereq relationship." );
-      return 0;
-  }
-  
-  sub _error {
-      my $self = shift;
-      my $mess = shift;
-  
-      $mess .= ' ('.join(' -> ',@{$self->{stack}}).')'  if($self->{stack});
-      $mess .= " [Validation: $self->{spec}]";
-  
-      push @{$self->{errors}}, $mess;
-  }
-  
-  1;
-  
-  # ABSTRACT: validate CPAN distribution metadata structures
-  
-  
-  
-  
-  __END__
-  
-  
-  
-CPAN_META_VALIDATOR
 
 $fatpacked{"HTTP/Tiny.pm"} = <<'HTTP_TINY';
   # vim: ts=4 sts=4 sw=4 et:
@@ -6923,6 +4255,185 @@ $fatpacked{"HTTP/Tiny.pm"} = <<'HTTP_TINY';
   __END__
   
 HTTP_TINY
+
+$fatpacked{"Module/CPANfile.pm"} = <<'MODULE_CPANFILE';
+  package Module::CPANfile;
+  use strict;
+  use warnings;
+  use Cwd;
+  
+  our $VERSION = '0.9009';
+  
+  sub new {
+      my($class, $file) = @_;
+      bless {}, $class;
+  }
+  
+  sub load {
+      my($proto, $file) = @_;
+      my $self = ref $proto ? $proto : $proto->new;
+      $self->{file} = $file || "cpanfile";
+      $self->parse;
+      $self;
+  }
+  
+  sub parse {
+      my $self = shift;
+  
+      my $file = Cwd::abs_path($self->{file});
+      $self->{result} = Module::CPANfile::Environment::parse($file) or die $@;
+  }
+  
+  sub prereqs { shift->prereq }
+  
+  sub prereq {
+      my $self = shift;
+      require CPAN::Meta::Prereqs;
+      CPAN::Meta::Prereqs->new($self->prereq_specs);
+  }
+  
+  sub prereq_specs {
+      my $self = shift;
+      $self->{result}{spec};
+  }
+  
+  sub merge_meta {
+      my($self, $file, $version) = @_;
+  
+      require CPAN::Meta;
+  
+      $version ||= $file =~ /\.yml$/ ? '1.4' : '2';
+  
+      my $prereq = $self->prereqs;
+  
+      my $meta = CPAN::Meta->load_file($file);
+      my $prereqs_hash = $prereq->with_merged_prereqs($meta->effective_prereqs)->as_string_hash;
+      my $struct = { %{$meta->as_struct}, prereqs => $prereqs_hash };
+  
+      CPAN::Meta->new($struct)->save($file, { version => $version });
+  }
+  
+  package Module::CPANfile::Environment;
+  use strict;
+  
+  my @bindings = qw(
+      on requires recommends suggests conflicts
+      osname perl
+      configure_requires build_requires test_requires author_requires
+  );
+  
+  my $file_id = 1;
+  
+  sub import {
+      my($class, $result_ref) = @_;
+      my $pkg = caller;
+  
+      $$result_ref = Module::CPANfile::Result->new;
+      for my $binding (@bindings) {
+          no strict 'refs';
+          *{"$pkg\::$binding"} = sub { $$result_ref->$binding(@_) };
+      }
+  }
+  
+  sub parse {
+      my $file = shift;
+  
+      my $code = do {
+          open my $fh, "<", $file or die "$file: $!";
+          join '', <$fh>;
+      };
+  
+      my($res, $err);
+  
+      {
+          local $@;
+          $res = eval sprintf <<EVAL, $file_id++;
+  package Module::CPANfile::Sandbox%d;
+  no warnings;
+  my \$_result;
+  BEGIN { import Module::CPANfile::Environment \\\$_result };
+  
+  $code;
+  
+  \$_result;
+  EVAL
+          $err = $@;
+      }
+  
+      if ($err) { die "Parsing $file failed: $err" };
+  
+      return $res;
+  }
+  
+  package Module::CPANfile::Result;
+  use strict;
+  
+  sub new {
+      bless {
+          phase => 'runtime', # default phase
+          spec  => {},
+      }, shift;
+  }
+  
+  sub on {
+      my($self, $phase, $code) = @_;
+      local $self->{phase} = $phase;
+      $code->()
+  }
+  
+  sub osname { die "TODO" }
+  sub perl { die "TODO" }
+  
+  sub requires {
+      my($self, $module, $requirement) = @_;
+      $self->{spec}{$self->{phase}}{requires}{$module} = $requirement || 0;
+  }
+  
+  sub recommends {
+      my($self, $module, $requirement) = @_;
+      $self->{spec}->{$self->{phase}}{recommends}{$module} = $requirement || 0;
+  }
+  
+  sub suggests {
+      my($self, $module, $requirement) = @_;
+      $self->{spec}->{$self->{phase}}{suggests}{$module} = $requirement || 0;
+  }
+  
+  sub conflicts {
+      my($self, $module, $requirement) = @_;
+      $self->{spec}->{$self->{phase}}{conflicts}{$module} = $requirement || 0;
+  }
+  
+  # Module::Install compatible shortcuts
+  
+  sub configure_requires {
+      my($self, @args) = @_;
+      $self->on(configure => sub { $self->requires(@args) });
+  }
+  
+  sub build_requires {
+      my($self, @args) = @_;
+      $self->on(build => sub { $self->requires(@args) });
+  }
+  
+  sub test_requires {
+      my($self, @args) = @_;
+      $self->on(test => sub { $self->requires(@args) });
+  }
+  
+  sub author_requires {
+      my($self, @args) = @_;
+      $self->on(develop => sub { $self->requires(@args) });
+  }
+  
+  package Module::CPANfile;
+  
+  1;
+  
+  __END__
+  
+  
+MODULE_CPANFILE
 
 $fatpacked{"Module/Metadata.pm"} = <<'MODULE_METADATA';
   # -*- mode: cperl; tab-width: 8; indent-tabs-mode: nil; basic-offset: 2 -*-

@@ -1,5 +1,15 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.59_10 Thu Feb  7 16:27:03 PST 2013
+   [New Features]
+      - EXPERIMENTAL: added an ability to install from git URL (ikasam_a)
+
+   [Improvements]
+      - Exclude backpan distribution from MetaCPAN query (mo)
+      - Add back Module::CPANfile to fatpack, accidentally deleted in a previous release
+      - Remove CPAN::Meta from fatpack, because it's unsued yet. This reduces the file
+        size of cpanm executable about 30%.
+
 1.59_09 Thu Feb  7 01:55:48 PST 2013
    [Improvements]
       - Re-enable --metacpan option to prefer MetaCPAN over CPANMetaDB for all queries,
