@@ -450,18 +450,13 @@ sub numify_ver {
 }
 
 sub maturity_filter {
-    my($self, $query, $module, $version) = @_;
+    my($self, $module, $version) = @_;
 
     # TODO: might be better dev release can be enabled per dist
     if ($self->{dev_release}) {
-        return $query;
+        return;
     } else {
-        return {
-            filtered => {
-                filter => { term => { maturity => 'released' } },
-                query => $query,
-            }
-        };
+        return { term => { maturity => 'released' } };
     }
 }
 
@@ -474,27 +469,32 @@ sub search_metacpan {
 
     my $metacpan_uri = 'http://api.metacpan.org/v0';
 
-    my $query = { nested => {
-        score_mode => 'max',
-        path => 'module',
-        query => { custom_score => {
-            script => "doc['module.version_numified'].value",
-            query => { constant_score => {
-                filter => { and => [
-                    { term => { 'module.authorized' => JSON::PP::true() } },
-                    { term => { 'module.name' => $module } },
-                    $self->version_to_query($module, $version),
-                ] }
+    my $query = { filtered => {
+        filter => { and => [
+            { not => { term => { status => 'backpan' } } },
+            $self->maturity_filter($module, $version)
+        ] },
+        query => { nested => {
+            score_mode => 'max',
+            path => 'module',
+            query => { custom_score => {
+                script => "doc['module.version_numified'].value",
+                query => { constant_score => {
+                    filter => { and => [
+                        { term => { 'module.authorized' => JSON::PP::true() } },
+                        { term => { 'module.indexed' => JSON::PP::true() } },
+                        { term => { 'module.name' => $module } },
+                        $self->version_to_query($module, $version),
+                    ] }
+                } },
             } },
         } },
     } };
 
-    $query = $self->maturity_filter($query, $module, $version);
-
     my $module_uri = "$metacpan_uri/file/_search?source=";
     $module_uri .= $self->encode_json({
         query => $query,
-        fields => [ 'release', 'module.name', 'module.version' ],
+        fields => [ 'release', 'module' ],
     });
 
     my($release, $module_version);
@@ -504,12 +504,8 @@ sub search_metacpan {
     my $match = $module_meta ? $module_meta->{hits}{hits}[0]{fields} : undef;
     if ($match) {
         $release = $match->{release};
-        if (ref $match->{'module.version'} eq 'ARRAY') {
-            my $score = $module_meta->{hits}{hits}[0]{_score};
-            $module_version = (grep { $self->numify_ver($_) == $score } @{$match->{'module.version'}})[0];
-        } else {
-            $module_version = $match->{'module.version'};
-        }
+        my $module_matched = (grep { $_->{name} eq $module } @{$match->{module}})[0];
+        $module_version = $module_matched->{version};
     }
 
     unless ($release) {
