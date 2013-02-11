@@ -18,6 +18,12 @@ use constant SUNOS => $^O eq 'solaris';
 
 our $VERSION = $App::cpanminus::VERSION;
 
+if ($INC{"App/FatPacker/Trace.pm"}) {
+    require JSON::PP;
+    require CPAN::Meta::YAML;
+    require version::vpp;
+}
+
 my $quote = WIN32 ? q/"/ : q/'/;
 
 sub determine_home {
