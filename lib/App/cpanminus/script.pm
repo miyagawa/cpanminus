@@ -1642,13 +1642,16 @@ sub build_stuff {
     }
 
     my @config_deps;
-    if (!%{$dist->{meta} || {}} && -e 'META.yml') {
+    if (-e 'META.json') {
+        $self->chat("Checking configure dependencies from META.json\n");
+        $dist->{meta} = $self->parse_meta('META.json');
+    } elsif (-e 'META.yml') {
         $self->chat("Checking configure dependencies from META.yml\n");
         $dist->{meta} = $self->parse_meta('META.yml');
     }
 
     if (!$dist->{meta} && $dist->{source} eq 'cpan') {
-        $self->chat("META.yml not found or unparsable. Fetching META.yml from search.cpan.org\n");
+        $self->chat("META.yml/json not found or unparsable. Fetching META.yml from search.cpan.org\n");
         $dist->{meta} = $self->fetch_meta_sco($dist);
     }
 
@@ -2460,12 +2463,12 @@ sub safeexec {
 
 sub parse_meta {
     my($self, $file) = @_;
-    return eval { (Parse::CPAN::Meta::LoadFile($file))[0] } || undef;
+    return eval { Parse::CPAN::Meta->load_file($file) };
 }
 
 sub parse_meta_string {
     my($self, $yaml) = @_;
-    return eval { (Parse::CPAN::Meta::Load($yaml))[0] } || undef;
+    return eval { Parse::CPAN::Meta->load_yaml_string($yaml) };
 }
 
 1;
