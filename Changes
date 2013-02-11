@@ -1,5 +1,10 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.59_11 Mon Feb 11 14:10:26 PST 2013
+   [Improvements]
+      - Support META.json in addition to META.yml for pre-configure requirements
+      - Fatpack JSON::PP and CPAN::Meta::YAML properly 
+
 1.59_10 Thu Feb  7 16:27:03 PST 2013
    [New Features]
       - EXPERIMENTAL: added an ability to install from git URL (ikasam_a)
