@@ -40,7 +40,9 @@ sub is_core {
 }
 
 my @modules  = find_fatpack('lib/App/cpanminus/script.pm');
-push @modules, 'version/vpp.pm'; # for 5.8 bootstrap
+push @modules, 'version/vpp.pm';    # for 5.8 bootstrap
+push @modules, 'CPAN/Meta/YAML.pm'; # runtime requirements for Parse::CPAN::Meta
+push @modules, 'JSON/PP.pm';        # runtime requirements for Parse::CPAN::Meta
 
 my $packer = App::FatPacker->new;
 my @packlists = $packer->packlists_containing(\@modules);

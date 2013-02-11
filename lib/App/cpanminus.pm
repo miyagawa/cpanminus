@@ -230,6 +230,8 @@ The standalone executable contains the following modules embedded.
 
 =item L<CPAN::Meta::Requirements> Copyright (c) 2010 by David Golden and Ricardo Signes
 
+=item L<CPAN::Meta::YAML> Copyright 2010 Adam Kennedy
+
 =back
 
 =head1 LICENSE
