@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.59_12 Wed Feb 13 18:13:49 PST 2013
+   [Internals]
+      - Switch to metacpan_script for the new MetaCPAN query
+
 1.59_11 Mon Feb 11 14:10:26 PST 2013
    [Improvements]
       - Support META.json in addition to META.yml for pre-configure requirements
