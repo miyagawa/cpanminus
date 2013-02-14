@@ -484,7 +484,7 @@ sub search_metacpan {
             score_mode => 'max',
             path => 'module',
             query => { custom_score => {
-                script => "doc['module.version_numified'].value",
+                metacpan_script => "score_version_numified",
                 query => { constant_score => {
                     filter => { and => [
                         { term => { 'module.authorized' => JSON::PP::true() } },
