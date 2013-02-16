@@ -1387,8 +1387,9 @@ sub resolve_name {
 
     # URL
     if ($module =~ /^(ftp|https?|file):/) {
-        if ($module =~ m!authors/id/!) {
-            return $self->cpan_dist($module, $module);
+        if ($module =~ m!authors/id/(.*)!) {
+            my $dist = $1;
+            return $self->cpan_dist($dist, $module);
         } else {
             return { uris => [ $module ] };
         }
