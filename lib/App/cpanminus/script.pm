@@ -22,6 +22,7 @@ if ($INC{"App/FatPacker/Trace.pm"}) {
     require JSON::PP;
     require CPAN::Meta::YAML;
     require version::vpp;
+    require File::pushd;
 }
 
 my $quote = WIN32 ? q/"/ : q/'/;
@@ -212,7 +213,8 @@ sub parse_module_args {
     my($self, $module) = @_;
 
     # Plack@1.2 -> Plack~"==1.2"
-    $module =~ s/@([v\d\._]+)$/~== $1/;
+    # BUT don't expand @ in git URLs
+    $module =~ s/^([A-Za-z0-9_:]+)@([v\d\._]+)$/$1~== $2/;
 
     # Plack~1.20, DBI~"> 1.0, <= 2.0"
     if ($module =~ /\~[v\d\._,\!<>= ]+$/) {
@@ -1475,15 +1477,30 @@ sub cpan_dist {
 sub git_uri {
     my ($self, $uri) = @_;
 
+    # similar to http://www.pip-installer.org/en/latest/logic.html#vcs-support
+    # git URL has to end with .git when you need to use pin @ commit/tag/branch
+
+    ($uri, my $commitish) = split /(?<=\.git)@/i, $uri, 2;
+
     my $dh  = File::Temp->newdir(CLEANUP => 1);
     my $dir = Cwd::abs_path($dh->dirname);
 
     $self->diag_progress("Cloning $uri");
-    $self->run("git clone $uri $dir");
+    $self->run([ 'git', 'clone', $uri, $dir ]);
 
     unless (-e "$dir/.git") {
         $self->diag_fail("Failed cloning git repository $uri");
         return;
+    }
+
+    if ($commitish) {
+        require File::pushd;
+        my $dir = File::pushd::pushd($dir);
+
+        unless ($self->run([ 'git', 'checkout', $commitish ])) {
+            $self->diag_fail("Failed to checkout '$commitish' in git repository $uri\n");
+            return;
+        }
     }
 
     $self->diag_ok;
