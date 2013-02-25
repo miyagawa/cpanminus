@@ -46,6 +46,39 @@ cpanm - get, unpack build and install modules from CPAN
 
 =over 4
 
+=item (arguments)
+
+Command line arguments can be either a module name, distribution file,
+local file path, HTTP URL or git repository URL. Following commands
+will all work as you expect.
+
+    cpanm Plack
+    cpanm Plack/Request.pm
+    cpanm MIYAGAWA/Plack-1.0000.tar.gz
+    cpanm /path/to/Plack-1.0000.tar.gz
+    cpanm http://cpan.metacpan.org/authors/id/M/MI/MIYAGAWA/Plack-0.9990.tar.gz
+    cpanm git://github.com/miyagawa/Plack.git
+
+Additionally, you can use the notation using C<~> and C<@> to specify
+version for a given module. C<~> specifies the version requirement in
+the L<CPAN::Meta::Spec> format, while C<@> pins the exact version, and
+is a shortcut for C<~"== VERSION">.
+
+    cpanm Plack~1.0000                 # 1.0000 or later
+    cpanm Plack~">= 1.0000, < 2.0000"  # latest of 1.xxxx
+    cpanm Plack@0.9990                 # specific version. same as Plack~"== 0.9990"
+
+The version query including specific version or range will be sent to
+L<MetaCPAN> to search for previous releases. The query will search for
+BackPAN archives by default, unless you specify C<--dev> option, in
+which case, archived versions will be filtered out.
+
+For a git repository, you can specify a branch, tag, or commit SHA to
+build. The default is C<master>
+
+    cpanm git://github.com/miyagawa/Plack.git@1.0000        # tag
+    cpanm git://github.com/miyagawa/Plack.git@devel         # branch
+
 =item -i, --install
 
 Installs the modules. This is a default behavior and this is just a
