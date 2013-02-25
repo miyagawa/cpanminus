@@ -2,11 +2,8 @@ use strict;
 use Test::More;
 use xt::Run;
 
-run '--metacpan', 'Date::Format~2.0';
-like last_build_log, qr/installed TimeDate-1.20/;
-
-run 'Date::Format@2.24';
-like last_build_log, qr/installed TimeDate-1.20/;
+run 'Date::Format@2.23';
+like last_build_log, qr/installed TimeDate-1.19/;
 
 run 'CPAN::Test::Dummy::MultiPkgVer~>0.01';
 like last_build_log, qr/0\.01 .* doesn't satisfy/;
