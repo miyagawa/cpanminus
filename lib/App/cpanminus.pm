@@ -232,6 +232,8 @@ The standalone executable contains the following modules embedded.
 
 =item L<CPAN::Meta::YAML> Copyright 2010 Adam Kennedy
 
+=item L<File::pushd> Copyright 2012 David Golden
+
 =back
 
 =head1 LICENSE
