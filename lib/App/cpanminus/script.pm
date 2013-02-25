@@ -458,13 +458,19 @@ sub numify_ver {
 sub maturity_filter {
     my($self, $module, $version) = @_;
 
-    # TODO: might be better dev release can be enabled per dist
-    if ($self->{dev_release}) {
+    my @filters;
+
+    # TODO: dev release should be enabled per dist
+    if (!$self->with_version_range($version) or $self->{dev_release}) {
         # backpan'ed dev release are considered "cancelled"
-        return { not => { term => { status => 'backpan' } } };
-    } else {
-        return { term => { maturity => 'released' } };
+        push @filters, { not => { term => { status => 'backpan' } } };
     }
+
+    if (!$self->{dev_release}) {
+        push @filters, { term => { maturity => 'released' } };
+    }
+
+    return \@filters;
 }
 
 sub search_metacpan {
@@ -477,11 +483,7 @@ sub search_metacpan {
     my $metacpan_uri = 'http://api.metacpan.org/v0';
 
     my $query = { filtered => {
-        filter => { and => [
-            # TODO: option to NOT fallback to backpan
-            # { not => { term => { status => 'backpan' } } },
-            $self->maturity_filter($module, $version)
-        ] },
+        filter => { and => $self->maturity_filter($module, $version) },
         query => { nested => {
             score_mode => 'max',
             path => 'module',
