@@ -18,7 +18,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.59_12";
+  our $VERSION = "1.59_13";
   
   =head1 NAME
   
@@ -251,6 +251,8 @@ $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   
   =item L<CPAN::Meta::YAML> Copyright 2010 Adam Kennedy
   
+  =item L<File::pushd> Copyright 2012 David Golden
+  
   =back
   
   =head1 LICENSE
@@ -328,6 +330,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       require JSON::PP;
       require CPAN::Meta::YAML;
       require version::vpp;
+      require File::pushd;
   }
   
   my $quote = WIN32 ? q/"/ : q/'/;
@@ -518,7 +521,8 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       my($self, $module) = @_;
   
       # Plack@1.2 -> Plack~"==1.2"
-      $module =~ s/@([v\d\._]+)$/~== $1/;
+      # BUT don't expand @ in git URLs
+      $module =~ s/^([A-Za-z0-9_:]+)@([v\d\._]+)$/$1~== $2/;
   
       # Plack~1.20, DBI~"> 1.0, <= 2.0"
       if ($module =~ /\~[v\d\._,\!<>= ]+$/) {
@@ -764,12 +768,19 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   sub maturity_filter {
       my($self, $module, $version) = @_;
   
-      # TODO: might be better dev release can be enabled per dist
-      if ($self->{dev_release}) {
-          return;
-      } else {
-          return { term => { maturity => 'released' } };
+      my @filters;
+  
+      # TODO: dev release should be enabled per dist
+      if (!$self->with_version_range($version) or $self->{dev_release}) {
+          # backpan'ed dev release are considered "cancelled"
+          push @filters, { not => { term => { status => 'backpan' } } };
       }
+  
+      if (!$self->{dev_release}) {
+          push @filters, { term => { maturity => 'released' } };
+      }
+  
+      return \@filters;
   }
   
   sub search_metacpan {
@@ -782,10 +793,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       my $metacpan_uri = 'http://api.metacpan.org/v0';
   
       my $query = { filtered => {
-          filter => { and => [
-              { not => { term => { status => 'backpan' } } },
-              $self->maturity_filter($module, $version)
-          ] },
+          filter => { and => $self->maturity_filter($module, $version) },
           query => { nested => {
               score_mode => 'max',
               path => 'module',
@@ -830,7 +838,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           filter => {
               term => { 'release.name' => $release },
           },
-          fields => [ 'download_url', 'stat' ],
+          fields => [ 'download_url', 'stat', 'status' ],
       });
   
       my $dist_json = $self->get($dist_uri);
@@ -842,8 +850,10 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       if ($dist_meta && $dist_meta->{download_url}) {
           (my $distfile = $dist_meta->{download_url}) =~ s!.+/authors/id/!!;
           local $self->{mirrors} = $self->{mirrors};
-          if ($dist_meta->{stat}->{mtime} > time()-24*60*60) {
-              $self->{mirrors} = ['http://cpan.metacpan.org'];
+          if ($dist_meta->{status} eq 'backpan') {
+              $self->{mirrors} = [ 'http://backpan.perl.org' ];
+          } elsif ($dist_meta->{stat}{mtime} > time()-24*60*60) {
+              $self->{mirrors} = [ 'http://cpan.metacpan.org' ];
           }
           return $self->cpan_module($module, $distfile, $module_version);
       }
@@ -1693,8 +1703,8 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   
       # URL
       if ($module =~ /^(ftp|https?|file):/) {
-          if ($module =~ m!authors/id/!) {
-              return $self->cpan_dist($module, $module);
+          if ($module =~ m!authors/id/(.*)!) {
+              return $self->cpan_dist($1, $module);
           } else {
               return { uris => [ $module ] };
           }
@@ -1775,15 +1785,30 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   sub git_uri {
       my ($self, $uri) = @_;
   
+      # similar to http://www.pip-installer.org/en/latest/logic.html#vcs-support
+      # git URL has to end with .git when you need to use pin @ commit/tag/branch
+  
+      ($uri, my $commitish) = split /(?<=\.git)@/i, $uri, 2;
+  
       my $dh  = File::Temp->newdir(CLEANUP => 1);
       my $dir = Cwd::abs_path($dh->dirname);
   
       $self->diag_progress("Cloning $uri");
-      $self->run("git clone $uri $dir");
+      $self->run([ 'git', 'clone', $uri, $dir ]);
   
       unless (-e "$dir/.git") {
           $self->diag_fail("Failed cloning git repository $uri");
           return;
+      }
+  
+      if ($commitish) {
+          require File::pushd;
+          my $dir = File::pushd::pushd($dir);
+  
+          unless ($self->run([ 'git', 'checkout', $commitish ])) {
+              $self->diag_fail("Failed to checkout '$commitish' in git repository $uri\n");
+              return;
+          }
       }
   
       $self->diag_ok;
@@ -2719,7 +2744,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
                   or return undef;
   
               chomp $root;
-              $root =~ s{^\s+testing:\s+(.+?)/\s+OK$}{$1};
+              $root =~ s{^\s+testing:\s+([^/]+)/.*?\s+OK$}{$1};
   
               system "$unzip $opt $zipfile";
               return $root if -d $root;
@@ -2738,15 +2763,16 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
               $self->diag_fail("Read of file[$file] failed")
                   if $status != Archive::Zip::AZ_OK();
               my @members = $zip->members();
-              my $root;
               for my $member ( @members ) {
                   my $af = $member->fileName();
                   next if ($af =~ m!^(/|\.\./)!);
-                  $root = $af unless $root;
                   $status = $member->extractToFileNamed( $af );
                   $self->diag_fail("Extracting of file[$af] from zipfile[$file failed")
                       if $status != Archive::Zip::AZ_OK();
               }
+  
+              my ($root) = $zip->membersMatching( qr<^[^/]+/$> );
+              $root &&= $root->fileName;
               return -d $root ? $root : undef;
           };
       }
@@ -3992,6 +4018,121 @@ $fatpacked{"CPAN/Meta/YAML.pm"} = <<'CPAN_META_YAML';
   
   
 CPAN_META_YAML
+
+$fatpacked{"File/pushd.pm"} = <<'FILE_PUSHD';
+  use 5.005;
+  use strict;
+  BEGIN{ if (not $] < 5.006) { require warnings; warnings->import } }
+  package File::pushd;
+  # ABSTRACT: change directory temporarily for a limited scope
+  our $VERSION = '1.003'; # VERSION
+  
+  use vars qw/@EXPORT @ISA/;
+  @EXPORT  = qw( pushd tempd );
+  @ISA     = qw( Exporter );
+  
+  use Exporter;
+  use Carp;
+  use Cwd         qw( cwd abs_path );
+  use File::Path  qw( rmtree );
+  use File::Temp  qw();
+  use File::Spec;
+  
+  use overload
+      q{""} => sub { File::Spec->canonpath( $_[0]->{_pushd} ) },
+      fallback => 1;
+  
+  #--------------------------------------------------------------------------#
+  # pushd()
+  #--------------------------------------------------------------------------#
+  
+  sub pushd {
+      my ($target_dir, $options) = @_;
+      $options->{untaint_pattern} ||= qr{^([-+@\w./]+)$};
+  
+      my $tainted_orig = cwd;
+      my $orig;
+      if ( $tainted_orig =~ $options->{untaint_pattern} ) {
+        $orig = $1;
+      }
+      else {
+        $orig = $tainted_orig;
+      }
+  
+      my $tainted_dest;
+      eval { $tainted_dest   = $target_dir ? abs_path( $target_dir ) : $orig };
+      croak "Can't locate directory $target_dir: $@" if $@;
+  
+      my $dest;
+      if ( $tainted_dest =~ $options->{untaint_pattern} ) {
+        $dest = $1;
+      }
+      else {
+        $dest = $tainted_dest;
+      }
+  
+      if ($dest ne $orig) {
+          chdir $dest or croak "Can't chdir to $dest\: $!";
+      }
+  
+      my $self = bless {
+          _pushd => $dest,
+          _original => $orig
+      }, __PACKAGE__;
+  
+      return $self;
+  }
+  
+  #--------------------------------------------------------------------------#
+  # tempd()
+  #--------------------------------------------------------------------------#
+  
+  sub tempd {
+      my ($options) = @_;
+      my $dir;
+      eval { $dir = pushd( File::Temp::tempdir( CLEANUP => 0 ), $options ) };
+      croak $@ if $@;
+      $dir->{_tempd} = 1;
+      return $dir;
+  }
+  
+  #--------------------------------------------------------------------------#
+  # preserve()
+  #--------------------------------------------------------------------------#
+  
+  sub preserve {
+      my $self = shift;
+      return 1 if ! $self->{"_tempd"};
+      if ( @_ == 0 ) {
+          return $self->{_preserve} = 1;
+      }
+      else {
+          return $self->{_preserve} = $_[0] ? 1 : 0;
+      }
+  }
+  
+  #--------------------------------------------------------------------------#
+  # DESTROY()
+  # Revert to original directory as object is destroyed and cleanup
+  # if necessary
+  #--------------------------------------------------------------------------#
+  
+  sub DESTROY {
+      my ($self) = @_;
+      my $orig = $self->{_original};
+      chdir $orig if $orig; # should always be so, but just in case...
+      if ( $self->{_tempd} &&
+          !$self->{_preserve} ) {
+          eval { rmtree( $self->{_pushd} ) };
+          carp $@ if $@;
+      }
+  }
+  
+  1;
+  
+  __END__
+  
+FILE_PUSHD
 
 $fatpacked{"HTTP/Tiny.pm"} = <<'HTTP_TINY';
   # vim: ts=4 sts=4 sw=4 et:
@@ -6537,7 +6678,7 @@ $fatpacked{"Module/CPANfile.pm"} = <<'MODULE_CPANFILE';
   use warnings;
   use Cwd;
   
-  our $VERSION = '0.9009';
+  our $VERSION = '0.9010';
   
   sub new {
       my($class, $file) = @_;
@@ -7614,10 +7755,9 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
   
   use File::Spec ();
   use File::Path ();
-  use Carp ();
   use Config;
   
-  our $VERSION = '1.008004'; # 1.8.4
+  our $VERSION = '1.008009'; # 1.8.9
   
   our @KNOWN_FLAGS = qw(--self-contained --deactivate --deactivate-all);
   
@@ -7748,6 +7888,7 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
       }
     };
     unless (defined $homedir) {
+      require Carp;
       Carp::croak(
         "Couldn't resolve homedir for "
         .(defined $user ? $user : 'current user')
@@ -7769,7 +7910,13 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
     my $interpolate = LITERAL_ENV;
     my @active_lls = $class->active_paths;
   
-    $path = $class->ensure_dir_structure_for($path);
+    $class->ensure_dir_structure_for($path);
+  
+    # On Win32 directories often contain spaces. But some parts of the CPAN
+    # toolchain don't like that. To avoid this, GetShortPathName() gives us
+    # an alternate representation that has none.
+    # This only works if the directory already exists.
+    $path = Win32::GetShortPathName($path) if $^O eq 'MSWin32';
   
     if (! $deactivating) {
       if (@active_lls && $active_lls[-1] eq $path) {
@@ -7790,7 +7937,15 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
       exit 0;
     } else {
       $class->setup_env_hash_for($path, $deactivating);
-      @INC = _uniq(split($Config{path_sep}, $ENV{PERL5LIB}), @INC);
+      my $arch_dir = $Config{archname};
+      @INC = _uniq(
+    (
+        # Inject $path/$archname for each path in PERL5LIB
+        map { ( File::Spec->catdir($_, $arch_dir), $_ ) }
+        split($Config{path_sep}, $ENV{PERL5LIB})
+    ),
+    @INC
+      );
     }
   }
   
@@ -7815,11 +7970,7 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
       warn "Attempting to create directory ${path}\n";
     }
     File::Path::mkpath($path);
-    # Need to have the path exist to make a short name for it, so
-    # converting to a short name here.
-    $path = Win32::GetShortPathName($path) if $^O eq 'MSWin32';
-  
-    return $path;
+    return
   }
   
   sub guess_shelltype {
@@ -7922,35 +8073,71 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
     }
   }
   
+  # Build an environment value for a variable like PATH from a list of paths.
+  # References to existing variables are given as references to the variable name.
+  # Duplicates are removed.
+  #
+  # options:
+  # - interpolate: INTERPOLATE_ENV/LITERAL_ENV
+  # - exists: paths are included only if they exist (default: interpolate == INTERPOLATE_ENV)
+  # - filter: function to apply to each path do decide if it must be included
+  # - empty: the value to return in the case of empty value
+  my %ENV_LIST_VALUE_DEFAULTS = (
+      interpolate => INTERPOLATE_ENV,
+      exists => undef,
+      filter => sub { 1 },
+      empty => undef,
+  );
+  sub _env_list_value {
+    my $options = shift;
+    die(sprintf "unknown option '$_' at %s line %u\n", (caller)[1..2])
+      for grep { !exists $ENV_LIST_VALUE_DEFAULTS{$_} } keys %$options;
+    my %options = (%ENV_LIST_VALUE_DEFAULTS, %{ $options });
+    $options{exists} = $options{interpolate} == INTERPOLATE_ENV
+      unless defined $options{exists};
+  
+    my %seen;
+  
+    my $value = join($Config{path_sep}, map {
+        ref $_ ? ($^O eq 'MSWin32' ? "%${$_}%" : "\$${$_}") : $_
+      } grep {
+        ref $_ || (defined $_
+                   && length($_) > 0
+                   && !$seen{$_}++
+                   && $options{filter}->($_)
+                   && (!$options{exists} || -e $_))
+      } map {
+        if (ref $_ eq 'SCALAR' && $options{interpolate} == INTERPOLATE_ENV) {
+          exists $ENV{${$_}} ? (split /\Q$Config{path_sep}/, $ENV{${$_}}) : ()
+        } else {
+          $_
+        }
+      } @_);
+    return length($value) ? $value : $options{empty};
+  }
+  
   sub build_activate_environment_vars_for {
     my ($class, $path, $interpolate) = @_;
     return (
-      PERL_LOCAL_LIB_ROOT => join($Config{path_sep},
-                (($ENV{PERL_LOCAL_LIB_ROOT}||()) ?
-                  ($interpolate == INTERPOLATE_ENV
-                    ? ($ENV{PERL_LOCAL_LIB_ROOT}||())
-                    : (($^O ne 'MSWin32') ? '$PERL_LOCAL_LIB_ROOT' 
-                      : '%PERL_LOCAL_LIB_ROOT%' ))
-                  : ()),
-                  $path
+      PERL_LOCAL_LIB_ROOT =>
+              _env_list_value(
+                { interpolate => $interpolate, exists => 0, empty => '' },
+                \'PERL_LOCAL_LIB_ROOT',
+                $path,
               ),
       PERL_MB_OPT => "--install_base ${path}",
       PERL_MM_OPT => "INSTALL_BASE=${path}",
-      PERL5LIB => join($Config{path_sep},
-                    $class->install_base_arch_path($path),
-                    $class->install_base_perl_path($path),
-                    (($ENV{PERL5LIB}||()) ?
-                      ($interpolate == INTERPOLATE_ENV
-                        ? ($ENV{PERL5LIB})
-                        : (($^O ne 'MSWin32') ? '$PERL5LIB' : '%PERL5LIB%' ))
-                      : ())
-                  ),
-      PATH => join($Config{path_sep},
-                $class->install_base_bin_path($path),
-                ($interpolate == INTERPOLATE_ENV
-                  ? ($ENV{PATH}||())
-                  : (($^O ne 'MSWin32') ? '$PATH' : '%PATH%' ))
-               ),
+      PERL5LIB =>
+              _env_list_value(
+                { interpolate => $interpolate, exists => 0, empty => '' },
+                $class->install_base_perl_path($path),
+                \'PERL5LIB',
+              ),
+      PATH => _env_list_value(
+                { interpolate => $interpolate, exists => 0, empty => '' },
+          $class->install_base_bin_path($path),
+                \'PATH',
+              ),
     )
   }
   
@@ -7958,7 +8145,7 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
     my ($class) = @_;
   
     return () unless defined $ENV{PERL_LOCAL_LIB_ROOT};
-    return split /\Q$Config{path_sep}/, $ENV{PERL_LOCAL_LIB_ROOT};
+    return grep { $_ ne '' } split /\Q$Config{path_sep}/, $ENV{PERL_LOCAL_LIB_ROOT};
   }
   
   sub build_deactivate_environment_vars_for {
@@ -7971,40 +8158,42 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
       return ();
     }
   
-    my @new_ll_root = grep { $_ ne $path } @active_lls;
-    my @new_perl5lib = grep {
-      $_ ne $class->install_base_arch_path($path) &&
-      $_ ne $class->install_base_perl_path($path)
-    } split /\Q$Config{path_sep}/, $ENV{PERL5LIB};
+    my $perl_path = $class->install_base_perl_path($path);
+    my $arch_path = $class->install_base_arch_path($path);
+    my $bin_path = $class->install_base_bin_path($path);
+  
   
     my %env = (
-      PERL_LOCAL_LIB_ROOT => (@new_ll_root ?
-        join($Config{path_sep}, @new_ll_root) : undef
+      PERL_LOCAL_LIB_ROOT => _env_list_value(
+        {
+          exists => 0,
+        },
+        grep { $_ ne $path } @active_lls
       ),
-      PERL5LIB => (@new_perl5lib ?
-        join($Config{path_sep}, @new_perl5lib) : undef
+      PERL5LIB => _env_list_value(
+        {
+          exists => 0,
+          filter => sub {
+            $_ ne $perl_path && $_ ne $arch_path
+          },
+        },
+        \'PERL5LIB',
       ),
-      PATH => join($Config{path_sep},
-        grep { $_ ne $class->install_base_bin_path($path) }
-        split /\Q$Config{path_sep}/, $ENV{PATH}
+      PATH => _env_list_value(
+        {
+          exists => 0,
+          filter => sub { $_ ne $bin_path },
+        },
+        \'PATH',
       ),
     );
   
     # If removing ourselves from the "top of the stack", set install paths to
     # correspond with the new top of stack.
     if ($active_lls[-1] eq $path) {
-      if (@active_lls > 1) {
-        my $new_top = $active_lls[-2];
-        %env = (%env,
-          PERL_MB_OPT => "--install_base ${new_top}",
-          PERL_MM_OPT => "INSTALL_BASE=${new_top}",
-        );
-      } else {
-        %env = (%env,
-          PERL_MB_OPT => undef,
-          PERL_MM_OPT => undef,
-        );
-      }
+      my $new_top = $active_lls[-2];
+      $env{PERL_MB_OPT} = defined($new_top) ? "--install_base ${new_top}" : undef;
+      $env{PERL_MM_OPT} = defined($new_top) ? "INSTALL_BASE=${new_top}" : undef;
     }
   
     return %env;
@@ -8015,28 +8204,36 @@ $fatpacked{"local/lib.pm"} = <<'LOCAL_LIB';
   
     my @active_lls = $class->active_paths;
   
-    my @new_perl5lib = split /\Q$Config{path_sep}/, $ENV{PERL5LIB};
-    my @new_path = split /\Q$Config{path_sep}/, $ENV{PATH};
-  
-    for my $path (@active_lls) {
-      @new_perl5lib = grep {
-        $_ ne $class->install_base_arch_path($path) &&
-        $_ ne $class->install_base_perl_path($path)
-      } @new_perl5lib;
-  
-      @new_path = grep {
-        $_ ne $class->install_base_bin_path($path)
-      } @new_path;
-    }
+    my %perl_paths = map { (
+        $class->install_base_perl_path($_) => 1,
+        $class->install_base_arch_path($_) => 1
+      ) } @active_lls;
+    my %bin_paths = map { (
+        $class->install_base_bin_path($_) => 1,
+      ) } @active_lls;
   
     my %env = (
       PERL_LOCAL_LIB_ROOT => undef,
       PERL_MM_OPT => undef,
       PERL_MB_OPT => undef,
-      PERL5LIB => (@new_perl5lib ?
-        join($Config{path_sep}, @new_perl5lib) : undef
+      PERL5LIB => _env_list_value(
+        {
+          exists => 0,
+          filter => sub {
+            ! scalar grep { exists $perl_paths{$_} } $_[0]
+          },
+        },
+        \'PERL5LIB'
       ),
-      PATH => join($Config{path_sep}, @new_path),
+      PATH => _env_list_value(
+        {
+          exists => 0,
+          filter => sub {
+            ! scalar grep { exists $bin_paths{$_} } $_[0]
+          },
+        },
+        \'PATH'
+      ),
     );
   
     return %env;

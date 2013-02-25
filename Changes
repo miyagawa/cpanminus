@@ -1,5 +1,15 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.59_13 Mon Feb 25 12:06:44 PST 2013
+   [New Features]
+      - Support @branch (or commit or tag) in Git URLs so that you can specify a
+        commitish to check out before installing from Git repo
+      - Search for BackPAN by default when specific version (or range) is requested
+
+   [Improvements]
+      - Detect .zip root directory more reliably (frioux)
+      - Fixed pathname of the CPAN distribution given as a URL (xaicron)
+
 1.59_12 Wed Feb 13 18:13:49 PST 2013
    [Internals]
       - Switch to metacpan_script for the new MetaCPAN query
