@@ -2413,7 +2413,7 @@ sub init_tools {
                 or return undef;
 
             chomp $root;
-            $root =~ s{^\s+testing:\s+(.+?)/\s+OK$}{$1};
+            $root =~ s{^\s+testing:\s+([^/]+)/.*?\s+OK$}{$1};
 
             system "$unzip $opt $zipfile";
             return $root if -d $root;
