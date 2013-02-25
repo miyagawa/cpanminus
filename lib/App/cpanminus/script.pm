@@ -460,7 +460,8 @@ sub maturity_filter {
 
     # TODO: might be better dev release can be enabled per dist
     if ($self->{dev_release}) {
-        return;
+        # backpan'ed dev release are considered "cancelled"
+        return { not => { term => { status => 'backpan' } } };
     } else {
         return { term => { maturity => 'released' } };
     }
@@ -477,7 +478,8 @@ sub search_metacpan {
 
     my $query = { filtered => {
         filter => { and => [
-            { not => { term => { status => 'backpan' } } },
+            # TODO: option to NOT fallback to backpan
+            # { not => { term => { status => 'backpan' } } },
             $self->maturity_filter($module, $version)
         ] },
         query => { nested => {
@@ -524,7 +526,7 @@ sub search_metacpan {
         filter => {
             term => { 'release.name' => $release },
         },
-        fields => [ 'download_url', 'stat' ],
+        fields => [ 'download_url', 'stat', 'status' ],
     });
 
     my $dist_json = $self->get($dist_uri);
@@ -536,8 +538,10 @@ sub search_metacpan {
     if ($dist_meta && $dist_meta->{download_url}) {
         (my $distfile = $dist_meta->{download_url}) =~ s!.+/authors/id/!!;
         local $self->{mirrors} = $self->{mirrors};
-        if ($dist_meta->{stat}->{mtime} > time()-24*60*60) {
-            $self->{mirrors} = ['http://cpan.metacpan.org'];
+        if ($dist_meta->{status} eq 'backpan') {
+            $self->{mirrors} = [ 'http://backpan.perl.org' ];
+        } elsif ($dist_meta->{stat}{mtime} > time()-24*60*60) {
+            $self->{mirrors} = [ 'http://cpan.metacpan.org' ];
         }
         return $self->cpan_module($module, $distfile, $module_version);
     }
