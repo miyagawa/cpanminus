@@ -1,5 +1,14 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.6000  Tue Feb 26 09:50:57 PST 2013
+   [Major Changes since 1.5]
+      - Support fixed version search with @version and ~"version range"
+      - MetaCPAN and BackPAN search using MetaCPAN API
+      - --dev to install developer releases
+      - Install via git:// URL (with @branch, tag or commit)
+      - Better MYMETA version range and cpanfile support
+      - No fallback to search.cpan.org, which means you can't install from command names
+
 1.59_13 Mon Feb 25 12:06:44 PST 2013
    [New Features]
       - Support @branch (or commit or tag) in Git URLs so that you can specify a
