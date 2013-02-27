@@ -10,12 +10,12 @@ sub maturity {
 
     my $s = App::cpanminus::script->new;
     $s->{dev_release} = $dev;
-    $s->maturity_filter($module, $version);
+    [ $s->maturity_filter($module, $version) ];
 }
 
 my @tests = (
     [ 'Test::More' ] => [ NOT_BACKPAN, RELEASED ],
-    [ 'Test::More', '==1.0' ] => [ RELEASED ],
+    [ 'Test::More', '==1.0' ] => [ ],
     [ 'Test::More', undef, 1 ] => [ NOT_BACKPAN ],
     [ 'Test::More', '< 2.0' ] => [ RELEASED ],
     [ 'Test::More', '< 2.0', 1 ] => [ NOT_BACKPAN ],

@@ -468,11 +468,11 @@ sub maturity_filter {
         push @filters, { not => { term => { status => 'backpan' } } };
     }
 
-    if (!$self->{dev_release}) {
+    unless ($self->{dev_release} or $version =~ /==/) {
         push @filters, { term => { maturity => 'released' } };
     }
 
-    return \@filters;
+    return @filters;
 }
 
 sub search_metacpan {
@@ -484,8 +484,10 @@ sub search_metacpan {
 
     my $metacpan_uri = 'http://api.metacpan.org/v0';
 
+    my @filter = $self->maturity_filter($module, $version);
+
     my $query = { filtered => {
-        filter => { and => $self->maturity_filter($module, $version) },
+        (@filter ? (filter => { and => \@filter }) : ()),
         query => { nested => {
             score_mode => 'max',
             path => 'module',

@@ -22,6 +22,9 @@ use xt::Run;
     run '--skip-installed', 'Try::Tiny@0.11';
     like last_build_log, qr/Searching Try::Tiny \(== 0.11\) on metacpan/;
     unlike last_build_log, qr/Try::Tiny is up to date/;
+
+    run 'Plack@1.0017';
+    like last_build_log, qr/Plack-1.0017-TRIAL/, 'should work with TRIAL release';
 }
 
 done_testing;
