@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.6001  Tue Feb 26 16:57:04 PST 2013
+   [Improvements]
+      - Enable developer release if a specific version is requested with == or @. #203
+
 1.6000  Tue Feb 26 09:50:57 PST 2013
    [Major Changes since 1.5]
       - Support fixed version search with @version and ~"version range"
