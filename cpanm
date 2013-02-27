@@ -18,7 +18,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.6001";
+  our $VERSION = "1.6002";
   
   =head1 NAME
   
@@ -1996,7 +1996,12 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   
       $dist->{meta} ||= {};
   
-      push @config_deps, %{$dist->{meta}{configure_requires} || {}};
+      if ( $dist->{meta}->{prereqs} ) {
+          push @config_deps, %{$dist->{meta}{prereqs}{configure}{requires} || {}};
+      }
+      else {
+          push @config_deps, %{$dist->{meta}{configure_requires} || {}};
+      }
   
       my $target = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $dist->{dir};
   

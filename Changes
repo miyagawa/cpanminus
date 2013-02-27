@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.6002  Wed Feb 27 12:12:09 PST 2013
+   [Improvements]
+      - Support parsing configure dependencies from META.json in spec 2 (kazeburo)
+
 1.6001  Tue Feb 26 16:57:04 PST 2013
    [Improvements]
       - Enable developer release if a specific version is requested with == or @. #203
