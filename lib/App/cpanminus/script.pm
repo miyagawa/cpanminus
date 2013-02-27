@@ -1688,7 +1688,12 @@ sub build_stuff {
 
     $dist->{meta} ||= {};
 
-    push @config_deps, %{$dist->{meta}{configure_requires} || {}};
+    if ( $dist->{meta}->{prereqs} ) {
+        push @config_deps, %{$dist->{meta}{prereqs}{configure}{requires} || {}};
+    }
+    else {
+        push @config_deps, %{$dist->{meta}{configure_requires} || {}};
+    }
 
     my $target = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $dist->{dir};
 
