@@ -79,6 +79,7 @@ sub new {
         pod2man => 1,
         installed_dists => 0,
         showdeps => 0,
+        show_only_missing => 0,
         scandeps => 0,
         scandeps_tree => [],
         format   => 'tree',
@@ -141,6 +142,7 @@ sub parse_options {
         'man-pages!' => \$self->{pod2man},
         'scandeps'   => \$self->{scandeps},
         'showdeps'   => sub { $self->{showdeps} = 1; $self->{skip_installed} = 0 },
+        'show-only-missing'   => \$self->{show_only_missing},
         'format=s'   => \$self->{format},
         'save-dists=s' => sub {
             $self->{save_dists} = $self->maybe_abs($_[1]);
@@ -1714,6 +1716,10 @@ sub build_stuff {
         my %rootdeps = (@config_deps, @deps); # merge
         for my $mod (keys %rootdeps) {
             my $ver = $rootdeps{$mod};
+            if ($self->{show_only_missing}) {
+                my($ok, $local) = $self->check_module($mod, $ver || 0);
+                next if $ok;
+            }
             print $mod, ($ver ? "~$ver" : ""), "\n";
         }
         return 1;
