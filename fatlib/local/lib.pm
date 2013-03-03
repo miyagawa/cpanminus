@@ -8,12 +8,17 @@ use 5.008001; # probably works with earlier versions but I'm not supporting them
 
 use File::Spec ();
 use File::Path ();
-use Carp ();
 use Config;
 
-our $VERSION = '1.008001'; # 1.8.1
+our $VERSION = '1.008009'; # 1.8.9
 
-our @KNOWN_FLAGS = qw(--self-contained);
+our @KNOWN_FLAGS = qw(--self-contained --deactivate --deactivate-all);
+
+sub DEACTIVATE_ONE () { 1 }
+sub DEACTIVATE_ALL () { 2 }
+
+sub INTERPOLATE_ENV () { 1 }
+sub LITERAL_ENV     () { 0 }
 
 sub import {
   my ($class, @args) = @_;
@@ -51,8 +56,16 @@ DEATH
     die "FATAL: The local::lib --self-contained flag has never worked reliably and the original author, Mark Stosberg, was unable or unwilling to maintain it. As such, this flag has been removed from the local::lib codebase in order to prevent misunderstandings and potentially broken builds. The local::lib authors recommend that you look at the lib::core::only module shipped with this distribution in order to create a more robust environment that is equivalent to what --self-contained provided (although quite possibly not what you originally thought it provided due to the poor quality of the documentation, for which we apologise).\n";
   }
 
+  my $deactivating = 0;
+  if ($arg_store{deactivate}) {
+    $deactivating = DEACTIVATE_ONE;
+  }
+  if ($arg_store{'deactivate-all'}) {
+    $deactivating = DEACTIVATE_ALL;
+  }
+
   $arg_store{path} = $class->resolve_path($arg_store{path});
-  $class->setup_local_lib_for($arg_store{path});
+  $class->setup_local_lib_for($arg_store{path}, $deactivating);
 
   for (@INC) { # Untaint @INC
     next if ref; # Skip entry if it is an ARRAY, CODE, blessed, etc.
@@ -128,6 +141,7 @@ sub resolve_home_path {
     }
   };
   unless (defined $homedir) {
+    require Carp;
     Carp::croak(
       "Couldn't resolve homedir for "
       .(defined $user ? $user : 'current user')
@@ -144,14 +158,47 @@ sub resolve_relative_path {
 }
 
 sub setup_local_lib_for {
-  my ($class, $path) = @_;
-  $path = $class->ensure_dir_structure_for($path);
+  my ($class, $path, $deactivating) = @_;
+
+  my $interpolate = LITERAL_ENV;
+  my @active_lls = $class->active_paths;
+
+  $class->ensure_dir_structure_for($path);
+
+  # On Win32 directories often contain spaces. But some parts of the CPAN
+  # toolchain don't like that. To avoid this, GetShortPathName() gives us
+  # an alternate representation that has none.
+  # This only works if the directory already exists.
+  $path = Win32::GetShortPathName($path) if $^O eq 'MSWin32';
+
+  if (! $deactivating) {
+    if (@active_lls && $active_lls[-1] eq $path) {
+      exit 0 if $0 eq '-';
+      return; # Asked to add what's already at the top of the stack
+    } elsif (grep { $_ eq $path} @active_lls) {
+      # Asked to add a dir that's lower in the stack -- so we remove it from
+      # where it is, and then add it back at the top.
+      $class->setup_env_hash_for($path, DEACTIVATE_ONE);
+      # Which means we can no longer output "PERL5LIB=...:$PERL5LIB" stuff
+      # anymore because we're taking something *out*.
+      $interpolate = INTERPOLATE_ENV;
+    }
+  }
+
   if ($0 eq '-') {
-    $class->print_environment_vars_for($path);
+    $class->print_environment_vars_for($path, $deactivating, $interpolate);
     exit 0;
   } else {
-    $class->setup_env_hash_for($path);
-    @INC = _uniq(split($Config{path_sep}, $ENV{PERL5LIB}), @INC);
+    $class->setup_env_hash_for($path, $deactivating);
+    my $arch_dir = $Config{archname};
+    @INC = _uniq(
+  (
+      # Inject $path/$archname for each path in PERL5LIB
+      map { ( File::Spec->catdir($_, $arch_dir), $_ ) }
+      split($Config{path_sep}, $ENV{PERL5LIB})
+  ),
+  @INC
+    );
   }
 }
 
@@ -176,15 +223,8 @@ sub ensure_dir_structure_for {
     warn "Attempting to create directory ${path}\n";
   }
   File::Path::mkpath($path);
-  # Need to have the path exist to make a short name for it, so
-  # converting to a short name here.
-  $path = Win32::GetShortPathName($path) if $^O eq 'MSWin32';
-
-  return $path;
+  return
 }
-
-sub INTERPOLATE_ENV () { 1 }
-sub LITERAL_ENV     () { 0 }
 
 sub guess_shelltype {
   my $shellbin = 'sh';
@@ -222,13 +262,13 @@ sub guess_shelltype {
 }
 
 sub print_environment_vars_for {
-  my ($class, $path) = @_;
-  print $class->environment_vars_string_for($path);
+  my ($class, $path, $deactivating, $interpolate) = @_;
+  print $class->environment_vars_string_for($path, $deactivating, $interpolate);
 }
 
 sub environment_vars_string_for {
-  my ($class, $path) = @_;
-  my @envs = $class->build_environment_vars_for($path, LITERAL_ENV);
+  my ($class, $path, $deactivating, $interpolate) = @_;
+  my @envs = $class->build_environment_vars_for($path, $deactivating, $interpolate);
   my $out = '';
 
   # rather basic csh detection, goes on the assumption that something won't
@@ -241,7 +281,7 @@ sub environment_vars_string_for {
 
   while (@envs) {
     my ($name, $value) = (shift(@envs), shift(@envs));
-    $value =~ s/(\\")/\\$1/g;
+    $value =~ s/(\\")/\\$1/g if defined $value;
     $out .= $class->${\"build_${shelltype}_env_declaration"}($name, $value);
   }
   return $out;
@@ -253,49 +293,203 @@ sub environment_vars_string_for {
 sub build_bourne_env_declaration {
   my $class = shift;
   my($name, $value) = @_;
-  return qq{export ${name}="${value}"\n};
+  return defined($value) ? qq{export ${name}="${value}";\n} : qq{unset ${name};\n};
 }
 
 sub build_csh_env_declaration {
   my $class = shift;
   my($name, $value) = @_;
-  return qq{setenv ${name} "${value}"\n};
+  return defined($value) ? qq{setenv ${name} "${value}"\n} : qq{unsetenv ${name}\n};
 }
 
 sub build_win32_env_declaration {
   my $class = shift;
   my($name, $value) = @_;
-  return qq{set ${name}=${value}\n};
+  return defined($value) ? qq{set ${name}=${value}\n} : qq{set ${name}=\n};
 }
 
 sub setup_env_hash_for {
-  my ($class, $path) = @_;
-  my %envs = $class->build_environment_vars_for($path, INTERPOLATE_ENV);
+  my ($class, $path, $deactivating) = @_;
+  my %envs = $class->build_environment_vars_for($path, $deactivating, INTERPOLATE_ENV);
   @ENV{keys %envs} = values %envs;
 }
 
 sub build_environment_vars_for {
+  my ($class, $path, $deactivating, $interpolate) = @_;
+
+  if ($deactivating == DEACTIVATE_ONE) {
+    return $class->build_deactivate_environment_vars_for($path, $interpolate);
+  } elsif ($deactivating == DEACTIVATE_ALL) {
+    return $class->build_deact_all_environment_vars_for($path, $interpolate);
+  } else {
+    return $class->build_activate_environment_vars_for($path, $interpolate);
+  }
+}
+
+# Build an environment value for a variable like PATH from a list of paths.
+# References to existing variables are given as references to the variable name.
+# Duplicates are removed.
+#
+# options:
+# - interpolate: INTERPOLATE_ENV/LITERAL_ENV
+# - exists: paths are included only if they exist (default: interpolate == INTERPOLATE_ENV)
+# - filter: function to apply to each path do decide if it must be included
+# - empty: the value to return in the case of empty value
+my %ENV_LIST_VALUE_DEFAULTS = (
+    interpolate => INTERPOLATE_ENV,
+    exists => undef,
+    filter => sub { 1 },
+    empty => undef,
+);
+sub _env_list_value {
+  my $options = shift;
+  die(sprintf "unknown option '$_' at %s line %u\n", (caller)[1..2])
+    for grep { !exists $ENV_LIST_VALUE_DEFAULTS{$_} } keys %$options;
+  my %options = (%ENV_LIST_VALUE_DEFAULTS, %{ $options });
+  $options{exists} = $options{interpolate} == INTERPOLATE_ENV
+    unless defined $options{exists};
+
+  my %seen;
+
+  my $value = join($Config{path_sep}, map {
+      ref $_ ? ($^O eq 'MSWin32' ? "%${$_}%" : "\$${$_}") : $_
+    } grep {
+      ref $_ || (defined $_
+                 && length($_) > 0
+                 && !$seen{$_}++
+                 && $options{filter}->($_)
+                 && (!$options{exists} || -e $_))
+    } map {
+      if (ref $_ eq 'SCALAR' && $options{interpolate} == INTERPOLATE_ENV) {
+        exists $ENV{${$_}} ? (split /\Q$Config{path_sep}/, $ENV{${$_}}) : ()
+      } else {
+        $_
+      }
+    } @_);
+  return length($value) ? $value : $options{empty};
+}
+
+sub build_activate_environment_vars_for {
   my ($class, $path, $interpolate) = @_;
   return (
-    PERL_LOCAL_LIB_ROOT => $path,
+    PERL_LOCAL_LIB_ROOT =>
+            _env_list_value(
+              { interpolate => $interpolate, exists => 0, empty => '' },
+              \'PERL_LOCAL_LIB_ROOT',
+              $path,
+            ),
     PERL_MB_OPT => "--install_base ${path}",
     PERL_MM_OPT => "INSTALL_BASE=${path}",
-    PERL5LIB => join($Config{path_sep},
-                  $class->install_base_arch_path($path),
-                  $class->install_base_perl_path($path),
-                  (($ENV{PERL5LIB}||()) ?
-                    ($interpolate == INTERPOLATE_ENV
-                      ? ($ENV{PERL5LIB})
-                      : (($^O ne 'MSWin32') ? '$PERL5LIB' : '%PERL5LIB%' ))
-                    : ())
-                ),
-    PATH => join($Config{path_sep},
-              $class->install_base_bin_path($path),
-              ($interpolate == INTERPOLATE_ENV
-                ? ($ENV{PATH}||())
-                : (($^O ne 'MSWin32') ? '$PATH' : '%PATH%' ))
-             ),
+    PERL5LIB =>
+            _env_list_value(
+              { interpolate => $interpolate, exists => 0, empty => '' },
+              $class->install_base_perl_path($path),
+              \'PERL5LIB',
+            ),
+    PATH => _env_list_value(
+              { interpolate => $interpolate, exists => 0, empty => '' },
+        $class->install_base_bin_path($path),
+              \'PATH',
+            ),
   )
+}
+
+sub active_paths {
+  my ($class) = @_;
+
+  return () unless defined $ENV{PERL_LOCAL_LIB_ROOT};
+  return grep { $_ ne '' } split /\Q$Config{path_sep}/, $ENV{PERL_LOCAL_LIB_ROOT};
+}
+
+sub build_deactivate_environment_vars_for {
+  my ($class, $path, $interpolate) = @_;
+
+  my @active_lls = $class->active_paths;
+
+  if (!grep { $_ eq $path } @active_lls) {
+    warn "Tried to deactivate inactive local::lib '$path'\n";
+    return ();
+  }
+
+  my $perl_path = $class->install_base_perl_path($path);
+  my $arch_path = $class->install_base_arch_path($path);
+  my $bin_path = $class->install_base_bin_path($path);
+
+
+  my %env = (
+    PERL_LOCAL_LIB_ROOT => _env_list_value(
+      {
+        exists => 0,
+      },
+      grep { $_ ne $path } @active_lls
+    ),
+    PERL5LIB => _env_list_value(
+      {
+        exists => 0,
+        filter => sub {
+          $_ ne $perl_path && $_ ne $arch_path
+        },
+      },
+      \'PERL5LIB',
+    ),
+    PATH => _env_list_value(
+      {
+        exists => 0,
+        filter => sub { $_ ne $bin_path },
+      },
+      \'PATH',
+    ),
+  );
+
+  # If removing ourselves from the "top of the stack", set install paths to
+  # correspond with the new top of stack.
+  if ($active_lls[-1] eq $path) {
+    my $new_top = $active_lls[-2];
+    $env{PERL_MB_OPT} = defined($new_top) ? "--install_base ${new_top}" : undef;
+    $env{PERL_MM_OPT} = defined($new_top) ? "INSTALL_BASE=${new_top}" : undef;
+  }
+
+  return %env;
+}
+
+sub build_deact_all_environment_vars_for {
+  my ($class, $path, $interpolate) = @_;
+
+  my @active_lls = $class->active_paths;
+
+  my %perl_paths = map { (
+      $class->install_base_perl_path($_) => 1,
+      $class->install_base_arch_path($_) => 1
+    ) } @active_lls;
+  my %bin_paths = map { (
+      $class->install_base_bin_path($_) => 1,
+    ) } @active_lls;
+
+  my %env = (
+    PERL_LOCAL_LIB_ROOT => undef,
+    PERL_MM_OPT => undef,
+    PERL_MB_OPT => undef,
+    PERL5LIB => _env_list_value(
+      {
+        exists => 0,
+        filter => sub {
+          ! scalar grep { exists $perl_paths{$_} } $_[0]
+        },
+      },
+      \'PERL5LIB'
+    ),
+    PATH => _env_list_value(
+      {
+        exists => 0,
+        filter => sub {
+          ! scalar grep { exists $bin_paths{$_} } $_[0]
+        },
+      },
+      \'PATH'
+    ),
+  );
+
+  return %env;
 }
 
 1;

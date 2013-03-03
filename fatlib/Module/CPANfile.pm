@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use Cwd;
 
-our $VERSION = '0.9007';
+our $VERSION = '0.9010';
 
 sub new {
     my($class, $file) = @_;
@@ -36,6 +36,22 @@ sub prereq {
 sub prereq_specs {
     my $self = shift;
     $self->{result}{spec};
+}
+
+sub merge_meta {
+    my($self, $file, $version) = @_;
+
+    require CPAN::Meta;
+
+    $version ||= $file =~ /\.yml$/ ? '1.4' : '2';
+
+    my $prereq = $self->prereqs;
+
+    my $meta = CPAN::Meta->load_file($file);
+    my $prereqs_hash = $prereq->with_merged_prereqs($meta->effective_prereqs)->as_string_hash;
+    my $struct = { %{$meta->as_struct}, prereqs => $prereqs_hash };
+
+    CPAN::Meta->new($struct)->save($file, { version => $version });
 }
 
 package Module::CPANfile::Environment;
@@ -156,31 +172,5 @@ package Module::CPANfile;
 1;
 
 __END__
-
-=head1 NAME
-
-Module::CPANfile - Parse cpanfile
-
-=head1 SYNOPSIS
-
-  use Module::CPANfile;
-
-  my $file = Module::CPANfile->load("cpanfile");
-  my $prereqs = $file->prereqs; # CPAN::Meta::Prereqs object
-
-=head1 DESCRIPTION
-
-Module::CPANfile is a tool to handle L<cpanfile> format to load application
-specific dependencies, not just for CPAN distributions.
-
-=head1 AUTHOR
-
-Tatsuhiko Miyagawa
-
-=head1 SEE ALSO
-
-L<cpanfile>, L<CPAN::Meta>, L<CPAN::Meta::Spec>
-
-=cut
 
 

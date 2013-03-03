@@ -2,11 +2,13 @@ package App::cpanminus::script;
 use strict;
 use Config;
 use Cwd ();
+use App::cpanminus;
 use File::Basename ();
 use File::Find ();
 use File::Path ();
 use File::Spec ();
 use File::Copy ();
+use File::Temp ();
 use Getopt::Long ();
 use Parse::CPAN::Meta;
 use Symbol ();
@@ -14,15 +16,37 @@ use Symbol ();
 use constant WIN32 => $^O eq 'MSWin32';
 use constant SUNOS => $^O eq 'solaris';
 
-our $VERSION = "1.5018";
+our $VERSION = $App::cpanminus::VERSION;
+
+if ($INC{"App/FatPacker/Trace.pm"}) {
+    require JSON::PP;
+    require CPAN::Meta::YAML;
+    require version::vpp;
+    require File::pushd;
+}
 
 my $quote = WIN32 ? q/"/ : q/'/;
+
+sub determine_home {
+    my $class = shift;
+
+    my $homedir = $ENV{HOME}
+      || eval { require File::HomeDir; File::HomeDir->my_home }
+      || join('', @ENV{qw(HOMEDRIVE HOMEPATH)}); # Win32
+
+    if (WIN32) {
+        require Win32; # no fatpack
+        $homedir = Win32::GetShortPathName($homedir);
+    }
+
+    return "$homedir/.cpanm";
+}
 
 sub new {
     my $class = shift;
 
     bless {
-        home => "$ENV{HOME}/.cpanm",
+        home => $class->determine_home,
         cmd  => 'install',
         seen => {},
         notest => undef,
@@ -60,6 +84,7 @@ sub new {
         format   => 'tree',
         save_dists => undef,
         skip_configure => 0,
+        verify => 0,
         @_,
     }, $class;
 }
@@ -83,6 +108,7 @@ sub parse_options {
         'test-only' => sub { $self->{notest} = 0; $self->{skip_installed} = 0; $self->{test_only} = 1 },
         'S|sudo!'   => \$self->{sudo},
         'v|verbose' => sub { $self->{verbose} = $self->{interactive} = 1 },
+        'verify!'   => \$self->{verify},
         'q|quiet!'  => \$self->{quiet},
         'h|help'    => sub { $self->{action} = 'show_help' },
         'V|version' => sub { $self->{action} = 'show_version' },
@@ -95,7 +121,7 @@ sub parse_options {
         },
         'mirror=s@' => $self->{mirrors},
         'mirror-only!' => \$self->{mirror_only},
-        'mirror-index=s'  => sub { $self->{mirror_index} = $_[1]; $self->{mirror_only} = 1 },
+        'mirror-index=s'  => \$self->{mirror_index},
         'cascade-search!' => \$self->{cascade_search},
         'prompt!'   => \$self->{prompt},
         'installdeps' => \$self->{installdeps},
@@ -120,7 +146,8 @@ sub parse_options {
             $self->{save_dists} = $self->maybe_abs($_[1]);
         },
         'skip-configure!' => \$self->{skip_configure},
-        'metacpan'   => \$self->{metacpan},
+        'dev!'       => \$self->{dev_release},
+        'metacpan!'  => \$self->{metacpan},
     );
 
     if (!@ARGV && $0 ne '-' && !-t STDIN){ # e.g. # cpanm < author/requires.cpanm
@@ -170,11 +197,39 @@ sub check_libs {
     }
 }
 
+sub setup_verify {
+    my $self = shift;
+
+    my $has_modules = eval { require Module::Signature; require Digest::SHA; 1 };
+    $self->{cpansign} = $self->which('cpansign');
+
+    unless ($has_modules && $self->{cpansign}) {
+        warn "WARNING: Module::Signature and Digest::SHA is required for distribution verifications.\n";
+        $self->{verify} = 0;
+    }
+}
+
+sub parse_module_args {
+    my($self, $module) = @_;
+
+    # Plack@1.2 -> Plack~"==1.2"
+    # BUT don't expand @ in git URLs
+    $module =~ s/^([A-Za-z0-9_:]+)@([v\d\._]+)$/$1~== $2/;
+
+    # Plack~1.20, DBI~"> 1.0, <= 2.0"
+    if ($module =~ /\~[v\d\._,\!<>= ]+$/) {
+        return split /\~/, $module, 2;
+    } else {
+        return $module, undef;
+    }
+}
+
 sub doit {
     my $self = shift;
 
     $self->setup_home;
     $self->init_tools;
+    $self->setup_verify if $self->{verify};
 
     if (my $action = $self->{action}) {
         $self->$action() and return 1;
@@ -194,8 +249,8 @@ sub doit {
             $module = join '::', grep { $_ } File::Spec->splitdir($dirs), $file;
         }
 
-        ($module, my $version) = split /\~/, $module, 2 if $module =~ /\~[v\d\._]+$/;
-        if ($self->{skip_satisfied} or defined $version) {
+        ($module, my $version) = $self->parse_module_args($module);
+        if ($self->{skip_satisfied}) {
             $self->check_libs;
             my($ok, $local) = $self->check_module($module, $version || 0);
             if ($ok) {
@@ -221,6 +276,13 @@ sub doit {
     if ($self->{scandeps}) {
         $self->dump_scandeps();
     }
+    # Workaround for older File::Temp's
+    # where creating a tempdir with an implicit $PWD
+    # causes tempdir non-cleanup if $PWD changes
+    # as paths are stored internally without being resolved
+    # absolutely.
+    # https://rt.cpan.org/Public/Bug/Display.html?id=44924
+    $self->chdir($cwd);
 
     return !@fail;
 }
@@ -312,7 +374,7 @@ sub search_mirror_index_file {
     open my $fh, '<', $file or return;
     my $found;
     while (<$fh>) {
-        if (m!^\Q$module\E\s+([\w\.]+)\s+(.*)!m) {
+        if (m!^\Q$module\E\s+([\w\.]+)\s+(\S*)!m) {
             $found = $self->cpan_module($module, $2, $1);
             last;
         }
@@ -321,14 +383,207 @@ sub search_mirror_index_file {
     return $found unless $self->{cascade_search};
 
     if ($found) {
-        if (!$version or
-            version->new($found->{version} || 0) >= version->new($version)) {
+        if ($self->satisfy_version($module, $found->{module_version}, $version)) {
             return $found;
         } else {
-            $self->chat("Found $module version $found->{version} < $version.\n");
+            $self->chat("Found $module $found->{module_version} which doesn't satisfy $version.\n");
         }
     }
 
+    return;
+}
+
+sub with_version_range {
+    my($self, $version) = @_;
+    defined($version) && $version =~ /[<>=]/;
+}
+
+sub encode_json {
+    my($self, $data) = @_;
+    require JSON::PP;
+
+    my $json = JSON::PP::encode_json($data);
+    $json =~ s/([^a-zA-Z0-9_\-.])/uc sprintf("%%%02x",ord($1))/eg;
+    $json;
+}
+
+# TODO extract this as a module?
+sub version_to_query {
+    my($self, $module, $version) = @_;
+
+    require CPAN::Meta::Requirements;
+
+    my $requirements = CPAN::Meta::Requirements->new;
+    $requirements->add_string_requirement($module, $version || '0');
+
+    my $req = $requirements->requirements_for_module($module);
+
+    if ($req =~ s/^==\s*//) {
+        return {
+            term => { 'module.version' => $req },
+        };
+    } elsif ($req !~ /\s/) {
+        return {
+            range => { 'module.version_numified' => { 'gte' => $self->numify_ver($req) } },
+        };
+    } else {
+        my %ops = qw(< lt <= lte > gt >= gte);
+        my(%range, @exclusion);
+        my @requirements = split /,\s*/, $req;
+        for my $r (@requirements) {
+            if ($r =~ s/^([<>]=?)\s*//) {
+                $range{$ops{$1}} = $self->numify_ver($r);
+            } elsif ($r =~ s/\!=\s*//) {
+                push @exclusion, $self->numify_ver($r);
+            }
+        }
+
+        my @filters= (
+            { range => { 'module.version_numified' => \%range } },
+        );
+
+        if (@exclusion) {
+            push @filters, {
+                not => { or => [ map { +{ term => { 'module.version_numified' => $self->numify_ver($_) } } } @exclusion ] },
+            };
+        }
+
+        return @filters;
+    }
+}
+
+sub numify_ver {
+    my($self, $ver) = @_;
+    version->new($ver)->numify;
+}
+
+sub maturity_filter {
+    my($self, $module, $version) = @_;
+
+    my @filters;
+
+    # TODO: dev release should be enabled per dist
+    if (!$self->with_version_range($version) or $self->{dev_release}) {
+        # backpan'ed dev release are considered "cancelled"
+        push @filters, { not => { term => { status => 'backpan' } } };
+    }
+
+    unless ($self->{dev_release} or $version =~ /==/) {
+        push @filters, { term => { maturity => 'released' } };
+    }
+
+    return @filters;
+}
+
+sub search_metacpan {
+    my($self, $module, $version) = @_;
+
+    require JSON::PP;
+
+    $self->chat("Searching $module ($version) on metacpan ...\n");
+
+    my $metacpan_uri = 'http://api.metacpan.org/v0';
+
+    my @filter = $self->maturity_filter($module, $version);
+
+    my $query = { filtered => {
+        (@filter ? (filter => { and => \@filter }) : ()),
+        query => { nested => {
+            score_mode => 'max',
+            path => 'module',
+            query => { custom_score => {
+                metacpan_script => "score_version_numified",
+                query => { constant_score => {
+                    filter => { and => [
+                        { term => { 'module.authorized' => JSON::PP::true() } },
+                        { term => { 'module.indexed' => JSON::PP::true() } },
+                        { term => { 'module.name' => $module } },
+                        $self->version_to_query($module, $version),
+                    ] }
+                } },
+            } },
+        } },
+    } };
+
+    my $module_uri = "$metacpan_uri/file/_search?source=";
+    $module_uri .= $self->encode_json({
+        query => $query,
+        fields => [ 'release', 'module' ],
+    });
+
+    my($release, $module_version);
+
+    my $module_json = $self->get($module_uri);
+    my $module_meta = eval { JSON::PP::decode_json($module_json) };
+    my $match = $module_meta ? $module_meta->{hits}{hits}[0]{fields} : undef;
+    if ($match) {
+        $release = $match->{release};
+        my $module_matched = (grep { $_->{name} eq $module } @{$match->{module}})[0];
+        $module_version = $module_matched->{version};
+    }
+
+    unless ($release) {
+        $self->chat("! Could not find a release matching $module ($version) on MetaCPAN.\n");
+        return;
+    }
+
+    my $dist_uri = "$metacpan_uri/release/_search?source=";
+    $dist_uri .= $self->encode_json({
+        filter => {
+            term => { 'release.name' => $release },
+        },
+        fields => [ 'download_url', 'stat', 'status' ],
+    });
+
+    my $dist_json = $self->get($dist_uri);
+    my $dist_meta = eval { JSON::PP::decode_json($dist_json) };
+
+    if ($dist_meta) {
+        $dist_meta = $dist_meta->{hits}{hits}[0]{fields};
+    }
+    if ($dist_meta && $dist_meta->{download_url}) {
+        (my $distfile = $dist_meta->{download_url}) =~ s!.+/authors/id/!!;
+        local $self->{mirrors} = $self->{mirrors};
+        if ($dist_meta->{status} eq 'backpan') {
+            $self->{mirrors} = [ 'http://backpan.perl.org' ];
+        } elsif ($dist_meta->{stat}{mtime} > time()-24*60*60) {
+            $self->{mirrors} = [ 'http://cpan.metacpan.org' ];
+        }
+        return $self->cpan_module($module, $distfile, $module_version);
+    }
+
+    $self->diag_fail("Finding $module on metacpan failed.");
+    return;
+}
+
+sub search_database {
+    my($self, $module, $version) = @_;
+
+    my $found;
+    my $range = ($self->with_version_range($version) || $self->{dev_release});
+
+    if ($range or $self->{metacpan}) {
+        $found = $self->search_metacpan($module, $version)   and return $found;
+        $found = $self->search_cpanmetadb($module, $version) and return $found;
+    } else {
+        $found = $self->search_cpanmetadb($module, $version) and return $found;
+        $found = $self->search_metacpan($module, $version)   and return $found;
+    }
+}
+
+sub search_cpanmetadb {
+    my($self, $module, $version) = @_;
+
+    $self->chat("Searching $module on cpanmetadb ...\n");
+
+    my $uri  = "http://cpanmetadb.plackperl.org/v1.0/package/$module";
+    my $yaml = $self->get($uri);
+    my $meta = $self->parse_meta_string($yaml);
+    if ($meta && $meta->{distfile}) {
+        return $self->cpan_module($module, $meta->{distfile}, $meta->{version});
+    }
+
+    $self->diag_fail("Finding $module on cpanmetadb failed.");
     return;
 }
 
@@ -347,45 +602,8 @@ sub search_module {
     }
 
     unless ($self->{mirror_only}) {
-        if ($self->{metacpan}) {
-            require JSON::PP;
-            $self->chat("Searching $module on metacpan ...\n");
-            my $module_uri  = "http://api.metacpan.org/module/$module";
-            my $module_json = $self->get($module_uri);
-            my $module_meta = eval { JSON::PP::decode_json($module_json) };
-            if ($module_meta && $module_meta->{distribution}) {
-                my $dist_uri = "http://api.metacpan.org/release/$module_meta->{distribution}";
-                my $dist_json = $self->get($dist_uri);
-                my $dist_meta = eval { JSON::PP::decode_json($dist_json) };
-                if ($dist_meta && $dist_meta->{download_url}) {
-                    (my $distfile = $dist_meta->{download_url}) =~ s!.+/authors/id/!!;
-                    local $self->{mirrors} = $self->{mirrors};
-                    if ($dist_meta->{stat}->{mtime} > time()-24*60*60) {
-                        $self->{mirrors} = ['http://cpan.metacpan.org'];
-                    }
-                    return $self->cpan_module($module, $distfile, $dist_meta->{version});
-                }
-            }
-            $self->diag_fail("Finding $module on metacpan failed.");
-        }
-
-        $self->chat("Searching $module on cpanmetadb ...\n");
-        my $uri  = "http://cpanmetadb.plackperl.org/v1.0/package/$module";
-        my $yaml = $self->get($uri);
-        my $meta = $self->parse_meta_string($yaml);
-        if ($meta && $meta->{distfile}) {
-            return $self->cpan_module($module, $meta->{distfile}, $meta->{version});
-        }
-
-        $self->diag_fail("Finding $module on cpanmetadb failed.");
-
-        $self->chat("Searching $module on search.cpan.org ...\n");
-        my $uri  = "http://search.cpan.org/perldoc?$module";
-        my $html = $self->get($uri);
-        $html =~ m!<a href="/CPAN/authors/id/(.*?\.(?:tar\.gz|tgz|tar\.bz2|zip))">!
-            and return $self->cpan_module($module, $1);
-
-        $self->diag_fail("Finding $module on search.cpan.org failed.");
+        my $found = $self->search_database($module, $version);
+        return $found if $found;
     }
 
     MIRROR: for my $mirror (@{ $self->{mirrors} }) {
@@ -517,8 +735,11 @@ sub _writable {
 
 sub maybe_abs {
     my($self, $lib) = @_;
-    return $lib if $lib eq '_'; # special case: gh-113
-    $lib =~ /^[~\/]/ ? $lib : File::Spec->canonpath(Cwd::cwd . "/$lib");
+    if ($lib eq '_' or $lib =~ /^~/ or File::Spec->file_name_is_absolute($lib)) {
+        return $lib;
+    } else {
+        return File::Spec->canonpath(File::Spec->catdir(Cwd::cwd(), $lib));
+    }
 }
 
 sub bootstrap_local_lib {
@@ -943,10 +1164,17 @@ sub install_module {
     $self->setup_module_build_patch unless $self->{pod2man};
 
     if ($dist->{module}) {
-        my($ok, $local) = $self->check_module($dist->{module}, $dist->{module_version} || 0);
-        if ($self->{skip_installed} && $ok) {
-            $self->diag("$dist->{module} is up to date. ($local)\n", 1);
-            return 1;
+        unless ($self->with_version_range($version)) {
+            my($ok, $local) = $self->check_module($dist->{module}, $dist->{module_version} || 0);
+            if ($self->{skip_installed} && $ok) {
+                $self->diag("$dist->{module} is up to date. ($local)\n", 1);
+                return 1;
+            }
+        }
+
+        unless ($self->satisfy_version($dist->{module}, $dist->{module_version}, $version)) {
+            $self->diag("Found $dist->{module} $dist->{module_version} which doesn't satisfy $version.\n");
+            return;
         }
     }
 
@@ -1027,7 +1255,7 @@ sub fetch_module {
         $self->diag_ok;
         $dist->{local_path} = File::Spec->rel2abs($name);
 
-        my $dir = $self->unpack($file);
+        my $dir = $self->unpack($file, $uri, $dist);
         next unless $dir; # unpack failed
 
         if (my $save = $self->{save_dists}) {
@@ -1042,7 +1270,12 @@ sub fetch_module {
 }
 
 sub unpack {
-    my($self, $file) = @_;
+    my($self, $file, $uri, $dist) = @_;
+
+    if ($self->{verify}) {
+        $self->verify_archive($file, $uri, $dist) or return;
+    }
+
     $self->chat("Unpacking $file\n");
     my $dir = $file =~ /\.zip/i ? $self->unzip($file) : $self->untar($file);
     unless ($dir) {
@@ -1051,13 +1284,121 @@ sub unpack {
     return $dir;
 }
 
+sub verify_checksums_signature {
+    my($self, $chk_file) = @_;
+
+    require Module::Signature; # no fatpack
+
+    $self->chat("Verifying the signature of CHECKSUMS\n");
+
+    my $rv = eval {
+        local $SIG{__WARN__} = sub {}; # suppress warnings
+        my $v = Module::Signature::_verify($chk_file);
+        $v == Module::Signature::SIGNATURE_OK();
+    };
+    if ($rv) {
+        $self->chat("Verified OK!\n");
+    } else {
+        $self->diag_fail("Verifying CHECKSUMS signature failed: $rv\n");
+        return;
+    }
+
+    return 1;
+}
+
+sub verify_archive {
+    my($self, $file, $uri, $dist) = @_;
+
+    unless ($dist->{cpanid}) {
+        $self->chat("Archive '$file' does not seem to be from PAUSE. Skip verification.\n");
+    }
+
+    (my $mirror = $uri) =~ s!/authors/id.*$!!;
+
+    (my $chksum_uri = $uri) =~ s!/[^/]*$!/CHECKSUMS!;
+    my $chk_file = $self->source_for($mirror) . "/$dist->{cpanid}.CHECKSUMS";
+    $self->diag_progress("Fetching $chksum_uri");
+    $self->mirror($chksum_uri, $chk_file);
+
+    unless (-e $chk_file) {
+        $self->diag_fail("Fetching $chksum_uri failed.\n");
+        return;
+    }
+
+    $self->diag_ok;
+    $self->verify_checksums_signature($chk_file) or return;
+    $self->verify_checksum($file, $chk_file);
+}
+
+sub verify_checksum {
+    my($self, $file, $chk_file) = @_;
+
+    $self->chat("Verifying the SHA1 for $file\n");
+
+    open my $fh, "<$chk_file" or die "$chk_file: $!";
+    my $data = join '', <$fh>;
+    $data =~ s/\015?\012/\n/g;
+
+    require Safe; # no fatpack
+    my $chksum = Safe->new->reval($data);
+
+    if (!ref $chksum or ref $chksum ne 'HASH') {
+        $self->diag_fail("! Checksum file downloaded from $chk_file is broken.\n");
+        return;
+    }
+
+    if (my $sha = $chksum->{$file}{sha256}) {
+        my $hex = $self->sha1_for($file);
+        if ($hex eq $sha) {
+            $self->chat("Checksum for $file: Verified!\n");
+        } else {
+            $self->diag_fail("Checksum mismatch for $file\n");
+            return;
+        }
+    } else {
+        $self->chat("Checksum for $file not found in CHECKSUMS.\n");
+        return;
+    }
+}
+
+sub sha1_for {
+    my($self, $file) = @_;
+
+    require Digest::SHA; # no fatpack
+
+    open my $fh, "<", $file or die "$file: $!";
+    my $dg = Digest::SHA->new(256);
+    my($data);
+    while (read($fh, $data, 4096)) {
+        $dg->add($data);
+    }
+
+    return $dg->hexdigest;
+}
+
+sub verify_signature {
+    my($self, $dist) = @_;
+
+    $self->diag_progress("Verifying the SIGNATURE file");
+    my $out = `$self->{cpansign} -v --skip 2>&1`;
+    $self->log($out);
+
+    if ($out =~ /Signature verified OK/) {
+        $self->diag_ok("Verified OK");
+        return 1;
+    } else {
+        $self->diag_fail("SIGNATURE verificaion for $dist->{filename} failed\n");
+        return;
+    }
+}
+
 sub resolve_name {
     my($self, $module, $version) = @_;
 
     # URL
     if ($module =~ /^(ftp|https?|file):/) {
-        if ($module =~ m!authors/id/!) {
-            return $self->cpan_dist($module, $module);
+        if ($module =~ m!authors/id/(.*)!) {
+            return $self->cpan_dist($1, $module);
         } else {
             return { uris => [ $module ] };
         }
@@ -1077,6 +1418,11 @@ sub resolve_name {
             source => 'local',
             uris => [ "file://" . Cwd::abs_path($module) ],
         };
+    }
+
+    # Git
+    if ($module =~ /(^git:|\.git$)/) {
+        return $self->git_uri($module);
     }
 
     # cpan URI
@@ -1130,6 +1476,44 @@ sub cpan_dist {
     };
 }
 
+sub git_uri {
+    my ($self, $uri) = @_;
+
+    # similar to http://www.pip-installer.org/en/latest/logic.html#vcs-support
+    # git URL has to end with .git when you need to use pin @ commit/tag/branch
+
+    ($uri, my $commitish) = split /(?<=\.git)@/i, $uri, 2;
+
+    my $dh  = File::Temp->newdir(CLEANUP => 1);
+    my $dir = Cwd::abs_path($dh->dirname);
+
+    $self->diag_progress("Cloning $uri");
+    $self->run([ 'git', 'clone', $uri, $dir ]);
+
+    unless (-e "$dir/.git") {
+        $self->diag_fail("Failed cloning git repository $uri");
+        return;
+    }
+
+    if ($commitish) {
+        require File::pushd;
+        my $dir = File::pushd::pushd($dir);
+
+        unless ($self->run([ 'git', 'checkout', $commitish ])) {
+            $self->diag_fail("Failed to checkout '$commitish' in git repository $uri\n");
+            return;
+        }
+    }
+
+    $self->diag_ok;
+
+    return {
+        source => 'local',
+        dir    => $dir,
+        handle => $dh,
+    };
+}
+
 sub setup_module_build_patch {
     my $self = shift;
 
@@ -1160,7 +1544,7 @@ sub check_module {
     # might be newer than (or actually wasn't core at) the version
     # that is shipped with the current perl
     if ($self->{self_contained} && $self->loaded_from_perl_lib($meta)) {
-        require Module::CoreList;
+        require Module::CoreList; # no fatpack
         unless (exists $Module::CoreList::version{$]+0}{$mod}) {
             return 0, undef;
         }
@@ -1171,10 +1555,31 @@ sub check_module {
 
     if ($self->is_deprecated($meta)){
         return 0, $version;
-    } elsif (!$want_ver or $version >= version->new($want_ver)) {
+    } elsif ($self->satisfy_version($mod, $version, $want_ver)) {
         return 1, ($version || 'undef');
     } else {
         return 0, $version;
+    }
+}
+
+sub satisfy_version {
+    my($self, $mod, $version, $want_ver) = @_;
+
+    $want_ver = '0' unless defined($want_ver) && length($want_ver);
+
+    require CPAN::Meta::Requirements;
+    my $requirements = CPAN::Meta::Requirements->new;
+    $requirements->add_string_requirement($mod, $want_ver);
+    $requirements->accepts_module($mod, $version);
+}
+
+sub unsatisfy_how {
+    my($self, $ver, $want_ver) = @_;
+
+    if ($want_ver =~ /^[v0-9\.\_]+$/) {
+        return "$ver < $want_ver";
+    } else {
+        return "$ver doesn't satisfy $want_ver";
     }
 }
 
@@ -1182,12 +1587,11 @@ sub is_deprecated {
     my($self, $meta) = @_;
 
     my $deprecated = eval {
-        require Module::CoreList;
+        require Module::CoreList; # no fatpack
         Module::CoreList::is_deprecated($meta->{module});
     };
 
-    return unless $deprecated;
-    return $self->loaded_from_perl_lib($meta);
+    return $deprecated && $self->loaded_from_perl_lib($meta);
 }
 
 sub loaded_from_perl_lib {
@@ -1211,7 +1615,7 @@ sub should_install {
     my($ok, $local) = $self->check_module($mod, $ver);
 
     if ($ok)       { $self->chat("Yes ($local)\n") }
-    elsif ($local) { $self->chat("No ($local < $ver)\n") }
+    elsif ($local) { $self->chat("No (" . $self->unsatisfy_how($local, $ver) . ")\n") }
     else           { $self->chat("No\n") }
 
     return $mod unless $ok;
@@ -1264,20 +1668,32 @@ sub install_deps_bailout {
 sub build_stuff {
     my($self, $stuff, $dist, $depth) = @_;
 
+    if ($self->{verify} && -e 'SIGNATURE') {
+        $self->verify_signature($dist) or return;
+    }
+
     my @config_deps;
-    if (!%{$dist->{meta} || {}} && -e 'META.yml') {
+    if (-e 'META.json') {
+        $self->chat("Checking configure dependencies from META.json\n");
+        $dist->{meta} = $self->parse_meta('META.json');
+    } elsif (-e 'META.yml') {
         $self->chat("Checking configure dependencies from META.yml\n");
         $dist->{meta} = $self->parse_meta('META.yml');
     }
 
     if (!$dist->{meta} && $dist->{source} eq 'cpan') {
-        $self->chat("META.yml not found or unparsable. Fetching META.yml from search.cpan.org\n");
+        $self->chat("META.yml/json not found or unparsable. Fetching META.yml from search.cpan.org\n");
         $dist->{meta} = $self->fetch_meta_sco($dist);
     }
 
     $dist->{meta} ||= {};
 
-    push @config_deps, %{$dist->{meta}{configure_requires} || {}};
+    if ( $dist->{meta}->{prereqs} ) {
+        push @config_deps, %{$dist->{meta}{prereqs}{configure}{requires} || {}};
+    }
+    else {
+        push @config_deps, %{$dist->{meta}{configure_requires} || {}};
+    }
 
     my $target = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $dist->{dir};
 
@@ -1742,7 +2158,7 @@ sub dump_scandeps {
         require JSON::PP;
         print JSON::PP::encode_json($self->{scandeps_tree});
     } elsif ($self->{format} eq 'yaml') {
-        require YAML;
+        require YAML; # no fatpack
         print YAML::Dump($self->{scandeps_tree});
     } else {
         $self->diag("Unknown format: $self->{format}\n");
@@ -1792,20 +2208,50 @@ sub which {
     return;
 }
 
-sub get      { $_[0]->{_backends}{get}->(@_) };
-sub mirror   { $_[0]->{_backends}{mirror}->(@_) };
+sub get {
+    my($self, $uri) = @_;
+    if ($uri =~ /^file:/) {
+        $self->file_get($uri);
+    } else {
+        $self->{_backends}{get}->(@_);
+    }
+}
+
+sub mirror {
+    my($self, $uri, $local) = @_;
+    if ($uri =~ /^file:/) {
+        $self->file_mirror($uri, $local);
+    } else {
+        $self->{_backends}{mirror}->(@_);
+    }
+}
+
 sub untar    { $_[0]->{_backends}{untar}->(@_) };
 sub unzip    { $_[0]->{_backends}{unzip}->(@_) };
 
+sub uri_to_file {
+    my($self, $uri) = @_;
+
+    # file:///path/to/file -> /path/to/file
+    # file://C:/path       -> C:/path
+    if ($uri =~ s!file:/+!!) {
+        $uri = "/$uri" unless $uri =~ m![a-zA-Z]:!;
+    }
+
+    return $uri;
+}
+
 sub file_get {
     my($self, $uri) = @_;
-    open my $fh, "<$uri" or return;
+    my $file = $self->uri_to_file($uri);
+    open my $fh, "<$file" or return;
     join '', <$fh>;
 }
 
 sub file_mirror {
     my($self, $uri, $path) = @_;
-    File::Copy::copy($uri, $path);
+    my $file = $self->uri_to_file($uri);
+    File::Copy::copy($file, $path);
 }
 
 sub init_tools {
@@ -1842,49 +2288,57 @@ sub init_tools {
         };
     } elsif ($self->{try_wget} and my $wget = $self->which('wget')) {
         $self->chat("You have $wget\n");
+        my @common = (
+            '--user-agent', "cpanminus/$VERSION",
+            '--retry-connrefused',
+            ($self->{verbose} ? () : ('-q')),
+        );
         $self->{_backends}{get} = sub {
             my($self, $uri) = @_;
-            return $self->file_get($uri) if $uri =~ s!^file:/+!/!;
-            $self->safeexec( my $fh, $wget, $uri, ( $self->{verbose} ? () : '-q' ), '-O', '-' ) or die "wget $uri: $!";
+            $self->safeexec( my $fh, $wget, $uri, @common, '-O', '-' ) or die "wget $uri: $!";
             local $/;
             <$fh>;
         };
         $self->{_backends}{mirror} = sub {
             my($self, $uri, $path) = @_;
-            return $self->file_mirror($uri, $path) if $uri =~ s!^file:/+!/!;
-            $self->safeexec( my $fh, $wget, '--retry-connrefused', $uri, ( $self->{verbose} ? () : '-q' ), '-O', $path ) or die "wget $uri: $!";
+            $self->safeexec( my $fh, $wget, $uri, @common, '-O', $path ) or die "wget $uri: $!";
             local $/;
             <$fh>;
         };
     } elsif ($self->{try_curl} and my $curl = $self->which('curl')) {
         $self->chat("You have $curl\n");
+        my @common = (
+            '--location',
+            '--user-agent', "cpanminus/$VERSION",
+            ($self->{verbose} ? () : '-s'),
+        );
         $self->{_backends}{get} = sub {
             my($self, $uri) = @_;
-            return $self->file_get($uri) if $uri =~ s!^file:/+!/!;
-            $self->safeexec( my $fh, $curl, '-L', ( $self->{verbose} ? () : '-s' ), $uri ) or die "curl $uri: $!";
+            $self->safeexec( my $fh, $curl, @common, $uri ) or die "curl $uri: $!";
             local $/;
             <$fh>;
         };
         $self->{_backends}{mirror} = sub {
             my($self, $uri, $path) = @_;
-            return $self->file_mirror($uri, $path) if $uri =~ s!^file:/+!/!;
-            $self->safeexec( my $fh, $curl, '-L', $uri, ( $self->{verbose} ? () : '-s' ), '-#', '-o', $path ) or die "curl $uri: $!";
+            $self->safeexec( my $fh, $curl, @common, $uri, '-#', '-o', $path ) or die "curl $uri: $!";
             local $/;
             <$fh>;
         };
     } else {
         require HTTP::Tiny;
         $self->chat("Falling back to HTTP::Tiny $HTTP::Tiny::VERSION\n");
-
+        my %common = (
+            agent => "cpanminus/$VERSION",
+        );
         $self->{_backends}{get} = sub {
             my $self = shift;
-            my $res = HTTP::Tiny->new->get($_[0]);
+            my $res = HTTP::Tiny->new(%common)->get($_[0]);
             return unless $res->{success};
             return $res->{content};
         };
         $self->{_backends}{mirror} = sub {
             my $self = shift;
-            my $res = HTTP::Tiny->new->mirror(@_);
+            my $res = HTTP::Tiny->new(%common)->mirror(@_);
             return $res->{status};
         };
     }
@@ -1989,7 +2443,7 @@ sub init_tools {
                 or return undef;
 
             chomp $root;
-            $root =~ s{^\s+testing:\s+(.+?)/\s+OK$}{$1};
+            $root =~ s{^\s+testing:\s+([^/]+)/.*?\s+OK$}{$1};
 
             system "$unzip $opt $zipfile";
             return $root if -d $root;
@@ -2008,15 +2462,16 @@ sub init_tools {
             $self->diag_fail("Read of file[$file] failed")
                 if $status != Archive::Zip::AZ_OK();
             my @members = $zip->members();
-            my $root;
             for my $member ( @members ) {
                 my $af = $member->fileName();
                 next if ($af =~ m!^(/|\.\./)!);
-                $root = $af unless $root;
                 $status = $member->extractToFileNamed( $af );
                 $self->diag_fail("Extracting of file[$af] from zipfile[$file failed")
                     if $status != Archive::Zip::AZ_OK();
             }
+
+            my ($root) = $zip->membersMatching( qr<^[^/]+/$> );
+            $root &&= $root->fileName;
             return -d $root ? $root : undef;
         };
     }
@@ -2045,12 +2500,12 @@ sub safeexec {
 
 sub parse_meta {
     my($self, $file) = @_;
-    return eval { (Parse::CPAN::Meta::LoadFile($file))[0] } || undef;
+    return eval { Parse::CPAN::Meta->load_file($file) };
 }
 
 sub parse_meta_string {
     my($self, $yaml) = @_;
-    return eval { (Parse::CPAN::Meta::Load($yaml))[0] } || undef;
+    return eval { Parse::CPAN::Meta->load_yaml_string($yaml) };
 }
 
 1;

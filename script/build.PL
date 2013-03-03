@@ -19,7 +19,7 @@ print STDERR "Generating cpanm from script/cpanm.PL\n";
 while (<$in>) {
     next if /Auto-removed/;
     s/DEVELOPERS:.*/DO NOT EDIT -- this is an auto generated file/;
-    s/.*__FATPACK__/zomg_hfs(scalar `$^X -e "use App::FatPacker -run_script" file`)/e;
+    s/.*__FATPACK__/`fatpack file`/e;
     print $out $_;
 }
 
@@ -30,10 +30,3 @@ rename "cpanm.tmp", "cpanm";
 chmod 0755, "cpanm";
 
 END { unlink "cpanm.tmp" }
-
-# HFS is case sensitive, we have fatlib/version that contains Version/Requirements.pm :(
-sub zomg_hfs {
-    local $_ = shift;
-    s!version/Requirements.pm!Version/Requirements.pm!;
-    return $_;
-}

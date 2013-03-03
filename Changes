@@ -1,5 +1,136 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.6002  Wed Feb 27 12:12:09 PST 2013
+   [Improvements]
+      - Support parsing configure dependencies from META.json in spec 2 (kazeburo)
+
+1.6001  Tue Feb 26 16:57:04 PST 2013
+   [Improvements]
+      - Enable developer release if a specific version is requested with == or @. #203
+
+1.6000  Tue Feb 26 09:50:57 PST 2013
+   [Major Changes since 1.5]
+      - Support fixed version search with @version and ~"version range"
+      - MetaCPAN and BackPAN search using MetaCPAN API
+      - --dev to install developer releases
+      - Install via git:// URL (with @branch, tag or commit)
+      - Better MYMETA version range and cpanfile support
+      - No fallback to search.cpan.org, which means you can't install from command names
+
+1.59_13 Mon Feb 25 12:06:44 PST 2013
+   [New Features]
+      - Support @branch (or commit or tag) in Git URLs so that you can specify a
+        commitish to check out before installing from Git repo
+      - Search for BackPAN by default when specific version (or range) is requested
+
+   [Improvements]
+      - Detect .zip root directory more reliably (frioux)
+      - Fixed pathname of the CPAN distribution given as a URL (xaicron)
+
+1.59_12 Wed Feb 13 18:13:49 PST 2013
+   [Internals]
+      - Switch to metacpan_script for the new MetaCPAN query
+
+1.59_11 Mon Feb 11 14:10:26 PST 2013
+   [Improvements]
+      - Support META.json in addition to META.yml for pre-configure requirements
+      - Fatpack JSON::PP and CPAN::Meta::YAML properly 
+
+1.59_10 Thu Feb  7 16:27:03 PST 2013
+   [New Features]
+      - EXPERIMENTAL: added an ability to install from git URL (ikasam_a)
+
+   [Improvements]
+      - Exclude backpan distribution from MetaCPAN query (mo)
+      - Add back Module::CPANfile to fatpack, accidentally deleted in a previous release
+      - Remove CPAN::Meta from fatpack, because it's unsued yet. This reduces the file
+        size of cpanm executable about 30%.
+
+1.59_09 Thu Feb  7 01:55:48 PST 2013
+   [Improvements]
+      - Re-enable --metacpan option to prefer MetaCPAN over CPANMetaDB for all queries,
+        mostly for testing purpose.
+      - Improved MetaCPAN queries in case a release have multiple modules with different
+        versions. Also fixed a bug where it tried to extract distribution version as a
+        module version in some cases
+
+1.59_08 Wed Feb  6 11:25:45 PST 2013
+   [Bug Fixes]
+      - Prioritize MetaCPAN when --dev option is enabled, for real
+
+1.59_07 Wed Feb  6 11:08:05 PST 2013
+   [Incompatible Changes]
+      - Disable implicit --skip-satisfied auto conversion with version specification
+      - Do not fallback to search.cpan.org scraping anymore. This means some of the bogus
+        search that doesn't match package name on PAUSE but returns a hit on search.cpan.org
+        can't be installed anymore. You have to use the right package name for it.
+      - Enable MetaCPAN search by default. --metacpan option is deprecated
+
+   [New Features]
+      - EXPERIMENTAL: --dev option to enable including developer release for searching
+        against MetaCPAN
+
+   [Improvements]
+      - Improve MetaCPAN query to search stable releases, unless developer release is requested
+
+1.59_06 Tue Feb  5 12:36:00 PST 2013
+   [Incompatible Changes]
+      - --mirror-index option doesn't automatically assume --mirror-only
+
+   [Improvements]
+      - Use versioned MetaCPAN API endpoint (oalders)
+
+1.59_05 Mon Feb  4 11:49:40 PST 2013
+   [New Features]
+      - Support version ranges in command args and cpanfile queried agsinst MetaCPAN
+        with the proper version range query to get the best version that satisfies
+        the requirements. Huge thanks to #metacpan guys
+
+1.59_04 Sun Feb  3 09:04:12 PST 2013
+   [Improvements]
+      - Make file copy more reliable on Win32 (A.J. Lucas) #180
+      - Always send cpanminus User-Agent to the servers no matter which backend is used (curl, wget etc.)
+
+1.59_03 Fri Feb  1 10:42:57 PST 2013
+   [Improvements]
+      - Fix issues working with file:// URLs with drive letters on Win32 (A.J. Lucas) #180
+      - Fix home directory detection without HOME env on win32 (kmx, Christian Walde) #132
+      - Allow comment fields in 02packages file (Jeffrey Thalhammer) #187
+
+1.59_02 Thu Jan 31 19:09:43 PST 2013
+   [New Features]
+      - Added experimental @ shortcut to mean exact version e.g. cpanm DBI@1.20
+      - Support version range with "~", such as cpanm DBI~">= 1.0, < 2.0"
+      - Enable metacpan release search when exact version is given (and when mirror-only is not specified)
+        i.e. cpanm DBI@1.100 will fetch the exact release based on metacpan
+
+1.59_01 Thu Jan 31 09:54:50 PST 2013
+   [New Features]
+      - Added a proper support for version range in MYMETA files using CPAN::Meta::Requirements
+      - Skip installing modules when found versions from CPAN doesn't satisfy the requirement, rather
+        than proceeding as if it is ok. For instance, if a ditribution X requires Y >= 1.1 and Y on
+        CPAN (or your CPAN mirror) has 1.0, cpanm will just complain and stop installing it.
+      - Better cpanfile end-to-end support
+      - Upgraded fatpacked modules to the latest
+
+1.5021 Thu Jan 31 00:42:28 PST 2013
+   [Improvements]
+      - Added new --verify option that enables verifying CHECKSUM and SIGNATURE for distributions
+        from CPAN/PAUSE
+
+1.5020 Tue Jan 29 10:29:08 PST 2013
+   [Bug Fixes]
+      - Fixed a bug in --cascade-search that was checking a wrong version from 02packages file (Bryce Baril)
+      - Added a workaround for older version of File::Temp bug (kentnl)
+
+1.5019 Sun Dec 23 02:19:45 JST 2012
+   [Bug Fixes]
+      - Fixes a bug where --installdeps fail to configure dependencies with cpanfile (hoelzro)
+
+   [Improvements]
+      - Cleaned up unused code
+      - Added documentation about --mirror option and local file path
+
 1.5018 Wed Sep 19 14:40:28 JST 2012
    [Improvements]
       - Check cpanm path upon --self-upgrade to give warnings for perlbrew users

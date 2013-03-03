@@ -1,6 +1,6 @@
 package CPAN::Meta::YAML;
-BEGIN {
-  $CPAN::Meta::YAML::VERSION = '0.003';
+{
+  $CPAN::Meta::YAML::VERSION = '0.008';
 }
 
 use strict;
@@ -459,7 +459,7 @@ sub _write_scalar {
 		$string =~ s/([\x00-\x1f])/\\$UNPRINTABLE[ord($1)]/g;
 		return qq|"$string"|;
 	}
-	if ( $string =~ /(?:^\W|\s)/ or $QUOTE{$string} ) {
+	if ( $string =~ /(?:^\W|\s|:\z)/ or $QUOTE{$string} ) {
 		return "'$string'";
 	}
 	return $string;
@@ -610,12 +610,14 @@ sub LoadFile {
 # Use Scalar::Util if possible, otherwise emulate it
 
 BEGIN {
+	local $@;
 	eval {
 		require Scalar::Util;
-		*refaddr = *Scalar::Util::refaddr;
 	};
-	eval <<'END_PERL' if $@;
-# Failed to load Scalar::Util	
+	my $v = eval("$Scalar::Util::VERSION") || 0;
+	if ( $@ or $v < 1.18 ) {
+		eval <<'END_PERL';
+# Scalar::Util failed to load or too old
 sub refaddr {
 	my $pkg = ref($_[0]) or return undef;
 	if ( !! UNIVERSAL::can($_[0], 'can') ) {
@@ -629,7 +631,9 @@ sub refaddr {
 	$i;
 }
 END_PERL
-
+	} else {
+		*refaddr = *Scalar::Util::refaddr;
+	}
 }
 
 1;
