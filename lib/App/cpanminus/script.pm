@@ -85,6 +85,12 @@ sub new {
         save_dists => undef,
         skip_configure => 0,
         verify => 0,
+        skip_report => 0,
+        metabase_api => "https://metabase.cpantesters.org/api/v1/",
+        metabase_file => Cwd::abs_path("File::Spec"->catfile(
+            $class->determine_home,
+            qw< .. .cpantesters metabase_id.json >,
+        )),
         @_,
     }, $class;
 }
@@ -106,6 +112,7 @@ sub parse_options {
         'f|force'   => sub { $self->{skip_installed} = 0; $self->{force} = 1 },
         'n|notest!' => \$self->{notest},
         'test-only' => sub { $self->{notest} = 0; $self->{skip_installed} = 0; $self->{test_only} = 1 },
+        'skip-report!' => \$self->{skip_report},
         'S|sudo!'   => \$self->{sudo},
         'v|verbose' => sub { $self->{verbose} = $self->{interactive} = 1 },
         'verify!'   => \$self->{verify},
@@ -1032,14 +1039,99 @@ sub build {
     }
 }
 
+sub _extract_log {
+    my($self, $offset, $length) = @_;
+    open my $logfh, '<', $self->{log};
+    seek $logfh, $offset, 0;
+    my $slurp = do { local $/ = <$logfh> };
+    close $logfh;
+    if ($length) {
+        $slurp = substr($slurp, 0, $length);
+    }
+    return \$slurp;
+}
+
+sub can_cpants_report {
+    my($self, $dist) = @_;
+    return if $self->{skip_report};
+    if (not defined $self->{_can_cpants_report}) {
+        $self->{_can_cpants_report} = eval {
+            require Test::Reporter;
+            require Test::Reporter::Transport::Metabase;
+            require LWP::Protocol::https;
+            -r $self->{metabase_file};
+        };
+    }
+    return unless $self->{_can_cpants_report};
+    return exists($dist->{filename}) && exists($dist->{cpanid}) if defined $dist;
+    return 1;
+}
+
+sub cpants_report
+{
+    my($self, $grade, $dist, $log) = @_;
+
+    my $report = <<"REPORT";
+$dist->{distvname} ... $grade
+
+Perl           : $^V
+System         : $^O
+Local Versions :
+REPORT
+
+    for my $mod (keys %{ $self->{local_versions} }) {
+        $report .= sprintf("    %-32s : %s\n", $mod, $self->{local_versions}{$mod});
+    }
+    $report .= "\n";
+    $report .= "Test Output    :\n\n";
+    $report .= $$log;
+    $report .= "\n";
+
+    my $Report = "Test::Reporter"->new(
+        transport      => 'Metabase',
+        transport_args => [
+            uri     => $self->{metabase_api},
+            id_file => $self->{metabase_file},
+        ],
+        distribution   => $dist->{distvname},
+        distfile       => sprintf(
+            '%s/%s',
+            $dist->{cpanid},
+            $dist->{filename},
+        ),
+        grade          => lc($grade),
+        from           => 'null@invalid.invalid',
+        comments       => $report,
+    );
+
+    $Report->send;
+
+    if ($Report->errstr) {
+        $self->log(
+            "Test::Reporter error report:\n",
+            $Report->errstr, "\n",
+        );
+    } else {
+        $self->log("Test::Reporter ... OK\n");
+    }
+}
+
 sub test {
-    my($self, $cmd, $distname) = @_;
+    my($self, $cmd, $distname, $dist) = @_;
     return 1 if $self->{notest};
 
     # https://rt.cpan.org/Ticket/Display.html?id=48965#txn-1013385
     local $ENV{PERL_MM_USE_DEFAULT} = 1;
 
-    return 1 if $self->run_timeout($cmd, $self->{test_timeout});
+    my $offset = -s $self->{log};
+    my $r = $self->run_timeout($cmd, $self->{test_timeout});
+
+    if ($self->can_cpants_report($dist)) {
+        $self->cpants_report($r ? "PASS" : "FAIL", $dist, $self->_extract_log($offset));
+    }
+
+    return 1 if $r;
+
     if ($self->{force}) {
         $self->diag_fail("Testing $distname failed but installing it anyway.");
         return 1;
@@ -1047,11 +1139,11 @@ sub test {
         $self->diag_fail;
         while (1) {
             my $ans = lc $self->prompt("Testing $distname failed.\nYou can s)kip, r)etry, f)orce install, e)xamine build log, or l)ook ?", "s");
-            return                              if $ans eq 's';
-            return $self->test($cmd, $distname) if $ans eq 'r';
-            return 1                            if $ans eq 'f';
-            $self->show_build_log               if $ans eq 'e';
-            $self->look                         if $ans eq 'l';
+            return                                     if $ans eq 's';
+            return $self->test($cmd, $distname, $dist) if $ans eq 'r';
+            return 1                                   if $ans eq 'f';
+            $self->show_build_log                      if $ans eq 'e';
+            $self->look                                if $ans eq 'l';
         }
     }
 }
@@ -1760,13 +1852,13 @@ DIAG
         my @switches = $self->{pod2man} ? () : ("-I$self->{base}", "-MModuleBuildSkipMan");
         $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . $distname);
         $self->build([ $self->{perl}, @switches, "./Build" ], $distname) &&
-        $self->test([ $self->{perl}, "./Build", "test" ], $distname) &&
+        $self->test([ $self->{perl}, "./Build", "test" ], $distname, $dist) &&
         $self->install([ $self->{perl}, @switches, "./Build", "install" ], [ "--uninst", 1 ], $depth) &&
         $installed++;
     } elsif ($self->{make} && -e 'Makefile') {
         $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . $distname);
         $self->build([ $self->{make} ], $distname) &&
-        $self->test([ $self->{make}, "test" ], $distname) &&
+        $self->test([ $self->{make}, "test" ], $distname, $dist) &&
         $self->install([ $self->{make}, "install" ], [ "UNINST=1" ], $depth) &&
         $installed++;
     } else {
