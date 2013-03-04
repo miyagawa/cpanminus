@@ -148,6 +148,10 @@ Note that if you specify this option with a module or distribution
 that has dependencies, these dependencies will be installed if you
 don't currently have them.
 
+=item --skip-report
+
+Do not attempt to send a test report to the CPAN Testers service.
+
 =item -S, --sudo
 
 Switch to the root user with C<sudo> when installing modules. Use this
@@ -422,6 +426,22 @@ Normally with C<--lwp>, C<--wget> and C<--curl> options set to true
 (in that order) and uses the first one available.
 
 =back
+
+=head1 CPAN TESTERS REPORTING
+
+cpanm will automatically attempt to send test reports to the CPAN Testers
+service. If it is unable to, it will continue with distribution installation
+without complaint.
+
+The following pre-requisites are needed to send CPAN Testers reports:
+L<Test::Reporter>, L<Test::Reporter::Transport::Metabase>,
+L<LWP::Protocol::https>. You also need to set up a metabase profile:
+
+  metabase-profile
+  ...
+  mkdir $HOME/.cpantesters
+  mv metabase_id.json $HOME/.cpantesters
+  chmod 400 $HOME/.cpantesters/metabase_id.json
 
 =head1 SEE ALSO
 
