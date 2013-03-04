@@ -1029,7 +1029,14 @@ sub configure {
 sub build {
     my($self, $cmd, $distname) = @_;
 
-    return 1 if $self->run_timeout($cmd, $self->{build_timeout});
+    $self->diag_progress("Building $distname");
+    if ($self->run_timeout($cmd, $self->{build_timeout})) {
+        $self->diag_ok;
+        return 1;
+    } else {
+        $self->diag_fail;
+    }
+
     while (1) {
         my $ans = lc $self->prompt("Building $distname failed.\nYou can s)kip, r)etry, e)xamine build log, or l)ook ?", "s");
         return                               if $ans eq 's';
@@ -1104,15 +1111,19 @@ REPORT
         comments       => $report,
     );
 
+    $self->diag_progress("Sending CPAN Testers report");
     $Report->send;
 
     if ($Report->errstr) {
+        $self->diag_fail("Could not send report. See $self->{log} for details.");
         $self->log(
             "Test::Reporter error report:\n",
             $Report->errstr, "\n",
         );
+        return;
     } else {
-        $self->log("Test::Reporter ... OK\n");
+        $self->diag_ok;
+        return 1;
     }
 }
 
@@ -1123,8 +1134,10 @@ sub test {
     # https://rt.cpan.org/Ticket/Display.html?id=48965#txn-1013385
     local $ENV{PERL_MM_USE_DEFAULT} = 1;
 
+    $self->diag_progress("Testing $distname");
     my $offset = -s $self->{log};
     my $r = $self->run_timeout($cmd, $self->{test_timeout});
+    $r ? $self->diag_ok : $self->diag_fail;
 
     if ($self->can_cpants_report($dist)) {
         $self->cpants_report($r ? "PASS" : "FAIL", $dist, $self->_extract_log($offset));
@@ -1850,13 +1863,11 @@ DIAG
     my $installed;
     if ($configure_state->{use_module_build} && -e 'Build' && -f _) {
         my @switches = $self->{pod2man} ? () : ("-I$self->{base}", "-MModuleBuildSkipMan");
-        $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . $distname);
         $self->build([ $self->{perl}, @switches, "./Build" ], $distname) &&
         $self->test([ $self->{perl}, "./Build", "test" ], $distname, $dist) &&
         $self->install([ $self->{perl}, @switches, "./Build", "install" ], [ "--uninst", 1 ], $depth) &&
         $installed++;
     } elsif ($self->{make} && -e 'Makefile') {
-        $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . $distname);
         $self->build([ $self->{make} ], $distname) &&
         $self->test([ $self->{make}, "test" ], $distname, $dist) &&
         $self->install([ $self->{make}, "install" ], [ "UNINST=1" ], $depth) &&
@@ -1873,7 +1884,6 @@ DIAG
     }
 
     if ($installed && $self->{test_only}) {
-        $self->diag_ok;
         $self->diag("Successfully tested $distname\n", 1);
     } elsif ($installed) {
         my $local   = $self->{local_versions}{$dist->{module} || ''};
@@ -1884,7 +1894,6 @@ DIAG
                 : $local     ? "installed $distname (upgraded from $local)"
                              : "installed $distname" ;
         my $msg = "Successfully $how";
-        $self->diag_ok;
         $self->diag("$msg\n", 1);
         $self->{installed_dists}++;
         $self->save_meta($stuff, $dist, $module_name, \@config_deps, \@deps);
