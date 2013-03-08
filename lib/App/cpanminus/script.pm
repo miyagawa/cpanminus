@@ -1810,6 +1810,7 @@ sub configure_this {
     if (-e 'cpanfile' && $self->{installdeps} && $depth == 0) {
         require Module::CPANfile;
         $dist->{cpanfile} = eval { Module::CPANfile->load('cpanfile') };
+        $self->diag_fail($@, 1) if $@;
         return {
             configured       => 1,
             configured_ok    => !!$dist->{cpanfile},
