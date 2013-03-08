@@ -1924,7 +1924,7 @@ sub save_meta {
             qw( blib/lib blib/arch ) # FCGI.pm :(
     );
 
-    mkdir "blib/meta", 0777 or die $!;
+    File::Path::mkpath("blib/meta", 0, 0777);
 
     my $local = {
         name => $module_name,
