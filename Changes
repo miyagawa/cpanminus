@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.6005  Fri Mar  8 11:46:11 PST 2013
+   [Improvements]
+      - Fatpack CPAN::Meta to fix bootstrap failure with --installdeps + cpanfile
+
 1.6004  Fri Mar  8 11:30:37 PST 2013
    [Improvements]
       - Add perl version to User-Agent strings
