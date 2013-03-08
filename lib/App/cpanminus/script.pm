@@ -27,6 +27,11 @@ if ($INC{"App/FatPacker/Trace.pm"}) {
 
 my $quote = WIN32 ? q/"/ : q/'/;
 
+sub agent {
+    my $self = shift;
+    "cpanminus/$VERSION perl/$]";
+}
+
 sub determine_home {
     my $class = shift;
 
@@ -2271,7 +2276,7 @@ sub init_tools {
             LWP::UserAgent->new(
                 parse_head => 0,
                 env_proxy => 1,
-                agent => "cpanminus/$VERSION",
+                agent => $self->agent,
                 timeout => 30,
                 @_,
             );
@@ -2290,7 +2295,7 @@ sub init_tools {
     } elsif ($self->{try_wget} and my $wget = $self->which('wget')) {
         $self->chat("You have $wget\n");
         my @common = (
-            '--user-agent', "cpanminus/$VERSION",
+            '--user-agent', $self->agent,
             '--retry-connrefused',
             ($self->{verbose} ? () : ('-q')),
         );
@@ -2310,7 +2315,7 @@ sub init_tools {
         $self->chat("You have $curl\n");
         my @common = (
             '--location',
-            '--user-agent', "cpanminus/$VERSION",
+            '--user-agent', $self->agent,
             ($self->{verbose} ? () : '-s'),
         );
         $self->{_backends}{get} = sub {
@@ -2329,7 +2334,7 @@ sub init_tools {
         require HTTP::Tiny;
         $self->chat("Falling back to HTTP::Tiny $HTTP::Tiny::VERSION\n");
         my %common = (
-            agent => "cpanminus/$VERSION",
+            agent => $self->agent,
         );
         $self->{_backends}{get} = sub {
             my $self = shift;
