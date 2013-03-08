@@ -18,7 +18,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.6002";
+  our $VERSION = "1.6003";
   
   =head1 NAME
   
@@ -2118,6 +2118,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       if (-e 'cpanfile' && $self->{installdeps} && $depth == 0) {
           require Module::CPANfile;
           $dist->{cpanfile} = eval { Module::CPANfile->load('cpanfile') };
+          $self->diag_fail($@, 1) if $@;
           return {
               configured       => 1,
               configured_ok    => !!$dist->{cpanfile},
@@ -2232,7 +2233,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
               qw( blib/lib blib/arch ) # FCGI.pm :(
       );
   
-      mkdir "blib/meta", 0777 or die $!;
+      File::Path::mkpath("blib/meta", 0, 0777);
   
       my $local = {
           name => $module_name,

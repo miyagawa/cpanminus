@@ -1,5 +1,10 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.6003  Fri Mar  8 10:57:13 PST 2013
+   [Improvements]
+      - Display cpanfile syntax error if any (robario)
+      - Fixed failure to install oddly laid out dists without blib (winfinit)
+
 1.6002  Wed Feb 27 12:12:09 PST 2013
    [Improvements]
       - Support parsing configure dependencies from META.json in spec 2 (kazeburo)
