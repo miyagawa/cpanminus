@@ -21,6 +21,7 @@ our $VERSION = $App::cpanminus::VERSION;
 if ($INC{"App/FatPacker/Trace.pm"}) {
     require JSON::PP;
     require CPAN::Meta::YAML;
+    require CPAN::Meta::Prereqs;
     require version::vpp;
     require File::pushd;
 }

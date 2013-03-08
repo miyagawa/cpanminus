@@ -1,13 +1,11 @@
-use 5.005;
 use strict;
-BEGIN{ if (not $] < 5.006) { require warnings; warnings->import } }
+use warnings;
 package File::pushd;
 # ABSTRACT: change directory temporarily for a limited scope
-our $VERSION = '1.003'; # VERSION
+our $VERSION = '1.004'; # VERSION
 
-use vars qw/@EXPORT @ISA/;
-@EXPORT  = qw( pushd tempd );
-@ISA     = qw( Exporter );
+our @EXPORT  = qw( pushd tempd );
+our @ISA     = qw( Exporter );
 
 use Exporter;
 use Carp;
@@ -101,8 +99,13 @@ sub DESTROY {
     chdir $orig if $orig; # should always be so, but just in case...
     if ( $self->{_tempd} &&
         !$self->{_preserve} ) {
-        eval { rmtree( $self->{_pushd} ) };
-        carp $@ if $@;
+        # don't destroy existing $@ if there is no error.
+        my $err = do {
+            local $@;
+            eval { rmtree( $self->{_pushd} ) };
+            $@;
+        };
+        carp $err if $err;
     }
 }
 

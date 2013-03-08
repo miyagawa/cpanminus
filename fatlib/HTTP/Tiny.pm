@@ -3,14 +3,14 @@ package HTTP::Tiny;
 use strict;
 use warnings;
 # ABSTRACT: A small, simple, correct HTTP/1.1 client
-our $VERSION = '0.025'; # VERSION
+our $VERSION = '0.028'; # VERSION
 
 use Carp ();
 
 
 my @attributes;
 BEGIN {
-    @attributes = qw(agent default_headers local_address max_redirect max_size proxy timeout SSL_options verify_SSL);
+    @attributes = qw(agent cookie_jar default_headers local_address max_redirect max_size proxy timeout SSL_options verify_SSL);
     no strict 'refs';
     for my $accessor ( @attributes ) {
         *{$accessor} = sub {
@@ -34,6 +34,8 @@ sub new {
 
     $args{agent} .= $default_agent
         if defined $args{agent} && $args{agent} =~ / $/;
+
+    $class->_validate_cookie_jar( $args{cookie_jar} ) if $args{cookie_jar};
 
     for my $key ( @attributes ) {
         $self->{$key} = $args{$key} if exists $args{$key}
@@ -157,7 +159,7 @@ sub www_form_urlencode {
     (@_ == 2 && ref $data)
         or Carp::croak(q/Usage: $http->www_form_urlencode(DATAREF)/ . "\n");
     (ref $data eq 'HASH' || ref $data eq 'ARRAY')
-        or Carp::croak("form data must be a hash or array reference");
+        or Carp::croak("form data must be a hash or array reference\n");
 
     my @params = ref $data eq 'HASH' ? %$data : @$data;
     @params % 2 == 0
@@ -216,12 +218,14 @@ sub _request {
         $handle->connect($scheme, $host, $port);
     }
 
-    $self->_prepare_headers_and_cb($request, $args);
+    $self->_prepare_headers_and_cb($request, $args, $url);
     $handle->write_request($request);
 
     my $response;
     do { $response = $handle->read_response_header }
         until (substr($response->{status},0,1) ne '1');
+
+    $self->_update_cookie_jar( $url, $response ) if $self->{cookie_jar};
 
     if ( my @redir_args = $self->_maybe_redirect($request, $response, $args) ) {
         $handle->close;
@@ -243,7 +247,7 @@ sub _request {
 }
 
 sub _prepare_headers_and_cb {
-    my ($self, $request, $args) = @_;
+    my ($self, $request, $args, $url) = @_;
 
     for ($self->{default_headers}, $args->{headers}) {
         next unless defined;
@@ -277,6 +281,13 @@ sub _prepare_headers_and_cb {
         $request->{trailer_cb} = $args->{trailer_callback}
             if ref $args->{trailer_callback} eq 'CODE';
     }
+
+    ### If we have a cookie jar, then maybe add relevant cookies
+    if ( $self->{cookie_jar} ) {
+        my $cookies = $self->cookie_jar->cookie_header( $url );
+        $request->{headers}{cookie} = $cookies if length $cookies;
+    }
+
     return;
 }
 
@@ -298,6 +309,31 @@ sub _prepare_data_cb {
         }
     }
     return $data_cb;
+}
+
+sub _update_cookie_jar {
+    my ($self, $url, $response) = @_;
+
+    my $cookies = $response->{headers}->{'set-cookie'};
+    return unless defined $cookies;
+
+    my @cookies = ref $cookies ? @$cookies : $cookies;
+
+    $self->cookie_jar->add( $url, $_ ) for @cookies;
+
+    return;
+}
+
+sub _validate_cookie_jar {
+    my ($class, $jar) = @_;
+
+    # duck typing
+    for my $method ( qw/add cookie_header/ ) {
+        Carp::croak(qq/Cookie jar must provide the '$method' method\n/)
+            unless ref($jar) && ref($jar)->can($method);
+    }
+
+    return;
 }
 
 sub _maybe_redirect {
