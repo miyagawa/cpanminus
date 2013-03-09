@@ -1150,7 +1150,7 @@ sub install_module {
         return 1;
     }
 
-    my $dist = $self->resolve_name($module, $version);
+    my $dist = $self->resolve_name($module, $version, $depth);
     unless ($dist) {
         $self->diag_fail("Couldn't find module or a distribution $module ($version)", 1);
         return;
@@ -1399,7 +1399,7 @@ sub verify_signature {
 }
 
 sub resolve_name {
-    my($self, $module, $version) = @_;
+    my($self, $module, $version, $depth) = @_;
 
     # URL
     if ($module =~ /^(ftp|https?|file):/) {
@@ -1428,7 +1428,7 @@ sub resolve_name {
 
     # Git
     if ($module =~ /(^git:|\.git$)/) {
-        return $self->git_uri($module);
+        return $self->git_uri($module, $depth);
     }
 
     # cpan URI
@@ -1483,7 +1483,7 @@ sub cpan_dist {
 }
 
 sub git_uri {
-    my ($self, $uri) = @_;
+    my ($self, $uri, $depth) = @_;
 
     # similar to http://www.pip-installer.org/en/latest/logic.html#vcs-support
     # git URL has to end with .git when you need to use pin @ commit/tag/branch
@@ -1508,6 +1508,22 @@ sub git_uri {
         unless ($self->run([ 'git', 'checkout', $commitish ])) {
             $self->diag_fail("Failed to checkout '$commitish' in git repository $uri\n");
             return;
+        }
+    }
+
+    # process cpanfile in git repo
+    if (-f "$dir/cpanfile") {
+        require File::pushd;
+        my $dir = File::pushd::pushd($dir);
+
+        require Module::CPANfile;
+        my $cpanfile = eval { Module::CPANfile->load('cpanfile') };
+        if ($cpanfile) {
+            my @deps = %{ $cpanfile->prereq_specs->{configure}->{requires} || {} };
+            $self->install_deps($dir, $depth, @deps);
+            $cpanfile->prereqs;
+        } else {
+            $self->diag_fail($@, 1) if $@;
         }
     }
 
