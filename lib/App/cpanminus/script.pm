@@ -1715,6 +1715,10 @@ sub build_stuff {
         push @config_deps, %{$dist->{meta}{configure_requires} || {}};
     }
 
+    if ( $dist->{source} ne 'cpan' && $dist->{meta}{prereqs}{devel}{requires} ) {
+        push @config_deps, %{$dist->{meta}{prereqs}{devel}{requires} || {}};
+    }
+
     my $target = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $dist->{dir};
 
     $self->install_deps_bailout($target, $dist->{dir}, $depth, @config_deps)
