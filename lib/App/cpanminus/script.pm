@@ -1687,9 +1687,23 @@ sub build_stuff {
         $dist->{meta} = $self->parse_meta('META.yml');
     }
 
-    if (!$dist->{meta} && $dist->{source} eq 'cpan') {
-        $self->chat("META.yml/json not found or unparsable. Fetching META.yml from search.cpan.org\n");
-        $dist->{meta} = $self->fetch_meta_sco($dist);
+    if (!$dist->{meta}) {
+        if ($dist->{source} eq 'cpan') {
+            $self->chat("META.yml/json not found or unparsable. Fetching META.yml from search.cpan.org\n");
+            $dist->{meta} = $self->fetch_meta_sco($dist);
+        } else {
+            if (-e 'cpanfile') {
+                $self->chat("META.yml/json not found or unparsable. Checking configure dependencies from cpanfile\n");
+
+                require Module::CPANfile;
+                my $cpanfile = eval { Module::CPANfile->load('cpanfile') };
+                if ($cpanfile) {
+                    $dist->{meta} = +{
+                        prereqs => $cpanfile->prereq_specs
+                    };
+                }
+            }
+        }
     }
 
     $dist->{meta} ||= {};
