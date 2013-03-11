@@ -325,6 +325,10 @@ Specifies the optional directory path to copy downloaded tarballs in
 the CPAN mirror compatible directory structure
 i.e. I<authors/id/A/AU/AUTHORS/Foo-Bar-version.tar.gz>
 
+If the distro tarball did not come from CPAN, for example from a local
+file or from GitHub, then it will be saved under
+I<vendor/Foo-Bar-version.tar.gz>.
+
 =item --uninst-shadows
 
 Uninstalls the shadow files of the distribution that you're

@@ -1,5 +1,11 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.6006
+   [Improvements]
+      - The --save-dists option died when you used it with a distro that did
+        not come from CPAN (local file, GitHub, etc.). These distros are now
+        saved as $save_dir/vendor/$tarball. (Dave Rolsky)
+
 1.6005  Fri Mar  8 11:46:11 PST 2013
    [Improvements]
       - Fatpack CPAN::Meta to fix bootstrap failure with --installdeps + cpanfile
