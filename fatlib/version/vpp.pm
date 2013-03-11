@@ -121,7 +121,7 @@ use strict;
 use POSIX qw/locale_h/;
 use locale;
 use vars qw ($VERSION @ISA @REGEXS);
-$VERSION = 0.9901;
+$VERSION = 0.9902;
 
 use overload (
     '""'       => \&stringify,
@@ -571,6 +571,10 @@ sub scan_version {
 sub new
 {
 	my ($class, $value) = @_;
+	unless (defined $class) {
+	    require Carp;
+	    Carp::croak('Usage: version::new(class, version)');
+	}
 	my $self = bless ({}, ref ($class) || $class);
 	my $qv = FALSE;
 
