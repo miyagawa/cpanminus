@@ -1265,7 +1265,9 @@ sub fetch_module {
         next unless $dir; # unpack failed
 
         if (my $save = $self->{save_dists}) {
-            my $path = "$save/authors/id/$dist->{pathname}";
+            # Only distros retrieved from CPAN have a pathname set
+            my $path = $dist->{pathname} ? "$save/authors/id/$dist->{pathname}"
+                                         : "$save/vendor/$file";
             $self->chat("Copying $name to $path\n");
             File::Path::mkpath([ File::Basename::dirname($path) ], 0, 0777);
             File::Copy::copy($file, $path) or warn $!;
