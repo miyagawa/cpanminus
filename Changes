@@ -1,5 +1,11 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.6006  Wed Mar 13 22:53:44 PDT 2013
+   [Improvements]
+      - Fixed --save-dists option when used with non-CPAN distros. They're now
+        saved into $dir/vendor. (Dave Rolsky) #216
+      - Fixed PAUSE dist path where author ID is only 2 chars (Brian Cassidy) #218
+
 1.6005  Fri Mar  8 11:46:11 PST 2013
    [Improvements]
       - Fatpack CPAN::Meta to fix bootstrap failure with --installdeps + cpanfile
