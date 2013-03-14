@@ -1437,8 +1437,9 @@ sub resolve_name {
     }
 
     # PAUSEID/foo
-    if ($module =~ m!([A-Z]{3,})/!) {
-        return $self->cpan_dist($module);
+    # P/PA/PAUSEID/foo
+    if ($module =~ m!^(?:[A-Z]/[A-Z]{2}/)?([A-Z]{2,}/.*)$!) {
+        return $self->cpan_dist($1);
     }
 
     # Module name
