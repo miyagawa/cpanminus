@@ -23,6 +23,7 @@ like last_build_log, qr/installed .*-0\.02/;
 
 run 'git://github.com/miyagawa/CPAN-Test-Dummy-FromGit.git@nonexistent';
 like last_build_log, qr/Failed to checkout 'nonexistent'/;
+unlike last_build_log, qr/cannot remove path/;
 
 done_testing;
 
