@@ -1802,6 +1802,7 @@ DIAG
         $self->diag("$msg\n", 1);
         $self->{installed_dists}++;
         $self->save_meta($stuff, $dist, $module_name, \@config_deps, \@deps);
+        chdir;
         return 1;
     } else {
         my $what = $self->{test_only} ? "Testing" : "Installing";
