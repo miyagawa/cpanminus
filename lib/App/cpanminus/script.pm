@@ -1493,8 +1493,7 @@ sub git_uri {
 
     ($uri, my $commitish) = split /(?<=\.git)@/i, $uri, 2;
 
-    my $dh  = File::Temp->newdir(CLEANUP => 1);
-    my $dir = Cwd::abs_path($dh->dirname);
+    my $dir = File::Temp::tempdir(CLEANUP => 1);
 
     $self->diag_progress("Cloning $uri");
     $self->run([ 'git', 'clone', $uri, $dir ]);
@@ -1519,7 +1518,6 @@ sub git_uri {
     return {
         source => 'local',
         dir    => $dir,
-        handle => $dh,
     };
 }
 
