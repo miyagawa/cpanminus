@@ -1,5 +1,10 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.6007  Sun Mar 17 14:26:07 PDT 2013
+   [Improvements]
+      - Fixed a warning where temp directory created with git install doesn't actually
+        cleanup the temporary directory. (Tim Heaney) #219
+
 1.6006  Wed Mar 13 22:53:44 PDT 2013
    [Improvements]
       - Fixed --save-dists option when used with non-CPAN distros. They're now
