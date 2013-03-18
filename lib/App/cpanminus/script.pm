@@ -1634,7 +1634,7 @@ sub install_deps {
 
     my(@install, %seen);
     while (my($mod, $ver) = splice @deps, 0, 2) {
-        next if $seen{$mod} or $mod eq 'perl' or $mod eq 'Config';
+        next if $seen{$mod} or $mod eq 'perl';
         if ($self->should_install($mod, $ver)) {
             push @install, [ $mod, $ver ];
             $seen{$mod} = 1;
