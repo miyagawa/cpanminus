@@ -119,6 +119,9 @@ The site is updated at least every hour to reflect the latest changes
 from fast syncing mirrors. The script then also falls back to query the
 module at L<http://metacpan.org/> using its wonderful API.
 
+Upon calling these API hosts, cpanm (1.6004 or later) will send the
+local perl versions to the server in User-Agent string.
+
 Fetched files are unpacked in C<~/.cpanm> and automatically cleaned up
 periodically.  You can configure the location of this with the
 C<PERL_CPANM_HOME> environment variable.

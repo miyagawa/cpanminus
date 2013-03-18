@@ -209,7 +209,9 @@ aware redirector.
 =item --mirror-only
 
 Download the mirror's 02packages.details.txt.gz index file instead of
-querying the CPAN Meta DB.
+querying the CPAN Meta DB. This will also effectively opt out sending
+your local perl versions to backend database servers such as CPAN Meta
+DB and MetaCPAN.
 
 Select this option if you are using a local mirror of CPAN, such as
 minicpan when you're offline, or your own CPAN index (a.k.a darkpan).
