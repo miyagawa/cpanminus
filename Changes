@@ -1,5 +1,10 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.6008  Tue Mar 19 09:07:43 PDT 2013
+   [Improvements]
+      - Document the link to privacy policy for perl version collection, as well as
+        added option --no-report-perl-version to opt out
+
 1.6007  Sun Mar 17 14:26:07 PDT 2013
    [Improvements]
       - Fixed a warning where temp directory created with git install doesn't actually

@@ -18,7 +18,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.6007";
+  our $VERSION = "1.6008";
   
   =head1 NAME
   
@@ -137,6 +137,12 @@ $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   The site is updated at least every hour to reflect the latest changes
   from fast syncing mirrors. The script then also falls back to query the
   module at L<http://metacpan.org/> using its wonderful API.
+  
+  Upon calling these API hosts, cpanm (1.6004 or later) will send the
+  local perl versions to the server in User-Agent string by default. You
+  can turn it off with C<--no-report-perl-version> option. Read more
+  about the option with L<cpanm>, and read more about the privacy policy
+  about this data collection at L<http://cpanmetadb.plackperl.org/#privacy>
   
   Fetched files are unpacked in C<~/.cpanm> and automatically cleaned up
   periodically.  You can configure the location of this with the
@@ -338,7 +344,9 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   
   sub agent {
       my $self = shift;
-      "cpanminus/$VERSION perl/$]";
+      my $agent = "cpanminus/$VERSION";
+      $agent .= " perl/$]" if $self->{report_perl_version};
+      $agent;
   }
   
   sub determine_home {
@@ -399,6 +407,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           save_dists => undef,
           skip_configure => 0,
           verify => 0,
+          report_perl_version => 1,
           @_,
       }, $class;
   }
@@ -462,6 +471,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           'skip-configure!' => \$self->{skip_configure},
           'dev!'       => \$self->{dev_release},
           'metacpan!'  => \$self->{metacpan},
+          'report-perl-version!' => \$self->{report_perl_version},
       );
   
       if (!@ARGV && $0 ne '-' && !-t STDIN){ # e.g. # cpanm < author/requires.cpanm
@@ -1942,7 +1952,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   
       my(@install, %seen);
       while (my($mod, $ver) = splice @deps, 0, 2) {
-          next if $seen{$mod} or $mod eq 'perl' or $mod eq 'Config';
+          next if $seen{$mod} or $mod eq 'perl';
           if ($self->should_install($mod, $ver)) {
               push @install, [ $mod, $ver ];
               $seen{$mod} = 1;
@@ -12379,7 +12389,9 @@ aware redirector.
 =item --mirror-only
 
 Download the mirror's 02packages.details.txt.gz index file instead of
-querying the CPAN Meta DB.
+querying the CPAN Meta DB. This will also effectively opt out sending
+your local perl versions to backend database servers such as CPAN Meta
+DB and MetaCPAN.
 
 Select this option if you are using a local mirror of CPAN, such as
 minicpan when you're offline, or your own CPAN index (a.k.a darkpan).
@@ -12556,6 +12568,12 @@ Defaults to false.
 
 Verify the integrity of distribution files retrieved from PAUSE using
 CHECKSUMS and SIGNATURES (if found). Defaults to false.
+
+=item --report-perl-version
+
+Whether it report the locally installed perl version to the various
+web server as part of User-Agent. Defaults to true, and you can diable
+it by using C<--no-report-perl-version>.
 
 =item --auto-cleanup
 
