@@ -30,7 +30,9 @@ my $quote = WIN32 ? q/"/ : q/'/;
 
 sub agent {
     my $self = shift;
-    "cpanminus/$VERSION perl/$]";
+    my $agent = "cpanminus/$VERSION";
+    $agent .= " perl/$]" if $self->{report_perl_version};
+    $agent;
 }
 
 sub determine_home {
@@ -91,6 +93,7 @@ sub new {
         save_dists => undef,
         skip_configure => 0,
         verify => 0,
+        report_perl_version => 1,
         @_,
     }, $class;
 }
@@ -154,6 +157,7 @@ sub parse_options {
         'skip-configure!' => \$self->{skip_configure},
         'dev!'       => \$self->{dev_release},
         'metacpan!'  => \$self->{metacpan},
+        'report-perl-version!' => \$self->{report_perl_version},
     );
 
     if (!@ARGV && $0 ne '-' && !-t STDIN){ # e.g. # cpanm < author/requires.cpanm
