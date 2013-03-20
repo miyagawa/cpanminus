@@ -392,7 +392,7 @@ CHECKSUMS and SIGNATURES (if found). Defaults to false.
 =item --report-perl-version
 
 Whether it report the locally installed perl version to the various
-web server as part of User-Agent. Defaults to true, and you can diable
+web server as part of User-Agent. Defaults to true, and you can disable
 it by using C<--no-report-perl-version>.
 
 =item --auto-cleanup
