@@ -2130,7 +2130,11 @@ sub cleanup_workdirs {
     }
 
     if (@targets) {
-        $self->chat("Expiring ", scalar(@targets), " work directories.\n");
+        if (@targets >= 64) {
+            $self->diag("Expiring ", scalar(@target), " work directories. This might take long...\n");
+        } else {
+            $self->chat("Expiring ", scalar(@target), " work directories.\n");
+        }
         File::Path::rmtree(\@targets, 0, 0); # safe = 0, since blib usually doesn't have write bits
     }
 }
