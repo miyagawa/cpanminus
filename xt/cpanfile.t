@@ -9,8 +9,7 @@ use xt::Run;
 
     like last_build_log, qr/installed Hash-MultiValue-0\.10/;
     like last_build_log, qr/installed Try-Tiny-0\.11/;
-
-    unlike last_build_log, qr/installed Test-Warn/, '--notest skips test requirements';
+    like last_build_log, qr/installed Test-Warn/, '--notest means skip tests on *deps*, not necessarily root'
 }
 
 {

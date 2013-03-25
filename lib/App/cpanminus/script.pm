@@ -1728,7 +1728,11 @@ sub build_stuff {
 
     $self->diag_ok($configure_state->{configured_ok} ? "OK" : "N/A");
 
-    my @deps = $self->find_prereqs($dist);
+    # install direct 'test' dependencies for --installdeps, even with --notest
+    my @want_phase = $self->{notest} && !($self->{installdeps} && $depth == 0)
+                   ? qw( build runtime ) : qw( build test runtime );
+
+    my @deps = $self->find_prereqs($dist, \@want_phase);
     my $module_name = $self->find_module_name($configure_state) || $dist->{meta}{name};
     $module_name =~ s/-/::/g;
 
@@ -2013,9 +2017,9 @@ sub safe_eval {
 }
 
 sub find_prereqs {
-    my($self, $dist) = @_;
+    my($self, $dist, $phases) = @_;
 
-    my @deps = $self->extract_meta_prereqs($dist);
+    my @deps = $self->extract_meta_prereqs($dist, $phases);
 
     if ($dist->{module} =~ /^Bundle::/i) {
         push @deps, $self->bundle_deps($dist);
@@ -2025,14 +2029,13 @@ sub find_prereqs {
 }
 
 sub extract_meta_prereqs {
-    my($self, $dist) = @_;
+    my($self, $dist, $phases) = @_;
 
     if ($dist->{cpanfile}) {
         my $prereq = $dist->{cpanfile}->prereq;
-        my @phase = $self->{notest} ? qw( build runtime ) : qw( build test runtime );
         require CPAN::Meta::Requirements;
         my $req = CPAN::Meta::Requirements->new;
-        $req->add_requirements($prereq->requirements_for($_, 'requires')) for @phase;
+        $req->add_requirements($prereq->requirements_for($_, 'requires')) for @$phases;
         return %{$req->as_string_hash};
     }
 
@@ -2046,7 +2049,7 @@ sub extract_meta_prereqs {
         my $mymeta = JSON::PP::decode_json($json);
         if ($mymeta) {
             $meta->{$_} = $mymeta->{$_} for qw(name version);
-            return $self->extract_requires($mymeta);
+            return $self->extract_requires($mymeta, $phases);
         }
     }
 
@@ -2055,14 +2058,14 @@ sub extract_meta_prereqs {
         my $mymeta = $self->parse_meta('MYMETA.yml');
         if ($mymeta) {
             $meta->{$_} = $mymeta->{$_} for qw(name version);
-            return $self->extract_requires($mymeta);
+            return $self->extract_requires($mymeta, $phases);
         }
     }
 
     if (-e '_build/prereqs') {
         $self->chat("Checking dependencies from _build/prereqs ...\n");
         my $mymeta = do { open my $in, "_build/prereqs"; $self->safe_eval(join "", <$in>) };
-        @deps = $self->extract_requires($mymeta);
+        @deps = $self->extract_requires($mymeta, $phases);
     } elsif (-e 'Makefile') {
         $self->chat("Finding PREREQ from Makefile ...\n");
         open my $mf, "Makefile";
@@ -2120,14 +2123,13 @@ sub maybe_version {
 }
 
 sub extract_requires {
-    my($self, $meta) = @_;
+    my($self, $meta, $phases) = @_;
 
     if ($meta->{'meta-spec'} && $meta->{'meta-spec'}{version} == 2) {
-        my @phase = $self->{notest} ? qw( build runtime ) : qw( build test runtime );
         my @deps = map {
             my $p = $meta->{prereqs}{$_} || {};
             %{$p->{requires} || {}};
-        } @phase;
+        } @$phases;
         return @deps;
     }
 
