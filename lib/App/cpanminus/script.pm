@@ -1633,13 +1633,23 @@ sub should_install {
     return;
 }
 
+sub check_perl_version {
+    my($self, $version) = @_;
+    return version->new($]) >= version->new($version);
+}
+
 sub install_deps {
     my($self, $dir, $depth, @deps) = @_;
 
-    my(@install, %seen);
+    my(@install, %seen, @fail);
     while (my($mod, $ver) = splice @deps, 0, 2) {
-        next if $seen{$mod} or $mod eq 'perl';
-        if ($self->should_install($mod, $ver)) {
+        next if $seen{$mod};
+        if ($mod eq 'perl') {
+            unless ($self->check_perl_version($ver)) {
+                $self->diag("Needs perl $ver, you only have $]\n");
+                push @fail, 'perl';
+            }
+        } elsif ($self->should_install($mod, $ver)) {
             push @install, [ $mod, $ver ];
             $seen{$mod} = 1;
         }
@@ -1649,7 +1659,6 @@ sub install_deps {
         $self->diag("==> Found dependencies: " . join(", ",  map $_->[0], @install) . "\n");
     }
 
-    my @fail;
     for my $mod (@install) {
         $self->install_module($mod->[0], $depth + 1, $mod->[1])
             or push @fail, $mod->[0];
@@ -1683,7 +1692,6 @@ sub build_stuff {
         $self->verify_signature($dist) or return;
     }
 
-    my @config_deps;
     if (-e 'META.json') {
         $self->chat("Checking configure dependencies from META.json\n");
         $dist->{meta} = $self->parse_meta('META.json');
@@ -1699,11 +1707,14 @@ sub build_stuff {
 
     $dist->{meta} ||= {};
 
-    if ( $dist->{meta}->{prereqs} ) {
-        push @config_deps, %{$dist->{meta}{prereqs}{configure}{requires} || {}};
-    }
-    else {
+    my @config_deps;
+
+    if (my $prereqs = $dist->{meta}->{prereqs} ) {
+        push @config_deps, %{$prereqs->{configure}{requires} || {}};
+        push @config_deps, $self->perl_requirements($prereqs->{runtime}{requires}, $prereqs->{build}{requires});
+    } else {
         push @config_deps, %{$dist->{meta}{configure_requires} || {}};
+        push @config_deps, $self->perl_requirements($dist->{meta}{build_requires}, $dist->{meta}{requires});
     }
 
     my $target = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $dist->{dir};
@@ -1813,6 +1824,19 @@ DIAG
         $self->diag_fail("$what $stuff failed. See $self->{log} for details.", 1);
         return;
     }
+}
+
+sub perl_requirements {
+    my($self, @requires) = @_;
+
+    my @perl;
+    for my $requires (grep defined, @requires) {
+        if ($requires->{perl}) {
+            push @perl, perl => $requires->{perl};
+        }
+    }
+
+    return @perl;
 }
 
 sub configure_this {
