@@ -1,5 +1,10 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.6101  Mon Mar 25 13:39:56 PDT 2013
+   [Improvements]
+      - Always install direct test dependencies with --installdeps even when
+        --notest option is used. This should make Travis CI users happy #222 (hide_o_55)
+
 1.6100  Sun Mar 24 21:09:30 PDT 2013
    [Improvements]
       - Support 'perl' key in requires (aka The Oslo Consensus) #221 (tokuhirom)
