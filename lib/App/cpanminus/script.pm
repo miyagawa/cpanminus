@@ -1831,7 +1831,7 @@ sub perl_requirements {
 
     my @perl;
     for my $requires (grep defined, @requires) {
-        if ($requires->{perl}) {
+        if (exists $requires->{perl}) {
             push @perl, perl => $requires->{perl};
         }
     }
