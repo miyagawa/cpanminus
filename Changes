@@ -1,5 +1,10 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.6100  Sun Mar 24 21:09:30 PDT 2013
+   [Improvements]
+      - Support 'perl' key in requires (aka The Oslo Consensus) #221 (tokuhirom)
+      - Gives warnings when pruning lots of work directories (xdg)
+
 1.6008  Tue Mar 19 09:07:43 PDT 2013
    [Improvements]
       - Document the link to privacy policy for perl version collection, as well as

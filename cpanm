@@ -18,7 +18,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.6008";
+  our $VERSION = "1.6100";
   
   =head1 NAME
   
@@ -1947,13 +1947,23 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       return;
   }
   
+  sub check_perl_version {
+      my($self, $version) = @_;
+      return version->new($]) >= version->new($version);
+  }
+  
   sub install_deps {
       my($self, $dir, $depth, @deps) = @_;
   
-      my(@install, %seen);
+      my(@install, %seen, @fail);
       while (my($mod, $ver) = splice @deps, 0, 2) {
-          next if $seen{$mod} or $mod eq 'perl';
-          if ($self->should_install($mod, $ver)) {
+          next if $seen{$mod};
+          if ($mod eq 'perl') {
+              unless ($self->check_perl_version($ver)) {
+                  $self->diag("Needs perl $ver, you only have $]\n");
+                  push @fail, 'perl';
+              }
+          } elsif ($self->should_install($mod, $ver)) {
               push @install, [ $mod, $ver ];
               $seen{$mod} = 1;
           }
@@ -1963,7 +1973,6 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           $self->diag("==> Found dependencies: " . join(", ",  map $_->[0], @install) . "\n");
       }
   
-      my @fail;
       for my $mod (@install) {
           $self->install_module($mod->[0], $depth + 1, $mod->[1])
               or push @fail, $mod->[0];
@@ -1997,7 +2006,6 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           $self->verify_signature($dist) or return;
       }
   
-      my @config_deps;
       if (-e 'META.json') {
           $self->chat("Checking configure dependencies from META.json\n");
           $dist->{meta} = $self->parse_meta('META.json');
@@ -2013,11 +2021,14 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   
       $dist->{meta} ||= {};
   
-      if ( $dist->{meta}->{prereqs} ) {
-          push @config_deps, %{$dist->{meta}{prereqs}{configure}{requires} || {}};
-      }
-      else {
+      my @config_deps;
+  
+      if (my $prereqs = $dist->{meta}->{prereqs} ) {
+          push @config_deps, %{$prereqs->{configure}{requires} || {}};
+          push @config_deps, $self->perl_requirements($prereqs->{runtime}{requires}, $prereqs->{build}{requires});
+      } else {
           push @config_deps, %{$dist->{meta}{configure_requires} || {}};
+          push @config_deps, $self->perl_requirements($dist->{meta}{build_requires}, $dist->{meta}{requires});
       }
   
       my $target = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $dist->{dir};
@@ -2127,6 +2138,19 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
           $self->diag_fail("$what $stuff failed. See $self->{log} for details.", 1);
           return;
       }
+  }
+  
+  sub perl_requirements {
+      my($self, @requires) = @_;
+  
+      my @perl;
+      for my $requires (grep defined, @requires) {
+          if (exists $requires->{perl}) {
+              push @perl, perl => $requires->{perl};
+          }
+      }
+  
+      return @perl;
   }
   
   sub configure_this {
@@ -2444,7 +2468,11 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       }
   
       if (@targets) {
-          $self->chat("Expiring ", scalar(@targets), " work directories.\n");
+          if (@targets >= 64) {
+              $self->diag("Expiring ", scalar(@targets), " work directories. This might take long...\n");
+          } else {
+              $self->chat("Expiring ", scalar(@targets), " work directories.\n");
+          }
           File::Path::rmtree(\@targets, 0, 0); # safe = 0, since blib usually doesn't have write bits
       }
   }
@@ -12572,7 +12600,7 @@ CHECKSUMS and SIGNATURES (if found). Defaults to false.
 =item --report-perl-version
 
 Whether it report the locally installed perl version to the various
-web server as part of User-Agent. Defaults to true, and you can diable
+web server as part of User-Agent. Defaults to true, and you can disable
 it by using C<--no-report-perl-version>.
 
 =item --auto-cleanup
