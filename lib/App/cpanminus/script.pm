@@ -1542,6 +1542,24 @@ CHECK {
 EOF
 }
 
+sub core_version_for {
+    my($self, $module) = @_;
+
+    require Module::CoreList; # no fatpack
+    unless (exists $Module::CoreList::version{$]+0}) {
+        die sprintf("Module::CoreList %s (loaded from %s) doesn't seem to have entries for perl $]. " .
+                    "You're strongly recommended to upgrade Module::CoreList from CPAN.\n",
+                    $Module::CoreList::VERSION, $INC{"Module/CoreList.pm"});
+    }
+
+    unless (exists $Module::CoreList::version{$]+0}{$module}) {
+        return -1;
+    }
+
+    return $Module::CoreList::version{$]+0}{$module};
+}
+
+
 sub check_module {
     my($self, $mod, $want_ver) = @_;
 
@@ -1555,11 +1573,8 @@ sub check_module {
     # might be newer than (or actually wasn't core at) the version
     # that is shipped with the current perl
     if ($self->{self_contained} && $self->loaded_from_perl_lib($meta)) {
-        require Module::CoreList; # no fatpack
-        unless (exists $Module::CoreList::version{$]+0}{$mod}) {
-            return 0, undef;
-        }
-        $version = $Module::CoreList::version{$]+0}{$mod};
+        $version = $self->core_version_for($mod);
+        return 0, undef if $version && $version == -1;
     }
 
     $self->{local_versions}{$mod} = $version;
