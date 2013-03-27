@@ -2237,11 +2237,12 @@ sub shell_quote {
 
 sub which {
     my($self, $name) = @_;
+    return $name if File::Spec->file_name_is_absolute($name) && -x $name;
     my $exe_ext = $Config{_exe};
     for my $dir (File::Spec->path) {
         my $fullpath = File::Spec->catfile($dir, $name);
         if (-x $fullpath || -x ($fullpath .= $exe_ext)) {
-            if ($fullpath =~ /\s/ && $fullpath !~ /^$quote/) {
+            if ($fullpath =~ /\s/) {
                 $fullpath = $self->shell_quote($fullpath);
             }
             return $fullpath;
