@@ -1974,6 +1974,7 @@ sub save_meta {
     my $base = ($ENV{PERL_MM_OPT} || '') =~ /INSTALL_BASE=/
         ? ($self->install_base($ENV{PERL_MM_OPT}) . "/lib/perl5") : $Config{sitelibexp};
 
+    require Module::Metadata;
     my $provides = $self->_merge_hashref(
         map Module::Metadata->package_versions_from_directory($_),
             qw( blib/lib blib/arch ) # FCGI.pm :(
