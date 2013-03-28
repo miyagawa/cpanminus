@@ -1,5 +1,11 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.6102  Wed Mar 27 17:14:18 PDT 2013
+   [Improvements]
+      - Added a safe guard check if Module::CoreList loaded is broken/outdated (jdb)
+      - Removed the check to see if make executable begins with quotes (jdb, charsbar)
+      - Added to load Module::Metadata in post-installation #226
+
 1.6101  Mon Mar 25 13:39:56 PDT 2013
    [Improvements]
       - Always install direct test dependencies with --installdeps even when

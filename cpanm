@@ -18,7 +18,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.6101";
+  our $VERSION = "1.6102";
   
   =head1 NAME
   
@@ -1856,6 +1856,24 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   EOF
   }
   
+  sub core_version_for {
+      my($self, $module) = @_;
+  
+      require Module::CoreList; # no fatpack
+      unless (exists $Module::CoreList::version{$]+0}) {
+          die sprintf("Module::CoreList %s (loaded from %s) doesn't seem to have entries for perl $]. " .
+                      "You're strongly recommended to upgrade Module::CoreList from CPAN.\n",
+                      $Module::CoreList::VERSION, $INC{"Module/CoreList.pm"});
+      }
+  
+      unless (exists $Module::CoreList::version{$]+0}{$module}) {
+          return -1;
+      }
+  
+      return $Module::CoreList::version{$]+0}{$module};
+  }
+  
+  
   sub check_module {
       my($self, $mod, $want_ver) = @_;
   
@@ -1869,11 +1887,8 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       # might be newer than (or actually wasn't core at) the version
       # that is shipped with the current perl
       if ($self->{self_contained} && $self->loaded_from_perl_lib($meta)) {
-          require Module::CoreList; # no fatpack
-          unless (exists $Module::CoreList::version{$]+0}{$mod}) {
-              return 0, undef;
-          }
-          $version = $Module::CoreList::version{$]+0}{$mod};
+          $version = $self->core_version_for($mod);
+          return 0, undef if $version && $version == -1;
       }
   
       $self->{local_versions}{$mod} = $version;
@@ -2273,6 +2288,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
       my $base = ($ENV{PERL_MM_OPT} || '') =~ /INSTALL_BASE=/
           ? ($self->install_base($ENV{PERL_MM_OPT}) . "/lib/perl5") : $Config{sitelibexp};
   
+      require Module::Metadata;
       my $provides = $self->_merge_hashref(
           map Module::Metadata->package_versions_from_directory($_),
               qw( blib/lib blib/arch ) # FCGI.pm :(
@@ -2551,11 +2567,12 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
   
   sub which {
       my($self, $name) = @_;
+      return $name if File::Spec->file_name_is_absolute($name) && -x $name;
       my $exe_ext = $Config{_exe};
       for my $dir (File::Spec->path) {
           my $fullpath = File::Spec->catfile($dir, $name);
           if (-x $fullpath || -x ($fullpath .= $exe_ext)) {
-              if ($fullpath =~ /\s/ && $fullpath !~ /^$quote/) {
+              if ($fullpath =~ /\s/) {
                   $fullpath = $self->shell_quote($fullpath);
               }
               return $fullpath;
