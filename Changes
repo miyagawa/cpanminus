@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.6103  Sat Mar 30 14:33:07 PDT 2013
+   [Bug Fixes]
+      - Fixed rare crash with version.pm loading order in perl 5.8 (tokuhirom)
+
 1.6102  Wed Mar 27 17:14:18 PDT 2013
    [Improvements]
       - Added a safe guard check if Module::CoreList loaded is broken/outdated (jdb)
