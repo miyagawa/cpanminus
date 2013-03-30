@@ -12,6 +12,7 @@ use File::Temp ();
 use Getopt::Long ();
 use Parse::CPAN::Meta;
 use Symbol ();
+use version ();
 
 use constant WIN32 => $^O eq 'MSWin32';
 use constant SUNOS => $^O eq 'solaris';
