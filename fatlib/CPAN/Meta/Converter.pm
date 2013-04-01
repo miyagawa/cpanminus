@@ -2,7 +2,7 @@ use 5.006;
 use strict;
 use warnings;
 package CPAN::Meta::Converter;
-our $VERSION = '2.120921'; # VERSION
+our $VERSION = '2.130880'; # VERSION
 
 
 use CPAN::Meta::Validator;
@@ -307,7 +307,7 @@ sub _is_module_name {
 }
 
 sub _clean_version {
-  my ($element, $key, $meta, $to_version) = @_;
+  my ($element) = @_;
   return 0 if ! defined $element;
 
   $element =~ s{^\s*}{};
@@ -676,12 +676,12 @@ sub _release_status_from_version {
 
 my $provides_spec = {
   file => \&_keep,
-  version => \&_clean_version,
+  version => \&_keep,
 };
 
 my $provides_spec_2 = {
   file => \&_keep,
-  version => \&_clean_version,
+  version => \&_keep,
   ':custom'  => \&_prefix_custom,
 };
 
@@ -692,6 +692,8 @@ sub _provides {
   my $new_data = {};
   for my $k ( keys %$element ) {
     $new_data->{$k} = _convert($element->{$k}, $spec, $to_version);
+    $new_data->{$k}{version} = _clean_version($element->{$k}{version})
+      if exists $element->{$k}{version};
   }
   return $new_data;
 }
@@ -1260,9 +1262,5 @@ sub convert {
 
 # ABSTRACT: Convert CPAN distribution metadata structures
 
-
-
-
 __END__
-
 

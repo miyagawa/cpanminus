@@ -2,14 +2,14 @@ use strict;
 use warnings;
 package File::pushd;
 # ABSTRACT: change directory temporarily for a limited scope
-our $VERSION = '1.004'; # VERSION
+our $VERSION = '1.005'; # VERSION
 
 our @EXPORT  = qw( pushd tempd );
 our @ISA     = qw( Exporter );
 
 use Exporter;
 use Carp;
-use Cwd         qw( cwd abs_path );
+use Cwd         qw( getcwd abs_path );
 use File::Path  qw( rmtree );
 use File::Temp  qw();
 use File::Spec;
@@ -26,7 +26,10 @@ sub pushd {
     my ($target_dir, $options) = @_;
     $options->{untaint_pattern} ||= qr{^([-+@\w./]+)$};
 
-    my $tainted_orig = cwd;
+    $target_dir = "." unless defined $target_dir;
+    croak "Can't locate directory $target_dir" unless -d $target_dir;
+
+    my $tainted_orig = getcwd;
     my $orig;
     if ( $tainted_orig =~ $options->{untaint_pattern} ) {
       $orig = $1;
@@ -37,7 +40,7 @@ sub pushd {
 
     my $tainted_dest;
     eval { $tainted_dest   = $target_dir ? abs_path( $target_dir ) : $orig };
-    croak "Can't locate directory $target_dir: $@" if $@;
+    croak "Can't locate absolute path for $target_dir: $@" if $@;
 
     my $dest;
     if ( $tainted_dest =~ $options->{untaint_pattern} ) {
