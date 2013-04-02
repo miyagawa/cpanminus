@@ -443,6 +443,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
               $self->{self_contained} = 1;
               $self->{pod2man} = undef;
           },
+          'self-contained!' => \$self->{self_contained},
           'mirror=s@' => $self->{mirrors},
           'mirror-only!' => \$self->{mirror_only},
           'mirror-index=s'  => \$self->{mirror_index},
@@ -1013,6 +1014,7 @@ $fatpacked{"App/cpanminus/script.pm"} = <<'APP_CPANMINUS_SCRIPT';
     --prompt                  Prompt when configure/build/test fails
     -l,--local-lib            Specify the install base to install modules
     -L,--local-lib-contained  Specify the install base to install all non-core modules
+    --self-contained          Install all non-core modules, even if they're already installed.
     --auto-cleanup            Number of days that cpanm's work directories expire in. Defaults to 7
   
   Commands:
@@ -12403,10 +12405,9 @@ as well.
 
 =item -L, --local-lib-contained
 
-Same with C<--local-lib> but when examining the dependencies, it
-assumes no non-core modules are installed on the system. It's handy if
-you want to bundle application dependencies in one directory so you
-can distribute to other machines.
+Same with C<--local-lib> but with L<--self-contained> set.  All
+non-core dependencies will be installed even if they're already
+installed.
 
 For instance,
 
@@ -12416,6 +12417,12 @@ would install Plack and all of its non-core dependencies into the
 directory C<extlib>, which can be loaded from your application with:
 
   use local::lib '/path/to/extlib';
+
+=item --self-contained
+
+When examining the dependencies, assume no non-core modules are
+installed on the system. Handy if you want to bundle application
+dependencies in one directory so you can distribute to other machines.
 
 =item --mirror
 
