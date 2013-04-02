@@ -128,6 +128,7 @@ sub parse_options {
             $self->{self_contained} = 1;
             $self->{pod2man} = undef;
         },
+        'self-contained!' => \$self->{self_contained},
         'mirror=s@' => $self->{mirrors},
         'mirror-only!' => \$self->{mirror_only},
         'mirror-index=s'  => \$self->{mirror_index},
@@ -698,6 +699,7 @@ Options:
   --prompt                  Prompt when configure/build/test fails
   -l,--local-lib            Specify the install base to install modules
   -L,--local-lib-contained  Specify the install base to install all non-core modules
+  --self-contained          Install all non-core modules, even if they're already installed.
   --auto-cleanup            Number of days that cpanm's work directories expire in. Defaults to 7
 
 Commands:
