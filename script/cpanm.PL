@@ -175,10 +175,9 @@ as well.
 
 =item -L, --local-lib-contained
 
-Same with C<--local-lib> but when examining the dependencies, it
-assumes no non-core modules are installed on the system. It's handy if
-you want to bundle application dependencies in one directory so you
-can distribute to other machines.
+Same with C<--local-lib> but with L<--self-contained> set.  All
+non-core dependencies will be installed even if they're already
+installed.
 
 For instance,
 
@@ -188,6 +187,12 @@ would install Plack and all of its non-core dependencies into the
 directory C<extlib>, which can be loaded from your application with:
 
   use local::lib '/path/to/extlib';
+
+=item --self-contained
+
+When examining the dependencies, assume no non-core modules are
+installed on the system. Handy if you want to bundle application
+dependencies in one directory so you can distribute to other machines.
 
 =item --mirror
 
