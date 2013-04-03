@@ -18,7 +18,7 @@ my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
   package App::cpanminus;
-  our $VERSION = "1.6103";
+  our $VERSION = "1.6104";
   
   =head1 NAME
   
@@ -3007,7 +3007,7 @@ $fatpacked{"CPAN/Meta.pm"} = <<'CPAN_META';
   use strict;
   use warnings;
   package CPAN::Meta;
-  our $VERSION = '2.120921'; # VERSION
+  our $VERSION = '2.130880'; # VERSION
   
   
   use Carp qw(carp croak);
@@ -3341,11 +3341,7 @@ $fatpacked{"CPAN/Meta.pm"} = <<'CPAN_META';
   
   # ABSTRACT: the distribution metadata for a CPAN dist
   
-  
-  
-  
   __END__
-  
   
 CPAN_META
 
@@ -3354,7 +3350,7 @@ $fatpacked{"CPAN/Meta/Converter.pm"} = <<'CPAN_META_CONVERTER';
   use strict;
   use warnings;
   package CPAN::Meta::Converter;
-  our $VERSION = '2.120921'; # VERSION
+  our $VERSION = '2.130880'; # VERSION
   
   
   use CPAN::Meta::Validator;
@@ -3659,7 +3655,7 @@ $fatpacked{"CPAN/Meta/Converter.pm"} = <<'CPAN_META_CONVERTER';
   }
   
   sub _clean_version {
-    my ($element, $key, $meta, $to_version) = @_;
+    my ($element) = @_;
     return 0 if ! defined $element;
   
     $element =~ s{^\s*}{};
@@ -4028,12 +4024,12 @@ $fatpacked{"CPAN/Meta/Converter.pm"} = <<'CPAN_META_CONVERTER';
   
   my $provides_spec = {
     file => \&_keep,
-    version => \&_clean_version,
+    version => \&_keep,
   };
   
   my $provides_spec_2 = {
     file => \&_keep,
-    version => \&_clean_version,
+    version => \&_keep,
     ':custom'  => \&_prefix_custom,
   };
   
@@ -4044,6 +4040,8 @@ $fatpacked{"CPAN/Meta/Converter.pm"} = <<'CPAN_META_CONVERTER';
     my $new_data = {};
     for my $k ( keys %$element ) {
       $new_data->{$k} = _convert($element->{$k}, $spec, $to_version);
+      $new_data->{$k}{version} = _clean_version($element->{$k}{version})
+        if exists $element->{$k}{version};
     }
     return $new_data;
   }
@@ -4612,11 +4610,7 @@ $fatpacked{"CPAN/Meta/Converter.pm"} = <<'CPAN_META_CONVERTER';
   
   # ABSTRACT: Convert CPAN distribution metadata structures
   
-  
-  
-  
   __END__
-  
   
 CPAN_META_CONVERTER
 
@@ -4625,7 +4619,7 @@ $fatpacked{"CPAN/Meta/Feature.pm"} = <<'CPAN_META_FEATURE';
   use strict;
   use warnings;
   package CPAN::Meta::Feature;
-  our $VERSION = '2.120921'; # VERSION
+  our $VERSION = '2.130880'; # VERSION
   
   use CPAN::Meta::Prereqs;
   
@@ -4655,12 +4649,7 @@ $fatpacked{"CPAN/Meta/Feature.pm"} = <<'CPAN_META_FEATURE';
   
   # ABSTRACT: an optional feature provided by a CPAN distribution
   
-  
-  
-  
   __END__
-  
-  
   
 CPAN_META_FEATURE
 
@@ -4670,16 +4659,13 @@ $fatpacked{"CPAN/Meta/History.pm"} = <<'CPAN_META_HISTORY';
   use strict;
   use warnings;
   package CPAN::Meta::History;
-  our $VERSION = '2.120921'; # VERSION
+  our $VERSION = '2.130880'; # VERSION
   
   1;
   
   # ABSTRACT: history of CPAN Meta Spec changes
   
-  
-  
   __END__
-  =pod
   
 CPAN_META_HISTORY
 
@@ -4688,7 +4674,7 @@ $fatpacked{"CPAN/Meta/Prereqs.pm"} = <<'CPAN_META_PREREQS';
   use strict;
   use warnings;
   package CPAN::Meta::Prereqs;
-  our $VERSION = '2.120921'; # VERSION
+  our $VERSION = '2.130880'; # VERSION
   
   
   use Carp qw(confess);
@@ -4825,12 +4811,7 @@ $fatpacked{"CPAN/Meta/Prereqs.pm"} = <<'CPAN_META_PREREQS';
   
   # ABSTRACT: a set of distribution prerequisites by phase and type
   
-  
-  
-  
   __END__
-  
-  
   
 CPAN_META_PREREQS
 
@@ -5280,16 +5261,13 @@ $fatpacked{"CPAN/Meta/Spec.pm"} = <<'CPAN_META_SPEC';
   use strict;
   use warnings;
   package CPAN::Meta::Spec;
-  our $VERSION = '2.120921'; # VERSION
+  our $VERSION = '2.130880'; # VERSION
   
   1;
   
   # ABSTRACT: specification for CPAN distribution metadata
   
-  
-  
   __END__
-  =pod
   
 CPAN_META_SPEC
 
@@ -5298,7 +5276,7 @@ $fatpacked{"CPAN/Meta/Validator.pm"} = <<'CPAN_META_VALIDATOR';
   use strict;
   use warnings;
   package CPAN::Meta::Validator;
-  our $VERSION = '2.120921'; # VERSION
+  our $VERSION = '2.130880'; # VERSION
   
   
   #--------------------------------------------------------------------------#
@@ -6124,12 +6102,7 @@ $fatpacked{"CPAN/Meta/Validator.pm"} = <<'CPAN_META_VALIDATOR';
   
   # ABSTRACT: validate CPAN distribution metadata structures
   
-  
-  
-  
   __END__
-  
-  
   
 CPAN_META_VALIDATOR
 
@@ -6790,14 +6763,14 @@ $fatpacked{"File/pushd.pm"} = <<'FILE_PUSHD';
   use warnings;
   package File::pushd;
   # ABSTRACT: change directory temporarily for a limited scope
-  our $VERSION = '1.004'; # VERSION
+  our $VERSION = '1.005'; # VERSION
   
   our @EXPORT  = qw( pushd tempd );
   our @ISA     = qw( Exporter );
   
   use Exporter;
   use Carp;
-  use Cwd         qw( cwd abs_path );
+  use Cwd         qw( getcwd abs_path );
   use File::Path  qw( rmtree );
   use File::Temp  qw();
   use File::Spec;
@@ -6814,7 +6787,10 @@ $fatpacked{"File/pushd.pm"} = <<'FILE_PUSHD';
       my ($target_dir, $options) = @_;
       $options->{untaint_pattern} ||= qr{^([-+@\w./]+)$};
   
-      my $tainted_orig = cwd;
+      $target_dir = "." unless defined $target_dir;
+      croak "Can't locate directory $target_dir" unless -d $target_dir;
+  
+      my $tainted_orig = getcwd;
       my $orig;
       if ( $tainted_orig =~ $options->{untaint_pattern} ) {
         $orig = $1;
@@ -6825,7 +6801,7 @@ $fatpacked{"File/pushd.pm"} = <<'FILE_PUSHD';
   
       my $tainted_dest;
       eval { $tainted_dest   = $target_dir ? abs_path( $target_dir ) : $orig };
-      croak "Can't locate directory $target_dir: $@" if $@;
+      croak "Can't locate absolute path for $target_dir: $@" if $@;
   
       my $dest;
       if ( $tainted_dest =~ $options->{untaint_pattern} ) {
@@ -7879,7 +7855,7 @@ $fatpacked{"JSON/PP.pm"} = <<'JSON_PP';
   use B ();
   #use Devel::Peek;
   
-  $JSON::PP::VERSION = '2.27200';
+  $JSON::PP::VERSION = '2.27202';
   
   @JSON::PP::EXPORT = qw(encode_json decode_json from_json to_json);
   
@@ -9483,7 +9459,7 @@ $fatpacked{"Module/CPANfile.pm"} = <<'MODULE_CPANFILE';
   use warnings;
   use Cwd;
   
-  our $VERSION = '0.9010';
+  our $VERSION = '0.9027';
   
   sub new {
       my($class, $file) = @_;
@@ -9498,11 +9474,27 @@ $fatpacked{"Module/CPANfile.pm"} = <<'MODULE_CPANFILE';
       $self;
   }
   
+  sub save {
+      my($self, $path) = @_;
+  
+      open my $out, ">", $path or die "$path: $!";
+      print {$out} $self->to_string;
+  }
+  
   sub parse {
       my $self = shift;
   
       my $file = Cwd::abs_path($self->{file});
       $self->{result} = Module::CPANfile::Environment::parse($file) or die $@;
+  }
+  
+  sub from_prereqs {
+      my($proto, $prereqs) = @_;
+  
+      my $self = $proto->new;
+      $self->{result} = Module::CPANfile::Result->from_prereqs($prereqs);
+  
+      $self;
   }
   
   sub prereqs { shift->prereq }
@@ -9534,12 +9526,44 @@ $fatpacked{"Module/CPANfile.pm"} = <<'MODULE_CPANFILE';
       CPAN::Meta->new($struct)->save($file, { version => $version });
   }
   
+  sub to_string {
+      my($self, $include_empty) = @_;
+  
+      my $prereqs = $self->{result}{spec};
+  
+      my $code = '';
+      for my $phase (qw(runtime configure build test develop)) {
+          my $indent = $phase eq 'runtime' ? '' : '    ';
+  
+          my($phase_code, $requirements);
+          $phase_code .= "on $phase => sub {\n" unless $phase eq 'runtime';
+  
+          for my $type (qw(requires recommends suggests conflicts)) {
+              for my $mod (sort keys %{$prereqs->{$phase}{$type}}) {
+                  my $ver = $prereqs->{$phase}{$type}{$mod};
+                  $phase_code .= $ver eq '0'
+                               ? "${indent}$type '$mod';\n"
+                               : "${indent}$type '$mod', '$ver';\n";
+                  $requirements++;
+              }
+          }
+  
+          $phase_code .= "\n" unless $requirements;
+          $phase_code .= "};\n" unless $phase eq 'runtime';
+  
+          $code .= $phase_code . "\n" if $requirements or $include_empty;
+      }
+  
+      $code =~ s/\n+$/\n/s;
+      $code;
+  }
+  
   package Module::CPANfile::Environment;
   use strict;
   
   my @bindings = qw(
       on requires recommends suggests conflicts
-      osname perl
+      osname
       configure_requires build_requires test_requires author_requires
   );
   
@@ -9574,6 +9598,7 @@ $fatpacked{"Module/CPANfile.pm"} = <<'MODULE_CPANFILE';
   my \$_result;
   BEGIN { import Module::CPANfile::Environment \\\$_result };
   
+  # line 1 "$file"
   $code;
   
   \$_result;
@@ -9589,6 +9614,14 @@ $fatpacked{"Module/CPANfile.pm"} = <<'MODULE_CPANFILE';
   package Module::CPANfile::Result;
   use strict;
   
+  sub from_prereqs {
+      my($class, $spec) = @_;
+      bless {
+          phase => 'runtime',
+          spec => $spec,
+      }, $class;
+  }
+  
   sub new {
       bless {
           phase => 'runtime', # default phase
@@ -9603,7 +9636,6 @@ $fatpacked{"Module/CPANfile.pm"} = <<'MODULE_CPANFILE';
   }
   
   sub osname { die "TODO" }
-  sub perl { die "TODO" }
   
   sub requires {
       my($self, $module, $requirement) = @_;
@@ -9652,7 +9684,6 @@ $fatpacked{"Module/CPANfile.pm"} = <<'MODULE_CPANFILE';
   1;
   
   __END__
-  
   
 MODULE_CPANFILE
 

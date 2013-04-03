@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.6104  Tue Apr  2 18:02:53 PDT 2013
+   [New Features]
+      - Added --self-contained, it's like --local-lib-contained but without --local-lib (schwern)
+
 1.6103  Sat Mar 30 14:33:07 PDT 2013
    [Bug Fixes]
       - Fixed rare crash with version.pm loading order in perl 5.8 (tokuhirom)
