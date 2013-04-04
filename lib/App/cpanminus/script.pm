@@ -1224,6 +1224,13 @@ sub format_dist {
     return "$dist->{cpanid}/$dist->{filename}";
 }
 
+sub trim {
+    local $_ = shift;
+    tr/\n/ /d;
+    s/^\s*|\s*$//g;
+    $_;
+}
+
 sub fetch_module {
     my($self, $dist) = @_;
 
@@ -1244,7 +1251,7 @@ sub fetch_module {
                 $self->mirror($uri, $name);
                 $file = $name if -e $name;
             };
-            $self->chat("$@") if $@ && $@ ne "SIGINT\n";
+            $self->diag("ERROR: " . trim("$@") . "\n", 1) if $@ && $@ ne "SIGINT\n";
             return $file;
         };
 
@@ -2346,6 +2353,7 @@ sub init_tools {
         $self->{_backends}{mirror} = sub {
             my $self = shift;
             my $res = $ua->()->mirror(@_);
+            die $res->content if $res->code == 501;
             $res->code;
         };
     } elsif ($self->{try_wget} and my $wget = $self->which('wget')) {
