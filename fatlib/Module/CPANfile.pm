@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use Cwd;
 
-our $VERSION = '0.9010';
+our $VERSION = '0.9027';
 
 sub new {
     my($class, $file) = @_;
@@ -18,11 +18,27 @@ sub load {
     $self;
 }
 
+sub save {
+    my($self, $path) = @_;
+
+    open my $out, ">", $path or die "$path: $!";
+    print {$out} $self->to_string;
+}
+
 sub parse {
     my $self = shift;
 
     my $file = Cwd::abs_path($self->{file});
     $self->{result} = Module::CPANfile::Environment::parse($file) or die $@;
+}
+
+sub from_prereqs {
+    my($proto, $prereqs) = @_;
+
+    my $self = $proto->new;
+    $self->{result} = Module::CPANfile::Result->from_prereqs($prereqs);
+
+    $self;
 }
 
 sub prereqs { shift->prereq }
@@ -54,12 +70,44 @@ sub merge_meta {
     CPAN::Meta->new($struct)->save($file, { version => $version });
 }
 
+sub to_string {
+    my($self, $include_empty) = @_;
+
+    my $prereqs = $self->{result}{spec};
+
+    my $code = '';
+    for my $phase (qw(runtime configure build test develop)) {
+        my $indent = $phase eq 'runtime' ? '' : '    ';
+
+        my($phase_code, $requirements);
+        $phase_code .= "on $phase => sub {\n" unless $phase eq 'runtime';
+
+        for my $type (qw(requires recommends suggests conflicts)) {
+            for my $mod (sort keys %{$prereqs->{$phase}{$type}}) {
+                my $ver = $prereqs->{$phase}{$type}{$mod};
+                $phase_code .= $ver eq '0'
+                             ? "${indent}$type '$mod';\n"
+                             : "${indent}$type '$mod', '$ver';\n";
+                $requirements++;
+            }
+        }
+
+        $phase_code .= "\n" unless $requirements;
+        $phase_code .= "};\n" unless $phase eq 'runtime';
+
+        $code .= $phase_code . "\n" if $requirements or $include_empty;
+    }
+
+    $code =~ s/\n+$/\n/s;
+    $code;
+}
+
 package Module::CPANfile::Environment;
 use strict;
 
 my @bindings = qw(
     on requires recommends suggests conflicts
-    osname perl
+    osname
     configure_requires build_requires test_requires author_requires
 );
 
@@ -94,6 +142,7 @@ no warnings;
 my \$_result;
 BEGIN { import Module::CPANfile::Environment \\\$_result };
 
+# line 1 "$file"
 $code;
 
 \$_result;
@@ -109,6 +158,14 @@ EVAL
 package Module::CPANfile::Result;
 use strict;
 
+sub from_prereqs {
+    my($class, $spec) = @_;
+    bless {
+        phase => 'runtime',
+        spec => $spec,
+    }, $class;
+}
+
 sub new {
     bless {
         phase => 'runtime', # default phase
@@ -123,7 +180,6 @@ sub on {
 }
 
 sub osname { die "TODO" }
-sub perl { die "TODO" }
 
 sub requires {
     my($self, $module, $requirement) = @_;
@@ -172,5 +228,4 @@ package Module::CPANfile;
 1;
 
 __END__
-
 
