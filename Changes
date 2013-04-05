@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.6105  Thu Apr  4 22:15:44 PDT 2013
+   [Improvements]
+      - Better error message when https is not supported with LWP #117
+
 1.6104  Tue Apr  2 18:02:53 PDT 2013
    [New Features]
       - Added --self-contained, it's like --local-lib-contained but without --local-lib (schwern)
