@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.6106  Sat Apr  6 14:18:25 PDT 2013
+   [Improvements]
+      - Support git-ssh with @commit (ikasam_a)
+
 1.6105  Thu Apr  4 22:15:44 PDT 2013
    [Improvements]
       - Better error message when https is not supported with LWP #117
