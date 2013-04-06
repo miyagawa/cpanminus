@@ -1443,7 +1443,7 @@ sub resolve_name {
     }
 
     # Git
-    if ($module =~ /(^git:|\.git$)/) {
+    if ($module =~ /(?:^git:|\.git(?:@.+)?$)/) {
         return $self->git_uri($module);
     }
 
