@@ -1,5 +1,9 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.6107  Sat Apr  6 21:17:57 PDT 2013
+   [Improvements]
+      - strip perl files in fatlib. Reduces cpanm executable size about 100KB
+
 1.6106  Sat Apr  6 14:18:25 PDT 2013
    [Improvements]
       - Support git-ssh with @commit (ikasam_a)
