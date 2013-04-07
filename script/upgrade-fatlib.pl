@@ -53,11 +53,10 @@ find({ wanted => \&want, no_chdir => 1 }, "fatlib");
 
 sub want {
     if (/\.pod$/) {
-        print "Deleting $_\n";
+        print "rm $_\n";
         unlink $_;
     } elsif (/\.pm$/) {
-        print "Stripping POD from $_\n";
-        system 'podstrip', $_, "$_.tmp";
-        rename "$_.tmp", $_;
+        print "perlstrip $_\n";
+        system 'perlstrip', $_;
     }
 }
