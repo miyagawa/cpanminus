@@ -1,6 +1,8 @@
 package App::cpanminus;
 our $VERSION = "1.6107";
 
+=head1 encoding utf-8
+
 =head1 NAME
 
 App::cpanminus - get, unpack, build and install modules from CPAN
