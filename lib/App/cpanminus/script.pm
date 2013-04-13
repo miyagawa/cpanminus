@@ -1345,7 +1345,7 @@ sub is_core_module {
 sub ask_permission {
     my ($self, $module, $packlist) = @_;
 
-    $self->diag("$module contains the following:\n\n");
+    $self->diag("$module containts the following:\n\n");
     for my $file ($self->unpack_packlist($packlist)) {
         $self->diag("  $file\n");
     }
