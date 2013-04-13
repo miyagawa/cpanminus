@@ -1041,6 +1041,8 @@ sub configure {
 sub build {
     my($self, $cmd, $distname) = @_;
 
+    local $ENV{PERL_MM_USE_DEFAULT} = !$self->{interactive};
+
     return 1 if $self->run_timeout($cmd, $self->{build_timeout});
     while (1) {
         my $ans = lc $self->prompt("Building $distname failed.\nYou can s)kip, r)etry, e)xamine build log, or l)ook ?", "s");
@@ -1056,7 +1058,7 @@ sub test {
     return 1 if $self->{notest};
 
     # https://rt.cpan.org/Ticket/Display.html?id=48965#txn-1013385
-    local $ENV{PERL_MM_USE_DEFAULT} = 1;
+    local $ENV{PERL_MM_USE_DEFAULT} = !$self->{interactive};
 
     return 1 if $self->run_timeout($cmd, $self->{test_timeout});
     if ($self->{force}) {
