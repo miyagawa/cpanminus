@@ -1,4 +1,6 @@
 #!/usr/bin/perl
+use strict;
+use File::Find;
 
 =for developers
 
@@ -10,6 +12,17 @@
   bin/cpanm                     standalone, packed. #!perl (for EUMM)             NO      YES |            x     x
 
 =cut
+
+system 'cp', '-r', 'fatlib-src', 'fatlib';
+
+my $want = sub {
+    if (/\.pm$/) {
+        print "perlstrip $_\n";
+        system 'perlstrip', $_;
+    }
+};
+
+find({ wanted => $want, no_chdir => 1 }, "fatlib");
 
 open my $in,  "<", "script/cpanm.PL" or die $!;
 open my $out, ">", "cpanm.tmp" or die $!;
@@ -28,5 +41,6 @@ close $out;
 unlink "cpanm";
 rename "cpanm.tmp", "cpanm";
 chmod 0755, "cpanm";
+system "rm", "-r", "fatlib";
 
 END { unlink "cpanm.tmp" }

@@ -1,9 +1,0 @@
-package CPAN::DistnameInfo;$VERSION="0.12";use strict;sub distname_info {my$file=shift or return;my ($dist,$version)=$file =~ /^
-    ((?:[-+.]*(?:[A-Za-z0-9]+|(?<=\D)_|_(?=\D))*
-     (?:
-	[A-Za-z](?=[^A-Za-z]|$)
-	|
-	\d(?=-)
-     )(?<![._-][vV])
-    )+)(.*)
-  $/xs or return ($file,undef,undef);if ($dist =~ /-undef\z/ and!length$version){$dist =~ s/-undef\z//}$version =~ s/-withoutworldwriteables$//;if ($version =~ /^(-[Vv].*)-(\d.*)/){$dist .= $1;$version=$2}if ($version =~ /(.+_.*)-(\d.*)/){$dist .= $1;$version=$2}$dist =~ s{\.pm$}{};$version=$1 if!length$version and $dist =~ s/-(\d+\w)$//;$version=$1 .$version if$version =~ /^\d+$/ and $dist =~ s/-(\w+)$//;if ($version =~ /\d\.\d/){$version =~ s/^[-_.]+//}else {$version =~ s/^[-_]+//}my$dev;if (length$version){if ($file =~ /^perl-?\d+\.(\d+)(?:\D(\d+))?(-(?:TRIAL|RC)\d+)?$/){$dev=1 if (($1 > 6 and $1 & 1)or ($2 and $2 >= 50))or $3}elsif ($version =~ /\d\D\d+_\d/ or $version =~ /-TRIAL/){$dev=1}}else {$version=undef}($dist,$version,$dev)}sub new {my$class=shift;my$distfile=shift;$distfile =~ s,//+,/,g;my%info=(pathname=>$distfile);($info{filename}=$distfile)=~ s,^(((.*?/)?authors/)?id/)?([A-Z])/(\4[A-Z])/(\5[-A-Z0-9]*)/,, and $info{cpanid}=$6;if ($distfile =~ m,([^/]+)\.(tar\.(?:g?z|bz2)|zip|tgz)$,i){$info{distvname}=$1;$info{extension}=$2}@info{qw(dist version beta)}=distname_info($info{distvname});$info{maturity}=delete$info{beta}? 'developer' : 'released';return bless \%info,$class}sub dist {shift->{dist}}sub version {shift->{version}}sub maturity {shift->{maturity}}sub filename {shift->{filename}}sub cpanid {shift->{cpanid}}sub distvname {shift->{distvname}}sub extension {shift->{extension}}sub pathname {shift->{pathname}}sub properties {%{$_[0]}}1;

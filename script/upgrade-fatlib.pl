@@ -43,20 +43,17 @@ my @modules  = find_fatpack('lib/App/cpanminus/script.pm');
 
 my $packer = App::FatPacker->new;
 my @packlists = $packer->packlists_containing(\@modules);
-$packer->packlists_to_tree(cwd . "/fatlib", \@packlists);
+$packer->packlists_to_tree(cwd . "/fatlib-src", \@packlists);
 
 use Config;
-rmtree("fatlib/$Config{archname}");
-rmtree("fatlib/POD2");
+rmtree("fatlib-src/$Config{archname}");
+rmtree("fatlib-src/POD2");
 
-find({ wanted => \&want, no_chdir => 1 }, "fatlib");
+find({ wanted => \&want, no_chdir => 1 }, "fatlib-src");
 
 sub want {
     if (/\.pod$/) {
         print "rm $_\n";
         unlink $_;
-    } elsif (/\.pm$/) {
-        print "perlstrip $_\n";
-        system 'perlstrip', $_;
     }
 }
