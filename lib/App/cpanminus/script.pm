@@ -1733,9 +1733,23 @@ sub build_stuff {
         $dist->{meta} = $self->parse_meta('META.yml');
     }
 
-    if (!$dist->{meta} && $dist->{source} eq 'cpan') {
-        $self->chat("META.yml/json not found or unparsable. Fetching META.yml from search.cpan.org\n");
-        $dist->{meta} = $self->fetch_meta_sco($dist);
+    if (!$dist->{meta}) {
+        if ($dist->{source} eq 'cpan') {
+            $self->chat("META.yml/json not found or unparsable. Fetching META.yml from search.cpan.org\n");
+            $dist->{meta} = $self->fetch_meta_sco($dist);
+        } else {
+            if (-e 'cpanfile') {
+                $self->chat("META.yml/json not found or unparsable. Checking configure dependencies from cpanfile\n");
+
+                require Module::CPANfile;
+                my $cpanfile = eval { Module::CPANfile->load('cpanfile') };
+                if ($cpanfile) {
+                    $dist->{meta} = +{
+                        prereqs => $cpanfile->prereq_specs
+                    };
+                }
+            }
+        }
     }
 
     $dist->{meta} ||= {};
@@ -1748,6 +1762,10 @@ sub build_stuff {
     } else {
         push @config_deps, %{$dist->{meta}{configure_requires} || {}};
         push @config_deps, $self->perl_requirements($dist->{meta}{build_requires}, $dist->{meta}{requires});
+    }
+
+    if ( $dist->{source} ne 'cpan' && $dist->{meta}{prereqs}{devel}{requires} ) {
+        push @config_deps, %{$dist->{meta}{prereqs}{devel}{requires} || {}};
     }
 
     my $target = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $dist->{dir};
