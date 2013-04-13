@@ -1348,8 +1348,9 @@ sub find_packlist {
         return ($packlist, $try_dist);
     }
 
-    # TODO
-#    $self->find_meta($module, $version);
+    # TODO: Looking up cpanmetadb
+
+    return;
 }
 
 sub locate_pack {
@@ -1416,11 +1417,10 @@ sub is_core_module {
 }
 
 sub ask_permission {
-    my($self, $module, $dist, $vname, $packlist) = @_;
+    my ($self, $module, $dist, $vname, $packlist) = @_;
 
     $self->diag("$module is included in the distribution $dist and contains:\n\n");
-    for my $file ($self->fixup_packlist($packlist)) {
-        chomp $file;
+    for my $file ($self->unpack_packlist($packlist)) {
         $self->diag("  $file\n");
     }
     $self->diag("\n");
@@ -1430,52 +1430,39 @@ sub ask_permission {
     return $self->prompt_bool("Are you sure you want to uninstall $dist?", 'n');
 }
 
-sub fixup_packlist {
+sub unpack_packlist {
     my ($self, $packlist) = @_;
-    my @target_list;
-    my $is_local_lib = $self->target_file_is_local_lib($packlist);
-    open my $in, "<", $packlist or die "$packlist: $!";
-    while (defined (my $file = <$in>)) {
-        if ($is_local_lib) {
-            next unless $self->target_file_is_local_lib($file);
-        }
-        push @target_list, $file;
-    }
-    return @target_list;
-}
 
-sub target_file_is_local_lib {
-    my ($self, $file) = @_;
-    return unless $self->{local_lib};
+    open my $fh, '<', $packlist or die "$!: $packlist";
+    my @files = <$fh>;
+    chomp @files;
 
-    my $local_lib_base = quotemeta File::Spec->catfile(Cwd::realpath($self->{local_lib}));
-    $file = File::Spec->catfile($file);
-
-    return $file =~ /^$local_lib_base/ ? 1 : 0;
+    return @files;
 }
 
 sub uninstall_from_packlist {
     my ($self, $packlist) = @_;
+    my $failed = 0;
 
-    my $inc = {
+    my $inc_map = {
         map { File::Spec->catfile($_) => 1 } @{ $self->{search_inc} }
     };
 
-    my $failed;
-
     my (@target_files, @not_exists_files);
-    for my $file ($self->fixup_packlist($packlist)) {
-        chomp $file;
+    for my $file ($self->unpack_packlist($packlist)) {
         if (-f $file) {
             push @target_files, $file;
         } else {
             push @not_exists_files, $file;
         }
     }
+
+    $self->diag("\n");
+
     for my $file (@target_files, $packlist) {
         $self->diag("unlink   : $file\n");
         unlink $file or $self->diag_fail("$!: $file") and $failed++;
-        $self->rm_empty_dir_from_file($file, $inc);
+        $self->rm_empty_dir_from_file($file, $inc_map);
     }
 
     for my $file (@not_exists_files) {
