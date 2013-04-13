@@ -1,5 +1,15 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.6190  Sat Apr 13 20:44:52 JST 2013
+   [New Features]
+      - Support --with-develop to install develop dependencies
+      - Installs 'recommends' dependencies by default, but ignore failures
+      - Add --with-suggests to also install 'suggests' dependencies
+
+   [Improvements]
+      - Overhauled Metadata handling using CPAN::Meta's validation
+      - Stopped monkey-patching Module::Build to skip man-page generation #130
+
 1.6108  Sat Apr 13 15:29:32 JST 2013
    [Improvements]
       - Fix the way local::lib options are expanded
