@@ -1055,6 +1055,7 @@ sub configure {
     local $ENV{PERL_MM_OPT} = $ENV{PERL_MM_OPT};
     unless ($self->{pod2man}) {
         $ENV{PERL_MM_OPT} .= " INSTALLMAN1DIR=none INSTALLMAN3DIR=none";
+        $ENV{PERL_MB_OPT} .= " --config installman1dir= --config installsiteman1dir= --config installman3dir= --config installsiteman3dir=";
     }
 
     local $self->{verbose} = $self->{verbose} || $self->{interactive};
@@ -1205,7 +1206,6 @@ sub install_module {
     }
 
     $self->check_libs;
-    $self->setup_module_build_patch unless $self->{pod2man};
 
     if ($dist->{module}) {
         unless ($self->with_version_range($version)) {
@@ -1847,11 +1847,10 @@ DIAG
 
     my $installed;
     if ($configure_state->{use_module_build} && -e 'Build' && -f _) {
-        my @switches = $self->{pod2man} ? () : ("-I$self->{base}", "-MModuleBuildSkipMan");
         $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . $distname);
-        $self->build([ $self->{perl}, @switches, "./Build" ], $distname) &&
+        $self->build([ $self->{perl}, "./Build" ], $distname) &&
         $self->test([ $self->{perl}, "./Build", "test" ], $distname) &&
-        $self->install([ $self->{perl}, @switches, "./Build", "install" ], [ "--uninst", 1 ], $depth) &&
+        $self->install([ $self->{perl}, "./Build", "install" ], [ "--uninst", 1 ], $depth) &&
         $installed++;
     } elsif ($self->{make} && -e 'Makefile') {
         $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . $distname);
@@ -1931,12 +1930,6 @@ sub configure_this {
         };
     }
 
-    my @mb_switches;
-    unless ($self->{pod2man}) {
-        # it has to be push, so Module::Build is loaded from the adjusted path when -L is in use
-        push @mb_switches, ("-I$self->{base}", "-MModuleBuildSkipMan");
-    }
-
     my $state = {};
 
     my $try_eumm = sub {
@@ -1957,7 +1950,7 @@ sub configure_this {
     my $try_mb = sub {
         if (-e 'Build.PL') {
             $self->chat("Running Build.PL\n");
-            if ($self->configure([ $self->{perl}, @mb_switches, "Build.PL" ])) {
+            if ($self->configure([ $self->{perl}, "Build.PL" ])) {
                 $state->{configured_ok} = -e 'Build' && -f _;
             }
             $state->{use_module_build}++;
