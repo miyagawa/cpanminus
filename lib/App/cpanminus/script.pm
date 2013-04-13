@@ -3,6 +3,7 @@ use strict;
 use Config;
 use Cwd ();
 use App::cpanminus;
+use App::cpanminus::Dependency;
 use File::Basename ();
 use File::Find ();
 use File::Path ();
@@ -89,6 +90,7 @@ sub new {
         auto_cleanup => 7, # days
         pod2man => 1,
         installed_dists => 0,
+        install_types => ['requires', 'recommends'],
         showdeps => 0,
         scandeps => 0,
         scandeps_tree => [],
@@ -104,6 +106,23 @@ sub new {
 sub env {
     my($self, $key) = @_;
     $ENV{"PERL_CPANM_" . $key};
+}
+
+sub install_type_handlers {
+    my $self = shift;
+
+    my @handlers;
+    for my $type (qw( recommends suggests )) {
+        push @handlers, "with-$type" => sub {
+            my %uniq;
+            $self->{install_types} = [ grep !$uniq{$_}++, @{$self->{install_types}}, $type ];
+        };
+        push @handlers, "without-$type" => sub {
+            $self->{install_types} = [ grep $_ ne $type, @{$self->{install_types}} ];
+        };
+    }
+
+    @handlers;
 }
 
 sub parse_options {
@@ -165,6 +184,7 @@ sub parse_options {
         'configure-timeout=i' => \$self->{configure_timeout},
         'build-timeout=i' => \$self->{build_timeout},
         'test-timeout=i' => \$self->{test_timeout},
+        $self->install_type_handlers,
     );
 
     if (!@ARGV && $0 ne '-' && !-t STDIN){ # e.g. # cpanm < author/requires.cpanm
@@ -849,8 +869,8 @@ sub setup_local_lib {
 sub bootstrap_local_lib_deps {
     my $self = shift;
     push @{$self->{bootstrap_deps}},
-        'ExtUtils::MakeMaker' => 6.31,
-        'ExtUtils::Install'   => 1.46;
+        App::cpanminus::Dependency->new('ExtUtils::MakeMaker' => 6.31),
+        App::cpanminus::Dependency->new('ExtUtils::Install'   => 1.46);
 }
 
 sub prompt_bool {
@@ -1675,26 +1695,27 @@ sub install_deps {
     my($self, $dir, $depth, @deps) = @_;
 
     my(@install, %seen, @fail);
-    while (my($mod, $ver) = splice @deps, 0, 2) {
-        next if $seen{$mod};
-        if ($mod eq 'perl') {
-            unless ($self->check_perl_version($ver)) {
-                $self->diag("Needs perl $ver, you only have $]\n");
+    for my $dep (@deps) {
+        next if $seen{$dep->module};
+        if ($dep->module eq 'perl') {
+            unless ($self->check_perl_version($dep->version)) {
+                $self->diag("Needs perl @{[$dep->version]}, you only have $]\n");
                 push @fail, 'perl';
             }
-        } elsif ($self->should_install($mod, $ver)) {
-            push @install, [ $mod, $ver ];
-            $seen{$mod} = 1;
+        } elsif ($self->should_install($dep->module, $dep->version)) {
+            push @install, $dep;
+            $seen{$dep->module} = 1;
         }
     }
 
     if (@install) {
-        $self->diag("==> Found dependencies: " . join(", ",  map $_->[0], @install) . "\n");
+        $self->diag("==> Found dependencies: " . join(", ",  map $_->module, @install) . "\n");
     }
 
-    for my $mod (@install) {
-        $self->install_module($mod->[0], $depth + 1, $mod->[1])
-            or push @fail, $mod->[0];
+    for my $dep (@install) {
+        unless ($self->install_module($dep->module, $depth + 1, $dep->version)) {
+            push @fail, $dep->module if $dep->is_requirement;
+        }
     }
 
     $self->chdir($self->{base});
@@ -1740,14 +1761,21 @@ sub build_stuff {
 
     $dist->{meta} ||= {};
 
+    if ($dist->{meta}{'meta-spec'}) {
+        require CPAN::Meta;
+        $dist->{cpanmeta} = CPAN::Meta->new($dist->{meta}, { lazy_validation => 1 });
+    }
+
     my @config_deps;
 
-    if (my $prereqs = $dist->{meta}->{prereqs} ) {
-        push @config_deps, %{$prereqs->{configure}{requires} || {}};
-        push @config_deps, $self->perl_requirements($prereqs->{runtime}{requires}, $prereqs->{build}{requires});
+    if ($dist->{cpanmeta}) {
+        push @config_deps, App::cpanminus::Dependency->from_prereqs(
+            $dist->{cpanmeta}->effective_prereqs, ['configure'], $self->{install_types},
+        );
     } else {
-        push @config_deps, %{$dist->{meta}{configure_requires} || {}};
-        push @config_deps, $self->perl_requirements($dist->{meta}{build_requires}, $dist->{meta}{requires});
+        push @config_deps, App::cpanminus::Dependency->from_versions(
+            $dist->{meta}{configure_requires} || {}, 'configure',
+        );
     }
 
     my $target = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $dist->{dir};
@@ -1770,10 +1798,8 @@ sub build_stuff {
     $module_name =~ s/-/::/g;
 
     if ($self->{showdeps}) {
-        my %rootdeps = (@config_deps, @deps); # merge
-        for my $mod (keys %rootdeps) {
-            my $ver = $rootdeps{$mod};
-            print $mod, ($ver ? "~$ver" : ""), "\n";
+        for my $dep (@config_deps, @deps) {
+            print $dep->module, ($dep->version ? ("~".$dep->version) : ""), "\n";
         }
         return 1;
     }
@@ -1869,7 +1895,7 @@ sub perl_requirements {
     my @perl;
     for my $requires (grep defined, @requires) {
         if (exists $requires->{perl}) {
-            push @perl, perl => $requires->{perl};
+            push @perl, App::cpanminus::Dependency->new(perl => $requires->{perl});
         }
     }
 
@@ -2066,11 +2092,8 @@ sub extract_meta_prereqs {
     my($self, $dist, $phases) = @_;
 
     if ($dist->{cpanfile}) {
-        my $prereq = $dist->{cpanfile}->prereq;
-        require CPAN::Meta::Requirements;
-        my $req = CPAN::Meta::Requirements->new;
-        $req->add_requirements($prereq->requirements_for($_, 'requires')) for @$phases;
-        return %{$req->as_string_hash};
+        my $prereq = $dist->{cpanfile}->prereqs;
+        return App::cpanminus::Dependency->from_prereqs($prereq, $phases, $self->{install_types});
     }
 
     my $meta = $dist->{meta};
@@ -2083,7 +2106,7 @@ sub extract_meta_prereqs {
         my $mymeta = JSON::PP::decode_json($json);
         if ($mymeta) {
             $meta->{$_} = $mymeta->{$_} for qw(name version);
-            return $self->extract_requires($mymeta, $phases);
+            return $self->extract_prereqs($mymeta, $phases, $self->{install_types});
         }
     }
 
@@ -2092,14 +2115,14 @@ sub extract_meta_prereqs {
         my $mymeta = $self->parse_meta('MYMETA.yml');
         if ($mymeta) {
             $meta->{$_} = $mymeta->{$_} for qw(name version);
-            return $self->extract_requires($mymeta, $phases);
+            return $self->extract_prereqs($mymeta, $phases, $self->{install_types});
         }
     }
 
     if (-e '_build/prereqs') {
         $self->chat("Checking dependencies from _build/prereqs ...\n");
         my $mymeta = do { open my $in, "_build/prereqs"; $self->safe_eval(join "", <$in>) };
-        @deps = $self->extract_requires($mymeta, $phases);
+        @deps = $self->extract_prereqs($mymeta, $phases, $self->{install_types});
     } elsif (-e 'Makefile') {
         $self->chat("Finding PREREQ from Makefile ...\n");
         open my $mf, "Makefile";
@@ -2113,7 +2136,7 @@ sub extract_meta_prereqs {
                 }
                 my $list = join ", ", map { "'$_->[0]' => $_->[1]" } @all;
                 my $prereq = $self->safe_eval("no strict; +{ $list }");
-                push @deps, %$prereq if $prereq;
+                push @deps, App::cpanminus::Dependency->from_versions($prereq) if $prereq;
                 last;
             }
         }
@@ -2143,7 +2166,7 @@ sub bundle_deps {
                 $in_contents = 0;
             } elsif ($in_contents) {
                 /^(\S+)\s*(\S+)?/
-                    and push @deps, $1, $self->maybe_version($2);
+                    and push @deps, App::cpanminus::Dependency->new($1, $self->maybe_version($2));
             }
         }
     }
@@ -2156,22 +2179,12 @@ sub maybe_version {
     return $string && $string =~ /^\.?\d/ ? $string : undef;
 }
 
-sub extract_requires {
-    my($self, $meta, $phases) = @_;
+sub extract_prereqs {
+    my($self, $metadata, $phases, $types) = @_;
 
-    if ($meta->{'meta-spec'} && $meta->{'meta-spec'}{version} == 2) {
-        my @deps = map {
-            my $p = $meta->{prereqs}{$_} || {};
-            %{$p->{requires} || {}};
-        } @$phases;
-        return @deps;
-    }
-
-    my @deps;
-    push @deps, %{$meta->{build_requires}} if $meta->{build_requires};
-    push @deps, %{$meta->{requires}} if $meta->{requires};
-
-    return @deps;
+    require CPAN::Meta;
+    my $meta = CPAN::Meta->new($metadata, { lazy_validation => 1 });
+    return App::cpanminus::Dependency->from_prereqs($meta->effective_prereqs, $phases, $types);
 }
 
 sub cleanup_workdirs {
