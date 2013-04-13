@@ -718,6 +718,7 @@ Commands:
   --self-upgrade            upgrades itself
   --info                    Displays distribution info on CPAN
   --look                    Opens the distribution with your SHELL
+  --uninstall               Uninstalls the modules (EXPERIMENTAL)
   -V,--version              Displays software version
 
 Examples:
