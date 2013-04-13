@@ -78,6 +78,8 @@ sub new {
         prompt_timeout => 0,
         prompt => undef,
         configure_timeout => 60,
+        build_timeout => 3600,
+        test_timeout => 1800,
         try_lwp => 1,
         try_wget => 1,
         try_curl => 1,
@@ -160,6 +162,9 @@ sub parse_options {
         'dev!'       => \$self->{dev_release},
         'metacpan!'  => \$self->{metacpan},
         'report-perl-version!' => \$self->{report_perl_version},
+        'configure-timeout=i' => \$self->{configure_timeout},
+        'build-timeout=i' => \$self->{build_timeout},
+        'test-timeout=i' => \$self->{test_timeout},
     );
 
     if (!@ARGV && $0 ne '-' && !-t STDIN){ # e.g. # cpanm < author/requires.cpanm
