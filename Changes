@@ -1,5 +1,12 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.6108  Sat Apr 13 15:29:32 JST 2013
+   [Improvements]
+      - Fix the way local::lib options are expanded
+      - Support --configure-timeout, --build-timeout and --test-timeout
+      - Enable PERL_MM_USE_DEFAULT in building as well
+      - Fixed the way fatpacked modules are perl-stripped
+
 1.6107  Sat Apr  6 21:17:57 PDT 2013
    [Improvements]
       - strip perl files in fatlib. Reduces cpanm executable size about 100KB
