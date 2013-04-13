@@ -108,6 +108,23 @@ sub env {
     $ENV{"PERL_CPANM_" . $key};
 }
 
+sub install_type_handlers {
+    my $self = shift;
+
+    my @handlers;
+    for my $type (qw( recommends suggests )) {
+        push @handlers, "with-$type" => sub {
+            my %uniq;
+            $self->{install_types} = [ grep !$uniq{$_}++, @{$self->{install_types}}, $type ];
+        };
+        push @handlers, "without-$type" => sub {
+            $self->{install_types} = [ grep $_ ne $type, @{$self->{install_types}} ];
+        };
+    }
+
+    @handlers;
+}
+
 sub parse_options {
     my $self = shift;
 
@@ -167,6 +184,7 @@ sub parse_options {
         'configure-timeout=i' => \$self->{configure_timeout},
         'build-timeout=i' => \$self->{build_timeout},
         'test-timeout=i' => \$self->{test_timeout},
+        $self->install_type_handlers,
     );
 
     if (!@ARGV && $0 ne '-' && !-t STDIN){ # e.g. # cpanm < author/requires.cpanm

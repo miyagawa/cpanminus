@@ -14,4 +14,8 @@ run_L '--notest', './testdist/TestDist-Recommend';
 unlike last_build_log, qr/Checking if you have Test::NoWarnings/;
 like last_build_log, qr/Successfully installed TestDist-Recommend/;
 
+run_L '--with-suggests', '--without-recommends', './testdist/TestDist-Recommend';
+unlike last_build_log, qr/Checking if you have Try::Tiny/;
+like last_build_log, qr/Checking if you have Hash::MultiValue/;
+
 done_testing;
