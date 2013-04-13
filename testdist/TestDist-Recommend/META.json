@@ -29,11 +29,6 @@
             "Module::Build::Tiny" : "0.016"
          }
       },
-      "develop" : {
-         "requires" : {
-            "Test::Pod" : "1.41"
-         }
-      },
       "runtime" : {
          "recommends" : {
             "Try::Tiny" : "0.10",
@@ -52,6 +47,14 @@
          },
          "requires" : {
             "Test::More" : "0.88"
+         }
+      },
+      "develop" : {
+         "requires" : {
+            "Hash::MultiValue" : "0"
+         },
+         "recommends" : {
+            "Test::Pod" : "0"
          }
       }
    },

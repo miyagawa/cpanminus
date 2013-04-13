@@ -91,6 +91,7 @@ sub new {
         pod2man => 1,
         installed_dists => 0,
         install_types => ['requires', 'recommends'],
+        with_develop => 0,
         showdeps => 0,
         scandeps => 0,
         scandeps_tree => [],
@@ -184,6 +185,8 @@ sub parse_options {
         'configure-timeout=i' => \$self->{configure_timeout},
         'build-timeout=i' => \$self->{build_timeout},
         'test-timeout=i' => \$self->{test_timeout},
+        'with-develop' => \$self->{with_develop},
+        'without-develop' => sub { $self->{with_develop} = 0 },
         $self->install_type_handlers,
     );
 
@@ -1792,6 +1795,8 @@ sub build_stuff {
     # install direct 'test' dependencies for --installdeps, even with --notest
     my @want_phase = $self->{notest} && !($self->{installdeps} && $depth == 0)
                    ? qw( build runtime ) : qw( build test runtime );
+
+    push @want_phase, 'develop' if $self->{with_develop} && $depth == 0;
 
     my @deps = $self->find_prereqs($dist, \@want_phase);
     my $module_name = $self->find_module_name($configure_state) || $dist->{meta}{name};
