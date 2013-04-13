@@ -824,13 +824,14 @@ sub setup_local_lib {
     {
         local $0 = 'cpanm'; # so curl/wget | perl works
         $base ||= "~/perl5";
+        $base = local::lib->resolve_path($base);
         if ($self->{self_contained}) {
             my @inc = $self->_core_only_inc($base);
             $self->{search_inc} = [ @inc ];
         } else {
             $self->{search_inc} = [
-                local::lib->resolve_path(local::lib->install_base_arch_path($base)),
-                local::lib->resolve_path(local::lib->install_base_perl_path($base)),
+                local::lib->install_base_arch_path($base),
+                local::lib->install_base_perl_path($base),
                 @INC,
             ];
         }
