@@ -41,6 +41,8 @@ close $out;
 unlink "cpanm";
 rename "cpanm.tmp", "cpanm";
 chmod 0755, "cpanm";
-system "rm", "-r", "fatlib";
 
-END { unlink "cpanm.tmp" }
+END {
+    unlink "cpanm.tmp";
+    system "rm", "-r", "fatlib";
+}
