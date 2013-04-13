@@ -165,6 +165,7 @@ sub parse_options {
         'configure-timeout=i' => \$self->{configure_timeout},
         'build-timeout=i' => \$self->{build_timeout},
         'test-timeout=i' => \$self->{test_timeout},
+        'uninstall!' => sub { $self->{cmd} = 'uninstall' },
     );
 
     if (!@ARGV && $0 ne '-' && !-t STDIN){ # e.g. # cpanm < author/requires.cpanm
@@ -277,8 +278,14 @@ sub doit {
         }
 
         $self->chdir($cwd);
-        $self->install_module($module, 0, $version)
-            or push @fail, $module;
+        if ($self->{cmd} eq 'uninstall') {
+            $self->uninstall_module($module, 0, $version)
+                or push @fail, $module;
+            next;
+        } else {
+            $self->install_module($module, 0, $version)
+                or push @fail, $module;
+        }
     }
 
     if ($self->{base} && $self->{auto_cleanup}) {
@@ -1223,6 +1230,214 @@ sub install_module {
     }
 
     return $self->build_stuff($module, $dist, $depth);
+}
+
+sub uninstall_module {
+    my ($self, $module, $version) = @_;
+
+    $self->check_libs;
+    my ($packlist, $dist, $vname) = $self->find_packlist($module, $version);
+    if ($self->is_core_module($module, $packlist)) {
+        $self->diag_fail("$module is a core module!! Cannot be uninstall.\n", 1);
+        return;
+    }
+
+    unless ($packlist && $dist) {
+        $self->diag_fail("$module is not installed.", 1);
+        return;
+    }
+
+    unless ($self->ask_permission($module, $dist, $vname, $packlist)) {
+        return;
+    }
+
+    unless ($self->uninstall_from_packlist($packlist)) {
+        $self->diag_fail("Failed to uninstall $module", 1);
+        return;
+    }
+
+    $self->diag("Successfully uninstalled $module\n", 1);
+
+    return 1;
+}
+
+sub find_packlist {
+    my ($self, $module, $version) = @_;
+
+    $self->{search_inc} ||= [ @INC ];
+
+    require File::Spec;
+
+    (my $try_dist = $module) =~ s!::!-!g;
+    if (my $packlist = $self->locate_pack($try_dist)) {
+        $packlist = File::Spec->catfile($packlist);
+        return ($packlist, $try_dist);
+    }
+
+    # TODO
+#    $self->find_meta($module, $version);
+}
+
+sub locate_pack {
+    my ($self, $dist) = @_;
+
+    $dist =~ s!-!/!g;
+    for my $inc (@{ $self->{search_inc} }) {
+        my $packlist = "$inc/auto/$dist/.packlist";
+        $self->chat("Finding .packlist $packlist\n");
+        return $packlist if -f $packlist && -r _;
+    }
+
+    return;
+}
+
+sub find_meta {
+    my ($self, $module, $version) = @_;
+    $module =~ s!::!-!g;
+    my $distvname = $version ? "$module-$version" : "$module-*";
+
+    require JSON::PP;
+
+    my $name;
+    for my $inc (@{ $self->{search_inc} || \@INC }) {
+        next unless $inc =~ /$Config{archname}/;
+        my ($install_json) = glob("$inc/.meta/$distvname/install.json");
+        next unless $install_json && -f $install_json && -r _;
+        $self->chat("Resolving dist name from $install_json\n");
+        open my $fh, '<', $install_json or die "$!: $install_json";
+        my $data = eval { JSON::PP::decode_json(do { local $/; <$fh> }) } or next;
+        $name = $data->{name} or next;
+        last;
+    }
+
+    return $name;
+}
+
+sub is_core_module {
+    my ($self, $dist, $packlist) = @_;
+    require Module::CoreList;
+    require version;
+
+    $self->{perl_version} ||= version->new($])->numify;
+    return unless exists $Module::CoreList::version{$self->{perl_version}}{$dist};
+    return 1 unless $packlist;
+
+    $self->{core_module_libs} ||= [
+        do {
+            my %seen;
+            grep !$seen{$_}++, @Config{qw/archlib archlibexp privlib privlibexp/},
+        },
+    ];
+
+    my $is_core = 0;
+    for my $lib (@{ $self->{core_module_libs} }) {
+        my $safe_dir = quotemeta $lib; # workaround for MSWin32
+        if ($packlist =~ /^$safe_dir/) {
+            $is_core = 1;
+            last;
+        }
+    }
+
+    return $is_core;
+}
+
+sub ask_permission {
+    my($self, $module, $dist, $vname, $packlist) = @_;
+
+    $self->diag("$module is included in the distribution $dist and contains:\n\n");
+    for my $file ($self->fixup_packlist($packlist)) {
+        chomp $file;
+        $self->diag("  $file\n");
+    }
+    $self->diag("\n");
+
+    return 'force uninstall' if $self->{force};
+    local $self->{prompt} = 1;
+    return $self->prompt_bool("Are you sure you want to uninstall $dist?", 'n');
+}
+
+sub fixup_packlist {
+    my ($self, $packlist) = @_;
+    my @target_list;
+    my $is_local_lib = $self->target_file_is_local_lib($packlist);
+    open my $in, "<", $packlist or die "$packlist: $!";
+    while (defined (my $file = <$in>)) {
+        if ($is_local_lib) {
+            next unless $self->target_file_is_local_lib($file);
+        }
+        push @target_list, $file;
+    }
+    return @target_list;
+}
+
+sub target_file_is_local_lib {
+    my ($self, $file) = @_;
+    return unless $self->{local_lib};
+
+    my $local_lib_base = quotemeta File::Spec->catfile(Cwd::realpath($self->{local_lib}));
+    $file = File::Spec->catfile($file);
+
+    return $file =~ /^$local_lib_base/ ? 1 : 0;
+}
+
+sub uninstall_from_packlist {
+    my ($self, $packlist) = @_;
+
+    my $inc = {
+        map { File::Spec->catfile($_) => 1 } @{ $self->{search_inc} }
+    };
+
+    my $failed;
+
+    my (@target_files, @not_exists_files);
+    for my $file ($self->fixup_packlist($packlist)) {
+        chomp $file;
+        if (-f $file) {
+            push @target_files, $file;
+        } else {
+            push @not_exists_files, $file;
+        }
+    }
+    for my $file (@target_files, $packlist) {
+        $self->diag("unlink   : $file\n");
+        unlink $file or $self->diag_fail("$!: $file") and $failed++;
+        $self->rm_empty_dir_from_file($file, $inc);
+    }
+
+    for my $file (@not_exists_files) {
+        $self->diag("not found: $file\n");
+    }
+
+    # TODO remove .meta directory
+
+    $self->diag("\n");
+
+    return !$failed;
+}
+
+sub rm_empty_dir_from_file {
+    my ($self, $file, $inc) = @_;
+    require File::Basename;
+    my $dir = File::Basename::dirname($file);
+    return unless -d $dir;
+    return if $inc->{+File::Spec->catfile($dir)};
+
+    my $failed;
+    if ($self->is_empty_dir($dir)) {
+        $self->puts("rmdir     : $dir") if $self->{verbose};
+        rmdir $dir or $self->puts("$dir: $!") and $failed++;
+        $self->rm_empty_dir_from_file($dir, $inc);
+    }
+
+    return !$failed;
+}
+
+sub is_empty_dir {
+    my ($self, $dir) = @_;
+    opendir my $dh, $dir or die "$dir: $!";
+    my @dir = grep !/^\.{1,2}$/, readdir $dh;
+    closedir $dh;
+    return @dir ? 0 : 1;
 }
 
 sub format_dist {
