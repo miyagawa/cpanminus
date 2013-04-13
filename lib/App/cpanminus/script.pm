@@ -1354,20 +1354,22 @@ sub packlists_containing {
 
     $self->{search_inc} ||= [ @INC ];
 
-    my %found;
+    my $packlist;
     my $cwd = Cwd::cwd;
     for my $inc (@{ $self->{search_inc} }) {
         File::Find::find(sub {
+            return if $packlist;
             return unless $_ eq '.packlist' && -f $_ && -r _;
             for my $file ($self->unpack_packlist($File::Find::name)) {
                 next unless $file =~ /$target$/;
-                $found{ $File::Find::name }++;
+                $packlist = $File::Find::name;
+                last;
             }
         }, grep -d $_, map File::Spec->catdir($_, 'auto'), @{ $self->{search_inc} });
     }
     chdir $cwd or die "$!: $cwd";
 
-    sort keys %found;
+    return $packlist;
 }
 
 sub find_meta_dirs {
@@ -1416,7 +1418,7 @@ sub is_core_module {
 sub ask_permission {
     my ($self, $module, $packlist) = @_;
 
-    $self->diag("$module contains:\n\n");
+    $self->diag("$module contains the following:\n\n");
     for my $file ($self->unpack_packlist($packlist)) {
         $self->diag("  $file\n");
     }
@@ -1424,7 +1426,7 @@ sub ask_permission {
 
     return 'force uninstall' if $self->{force};
     local $self->{prompt} = 1;
-    return $self->prompt_bool("Are you sure you want to uninstall?", 'n');
+    return $self->prompt_bool("Are you sure you want to uninstall $module?", 'n');
 }
 
 sub unpack_packlist {
