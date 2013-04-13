@@ -309,8 +309,7 @@ sub doit {
 
         $self->chdir($cwd);
         if ($self->{cmd} eq 'uninstall') {
-            $self->uninstall_module($module, 0, $version)
-                or push @fail, $module;
+            $self->uninstall_module($module) or push @fail, $module;
             next;
         } else {
             $self->install_module($module, 0, $version)
@@ -1307,25 +1306,25 @@ sub install_module {
 }
 
 sub uninstall_module {
-    my ($self, $module, $version) = @_;
+    my ($self, $module) = @_;
 
     $self->check_libs;
-    my ($packlist, $dist) = $self->find_packlist($module, $version);
+    my $packlist = $self->find_packlist($module);
     if ($self->is_core_module($module, $packlist)) {
         $self->diag_fail("$module is a core module!! Cannot be uninstall.\n", 1);
         return;
     }
 
-    unless ($packlist && $dist) {
+    unless ($packlist) {
         $self->diag_fail("$module is not installed.", 1);
         return;
     }
 
-    unless ($self->ask_permission($module, $dist, $packlist)) {
+    unless ($self->ask_permission($module, $packlist)) {
         return;
     }
 
-    unless ($self->uninstall_from_packlist($packlist, $dist)) {
+    unless ($self->uninstall_from_packlist($packlist)) {
         $self->diag_fail("Failed to uninstall $module", 1);
         return;
     }
@@ -1338,54 +1337,37 @@ sub uninstall_module {
 sub find_packlist {
     my ($self, $module, $version) = @_;
 
+    if (my ($packlist) = $self->packlists_containing($module)) {
+        $packlist = File::Spec->catfile($packlist);
+        return $packlist;
+    }
+
+    return;
+}
+
+sub packlists_containing {
+    my ($self, $module) = @_;
+
+    (my $target = $module) =~ s!::!/!g;
+    $target .= '.pm';
+    $target = quotemeta File::Spec->catfile($target);
+
     $self->{search_inc} ||= [ @INC ];
 
-    require File::Spec;
-
-    (my $try_dist = $module) =~ s!::!-!g;
-    if (my $packlist = $self->locate_pack($try_dist)) {
-        $packlist = File::Spec->catfile($packlist);
-        return ($packlist, $try_dist);
-    }
-
-    # TODO: Looking up cpanmetadb
-
-    return;
-}
-
-sub locate_pack {
-    my ($self, $dist) = @_;
-
-    $dist =~ s!-!/!g;
+    my %found;
+    my $cwd = Cwd::cwd;
     for my $inc (@{ $self->{search_inc} }) {
-        my $packlist = "$inc/auto/$dist/.packlist";
-        $self->chat("Finding .packlist $packlist\n");
-        return $packlist if -f $packlist && -r _;
+        File::Find::find(sub {
+            return unless $_ eq '.packlist' && -f $_ && -r _;
+            for my $file ($self->unpack_packlist($File::Find::name)) {
+                next unless $file =~ /$target$/;
+                $found{ $File::Find::name }++;
+            }
+        }, grep -d $_, map File::Spec->catdir($_, 'auto'), @{ $self->{search_inc} });
     }
+    chdir $cwd or die "$!: $cwd";
 
-    return;
-}
-
-sub find_install_json {
-    my ($self, $module, $version) = @_;
-
-    # TODO
-
-    require JSON::PP;
-
-    my $name;
-    for my $meta_dir ($self->find_meta_dirs($module, $version)) {
-        my $install_json = "$meta_dir/install.json";
-        next unless $install_json && -f $install_json && -r _;
-
-        $self->chat("Resolving dist name from $install_json\n");
-        open my $fh, '<', $install_json or die "$!: $install_json";
-        my $data = eval { JSON::PP::decode_json(do { local $/; <$fh> }) } or next;
-        $name = $data->{name} or next;
-        last;
-    }
-
-    return $name;
+    sort keys %found;
 }
 
 sub find_meta_dirs {
@@ -1432,9 +1414,9 @@ sub is_core_module {
 }
 
 sub ask_permission {
-    my ($self, $module, $dist, $packlist) = @_;
+    my ($self, $module, $packlist) = @_;
 
-    $self->diag("$module is included in the distribution $dist and contains:\n\n");
+    $self->diag("$module contains:\n\n");
     for my $file ($self->unpack_packlist($packlist)) {
         $self->diag("  $file\n");
     }
@@ -1442,21 +1424,32 @@ sub ask_permission {
 
     return 'force uninstall' if $self->{force};
     local $self->{prompt} = 1;
-    return $self->prompt_bool("Are you sure you want to uninstall $dist?", 'n');
+    return $self->prompt_bool("Are you sure you want to uninstall?", 'n');
 }
 
 sub unpack_packlist {
     my ($self, $packlist) = @_;
+    my @targets;
+
+    my $local_lib = $self->{local_lib} ? quotemeta $self->{local_lib} : undef;
 
     open my $fh, '<', $packlist or die "$!: $packlist";
-    my @files = <$fh>;
-    chomp @files;
+    for my $file (<$fh>) {
+        chomp $file;
+        if ($local_lib) {
+            if ($file =~ /^$local_lib/) {
+                push @targets, $file;
+            }
+        } else {
+            push @targets, $file;
+        }
+    }
 
-    return @files;
+    return @targets;
 }
 
 sub uninstall_from_packlist {
-    my ($self, $packlist, $dist) = @_;
+    my ($self, $packlist) = @_;
     my $failed = 0;
 
     my $inc_map = {
@@ -1487,14 +1480,7 @@ sub uninstall_from_packlist {
         $self->diag_fail("Not found: $file\n");
     }
 
-    require File::Path;
-    for my $meta_dir ($self->find_meta_dirs($dist)) {
-        $self->diag("Remove: $meta_dir\n");
-        File::Path::rmtree($meta_dir, 0, 0) or do {
-            $self->diag_fail("$!: $meta_dir");
-            $failed++;
-        };
-    }
+    # TODO remove .meta dirs
 
     $self->diag("\n");
 
