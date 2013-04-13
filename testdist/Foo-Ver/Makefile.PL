@@ -1,4 +1,10 @@
-use inc::Module::Install;
-all_from "Foo.pm";
-cpanfile;
-WriteAll;
+use ExtUtils::MakeMaker;
+use File::Copy;
+
+WriteMakefile(
+  NAME => 'Foo',
+);
+
+copy('META.json', 'MYMETA.json');
+
+

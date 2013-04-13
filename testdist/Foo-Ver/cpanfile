@@ -1,2 +1,0 @@
-requires 'ExtUtils::MakeMaker', '> 5, < 100';
-requires 'Hash::MultiValue', '> 2';
