@@ -1310,7 +1310,7 @@ sub uninstall_module {
     my ($self, $module, $version) = @_;
 
     $self->check_libs;
-    my ($packlist, $dist, $vname) = $self->find_packlist($module, $version);
+    my ($packlist, $dist) = $self->find_packlist($module, $version);
     if ($self->is_core_module($module, $packlist)) {
         $self->diag_fail("$module is a core module!! Cannot be uninstall.\n", 1);
         return;
@@ -1321,11 +1321,11 @@ sub uninstall_module {
         return;
     }
 
-    unless ($self->ask_permission($module, $dist, $vname, $packlist)) {
+    unless ($self->ask_permission($module, $dist, $packlist)) {
         return;
     }
 
-    unless ($self->uninstall_from_packlist($packlist)) {
+    unless ($self->uninstall_from_packlist($packlist, $dist)) {
         $self->diag_fail("Failed to uninstall $module", 1);
         return;
     }
@@ -1366,18 +1366,18 @@ sub locate_pack {
     return;
 }
 
-sub find_meta {
+sub find_install_json {
     my ($self, $module, $version) = @_;
-    $module =~ s!::!-!g;
-    my $distvname = $version ? "$module-$version" : "$module-*";
+
+    # TODO
 
     require JSON::PP;
 
     my $name;
-    for my $inc (@{ $self->{search_inc} || \@INC }) {
-        next unless $inc =~ /$Config{archname}/;
-        my ($install_json) = glob("$inc/.meta/$distvname/install.json");
+    for my $meta_dir ($self->find_meta_dirs($module, $version)) {
+        my $install_json = "$meta_dir/install.json";
         next unless $install_json && -f $install_json && -r _;
+
         $self->chat("Resolving dist name from $install_json\n");
         open my $fh, '<', $install_json or die "$!: $install_json";
         my $data = eval { JSON::PP::decode_json(do { local $/; <$fh> }) } or next;
@@ -1386,6 +1386,21 @@ sub find_meta {
     }
 
     return $name;
+}
+
+sub find_meta_dirs {
+    my ($self, $module, $version) = @_;
+
+    $module =~ s!::!-!g;
+    my $distvname = $version ? "$module-$version" : "$module-*";
+
+    for my $inc (@{ $self->{search_inc} || \@INC }) {
+        next unless $inc =~ /$Config{archname}/;
+        my @meta_dirs = glob("$inc/.meta/$distvname/");
+        return @meta_dirs if @meta_dirs;
+    }
+
+    return;
 }
 
 sub is_core_module {
@@ -1417,7 +1432,7 @@ sub is_core_module {
 }
 
 sub ask_permission {
-    my ($self, $module, $dist, $vname, $packlist) = @_;
+    my ($self, $module, $dist, $packlist) = @_;
 
     $self->diag("$module is included in the distribution $dist and contains:\n\n");
     for my $file ($self->unpack_packlist($packlist)) {
@@ -1441,7 +1456,7 @@ sub unpack_packlist {
 }
 
 sub uninstall_from_packlist {
-    my ($self, $packlist) = @_;
+    my ($self, $packlist, $dist) = @_;
     my $failed = 0;
 
     my $inc_map = {
@@ -1460,16 +1475,26 @@ sub uninstall_from_packlist {
     $self->diag("\n");
 
     for my $file (@target_files, $packlist) {
-        $self->diag("unlink   : $file\n");
-        unlink $file or $self->diag_fail("$!: $file") and $failed++;
+        $self->diag("Unlink: $file\n");
+        unlink $file or do {
+            $self->diag_fail("$!: $file");
+            $failed++;
+        };
         $self->rm_empty_dir_from_file($file, $inc_map);
     }
 
     for my $file (@not_exists_files) {
-        $self->diag("not found: $file\n");
+        $self->diag_fail("Not found: $file\n");
     }
 
-    # TODO remove .meta directory
+    require File::Path;
+    for my $meta_dir ($self->find_meta_dirs($dist)) {
+        $self->diag("Remove: $meta_dir\n");
+        File::Path::rmtree($meta_dir, 0, 0) or do {
+            $self->diag_fail("$!: $meta_dir");
+            $failed++;
+        };
+    }
 
     $self->diag("\n");
 
