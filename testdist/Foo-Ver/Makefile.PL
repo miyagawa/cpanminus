@@ -6,5 +6,3 @@ WriteMakefile(
 );
 
 copy('META.json', 'MYMETA.json');
-
-
