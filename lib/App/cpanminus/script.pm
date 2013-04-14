@@ -103,6 +103,7 @@ sub new {
         verify => 0,
         report_perl_version => 1,
         build_args => {},
+        features => {},
         @_,
     }, $class;
 }
@@ -201,6 +202,9 @@ sub parse_options {
         'test-timeout=i' => \$self->{test_timeout},
         'with-develop' => \$self->{with_develop},
         'without-develop' => sub { $self->{with_develop} = 0 },
+        'with-feature=s' => sub { $self->{features}{$_[1]} = 1 },
+        'without-feature=s' => sub { $self->{features}{$_[1]} = 0 },
+        'with-all-features' => sub { $self->{features}{__all} = 1 },
         $self->install_type_handlers,
         $self->build_args_handlers,
     );
@@ -1257,6 +1261,7 @@ sub install_module {
         return 1;
     }
 
+    $dist->{depth} = $depth; # ugly hack
 
     if ($dist->{module}) {
         # check if we already have the exact same version
@@ -1847,12 +1852,12 @@ sub build_stuff {
 
     # install direct 'test' dependencies for --installdeps, even with --notest
     my $root_target = (($self->{installdeps} or $self->{showdeps}) and $depth == 0);
-    my @want_phase = $self->{notest} && !$root_target
-                   ? qw( build runtime ) : qw( build test runtime );
+    $dist->{want_phases} = $self->{notest} && !$root_target
+                         ? [qw( build runtime )] : [qw( build test runtime )];
 
-    push @want_phase, 'develop' if $self->{with_develop} && $depth == 0;
+    push @{$dist->{want_phases}}, 'develop' if $self->{with_develop} && $depth == 0;
 
-    my @deps = $self->find_prereqs($dist, \@want_phase);
+    my @deps = $self->find_prereqs($dist);
     my $module_name = $self->find_module_name($configure_state) || $dist->{meta}{name};
     $module_name =~ s/-/::/g;
 
@@ -2128,10 +2133,55 @@ sub safe_eval {
     eval $code;
 }
 
-sub find_prereqs {
-    my($self, $dist, $phases) = @_;
+sub configure_features {
+    my($self, $dist, @features) = @_;
+    map $_->identifier, grep { $self->effective_feature($dist, $_) } @features;
+}
 
-    my @deps = $self->extract_meta_prereqs($dist, $phases);
+sub effective_feature {
+    my($self, $dist, $feature) = @_;
+
+    if ($dist->{depth} == 0) {
+        my $value = $self->{features}{$feature->identifier};
+        return $value if defined $value;
+        return 1 if $self->{features}{__all};
+    }
+
+    if ($self->{interactive}) {
+        require CPAN::Meta::Requirements;
+
+        $self->diag("[@{[ $feature->description ]}]\n", 1);
+
+        my $req = CPAN::Meta::Requirements->new;
+        for my $phase (@{$dist->{want_phases}}) {
+            for my $type (@{$self->{install_types}}) {
+                $req->add_requirements($feature->prereqs->requirements_for($phase, $type));
+            }
+        }
+
+        my $reqs = $req->as_string_hash;
+        my @missing;
+        for my $module (keys %$reqs) {
+            if ($self->should_install($module, $req->{$module})) {
+                push @missing, $module;
+            }
+        }
+
+        if (@missing) {
+            my $howmany = @missing;
+            $self->diag("==> Found missing dependencies: " . join(", ", @missing) . "\n", 1);
+            local $self->{prompt} = 1;
+            return $self->prompt_bool("Install the $howmany optional module(s)?", "y");
+        }
+    }
+
+    return;
+}
+
+sub find_prereqs {
+    my($self, $dist) = @_;
+
+    my @deps = $self->extract_meta_prereqs($dist);
 
     if ($dist->{module} =~ /^Bundle::/i) {
         push @deps, $self->bundle_deps($dist);
@@ -2141,11 +2191,12 @@ sub find_prereqs {
 }
 
 sub extract_meta_prereqs {
-    my($self, $dist, $phases) = @_;
+    my($self, $dist) = @_;
 
     if ($dist->{cpanfile}) {
-        my $prereq = $dist->{cpanfile}->prereqs;
-        return Dependency->from_prereqs($prereq, $phases, $self->{install_types});
+        my @features = $self->configure_features($dist, $dist->{cpanfile}->features);
+        my $prereqs = $dist->{cpanfile}->prereqs_with(@features);
+        return Dependency->from_prereqs($prereqs, $dist->{want_phases}, $self->{install_types});
     }
 
     my $meta = $dist->{meta};
@@ -2158,7 +2209,7 @@ sub extract_meta_prereqs {
         my $mymeta = JSON::PP::decode_json($json);
         if ($mymeta) {
             $meta->{$_} = $mymeta->{$_} for qw(name version);
-            return $self->extract_prereqs($mymeta, $phases, $self->{install_types});
+            return $self->extract_prereqs($mymeta, $dist);
         }
     }
 
@@ -2167,14 +2218,14 @@ sub extract_meta_prereqs {
         my $mymeta = $self->parse_meta('MYMETA.yml');
         if ($mymeta) {
             $meta->{$_} = $mymeta->{$_} for qw(name version);
-            return $self->extract_prereqs($mymeta, $phases, $self->{install_types});
+            return $self->extract_prereqs($mymeta, $dist);
         }
     }
 
     if (-e '_build/prereqs') {
         $self->chat("Checking dependencies from _build/prereqs ...\n");
         my $mymeta = do { open my $in, "_build/prereqs"; $self->safe_eval(join "", <$in>) };
-        @deps = $self->extract_prereqs($mymeta, $phases, $self->{install_types});
+        @deps = $self->extract_prereqs($mymeta, $dist);
     } elsif (-e 'Makefile') {
         $self->chat("Finding PREREQ from Makefile ...\n");
         open my $mf, "Makefile";
@@ -2232,11 +2283,13 @@ sub maybe_version {
 }
 
 sub extract_prereqs {
-    my($self, $metadata, $phases, $types) = @_;
+    my($self, $metadata, $dist) = @_;
 
     require CPAN::Meta;
     my $meta = CPAN::Meta->new($metadata, { lazy_validation => 1 });
-    return Dependency->from_prereqs($meta->effective_prereqs, $phases, $types);
+    my @features = $self->configure_features($dist, $meta->features);
+
+    return Dependency->from_prereqs($meta->effective_prereqs(\@features), $dist->{want_phases}, $self->{install_types});
 }
 
 sub cleanup_workdirs {

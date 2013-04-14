@@ -1,0 +1,270 @@
+0.48	- 14 Mar 2013, H.Merijn Brand
+    * Improve documentation consistency (RT#80409)
+    * Updated copyright to 2013
+    * Force old(er) tar format (ustar) - assumes GNU tar on release box
+    * Fix yml/json optional_features
+    * Install utilities from example by default
+    * Several minor changes (for maint)
+
+0.47	- 30 Jun 2012, H.Merijn Brand
+    * Note that empty sheets are skipped when clip is true (RT#75277)
+    * Allow undef as valid value for the options (Max Maischein)
+    * Don't generate warnings when stripping whitespace and only
+      generating one of cells or rc. (Max Maschein)
+    * Fix test warning under perl-5.17.x
+
+0.46	- 14 Feb 2012, H.Merijn Brand
+    * Updated copyright to 2012
+    * Support passing attributes to the underlying parser
+    * Do not strip fields in sheets with no cells at all (RT#74976)
+
+0.45	- 07 Sep 2011, H.Merijn Brand
+    * NAME / DISTNAME in Makefile.PL
+
+0.44	- 07 Sep 2011, H.Merijn Brand
+    * More cross-checks for META data
+
+0.43	- 02 Aug 2011, H.Merijn Brand
+    * Changed name in META.yml (RT#69574)
+
+0.42	- 01 Jun 2011, H.Merijn Brand
+    * Add --html output option to xlscat
+    * Force CSV parser when in-sep is given
+    * Prefer Data::Peek over Data::Dumper if available
+
+0.41	- 06 Oct 2010, H.Merijn Brand
+    * Spell-check
+    * Fixed requiring optional modules (RT#61928 - Roderick Schupp)
+
+0.40	- 31 Mar 2010, H.Merijn Brand
+    * Default option for clip fixed (RT#56151 - Alan James)
+
+0.39	- 16 Mar 2010, H.Merijn Brand
+    * Doc fix (RT#54507, Patrick Cronin)
+    * Upped Copyright notices to 2010
+    * Drop YAML version to 1.0
+
+0.38	- 15 Dec 2009, H.Merijn Brand
+    * Add row () and cellrow ()
+    * Updated META.yml to meet most recent specs (optional_features = map)
+
+0.37	- 09 Nov 2009, H.Merijn Brand
+    * IO streams improvements
+    * MANIFEST fix
+
+0.36	- 06 Nov 2009, H.Merijn Brand
+    * Add strip option
+    * Spreadsheet::XLSX 0.12 still does not support attributes
+    * Require Text::CSV_XS-0.69 for CSV for auto-detection of \r
+    * New attribute "parser" to force format
+    * Allow CSV streams
+    * Allow SC  streams
+    * Allow XLS streams
+
+0.35	- 03 Jun 2009, H.Merijn Brand
+    * Add Test::NoWarnings, which is not run in AUTOMATED_TESTING
+    * Switched to Test::More using tests_done ()
+    * Text::CSV_XS requires 0.43 or up, as we use ->eof ()
+      still prefer a really new release, like 0.65, which
+      is Test::NoWarnings safe
+    * Spreadsheet::XLSX 0.10 still does not support attributes
+    * Added -n to xlscat
+    * XLSX tests skip on feature, not on version
+
+0.34	- 27 Jan 2009, H.Merijn Brand
+    * Spreadsheet::XLSX 0.09 still does not support attributes
+      still think it is better to follow closely. 0.09 is much
+      better than 0.08
+
+0.33	- 23 Jan 2009, H.Merijn Brand
+    * A few Perl::Critic inspired changes
+    * Modified tests to prevent rounding errors (we were not checking for that)
+    * Added examples/ss-dups-tk.pl
+
+0.32	- 06 Jan 2009, H.Merijn Brand
+    * Add basic support for M$ Excel 2007 using Spreadsheet::XLSX
+    * Test suite reports the parsers it found
+
+0.31	- 04 Jan 2009, H.Merijn Brand
+    * Upped Copyright notices to 2009
+    * Detection of percentage type
+    * Even more reliable detection of Date types
+
+0.30	- 22 Dec 2008, H.Merijn Brand
+    * Wrong e-mail in META.yml
+    * CSV files from a Mac, with \r as eol, would not parse
+
+0.29	- 19 Oct 2008, H.Merijn Brand
+    * Make Read safer for files that do not match extension,
+      like HTML in foo.xls
+    * YAML declared 1.4 (META.yml) instead of 1.1 (YAML)
+    * Bring Makefile.PL in sync with META.yml
+    * Recommend Text-CSV-0.56
+
+0.28	- 04 Sep 2008, H.Merijn Brand
+    * More tests on date formats
+    * Declare Spreadsheet::ParseExcel::FmtDefault in META.yml
+    * Add 'size' from Excel font size
+    * Update docs about Excel quirks and CPAN links
+    * Reference to public git repo
+    * Some typo's
+
+0.27	- 31 Aug 2008, H.Merijn Brand
+    * Fixed META.yml (the specs are inconsistent)
+    * Added --dtfmt to xlscat
+
+0.26	- 29 Aug 2008, H.Merijn Brand
+    * Added examples/xls2csv
+    * Upped copyright to 2008 in examples
+    * Don't ask to install examples under automated testing
+    * die => croak
+    * Added tgzdist target
+    * Added encoding options to examples/xlscat
+    * Added date-type checks for SS:PE > 0.32
+
+0.25	- 02 Jan 2008, H.Merijn Brand
+    * Spreadsheet-Read now under git
+    * Upped copyrights to 2008
+    * Added all prereq's to Makefile.PL, even core mods
+    * Tested under perl-5.10.0
+    * Text::CSV as of 1.00 is OK
+
+0.24	- 05 Oct 2007, H.Merijn Brand
+    * -? and --help in utils moved to Getopt::Long
+    * Adjusted copyright notice in utils
+    * removed prototypes in utils
+    * next is illegal in do {} while (); (Johan Vromans)
+      only happens with old Text::CSV_XS
+
+0.23	- 21 Jun 2007, H.Merijn Brand
+    * Use IO::Scalar instead of File::Temp when installed
+      Thanks to David Cantrell for making a OpenBSD test box available!
+    * use binmode () when opening files
+    * Also use 3-arg open in test files
+    * die if test files cannot be opene'ed
+
+0.22	- 18 Jun 2007, H.Merijn Brand
+    * 0.21 should already support Text::CSV_PP 1.05
+      Tested Text::CSV_PP 1.05 on bleadperl.
+    * Better detection of (not) installed modules
+    * Module requires perl 5.6.x
+
+0.21	- 18 Jun 2007, H.Merijn Brand
+    * Text::CSV_XS uses keep_meta_info instead of get_flags
+    * Removed always_quote from xlscat's CSV output
+
+0.20	- 31 May 2007, H.Merijn Brand
+    * perlcritic OK
+    * CSV parsing now uses getline (), and auto-detects eol
+      Assumes first line does not contain embedded eol. This implies that
+      parsing CSV with embedded eol sequences is now safe.
+    * As I now also maintain Text::CSV_XS, I changed the references
+    * Changed TODO's from Text::CSV to Text::CSV_PP (::CSV is dated 1997)
+
+0.19	- 04 May 2007, H.Merijn Brand
+    * Could not retreive '0' fields from OpenOffice (Jim Kelly)
+
+0.18	- 27 Apr 2007, H.Merijn Brand
+    * use strict in Makefile.PL
+    * Added test_cover make target
+    * Added "ods" for OpenOffice conversions
+    * Added color tests for ods (but SR::RS doesn't support that yet)
+    * Switched from \d to 0-9 in regexp
+    * Added more test files and tests (increase coverage)
+
+0.17	- 04 Jul 2006, H.Merijn Brand
+    * xlscat new option: --ansii to (try to) use the ansi colors for fields
+    * Fixed a color attribute off-by-one error
+    * Added test cases (not yet complete)
+    * Added bold and underline
+
+0.16	- 04 Jul 2006, H.Merijn Brand
+    * xlscat new option: --in-sep-char to force-define input sep-char for CSV
+    * More debug lines
+    * Parser name info in $ref->[0]
+    * SquirrelCalc now reports Spreadsheet::Read and its version for parser info
+    * Most of the attributes for Excel now implemented. Tested, but no test case
+
+0.15	- 21 Jun 2006, H.Merijn Brand
+    * Small doc change from AnnoCPAN
+    * Sheets with undefined labels might cause havoc
+    * Clip now skips empty xls sheets (TODO: sxc)
+    * xlscat clips by default
+    * xlscat new options -d and --noclip
+    * xlscat usage () from -?/--help to STDOUT from fault to STDERR
+
+0.14	- 20 Jan 2006, H.Merijn Brand
+    * maxrow and maxcol were swapped in csv sheets
+    * promoted internal debug flag to option
+    * small doc changes
+
+0.13	- 04 Nov 2005, H.Merijn Brand
+    * Control attrib 'cells' was misinterpreted
+    * New option: clip, default is true if {cell} is selected, false otherwise
+      Removes trailing lines and columns in each sheet that have no visible data
+    * new test t/11_call.t for checking options. Not complete yet
+    * Added test_cover target to Makefile.PL
+
+0.12	- 31 Oct 2005, H.Merijn Brand
+    * Added ss2tk to examples
+
+0.11	- 26 Oct 2005, H.Merijn Brand
+    * Allow ods (OpenOffice 2.0) for sxc
+    * include real ods test files and new test
+    * Check if sc.version is undef, not 0
+
+0.10	- 19 Sep 2005, H.Merijn Brand
+    * More test coverage
+    * cr2cell () returns ""     for illegal col/row values
+    * cell2cr () returns (0, 0) for illegal cell    values
+    * rows () tests even better for valid reference pointer
+    * Renamed the test files
+
+0.09	- 18 Sep 2005, H.Merijn Brand
+    * Added Test::Pod
+    * Added Test::Pod::Coverage
+    * Spreadsheet::ReadSXC 0.20 now required (too many tests fail on 0.12)
+    * Small changes to the docs
+    * More secure handling of false values
+    * Mention a bug in Spreadsheet::ParseExcel
+
+0.08	- 22 Aug 2005, H.Merijn Brand
+    * Slightly changed the Synopsis
+
+0.07	- 06 Jul 2005, H.Merijn Brand
+    * Added function rows ()
+    * Added function parses ()
+    * Made all modules optional
+    * Prepared for Spreadsheet::Perl
+    * Doc updates
+
+0.06	- 22 Jun 2005, H.Merijn Brand
+    * Repaired error in label names in metadata for SXC
+
+0.05	- 17 Jun 2005, H.Merijn Brand
+    * Spreadsheet::ReadSXC >= 0.20 supports sheet order
+    * Spreadsheet::ReadSXC has new data structure (we still support the old)
+    * Added "version" to the meta data for parser version
+    * More tests
+
+0.04	- 14 Jun 2005, H.Merijn Brand
+    * Changed TODO
+    * Added options "rc", and "cell"
+    * Added CSV
+    * Added CSV options "sep", and "quote"
+    * Support xls from content
+    * Added basic support for SquirrelCalc format
+    * Updated pod
+    * xlscat -R option for row selection was a one-off
+    * xlscat now supports selecting fields with -F
+
+0.03	- 19 May 2005, H.Merijn Brand
+    * Expanded xlscat to support -i for index
+    * Optionally install xlscat
+
+0.02	- 19 May 2005, H.Merijn Brand
+    * Typoes in the doc
+    * Small change in organization so it actually installs
+
+0.01	- 12 May 2005, H.Merijn Brand
+    * Initial CPAN version. A lot can still change
