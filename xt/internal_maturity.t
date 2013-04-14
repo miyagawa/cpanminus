@@ -1,5 +1,6 @@
 use strict;
 use Test::More;
+use lib "fatlib";
 use App::cpanminus::script;
 
 use constant NOT_BACKPAN => { not => { term => { status => 'backpan' } } };
