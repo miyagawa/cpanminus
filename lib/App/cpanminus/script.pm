@@ -3,7 +3,6 @@ use strict;
 use Config;
 use Cwd ();
 use App::cpanminus;
-use App::cpanminus::Dependency;
 use File::Basename ();
 use File::Find ();
 use File::Path ();
@@ -14,6 +13,8 @@ use Getopt::Long ();
 use Parse::CPAN::Meta;
 use Symbol ();
 use version ();
+
+use aliased 'App::cpanminus::Dependency';
 
 use constant WIN32 => $^O eq 'MSWin32';
 use constant SUNOS => $^O eq 'solaris';
@@ -872,8 +873,8 @@ sub setup_local_lib {
 sub bootstrap_local_lib_deps {
     my $self = shift;
     push @{$self->{bootstrap_deps}},
-        App::cpanminus::Dependency->new('ExtUtils::MakeMaker' => 6.31),
-        App::cpanminus::Dependency->new('ExtUtils::Install'   => 1.46);
+        Dependency->new('ExtUtils::MakeMaker' => 6.31),
+        Dependency->new('ExtUtils::Install'   => 1.46);
 }
 
 sub prompt_bool {
@@ -1774,11 +1775,11 @@ sub build_stuff {
     my @config_deps;
 
     if ($dist->{cpanmeta}) {
-        push @config_deps, App::cpanminus::Dependency->from_prereqs(
+        push @config_deps, Dependency->from_prereqs(
             $dist->{cpanmeta}->effective_prereqs, ['configure'], $self->{install_types},
         );
     } else {
-        push @config_deps, App::cpanminus::Dependency->from_versions(
+        push @config_deps, Dependency->from_versions(
             $dist->{meta}{configure_requires} || {}, 'configure',
         );
     }
@@ -1901,7 +1902,7 @@ sub perl_requirements {
     my @perl;
     for my $requires (grep defined, @requires) {
         if (exists $requires->{perl}) {
-            push @perl, App::cpanminus::Dependency->new(perl => $requires->{perl});
+            push @perl, Dependency->new(perl => $requires->{perl});
         }
     }
 
@@ -2093,7 +2094,7 @@ sub extract_meta_prereqs {
 
     if ($dist->{cpanfile}) {
         my $prereq = $dist->{cpanfile}->prereqs;
-        return App::cpanminus::Dependency->from_prereqs($prereq, $phases, $self->{install_types});
+        return Dependency->from_prereqs($prereq, $phases, $self->{install_types});
     }
 
     my $meta = $dist->{meta};
@@ -2136,7 +2137,7 @@ sub extract_meta_prereqs {
                 }
                 my $list = join ", ", map { "'$_->[0]' => $_->[1]" } @all;
                 my $prereq = $self->safe_eval("no strict; +{ $list }");
-                push @deps, App::cpanminus::Dependency->from_versions($prereq) if $prereq;
+                push @deps, Dependency->from_versions($prereq) if $prereq;
                 last;
             }
         }
@@ -2166,7 +2167,7 @@ sub bundle_deps {
                 $in_contents = 0;
             } elsif ($in_contents) {
                 /^(\S+)\s*(\S+)?/
-                    and push @deps, App::cpanminus::Dependency->new($1, $self->maybe_version($2));
+                    and push @deps, Dependency->new($1, $self->maybe_version($2));
             }
         }
     }
@@ -2184,7 +2185,7 @@ sub extract_prereqs {
 
     require CPAN::Meta;
     my $meta = CPAN::Meta->new($metadata, { lazy_validation => 1 });
-    return App::cpanminus::Dependency->from_prereqs($meta->effective_prereqs, $phases, $types);
+    return Dependency->from_prereqs($meta->effective_prereqs, $phases, $types);
 }
 
 sub cleanup_workdirs {
