@@ -2,8 +2,9 @@ package Module::CPANfile;
 use strict;
 use warnings;
 use Cwd;
+use Carp ();
 
-our $VERSION = '0.9027';
+our $VERSION = '0.9028';
 
 sub new {
     my($class, $file) = @_;
@@ -41,7 +42,34 @@ sub from_prereqs {
     $self;
 }
 
+sub features {
+    my $self = shift;
+    map $self->feature_for($_), keys %{$self->{result}{features}};
+}
+
+sub feature_for {
+    my($self, $identifier) = @_;
+
+    my $data = $self->{result}{features}{$identifier}
+      or Carp::croak("Unknown feature '$identifier'");
+
+    require CPAN::Meta::Feature;
+    CPAN::Meta::Feature->new($data->{identifier}, {
+        description => $data->{description},
+        prereqs => $data->{spec},
+    });
+}
+
 sub prereqs { shift->prereq }
+
+sub prereqs_with {
+    my($self, @feature_identifiers) = @_;
+
+    my $prereqs = $self->prereqs;
+    my @others = map { $self->feature_for($_)->prereqs } @feature_identifiers;
+
+    $prereqs->with_merged_prereqs(@others);
+}
 
 sub prereq {
     my $self = shift;
@@ -70,14 +98,38 @@ sub merge_meta {
     CPAN::Meta->new($struct)->save($file, { version => $version });
 }
 
+sub _dump {
+    my $str = shift;
+    require Data::Dumper;
+    chomp(my $value = Data::Dumper->new([$str])->Terse(1)->Dump);
+    $value;
+}
+
 sub to_string {
     my($self, $include_empty) = @_;
 
     my $prereqs = $self->{result}{spec};
 
     my $code = '';
+    $code .= $self->_dump_prereqs($self->{result}{spec}, $include_empty);
+
+    for my $feature (values %{$self->{result}{features}}) {
+        $code .= sprintf "feature %s, %s => sub {\n", _dump($feature->{identifier}), _dump($feature->{description});
+        $code .= $self->_dump_prereqs($feature->{spec}, $include_empty, 4);
+        $code .= "}\n\n";
+    }
+
+    $code =~ s/\n+$/\n/s;
+    $code;
+}
+
+sub _dump_prereqs {
+    my($self, $prereqs, $include_empty, $base_indent) = @_;
+
+    my $code = '';
     for my $phase (qw(runtime configure build test develop)) {
         my $indent = $phase eq 'runtime' ? '' : '    ';
+        $indent = (' ' x ($base_indent || 0)) . $indent;
 
         my($phase_code, $requirements);
         $phase_code .= "on $phase => sub {\n" unless $phase eq 'runtime';
@@ -104,9 +156,11 @@ sub to_string {
 
 package Module::CPANfile::Environment;
 use strict;
+use Carp ();
 
 my @bindings = qw(
     on requires recommends suggests conflicts
+    feature
     osname
     configure_requires build_requires test_requires author_requires
 );
@@ -169,6 +223,8 @@ sub from_prereqs {
 sub new {
     bless {
         phase => 'runtime', # default phase
+        features => {},
+        feature => undef,
         spec  => {},
     }, shift;
 }
@@ -179,26 +235,37 @@ sub on {
     $code->()
 }
 
+sub feature {
+    my($self, $identifier, $description, $code) = @_;
+    local $self->{feature} = $self->{features}{$identifier}
+      = { identifier => $identifier, description => $description, spec => {} };
+    $code->();
+}
+
 sub osname { die "TODO" }
 
 sub requires {
     my($self, $module, $requirement) = @_;
-    $self->{spec}{$self->{phase}}{requires}{$module} = $requirement || 0;
+    ($self->{feature} ? $self->{feature}{spec} : $self->{spec})
+      ->{$self->{phase}}{requires}{$module} = $requirement || 0;
 }
 
 sub recommends {
     my($self, $module, $requirement) = @_;
-    $self->{spec}->{$self->{phase}}{recommends}{$module} = $requirement || 0;
+    ($self->{feature} ? $self->{feature}{spec} : $self->{spec})
+      ->{$self->{phase}}{recommends}{$module} = $requirement || 0;
 }
 
 sub suggests {
     my($self, $module, $requirement) = @_;
-    $self->{spec}->{$self->{phase}}{suggests}{$module} = $requirement || 0;
+    ($self->{feature} ? $self->{feature}{spec} : $self->{spec})
+      ->{$self->{phase}}{suggests}{$module} = $requirement || 0;
 }
 
 sub conflicts {
     my($self, $module, $requirement) = @_;
-    $self->{spec}->{$self->{phase}}{conflicts}{$module} = $requirement || 0;
+    ($self->{feature} ? $self->{feature}{spec} : $self->{spec})
+      ->{$self->{phase}}{conflicts}{$module} = $requirement || 0;
 }
 
 # Module::Install compatible shortcuts
@@ -239,6 +306,9 @@ Module::CPANfile - Parse cpanfile
 
   my $file = Module::CPANfile->load("cpanfile");
   my $prereqs = $file->prereqs; # CPAN::Meta::Prereqs object
+
+  my @features = $file->features; # CPAN::Meta::Feature objects
+  my $merged_prereqs = $file->prereqs_with(@identifiers); # CPAN::Meta::Prereqs
 
   $file->merge_meta('MYMETA.json');
 
@@ -285,6 +355,15 @@ Returns L<CPAN::Meta::Prereqs> object out of the parsed cpanfile.
 =item prereq_specs
 
 Returns a hash reference that should be passed to C<< CPAN::Meta::Prereqs->new >>.
+
+=item features
+
+Returns a list of features available in the cpanfile as L<CPAN::Meta::Feature>.
+
+=item prereqs_with(@identifiers)
+
+Retuens L<CPAN::Meta::Prereqs> object, with merged prereqs for
+features identified with the C<@identifiers>.
 
 =item to_string($include_empty)
 
