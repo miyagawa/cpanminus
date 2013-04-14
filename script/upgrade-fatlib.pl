@@ -55,10 +55,13 @@ sub pack_modules {
 
     my $packer = App::FatPacker->new;
     my @requires = grep !is_core(pm_to_mod($_)), split /\n/,
-      $packer->trace(use => $modules, args => ['/dev/null']);
+      $packer->trace(use => $modules, args => ['-e', 1]);
     push @requires, map mod_to_pm($_), @$no_trace;
 
     my @packlists = $packer->packlists_containing(\@requires);
+    for my $packlist (@packlists) {
+        print "Packing $packlist\n";
+    }
     $packer->packlists_to_tree($path, \@packlists);
 }
 
