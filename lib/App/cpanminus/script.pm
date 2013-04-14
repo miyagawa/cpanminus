@@ -1351,28 +1351,43 @@ sub packlists_containing {
 
     (my $target = $module) =~ s!::!/!g;
     $target .= '.pm';
-    $target = quotemeta File::Spec->catfile($target);
+    $target = File::Spec->catfile($target);
 
     $self->{search_inc} ||= [ @INC ];
+    $self->{inc_regexp} ||= do {
+        my $regexp = join '|', map {
+            quotemeta File::Spec->catdir("$_");
+        } @{ $self->{search_inc} };
+        qr/^(?:$regexp)./;
+    };
 
     my $packlist;
     my $cwd = Cwd::cwd;
     for my $inc (@{ $self->{search_inc} }) {
+        my $dir = File::Spec->catdir($inc, 'auto');
+        next unless -d $dir;
+
         File::Find::find(sub {
             return if $packlist;
             return unless $_ eq '.packlist' && -f $_ && -r _;
             for my $file ($self->unpack_packlist($File::Find::name)) {
-                next unless $file =~ /$target$/;
+                $file = File::Spec->catfile($file);
+                next unless $file =~ s/$self->{inc_regexp}//; # trim inc dir
+                next unless $file eq $target;
                 $packlist = $File::Find::name;
                 last;
             }
-        }, grep -d $_, map File::Spec->catdir($_, 'auto'), @{ $self->{search_inc} });
+        }, $dir);
+
+        chdir $cwd or die "$!: $cwd";
+
+        last if $packlist;
     }
-    chdir $cwd or die "$!: $cwd";
 
     return $packlist;
 }
 
+# TODO: not use this code (will use when want remove .meta directory)
 sub find_meta_dirs {
     my ($self, $module, $version) = @_;
 
