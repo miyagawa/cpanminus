@@ -101,6 +101,7 @@ sub new {
         skip_configure => 0,
         verify => 0,
         report_perl_version => 1,
+        build_args => {},
         @_,
     }, $class;
 }
@@ -122,6 +123,17 @@ sub install_type_handlers {
         push @handlers, "without-$type" => sub {
             $self->{install_types} = [ grep $_ ne $type, @{$self->{install_types}} ];
         };
+    }
+
+    @handlers;
+}
+
+sub build_args_handlers {
+    my $self = shift;
+
+    my @handlers;
+    for my $phase (qw( configure build test install )) {
+        push @handlers, "$phase-args=s" => \($self->{build_args}{$phase});
     }
 
     @handlers;
@@ -189,6 +201,7 @@ sub parse_options {
         'with-develop' => \$self->{with_develop},
         'without-develop' => sub { $self->{with_develop} = 0 },
         $self->install_type_handlers,
+        $self->build_args_handlers,
     );
 
     if (!@ARGV && $0 ne '-' && !-t STDIN){ # e.g. # cpanm < author/requires.cpanm
@@ -973,11 +986,13 @@ sub log {
 sub run {
     my($self, $cmd) = @_;
 
-    if (WIN32 && ref $cmd eq 'ARRAY') {
-        $cmd = join q{ }, map { $self->shell_quote($_) } @$cmd;
-    }
-
-    if (ref $cmd eq 'ARRAY') {
+    if (WIN32) {
+        $cmd = join q{ }, map { $self->shell_quote($_) } @$cmd if ref $cmd eq 'ARRAY';
+        unless ($self->{verbose}) {
+            $cmd .= " >> " . $self->shell_quote($self->{log}) . " 2>&1";
+        }
+        !system $cmd;
+    } else {
         my $pid = fork;
         if ($pid) {
             waitpid $pid, 0;
@@ -985,11 +1000,6 @@ sub run {
         } else {
             $self->run_exec($cmd);
         }
-    } else {
-        unless ($self->{verbose}) {
-            $cmd .= " >> " . $self->shell_quote($self->{log}) . " 2>&1";
-        }
-        !system $cmd;
     }
 }
 
@@ -1040,8 +1050,18 @@ sub run_timeout {
     }
 }
 
+sub append_args {
+    my($self, $cmd, $phase) = @_;
+
+    if (my $args = $self->{build_args}{$phase}) {
+        $cmd = join ' ', (map $self->shell_quote($_), @$cmd), $args;
+    }
+
+    $cmd;
+}
+
 sub configure {
-    my($self, $cmd) = @_;
+    my($self, $cmd, $depth) = @_;
 
     # trick AutoInstall
     local $ENV{PERL5_CPAN_IS_RUNNING} = local $ENV{PERL5_CPANPLUS_IS_RUNNING} = $$;
@@ -1059,31 +1079,37 @@ sub configure {
         $ENV{PERL_MB_OPT} .= " --config installman1dir= --config installsiteman1dir= --config installman3dir= --config installsiteman3dir=";
     }
 
+    $cmd = $self->append_args($cmd, 'configure') if $depth == 0;
+
     local $self->{verbose} = $self->{verbose} || $self->{interactive};
     $self->run_timeout($cmd, $self->{configure_timeout});
 }
 
 sub build {
-    my($self, $cmd, $distname) = @_;
+    my($self, $cmd, $distname, $depth) = @_;
 
     local $ENV{PERL_MM_USE_DEFAULT} = !$self->{interactive};
+
+    $cmd = $self->append_args($cmd, 'build') if $depth == 0;
 
     return 1 if $self->run_timeout($cmd, $self->{build_timeout});
     while (1) {
         my $ans = lc $self->prompt("Building $distname failed.\nYou can s)kip, r)etry, e)xamine build log, or l)ook ?", "s");
-        return                               if $ans eq 's';
-        return $self->build($cmd, $distname) if $ans eq 'r';
-        $self->show_build_log                if $ans eq 'e';
-        $self->look                          if $ans eq 'l';
+        return                                       if $ans eq 's';
+        return $self->build($cmd, $distname, $depth) if $ans eq 'r';
+        $self->show_build_log                        if $ans eq 'e';
+        $self->look                                  if $ans eq 'l';
     }
 }
 
 sub test {
-    my($self, $cmd, $distname) = @_;
+    my($self, $cmd, $distname, $depth) = @_;
     return 1 if $self->{notest};
 
     # https://rt.cpan.org/Ticket/Display.html?id=48965#txn-1013385
     local $ENV{PERL_MM_USE_DEFAULT} = !$self->{interactive};
+
+    $cmd = $self->append_args($cmd, 'test') if $depth == 0;
 
     return 1 if $self->run_timeout($cmd, $self->{test_timeout});
     if ($self->{force}) {
@@ -1093,11 +1119,11 @@ sub test {
         $self->diag_fail;
         while (1) {
             my $ans = lc $self->prompt("Testing $distname failed.\nYou can s)kip, r)etry, f)orce install, e)xamine build log, or l)ook ?", "s");
-            return                              if $ans eq 's';
-            return $self->test($cmd, $distname) if $ans eq 'r';
-            return 1                            if $ans eq 'f';
-            $self->show_build_log               if $ans eq 'e';
-            $self->look                         if $ans eq 'l';
+            return                                      if $ans eq 's';
+            return $self->test($cmd, $distname, $depth) if $ans eq 'r';
+            return 1                                    if $ans eq 'f';
+            $self->show_build_log                       if $ans eq 'e';
+            $self->look                                 if $ans eq 'l';
         }
     }
 }
@@ -1116,6 +1142,8 @@ sub install {
     if ($self->{uninstall_shadows} && !$ENV{PERL_MM_OPT}) {
         push @$cmd, @$uninst_opts;
     }
+
+    $cmd = $self->append_args($cmd, 'install') if $depth == 0;
 
     $self->run($cmd);
 }
@@ -1851,14 +1879,14 @@ DIAG
     my $installed;
     if ($configure_state->{use_module_build} && -e 'Build' && -f _) {
         $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . $distname);
-        $self->build([ $self->{perl}, "./Build" ], $distname) &&
-        $self->test([ $self->{perl}, "./Build", "test" ], $distname) &&
+        $self->build([ $self->{perl}, "./Build" ], $distname, $depth) &&
+        $self->test([ $self->{perl}, "./Build", "test" ], $distname, $depth) &&
         $self->install([ $self->{perl}, "./Build", "install" ], [ "--uninst", 1 ], $depth) &&
         $installed++;
     } elsif ($self->{make} && -e 'Makefile') {
         $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . $distname);
-        $self->build([ $self->{make} ], $distname) &&
-        $self->test([ $self->{make}, "test" ], $distname) &&
+        $self->build([ $self->{make} ], $distname, $depth) &&
+        $self->test([ $self->{make}, "test" ], $distname, $depth) &&
         $self->install([ $self->{make}, "install" ], [ "UNINST=1" ], $depth) &&
         $installed++;
     } else {
@@ -1943,7 +1971,7 @@ sub configure_this {
             # with 0 even if header files are missing, to avoid receiving
             # tons of FAIL reports in such cases. So exit code can't be
             # trusted if it went well.
-            if ($self->configure([ $self->{perl}, "Makefile.PL" ])) {
+            if ($self->configure([ $self->{perl}, "Makefile.PL" ], $depth)) {
                 $state->{configured_ok} = -e 'Makefile';
             }
             $state->{configured}++;
@@ -1953,7 +1981,7 @@ sub configure_this {
     my $try_mb = sub {
         if (-e 'Build.PL') {
             $self->chat("Running Build.PL\n");
-            if ($self->configure([ $self->{perl}, "Build.PL" ])) {
+            if ($self->configure([ $self->{perl}, "Build.PL" ], $depth)) {
                 $state->{configured_ok} = -e 'Build' && -f _;
             }
             $state->{use_module_build}++;
