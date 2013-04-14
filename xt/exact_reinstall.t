@@ -14,4 +14,8 @@ run '--skip-installed', 'Hash::MultiValue@0.13';
 like last_build_log, qr/is up to date/;
 unlike last_build_log, qr/installed Hash-MultiValue-0\.13/;
 
+run '--reinstall', 'Hash::MultiValue@0.13';
+unlike last_build_log, qr/is up to date/;
+like last_build_log, qr/reinstalled Hash-MultiValue-0\.13/;
+
 done_testing;
