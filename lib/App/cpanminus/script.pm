@@ -1426,7 +1426,7 @@ sub ask_permission {
 
     return 'force uninstall' if $self->{force};
     local $self->{prompt} = 1;
-    return $self->prompt_bool("Are you sure you want to uninstall $module?", 'n');
+    return $self->prompt_bool("Are you sure you want to uninstall $module?", 'y');
 }
 
 sub unpack_packlist {
