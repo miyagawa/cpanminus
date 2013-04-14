@@ -19,14 +19,17 @@ sub find_requires {
     keys %requires;
 }
 
-sub find_fatpack {
-    my $file = shift;
+sub mod_to_pm {
+    local $_ = shift;
+    s!::!/!g;
+    "$_.pm";
+}
 
-    my @requires = find_requires($file);
-    @requires = grep !is_core($_), @requires;
-
-    my @modules = map { s!::!/!g; "$_.pm" } @requires;
-    grep !in_lib($_), @modules;
+sub pm_to_mod {
+    local $_ = shift;
+    s!/!::!g;
+    s/\.pm$//;
+    $_;
 }
 
 sub in_lib {
@@ -39,11 +42,28 @@ sub is_core {
     exists $Module::CoreList::version{5.008001}{$module};
 }
 
-my @modules  = find_fatpack('lib/App/cpanminus/script.pm');
+sub exclude_modules {
+    my($modules, $except) = @_;
+    my %exclude = map { $_ => 1 } @$except;
+    [ grep !$exclude{$_}, @$modules ];
+}
 
-my $packer = App::FatPacker->new;
-my @packlists = $packer->packlists_containing(\@modules);
-$packer->packlists_to_tree(cwd . "/fatlib-src", \@packlists);
+sub pack_modules {
+    my($path, $modules, $no_trace) = @_;
+
+    $modules = exclude_modules($modules, $no_trace);
+
+    my $packer = App::FatPacker->new;
+    my @requires = grep !is_core(pm_to_mod($_)), split /\n/,
+      $packer->trace(use => $modules, args => ['/dev/null']);
+    push @requires, map mod_to_pm($_), @$no_trace;
+
+    my @packlists = $packer->packlists_containing(\@requires);
+    $packer->packlists_to_tree($path, \@packlists);
+}
+
+my @modules = grep !in_lib(mod_to_pm($_)), find_requires('lib/App/cpanminus/script.pm');
+pack_modules(cwd . "/fatlib-src", \@modules, [ 'local::lib' ]);
 
 use Config;
 rmtree("fatlib-src/$Config{archname}");
