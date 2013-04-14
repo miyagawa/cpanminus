@@ -12,7 +12,7 @@ sub find_requires {
     my %requires;
     open my $in, "<", $file or die $!;
     while (<$in>) {
-        /^\s*(?:use|require) (\S+);\s*$/
+        /^\s*(?:use|require) (\S+)[^;]*;\s*$/
           and $requires{$1} = 1;
     }
 
