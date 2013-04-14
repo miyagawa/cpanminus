@@ -305,14 +305,6 @@ sub doit {
         }
 
         ($module, my $version) = $self->parse_module_args($module);
-        if ($self->{skip_satisfied}) {
-            $self->check_libs;
-            my($ok, $local) = $self->check_module($module, $version || 0);
-            if ($ok) {
-                $self->diag("You have $module ($local)\n", 1);
-                next;
-            }
-        }
 
         $self->chdir($cwd);
         $self->install_module($module, 0, $version)
@@ -1219,6 +1211,14 @@ sub install_module {
         return 1;
     }
 
+    if ($self->{skip_satisfied}) {
+        my($ok, $local) = $self->check_module($module, $version || 0);
+        if ($ok) {
+            $self->diag("You have $module ($local)\n", 1);
+            return 1;
+        }
+    }
+
     my $dist = $self->resolve_name($module, $version);
     unless ($dist) {
         $self->diag_fail("Couldn't find module or a distribution $module ($version)", 1);
@@ -1238,12 +1238,12 @@ sub install_module {
     $self->check_libs;
 
     if ($dist->{module}) {
-        unless ($self->with_version_range($version)) {
-            my($ok, $local) = $self->check_module($dist->{module}, $dist->{module_version} || 0);
-            if ($self->{skip_installed} && $ok) {
-                $self->diag("$dist->{module} is up to date. ($local)\n", 1);
-                return 1;
-            }
+        # check if we already have the exact same version
+        my $requirement = $dist->{module_version} ? "==$dist->{module_version}" : 0;
+        my($ok, $local) = $self->check_module($dist->{module}, $requirement);
+        if ($self->{skip_installed} && $ok) {
+            $self->diag("$dist->{module} is up to date. ($local)\n", 1);
+            return 1;
         }
 
         unless ($self->satisfy_version($dist->{module}, $dist->{module_version}, $version)) {
