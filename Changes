@@ -1,5 +1,14 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.6191  Sun Apr 14 12:05:57 JST 2013
+   [New Features]
+      - Support --configure-args
+
+   [Improvements]
+      - Use String::ShellQuote on non-Win32 systems
+      - Strip lib files for cpanm executable as well
+      - Support version requirements for 'perl', not just modules
+
 1.6190  Sat Apr 13 20:44:52 JST 2013
    [New Features]
       - Support --with-develop to install develop dependencies
