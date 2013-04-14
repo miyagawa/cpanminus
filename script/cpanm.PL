@@ -368,8 +368,9 @@ version of the module than requested. Defaults to false.
 Specifies whether a module given in the command line is skipped if its latest
 version is already installed. Defaults to true.
 
-B<NOTE>: The C<PERL5LIB> environment variable have to be correctly set for this
-to work with modules installed using L<local::lib>.
+B<NOTE>: The C<PERL5LIB> environment variable have to be correctly set
+for this to work with modules installed using L<local::lib>, unless
+you always use the C<-l> option.
 
 =item --skip-satisfied
 
