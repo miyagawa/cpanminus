@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 use strict;
+use File::pushd;
 use File::Find;
 
 =for developers
@@ -13,16 +14,22 @@ use File::Find;
 
 =cut
 
-system 'cp', '-r', 'fatlib-src', 'fatlib';
+mkdir ".build", 0777;
+system qw(cp -r fatlib lib .build/);
 
-my $want = sub {
-    if (/\.pm$/) {
-        print "perlstrip $_\n";
-        system 'perlstrip', $_;
-    }
+my $fatpack = do {
+    my $dir = pushd '.build';
+
+    my $want = sub {
+        if (/\.pm$/) {
+            print "perlstrip $_\n";
+            system 'perlstrip', $_;
+        }
+    };
+
+    find({ wanted => $want, no_chdir => 1 }, "fatlib", "lib");
+    `fatpack file`;
 };
-
-find({ wanted => $want, no_chdir => 1 }, "fatlib");
 
 open my $in,  "<", "script/cpanm.PL" or die $!;
 open my $out, ">", "cpanm.tmp" or die $!;
@@ -32,7 +39,7 @@ print STDERR "Generating cpanm from script/cpanm.PL\n";
 while (<$in>) {
     next if /Auto-removed/;
     s/DEVELOPERS:.*/DO NOT EDIT -- this is an auto generated file/;
-    s/.*__FATPACK__/`fatpack file`/e;
+    s/.*__FATPACK__/$fatpack/;
     print $out $_;
 }
 
@@ -44,5 +51,5 @@ chmod 0755, "cpanm";
 
 END {
     unlink "cpanm.tmp";
-    system "rm", "-r", "fatlib";
+    system "rm", "-r", ".build";
 }

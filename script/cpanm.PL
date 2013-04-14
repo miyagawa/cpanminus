@@ -14,7 +14,7 @@
 # __FATPACK__
 use strict;
 use FindBin qw($Bin);                        # For dev -- Auto-removed
-use lib "$Bin/../lib", "$Bin/../fatlib-src"; # For dev -- Auto-removed
+use lib "$Bin/../lib", "$Bin/../fatlib"; # For dev -- Auto-removed
 use App::cpanminus::script;
 
 unless (caller) {

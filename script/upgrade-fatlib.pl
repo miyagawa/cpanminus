@@ -63,13 +63,13 @@ sub pack_modules {
 }
 
 my @modules = grep !in_lib(mod_to_pm($_)), find_requires('lib/App/cpanminus/script.pm');
-pack_modules(cwd . "/fatlib-src", \@modules, [ 'local::lib' ]);
+pack_modules(cwd . "/fatlib", \@modules, [ 'local::lib' ]);
 
 use Config;
-rmtree("fatlib-src/$Config{archname}");
-rmtree("fatlib-src/POD2");
+rmtree("fatlib/$Config{archname}");
+rmtree("fatlib/POD2");
 
-find({ wanted => \&want, no_chdir => 1 }, "fatlib-src");
+find({ wanted => \&want, no_chdir => 1 }, "fatlib");
 
 sub want {
     if (/\.pod$/) {
