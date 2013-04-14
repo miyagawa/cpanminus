@@ -1846,7 +1846,8 @@ sub build_stuff {
     $self->diag_ok($configure_state->{configured_ok} ? "OK" : "N/A");
 
     # install direct 'test' dependencies for --installdeps, even with --notest
-    my @want_phase = $self->{notest} && !($self->{installdeps} && $depth == 0)
+    my $root_target = (($self->{installdeps} or $self->{showdeps}) and $depth == 0);
+    my @want_phase = $self->{notest} && !$root_target
                    ? qw( build runtime ) : qw( build test runtime );
 
     push @want_phase, 'develop' if $self->{with_develop} && $depth == 0;
