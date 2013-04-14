@@ -40,7 +40,6 @@ cpanm - get, unpack build and install modules from CPAN
   cpanm --installdeps .                            # install all the deps for the current directory
   cpanm -L extlib Plack                            # install Plack and all non-core deps into extlib
   cpanm --mirror http://cpan.cpantesters.org/ DBI  # use the fast-syncing mirror
-  cpanm --scandeps Moose                           # See what modules will be installed for Moose
 
 =head1 COMMANDS
 
@@ -413,9 +412,9 @@ directories.
 
 Generates man pages for executables (man1) and libraries (man3).
 
-Defaults to false (no man pages generated) if
-C<-L|--local-lib-contained> option is supplied. Otherwise, defaults to
-true, and you can disable it with C<--no-man-pages>.
+Defaults to true (man pages generated) unless C<-L|--local-lib-contained>
+option is supplied in which case it's set to false. You can disable
+it with C<--no-man-pages>.
 
 =item --lwp
 
