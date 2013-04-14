@@ -6,4 +6,4 @@ perl:
   - 5.10
 script:
   - cpanm -nq Module::Install
-  - prove -lr xt
+  - prove -lr xt -j8
