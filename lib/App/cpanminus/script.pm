@@ -701,7 +701,27 @@ sub load_argv_from_fh {
 }
 
 sub show_version {
-    print "cpanm (App::cpanminus) version $VERSION\n";
+    my $self = shift;
+
+    print "cpanm (App::cpanminus) version $VERSION ($0)\n";
+    print "perl version $] ($^X)\n\n";
+
+    print "  \%Config:\n";
+    for my $key (qw( archname installsitelib installsitebin installman1dir installman3dir
+                     sitelibexp archlibexp privlibexp )) {
+        print "    $key=$Config{$key}\n";
+    }
+
+    print "  \%ENV:\n";
+    for my $key (grep /^PERL/, sort keys %ENV) {
+        print "    $key=$ENV{$key}\n";
+    }
+
+    print "  \@INC:\n";
+    for my $inc (@INC) {
+        print "    $inc\n";
+    }
+
     return 1;
 }
 
