@@ -1,5 +1,14 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.6192  Sun Apr 14 17:12:52 JST 2013
+   [New Features]
+      - Support features with --with-feature
+
+   [Improvements]
+      - Fixed an inconsistency when `cpanm Module@ver` always tries to reinstall
+        the module even when you have it already, when --skip-installed is on
+      - Display useful info about %ENV, %Config and @INC in cpanm --version
+
 1.6191  Sun Apr 14 12:05:57 JST 2013
    [New Features]
       - Support --configure-args
