@@ -7,7 +7,7 @@ use File::Find;
   NAME                          DESCRIPTION                                     repo     CPAN | wget  source  CPAN
   --------------------------------------------------------------------------------------------+--------------------
   script/cpanm.PL               frontend source                                  YES       NO |
-  lib/App/cpanminus/script.pm   "the gut".                                       YES      YES |            x     x
+  lib/App/cpanminus/script.pm   "the gut".                                       YES       NO |            x     
   cpanm                         standalone, packed. #!/usr/bin/env (for cp)      YES       NO |    x
   bin/cpanm                     standalone, packed. #!perl (for EUMM)             NO      YES |            x     x
 
