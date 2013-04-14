@@ -1391,7 +1391,6 @@ sub find_meta_dirs {
 sub is_core_module {
     my ($self, $dist, $packlist) = @_;
     require Module::CoreList;
-    require version;
 
     $self->{perl_version} ||= version->new($])->numify;
     return unless exists $Module::CoreList::version{$self->{perl_version}}{$dist};
