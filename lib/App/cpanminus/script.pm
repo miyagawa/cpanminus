@@ -1211,6 +1211,8 @@ sub install_module {
         return 1;
     }
 
+    $self->check_libs;
+
     if ($self->{skip_satisfied}) {
         my($ok, $local) = $self->check_module($module, $version || 0);
         if ($ok) {
@@ -1235,7 +1237,6 @@ sub install_module {
         return 1;
     }
 
-    $self->check_libs;
 
     if ($dist->{module}) {
         # check if we already have the exact same version
