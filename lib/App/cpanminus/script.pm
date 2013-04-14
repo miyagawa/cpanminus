@@ -12,6 +12,7 @@ use File::Temp ();
 use Getopt::Long ();
 use Parse::CPAN::Meta;
 use Symbol ();
+use String::ShellQuote ();
 use version ();
 
 use aliased 'App::cpanminus::Dependency';
@@ -987,7 +988,7 @@ sub run {
     my($self, $cmd) = @_;
 
     if (WIN32) {
-        $cmd = join q{ }, map { $self->shell_quote($_) } @$cmd if ref $cmd eq 'ARRAY';
+        $cmd = $self->shell_quote(@$cmd) if ref $cmd eq 'ARRAY';
         unless ($self->{verbose}) {
             $cmd .= " >> " . $self->shell_quote($self->{log}) . " 2>&1";
         }
@@ -1054,7 +1055,7 @@ sub append_args {
     my($self, $cmd, $phase) = @_;
 
     if (my $args = $self->{build_args}{$phase}) {
-        $cmd = join ' ', (map $self->shell_quote($_), @$cmd), $args;
+        $cmd = join ' ', $self->shell_quote(@$cmd), $args;
     }
 
     $cmd;
@@ -2307,8 +2308,12 @@ sub DESTROY {
 # Utils
 
 sub shell_quote {
-    my($self, $stuff) = @_;
-    $stuff =~ /^${quote}.+${quote}$/ ? $stuff : ($quote . $stuff . $quote);
+    my($self, @stuff) = @_;
+    if (WIN32) {
+        join ' ', map { /^${quote}.+${quote}$/ ? $_ : ($quote . $_ . $quote) } @stuff;
+    } else {
+        String::ShellQuote::shell_quote_best_effort(@stuff);
+    }
 }
 
 sub which {
@@ -2602,7 +2607,7 @@ sub safeexec {
     my $rdr = $_[0] ||= Symbol::gensym();
 
     if (WIN32) {
-        my $cmd = join q{ }, map { $self->shell_quote($_) } @_[ 1 .. $#_ ];
+        my $cmd = $self->shell_quote(@_[1..$#_]);
         return open( $rdr, "$cmd |" );
     }
 
