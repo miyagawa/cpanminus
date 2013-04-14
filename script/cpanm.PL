@@ -108,6 +108,11 @@ Download and unpack the distribution and then open the directory with
 your shell. Handy to poke around the source code or do manual
 testing.
 
+=item --uninstall
+
+B<EXPERIMENTAL>: Uninstalls the modules. Will remove the distribution files from
+C<<.packlist>>.
+
 =item -h, --help
 
 Displays the help message.
