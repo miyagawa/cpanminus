@@ -176,9 +176,10 @@ sub parse_options {
         'skip-satisfied!' => \$self->{skip_satisfied},
         'reinstall'    => sub { $self->{skip_installed} = 0 },
         'interactive!' => \$self->{interactive},
-        'i|install' => sub { $self->{cmd} = 'install' },
-        'info'      => sub { $self->{cmd} = 'info' },
-        'look'      => sub { $self->{cmd} = 'look'; $self->{skip_installed} = 0 },
+        'i|install'    => sub { $self->{cmd} = 'install' },
+        'info'         => sub { $self->{cmd} = 'info' },
+        'look'         => sub { $self->{cmd} = 'look'; $self->{skip_installed} = 0 },
+        'U|uninstall'  => sub { $self->{cmd} = 'uninstall' },
         'self-upgrade' => sub { $self->check_upgrade; $self->{cmd} = 'install'; $self->{skip_installed} = 1; push @ARGV, 'App::cpanminus' },
         'uninst-shadows!'  => \$self->{uninstall_shadows},
         'lwp!'    => \$self->{try_lwp},
@@ -203,7 +204,6 @@ sub parse_options {
         'without-develop' => sub { $self->{with_develop} = 0 },
         $self->install_type_handlers,
         $self->build_args_handlers,
-        'uninstall!' => sub { $self->{cmd} = 'uninstall' },
     );
 
     if (!@ARGV && $0 ne '-' && !-t STDIN){ # e.g. # cpanm < author/requires.cpanm
@@ -768,7 +768,7 @@ Commands:
   --self-upgrade            upgrades itself
   --info                    Displays distribution info on CPAN
   --look                    Opens the distribution with your SHELL
-  --uninstall               Uninstalls the modules (EXPERIMENTAL)
+  -U,--uninstall            Uninstalls the modules (EXPERIMENTAL)
   -V,--version              Displays software version
 
 Examples:
