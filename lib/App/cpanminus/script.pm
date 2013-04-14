@@ -1691,7 +1691,9 @@ sub should_install {
 
 sub check_perl_version {
     my($self, $version) = @_;
-    return version->new($]) >= version->new($version);
+    require CPAN::Meta::Requirements;
+    my $req = CPAN::Meta::Requirements->from_string_hash({ perl => $version });
+    $req->accepts_module(perl => $]);
 }
 
 sub install_deps {
@@ -1702,7 +1704,7 @@ sub install_deps {
         next if $seen{$dep->module};
         if ($dep->module eq 'perl') {
             unless ($self->check_perl_version($dep->version)) {
-                $self->diag("Needs perl @{[$dep->version]}, you only have $]\n");
+                $self->diag("Needs perl @{[$dep->version]}, you have $]\n");
                 push @fail, 'perl';
             }
         } elsif ($self->should_install($dep->module, $dep->version)) {
