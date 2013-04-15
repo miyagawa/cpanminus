@@ -23,7 +23,7 @@ my $fatpack = do {
     my $want = sub {
         if (/\.pm$/) {
             print "perlstrip $_\n";
-            system 'perlstrip', $_;
+            system 'perlstrip', '--cache', $_;
         }
     };
 
