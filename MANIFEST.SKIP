@@ -7,3 +7,4 @@ lib/App/cpanminus/.*\.pm
 ^maint/
 ^xt/
 ^testdist/
+^cpanm$
