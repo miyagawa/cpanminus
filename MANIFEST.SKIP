@@ -3,6 +3,7 @@ dist\.ini
 lib/App/cpanminus/.*\.pm
 ^fatlib/
 ^plugins/
-^script/cpanm.PL
+^script/
+^maint/
 ^xt/
 ^testdist/
