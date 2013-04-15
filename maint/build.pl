@@ -20,14 +20,16 @@ system qw(cp -r fatlib lib .build/);
 my $fatpack = do {
     my $dir = pushd '.build';
 
+    my @files;
     my $want = sub {
         if (/\.pm$/) {
-            print "perlstrip $_\n";
-            system 'perlstrip', '--cache', $_;
+            push @files, $_;
         }
     };
 
     find({ wanted => $want, no_chdir => 1 }, "fatlib", "lib");
+    system 'perlstrip', '--cache', '-v', @files;
+
     `fatpack file`;
 };
 
