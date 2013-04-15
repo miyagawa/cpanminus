@@ -246,7 +246,7 @@ The standalone executable contains the following modules embedded.
 
 =head1 LICENSE
 
-Same as Perl.
+This software is licensed under the same terms as Perl.
 
 =head1 CREDITS
 

@@ -1,0 +1,8 @@
+\.git-placeholder
+dist\.ini
+lib/App/cpanminus/.*\.pm
+^fatlib/
+^plugins/
+^script/cpanm.PL
+^xt/
+^testdist/

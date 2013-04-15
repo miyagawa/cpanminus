@@ -1,0 +1,153 @@
+{
+   "abstract" : "get, unpack, build and install modules from CPAN",
+   "author" : [
+      "- Tatsuhiko Miyagawa"
+   ],
+   "dynamic_config" : 0,
+   "generated_by" : "Dist::Milla version v1.0.1, Dist::Zilla version 4.300034, CPAN::Meta::Converter version 2.130880",
+   "license" : [
+      "perl_5"
+   ],
+   "meta-spec" : {
+      "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
+      "version" : "2"
+   },
+   "name" : "App-cpanminus",
+   "no_index" : {
+      "directory" : [
+         "t",
+         "xt",
+         "inc",
+         "share",
+         "eg",
+         "examples"
+      ]
+   },
+   "prereqs" : {
+      "configure" : {
+         "requires" : {
+            "ExtUtils::MakeMaker" : "6.30"
+         }
+      },
+      "develop" : {
+         "recommends" : {
+            "Archive::Tar" : "0",
+            "Archive::Zip" : "0",
+            "Compress::Zlib" : "0",
+            "File::HomeDir" : "0",
+            "Module::Signature" : "0"
+         },
+         "requires" : {
+            "App::FatPacker" : "0",
+            "CPAN::DistnameInfo" : "0",
+            "CPAN::Meta" : "0",
+            "CPAN::Meta::Prereqs" : "0",
+            "CPAN::Meta::Requirements" : "0",
+            "CPAN::Meta::YAML" : "0",
+            "Capture::Tiny" : "0",
+            "Digest::SHA" : "0",
+            "File::Temp" : "0",
+            "File::pushd" : "0",
+            "Getopt::Long" : "0",
+            "HTTP::Tiny" : "0",
+            "JSON" : "0",
+            "JSON::PP" : "0",
+            "LWP::Simple" : "0",
+            "LWP::UserAgent" : "5.802",
+            "Module::Build" : "0",
+            "Module::CPANfile" : "0",
+            "Module::CoreList" : "0",
+            "Module::Metadata" : "0",
+            "Module::Signature" : "0",
+            "Parse::CPAN::Meta" : "0",
+            "String::ShellQuote" : "0",
+            "Test::More" : "0.90",
+            "Test::Pod" : "1.41",
+            "Test::Requires" : "0",
+            "YAML" : "0",
+            "YAML::Tiny" : "0",
+            "aliased" : "0",
+            "local::lib" : "0",
+            "version" : "0"
+         }
+      },
+      "runtime" : {
+         "requires" : {
+            "ExtUtils::Install" : "1.46",
+            "ExtUtils::MakeMaker" : "6.31",
+            "Module::Build" : "0.36"
+         }
+      },
+      "test" : {
+         "requires" : {
+            "Test::More" : "0"
+         }
+      }
+   },
+   "release_status" : "stable",
+   "resources" : {
+      "bugtracker" : {
+         "web" : "https://github.com/miyagawa/cpanminus/issues"
+      },
+      "homepage" : "https://github.com/miyagawa/cpanminus",
+      "repository" : {
+         "type" : "git",
+         "url" : "https://github.com/miyagawa/cpanminus.git",
+         "web" : "https://github.com/miyagawa/cpanminus"
+      }
+   },
+   "version" : "1.6192",
+   "x_contributors" : [
+      "Alessandro Ghedini <al3xbio@gmail.com>",
+      "Andrew Rodland <andrew@cleverdomain.org>",
+      "Ash Berlin <ash_github@firemirror.com>",
+      "Ben Bullock <benkasminbullock@gmail.com>",
+      "Christian Walde <walde.christian@googlemail.com>",
+      "Dagfinn Ilmari Manns\u00e5ker <ilmari@ilmari.org>",
+      "Dave Goodell <davidjgoodell@gmail.com>",
+      "Dave Rolsky <autarch@urth.org>",
+      "Ingy dot Net <ingy@ingy.net>",
+      "J. Nick Koston <nick@cpanel.net>",
+      "Jan Dubois <jand@activestate.com>",
+      "Jeffrey Ryan Thalhammer <jeff@imaginative-software.com>",
+      "Jesse Luehrs <doy@tozt.net>",
+      "Jonathan Scott Duff <duff@pobox.com>",
+      "Kenichi Ishigaki <ishigaki@cpan.org>",
+      "Kent Fredric <kentnl@cpan.org>",
+      "Larry Leszczynski <larryl@atomiclearning.com>",
+      "Masahiro Nagano <kazeburo@gmail.com>",
+      "Masayoshi Sekimura <sekimura@gmail.com>",
+      "Matt S Trout <>",
+      "Matt S Trout <mst@shadowcat.co.uk>",
+      "Michael G. Schwern <schwern@pobox.com>",
+      "Norman Nunley <nnunley@gmail.com>",
+      "Olaf Alders <olaf@wundersolutions.com>",
+      "Pedro Melo <melo@simplicidade.org>",
+      "Rafal Pocztarski <r.pocztarski@gmail.com>",
+      "Ricardo Signes <rjbs@cpan.org>",
+      "Rob Hoelz <rob@hoelz.ro>",
+      "Robert Buels <rmb32@cornell.edu>",
+      "Roman Jurkov <rjurkov@verio.net>",
+      "Smylers <Smylers@stripey.com>",
+      "Stoned Elipot <stoned.elipot@gmail.com>",
+      "Tatsuhiko Miyagawa <miyagawa@gmail.com>",
+      "Tokuhiro Matsuno <tokuhirom@gmail.com>",
+      "Vyacheslav Matyukhin <mmcleric@yandex-team.ru>",
+      "Yann Kerherve <yann@cyberion.net>",
+      "cho45 <cho45@lowreal.net>",
+      "chromatic <chromatic@wgz.org>",
+      "fREW Schmidt <frioux@gmail.com>",
+      "gfx <gfuji@cpan.org>",
+      "ikasam_a <masaki.nakagawa@gmail.com>",
+      "jonallen <jj@jonallen.info>",
+      "kmx <kmx@cpan.org>",
+      "lestrrat <lestrrat+github@gmail.com>",
+      "motemen <motemen@gmail.com>",
+      "reezer <kind@gmx.at>",
+      "robario <webmaster@robario.com>",
+      "vti <viacheslav.t@gmail.com>",
+      "xaicron <xaicron@gmail.com>",
+      "yappo <yappo@shibuya.pl>"
+   ]
+}
+

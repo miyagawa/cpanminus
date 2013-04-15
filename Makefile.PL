@@ -1,63 +1,82 @@
-=for developers
 
-If you're a developer, Makefile.PL will pack `cpanm` from
-script/cpanm.PL and then copy that file to `bin/cpanm`.
+use strict;
+use warnings;
 
-You can pretend to be an author by running it with:
 
-  perl Makefile.PL --author
 
-You should install local::lib, Parse::CPAN::Meta, Module::Metadata,
-App::FatPacker and HTTP::Tiny before doing so.
-
-Do not commit the changes to `cpanm` standalone executable. We only
-commit changes to this file whenever we tag a new CPAN release.
-
-=cut
-
-my $author = ((grep{ $_ eq '--author' } @ARGV) or -d '.git' && `git remote -v` =~ /git\@github/);
-print STDERR "Running as an author mode!\n" if $author;
-
-# Author: perl Makefile.PL packs 'script/cpanm.PL' -> 'cpanm'
-if ($author) {
-    shift @ARGV;
-    system $^X, "script/build.PL" and die $?;
-}
+use ExtUtils::MakeMaker 6.30;
 
 # perl Makefile.PL (from git repo) copies 'cpanm' -> 'bin/cpanm'
 if (-e 'cpanm') {
     print STDERR "Generating bin/cpanm from cpanm\n";
     open my $in,  "<cpanm"     or die $!;
     open my $out, ">bin/cpanm" or die $!;
+
     while (<$in>) {
         s|^#!/usr/bin/env perl|#!perl|; # so MakeMaker can fix it
-        print $out $_
+        print $out $_;
     }
 }
 
-use ExtUtils::MakeMaker;
 
-my %args = (
-    NAME => 'App::cpanminus',
-    VERSION_FROM => "lib/App/cpanminus.pm",
-    ABSTRACT => 'Get, unpack, build and install modules from CPAN.',
-    PREREQ_PM => {
-        'Module::Build' => 0.36,
-        'ExtUtils::MakeMaker' => 6.31,
-        'ExtUtils::Install' => 1.46,
-    },
-    LICENSE => 'perl',
-    EXE_FILES => [ 'bin/cpanm' ],
+
+
+my %WriteMakefileArgs = (
+  "ABSTRACT" => "get, unpack, build and install modules from CPAN",
+  "AUTHOR" => "- Tatsuhiko Miyagawa",
+  "BUILD_REQUIRES" => {},
+  "CONFIGURE_REQUIRES" => {
+    "ExtUtils::MakeMaker" => "6.30"
+  },
+  "DISTNAME" => "App-cpanminus",
+  "EXE_FILES" => [],
+  "LICENSE" => "perl",
+  "NAME" => "App::cpanminus",
+  "PREREQ_PM" => {
+    "ExtUtils::Install" => "1.46",
+    "ExtUtils::MakeMaker" => "6.31",
+    "Module::Build" => "0.36"
+  },
+  "TEST_REQUIRES" => {
+    "Test::More" => 0
+  },
+  "VERSION" => "1.6192",
+  "test" => {
+    "TESTS" => "t/*.t"
+  }
 );
 
-my $eummv = eval ($ExtUtils::MakeMaker::VERSION);
-if ($eummv >= 6.45) {
-    $args{META_MERGE} = {
-        resources => {
-            repository => 'git://github.com/miyagawa/cpanminus.git',
-            bugtracker => 'https://github.com/miyagawa/cpanminus/issues',
-        },
-    };
+
+unless ( eval { ExtUtils::MakeMaker->VERSION(6.63_03) } ) {
+  my $tr = delete $WriteMakefileArgs{TEST_REQUIRES};
+  my $br = $WriteMakefileArgs{BUILD_REQUIRES};
+  for my $mod ( keys %$tr ) {
+    if ( exists $br->{$mod} ) {
+      $br->{$mod} = $tr->{$mod} if $tr->{$mod} > $br->{$mod};
+    }
+    else {
+      $br->{$mod} = $tr->{$mod};
+    }
+  }
 }
 
-WriteMakefile(%args);
+unless ( eval { ExtUtils::MakeMaker->VERSION(6.56) } ) {
+  my $br = delete $WriteMakefileArgs{BUILD_REQUIRES};
+  my $pp = $WriteMakefileArgs{PREREQ_PM};
+  for my $mod ( keys %$br ) {
+    if ( exists $pp->{$mod} ) {
+      $pp->{$mod} = $br->{$mod} if $br->{$mod} > $pp->{$mod};
+    }
+    else {
+      $pp->{$mod} = $br->{$mod};
+    }
+  }
+}
+
+delete $WriteMakefileArgs{CONFIGURE_REQUIRES}
+  unless eval { ExtUtils::MakeMaker->VERSION(6.52) };
+
+WriteMakefile(%WriteMakefileArgs);
+
+
+

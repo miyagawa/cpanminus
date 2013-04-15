@@ -4,6 +4,7 @@ perl:
   - 5.14
   - 5.12
   - 5.10
+install:
+  - cpanm --installdeps -nq .
 script:
-  - cpanm -nq Module::Install
   - prove -lr xt -j8
