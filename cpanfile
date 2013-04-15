@@ -22,11 +22,10 @@ on develop => sub {
     requires 'JSON::PP';
     requires 'LWP::Simple';
     requires 'LWP::UserAgent', '5.802';
-    requires 'Module::Build';
+    requires 'Module::Install';
     requires 'Module::CPANfile';
     requires 'Module::CoreList';
     requires 'Module::Metadata';
-    requires 'Module::Signature';
     requires 'Parse::CPAN::Meta';
     requires 'String::ShellQuote';
     requires 'YAML';
