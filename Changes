@@ -1,5 +1,11 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+{{$NEXT}}
+
+1.6193  2013-04-15 16:36:53 JST
+   [Maintenance]
+      - Changed how to make a release by switching to Milla and dzil
+
 1.6192  Sun Apr 14 17:12:52 JST 2013
    [New Features]
       - Support features with --with-feature
