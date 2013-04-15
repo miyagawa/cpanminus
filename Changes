@@ -2,6 +2,10 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6900  2013-04-15 16:41:31 JST
+   [Maintenance]
+      - Remove 'cpanm' executable in the root directory from the distribution
+
 1.6193  2013-04-15 16:36:53 JST
    [Maintenance]
       - Changed how to make a release by switching to Milla and dzil
