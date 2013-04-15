@@ -11,7 +11,6 @@ if (-e 'cpanm') {
     print STDERR "Generating bin/cpanm from cpanm\n";
     open my $in,  "<cpanm"     or die $!;
     open my $out, ">bin/cpanm" or die $!;
-
     while (<$in>) {
         s|^#!/usr/bin/env perl|#!perl|; # so MakeMaker can fix it
         print $out $_;
@@ -29,7 +28,9 @@ my %WriteMakefileArgs = (
     "ExtUtils::MakeMaker" => "6.30"
   },
   "DISTNAME" => "App-cpanminus",
-  "EXE_FILES" => [],
+  "EXE_FILES" => [
+    "bin/cpanm"
+  ],
   "LICENSE" => "perl",
   "NAME" => "App::cpanminus",
   "PREREQ_PM" => {
