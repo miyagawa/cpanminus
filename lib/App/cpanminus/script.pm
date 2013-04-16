@@ -723,7 +723,7 @@ sub show_version {
 
     print "  \@INC:\n";
     for my $inc (@INC) {
-        print "    $inc\n";
+        print "    $inc\n" unless ref($inc) eq 'CODE';
     }
 
     return 1;
