@@ -180,7 +180,7 @@ sub parse_options {
         'i|install' => sub { $self->{cmd} = 'install' },
         'info'      => sub { $self->{cmd} = 'info' },
         'look'      => sub { $self->{cmd} = 'look'; $self->{skip_installed} = 0 },
-        'self-upgrade' => sub { $self->check_upgrade; $self->{cmd} = 'install'; $self->{skip_installed} = 1; push @ARGV, 'App::cpanminus' },
+        'self-upgrade' => sub { $self->{action} = 'self_upgrade' },
         'uninst-shadows!'  => \$self->{uninstall_shadows},
         'lwp!'    => \$self->{try_lwp},
         'wget!'   => \$self->{try_wget},
@@ -220,7 +220,7 @@ sub parse_options {
 sub check_upgrade {
     if ($0 !~ /^$Config{installsitebin}/) {
         if ($0 =~ m!perlbrew/bin!) {
-            warn <<WARN;
+            die <<DIE;
 It appears your cpanm executable was installed via `perlbrew install-cpanm`.
 cpanm --self-upgrade won't upgrade the version of cpanm you're running.
 
@@ -228,9 +228,9 @@ Run the following command to get it upgraded.
 
   perlbrew install-cpanm
 
-WARN
+DIE
         } else {
-            warn <<WARN;
+            die <<DIE;
 You are running cpanm from the path where your current perl won't install executables to.
 Because of that, cpanm --self-upgrade won't upgrade the version of cpanm you're running.
 
@@ -239,7 +239,7 @@ Because of that, cpanm --self-upgrade won't upgrade the version of cpanm you're 
 
 It means you either installed cpanm globally with system perl, or use distro packages such
 as rpm or apt-get, and you have to use them again to upgrade cpanm.
-WARN
+DIE
         }
     }
 }
@@ -1223,6 +1223,7 @@ sub configure_mirrors {
 
 sub self_upgrade {
     my $self = shift;
+    $self->check_upgrade;
     $self->{argv} = [ 'App::cpanminus' ];
     return; # continue
 }
