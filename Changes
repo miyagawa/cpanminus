@@ -2,6 +2,9 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6902  2013-04-21 09:16:46 CST
+      - No changes, maintenance release
+
 1.6901  2013-04-21 08:50:10 CST
    [Improvements]
       - --self-upgrade dies rather than warns when it's installed via perlbrew etc.
