@@ -1,5 +1,8 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
+1.6109  Sun Apr 21 09:02:42 CST 2013
+      - Maintenance release, no code changes
+
 1.6108  Sat Apr 13 15:29:32 JST 2013
    [Improvements]
       - Fix the way local::lib options are expanded
