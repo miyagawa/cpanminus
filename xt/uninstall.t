@@ -4,10 +4,10 @@ use Test::More;
 use Module::Metadata;
 
 run '--uninstall', 'NonExistent';
-like last_build_log, qr/is not installed/;
+like last_build_log, qr/is not found/;
 
 run '--uninstall', 'utf8';
-like last_build_log, qr/core/;
+like last_build_log, qr/is not found/;
 
 run 'Hash::MultiValue';
 run '--uninstall', '-f', 'Hash::MultiValue';

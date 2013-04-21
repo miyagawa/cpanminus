@@ -902,6 +902,7 @@ sub setup_local_lib {
             ];
         }
         $self->_setup_local_lib_env($base);
+        $self->{local_lib} = $base;
     }
 
     $self->bootstrap_local_lib_deps;
@@ -1317,16 +1318,23 @@ sub uninstall_module {
 
     $self->check_libs;
 
-    my $packlist = $self->packlists_containing($module);
+    my @inc = $self->{local_lib}
+        ? (local::lib->install_base_arch_path($self->{local_lib}),
+           local::lib->install_base_perl_path($self->{local_lib}))
+        : @Config{qw(installsitearch installsitelib)};
 
+    my $packlist = $self->packlists_containing($module, \@inc);
     unless ($packlist) {
-        $self->diag_fail("$module is not installed or can't be uninstalled because it's core.", 1);
+        $self->diag_fail(<<DIAG, 1);
+$module is not found in the following directories and can't be uninstalled.
+
+@{[ join("  \n", map "  $_", @inc) ]}
+
+DIAG
         return;
     }
 
-    unless ($self->ask_permission($module, $packlist)) {
-        return;
-    }
+    $self->ask_permission($module, $packlist) or return;
 
     unless ($self->uninstall_from_packlist($packlist)) {
         $self->diag_fail("Failed to uninstall $module", 1);
@@ -1339,13 +1347,10 @@ sub uninstall_module {
 }
 
 sub packlists_containing {
-    my($self, $module) = @_;
-
-    my @inc = grep { $_ ne $Config{privlibexp} && $_ ne $Config{archlibexp} }
-        @{ $self->{search_inc} || \@INC };
+    my($self, $module, $inc) = @_;
 
     require Module::Metadata;
-    my $metadata = Module::Metadata->new_from_module($module, inc => \@inc)
+    my $metadata = Module::Metadata->new_from_module($module, inc => $inc)
         or return;
 
     my $packlist;
@@ -1359,7 +1364,7 @@ sub packlists_containing {
     {
         require File::pushd;
         my $pushd = File::pushd::pushd();
-        my @search = grep -d $_, map File::Spec->catdir($_, 'auto'), @inc;
+        my @search = grep -d $_, map File::Spec->catdir($_, 'auto'), @$inc;
         File::Find::find($wanted, @search);
     }
 
@@ -1398,9 +1403,8 @@ sub ask_permission {
 
 sub unpack_packlist {
     my ($self, $packlist) = @_;
-
     open my $fh, '<', $packlist or die "$packlist: $!";
-    return map { chomp; $_ } <$fh>;
+    map { chomp; $_ } <$fh>;
 }
 
 sub uninstall_from_packlist {
