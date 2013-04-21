@@ -313,8 +313,8 @@ sub doit {
 
         $self->chdir($cwd);
         if ($self->{cmd} eq 'uninstall') {
-            $self->uninstall_module($module) or push @fail, $module;
-            next;
+            $self->uninstall_module($module)
+              or push @fail, $module;
         } else {
             $self->install_module($module, 0, $version)
                 or push @fail, $module;
@@ -1318,7 +1318,7 @@ sub uninstall_module {
     $self->check_libs;
     my $packlist = $self->find_packlist($module);
     if ($self->is_core_module($module, $packlist)) {
-        $self->diag_fail("$module is a core module!! Cannot be uninstall.\n", 1);
+        $self->diag_fail("$module is a core module!! Cannot be uninstalled.\n", 1);
         return;
     }
 

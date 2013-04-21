@@ -1,7 +1,7 @@
 package xt::Run;
 use strict;
 use base qw(Exporter);
-our @EXPORT = qw(run run_L run_uninstall run_uninstall_L last_build_log);
+our @EXPORT = qw(run run_L last_build_log);
 
 use Capture::Tiny qw(capture);
 use File::Temp qw(tempdir);
@@ -20,19 +20,6 @@ sub run {
     my @notest = $ENV{NOTEST} ? ("--notest") : ();
     my($stdout, $stderr, $exit) = capture {
         system($^X, $executable, @notest, "--quiet", "--reinstall", @args);
-    };
-    ::diag($stderr) if $stderr;
-    return wantarray ? ($stdout, $stderr, $exit) : $stdout;
-}
-
-sub run_uninstall_L {
-    run_uninstall("-L", "$ENV{PERL_CPANM_HOME}/perl5", @_);
-}
-
-sub run_uninstall {
-    my @args = @_;
-    my($stdout, $stderr, $exit) = capture {
-        system($^X, $executable, "--uninstall", @args);
     };
     ::diag($stderr) if $stderr;
     return wantarray ? ($stdout, $stderr, $exit) : $stdout;
