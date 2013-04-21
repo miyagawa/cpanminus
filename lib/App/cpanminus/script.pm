@@ -1371,22 +1371,6 @@ sub packlists_containing {
     return $packlist;
 }
 
-# TODO: not use this code (will use when want remove .meta directory)
-sub find_meta_dirs {
-    my ($self, $module, $version) = @_;
-
-    $module =~ s!::!-!g;
-    my $distvname = $version ? "$module-$version" : "$module-*";
-
-    for my $inc (@{ $self->{search_inc} || \@INC }) {
-        next unless $inc =~ /$Config{archname}/;
-        my @meta_dirs = glob("$inc/.meta/$distvname/");
-        return @meta_dirs if @meta_dirs;
-    }
-
-    return;
-}
-
 sub ask_permission {
     my ($self, $module, $packlist) = @_;
 
