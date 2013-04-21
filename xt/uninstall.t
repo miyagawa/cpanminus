@@ -3,6 +3,12 @@ use xt::Run;
 use Test::More;
 use Module::Metadata;
 
+run '--uninstall', 'NonExistent';
+like last_build_log, qr/is not installed/;
+
+run '--uninstall', 'utf8';
+like last_build_log, qr/core/;
+
 run 'Hash::MultiValue';
 run '--uninstall', '-f', 'Hash::MultiValue';
 like last_build_log, qr!Unlink.*/Hash/MultiValue\.pm!;

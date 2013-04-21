@@ -1316,15 +1316,16 @@ sub uninstall_module {
     my ($self, $module) = @_;
 
     $self->check_libs;
+
     my $packlist = $self->find_packlist($module);
-    if ($self->is_core_module($module, $packlist)) {
-        $self->diag_fail("$module is a core module!! Cannot be uninstalled.\n", 1);
+
+    unless ($packlist) {
+        $self->diag_fail("$module is not installed or can't be uninstalled because it's core.", 1);
         return;
     }
 
-    unless ($packlist) {
-        $self->diag_fail("$module is not installed.", 1);
-        return;
+    if ($self->is_core_module($module, $packlist)) {
+
     }
 
     unless ($self->ask_permission($module, $packlist)) {
@@ -1353,44 +1354,30 @@ sub find_packlist {
 }
 
 sub packlists_containing {
-    my ($self, $module) = @_;
+    my($self, $module) = @_;
 
-    (my $target = $module) =~ s!::!/!g;
-    $target .= '.pm';
-    $target = File::Spec->catfile($target);
+    my @inc = @{ $self->{search_inc} || \@INC };
 
-    $self->{search_inc} ||= [ @INC ];
-    $self->{inc_regexp} ||= do {
-        my $regexp = join '|', map {
-            quotemeta File::Spec->catdir("$_");
-        } @{ $self->{search_inc} };
-        qr/^(?:$regexp)./;
+    require Module::Metadata;
+    my $metadata = Module::Metadata->new_from_module($module, inc => \@inc)
+        or return;
+
+    my %pack_rev;
+    my $wanted = sub {
+        return unless $_ eq '.packlist' && -f $_;
+        for my $file ($self->unpack_packlist($File::Find::name)) {
+            $pack_rev{$file} ||= $File::Find::name;
+        }
     };
 
-    my $packlist;
-    my $cwd = Cwd::cwd;
-    for my $inc (@{ $self->{search_inc} }) {
-        my $dir = File::Spec->catdir($inc, 'auto');
-        next unless -d $dir;
-
-        File::Find::find(sub {
-            return if $packlist;
-            return unless $_ eq '.packlist' && -f $_ && -r _;
-            for my $file ($self->unpack_packlist($File::Find::name)) {
-                $file = File::Spec->catfile($file);
-                next unless $file =~ s/$self->{inc_regexp}//; # trim inc dir
-                next unless $file eq $target;
-                $packlist = $File::Find::name;
-                last;
-            }
-        }, $dir);
-
-        chdir $cwd or die "$!: $cwd";
-
-        last if $packlist;
+    {
+        require File::pushd;
+        my $pushd = File::pushd::pushd();
+        my @search = grep -d $_, map File::Spec->catdir($_, 'auto'), @inc;
+        File::Find::find($wanted, @search);
     }
 
-    return $packlist;
+    return $pack_rev{$metadata->filename};
 }
 
 # TODO: not use this code (will use when want remove .meta directory)
@@ -1452,23 +1439,9 @@ sub ask_permission {
 
 sub unpack_packlist {
     my ($self, $packlist) = @_;
-    my @targets;
 
-    my $local_lib = $self->{local_lib} ? quotemeta $self->{local_lib} : undef;
-
-    open my $fh, '<', $packlist or die "$!: $packlist";
-    for my $file (<$fh>) {
-        chomp $file;
-        if ($local_lib) {
-            if ($file =~ /^$local_lib/) {
-                push @targets, $file;
-            }
-        } else {
-            push @targets, $file;
-        }
-    }
-
-    return @targets;
+    open my $fh, '<', $packlist or die "$packlist: $!";
+    return map { chomp; $_ } <$fh>;
 }
 
 sub uninstall_from_packlist {
