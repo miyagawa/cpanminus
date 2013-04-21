@@ -1317,15 +1317,11 @@ sub uninstall_module {
 
     $self->check_libs;
 
-    my $packlist = $self->find_packlist($module);
+    my $packlist = $self->packlists_containing($module);
 
     unless ($packlist) {
         $self->diag_fail("$module is not installed or can't be uninstalled because it's core.", 1);
         return;
-    }
-
-    if ($self->is_core_module($module, $packlist)) {
-
     }
 
     unless ($self->ask_permission($module, $packlist)) {
@@ -1342,31 +1338,21 @@ sub uninstall_module {
     return 1;
 }
 
-sub find_packlist {
-    my ($self, $module, $version) = @_;
-
-    if (my ($packlist) = $self->packlists_containing($module)) {
-        $packlist = File::Spec->catfile($packlist);
-        return $packlist;
-    }
-
-    return;
-}
-
 sub packlists_containing {
     my($self, $module) = @_;
 
-    my @inc = @{ $self->{search_inc} || \@INC };
+    my @inc = grep { $_ ne $Config{privlibexp} && $_ ne $Config{archlibexp} }
+        @{ $self->{search_inc} || \@INC };
 
     require Module::Metadata;
     my $metadata = Module::Metadata->new_from_module($module, inc => \@inc)
         or return;
 
-    my %pack_rev;
+    my $packlist;
     my $wanted = sub {
         return unless $_ eq '.packlist' && -f $_;
         for my $file ($self->unpack_packlist($File::Find::name)) {
-            $pack_rev{$file} ||= $File::Find::name;
+            $packlist ||= $File::Find::name if $file eq $metadata->filename;
         }
     };
 
@@ -1377,7 +1363,7 @@ sub packlists_containing {
         File::Find::find($wanted, @search);
     }
 
-    return $pack_rev{$metadata->filename};
+    return $packlist;
 }
 
 # TODO: not use this code (will use when want remove .meta directory)
@@ -1394,33 +1380,6 @@ sub find_meta_dirs {
     }
 
     return;
-}
-
-sub is_core_module {
-    my ($self, $dist, $packlist) = @_;
-    require Module::CoreList;
-
-    $self->{perl_version} ||= version->new($])->numify;
-    return unless exists $Module::CoreList::version{$self->{perl_version}}{$dist};
-    return 1 unless $packlist;
-
-    $self->{core_module_libs} ||= [
-        do {
-            my %seen;
-            grep !$seen{$_}++, @Config{qw/archlib archlibexp privlib privlibexp/},
-        },
-    ];
-
-    my $is_core = 0;
-    for my $lib (@{ $self->{core_module_libs} }) {
-        my $safe_dir = quotemeta $lib; # workaround for MSWin32
-        if ($packlist =~ /^$safe_dir/) {
-            $is_core = 1;
-            last;
-        }
-    }
-
-    return $is_core;
 }
 
 sub ask_permission {
