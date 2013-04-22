@@ -1313,17 +1313,23 @@ sub install_module {
     return $self->build_stuff($module, $dist, $depth);
 }
 
+sub uninstall_search_path {
+    my $self = shift;
+
+    $self->{local_lib}
+        ? (local::lib->install_base_arch_path($self->{local_lib}),
+           local::lib->install_base_perl_path($self->{local_lib}))
+        : @Config{qw(installsitearch installsitelib)};
+}
+
 sub uninstall_module {
     my ($self, $module) = @_;
 
     $self->check_libs;
 
-    my @inc = $self->{local_lib}
-        ? (local::lib->install_base_arch_path($self->{local_lib}),
-           local::lib->install_base_perl_path($self->{local_lib}))
-        : @Config{qw(installsitearch installsitelib)};
+    my @inc = $self->uninstall_search_path;
 
-    my $packlist = $self->packlists_containing($module, \@inc);
+    my($metadata, $packlist) = $self->packlists_containing($module, \@inc);
     unless ($packlist) {
         $self->diag_fail(<<DIAG, 1);
 $module is not found in the following directories and can't be uninstalled.
@@ -1334,12 +1340,10 @@ DIAG
         return;
     }
 
-    $self->ask_permission($module, $packlist) or return;
+    my @uninst_files = $self->uninstall_target($metadata, $packlist);
 
-    unless ($self->uninstall_from_packlist($packlist)) {
-        $self->diag_fail("Failed to uninstall $module", 1);
-        return;
-    }
+    $self->ask_permission($module, \@uninst_files) or return;
+    $self->uninstall_files(@uninst_files, $packlist);
 
     $self->diag("Successfully uninstalled $module\n", 1);
 
@@ -1368,14 +1372,41 @@ sub packlists_containing {
         File::Find::find($wanted, @search);
     }
 
-    return $packlist;
+    return $metadata, $packlist;
+}
+
+sub uninstall_target {
+    my($self, $metadata, $packlist) = @_;
+
+    if ($self->has_shadow_install($metadata) or $self->{local_lib}) {
+        grep $self->should_unlink($_), $self->unpack_packlist($packlist);
+    } else {
+        $self->unpack_packlist($packlist);
+    }
+}
+
+sub has_shadow_install {
+    my($self, $metadata) = @_;
+
+    # check if you have the module in site_perl *and* perl
+    my @shadow = grep defined, map Module::Metadata->new_from_module($metadata->name, inc => [$_]), @INC;
+    @shadow >= 2;
+}
+
+sub should_unlink {
+    my($self, $file) = @_;
+    if ($self->{local_lib}) {
+        $file =~ /^\Q$self->{local_lib}\E/;
+    } else {
+        !(grep $file =~ /^\Q$_\E/, @Config{qw(installbin installscript installman1dir installman3dir)});
+    }
 }
 
 sub ask_permission {
-    my ($self, $module, $packlist) = @_;
+    my ($self, $module, $files) = @_;
 
     $self->diag("$module containts the following:\n\n");
-    for my $file ($self->unpack_packlist($packlist)) {
+    for my $file (@$files) {
         $self->diag("  $file\n");
     }
     $self->diag("\n");
@@ -1391,43 +1422,19 @@ sub unpack_packlist {
     map { chomp; $_ } <$fh>;
 }
 
-sub uninstall_from_packlist {
-    my ($self, $packlist) = @_;
-    my $failed = 0;
-
-    my $inc_map = {
-        map { File::Spec->catfile($_) => 1 } @{ $self->{search_inc} }
-    };
-
-    my (@target_files, @not_exists_files);
-    for my $file ($self->unpack_packlist($packlist)) {
-        if (-f $file) {
-            push @target_files, $file;
-        } else {
-            push @not_exists_files, $file;
-        }
-    }
+sub uninstall_files {
+    my ($self, @files) = @_;
 
     $self->diag("\n");
 
-    for my $file (@target_files, $packlist) {
+    for my $file (@files) {
         $self->diag("Unlink: $file\n");
-        unlink $file or do {
-            $self->diag_fail("$!: $file");
-            $failed++;
-        };
-        $self->rm_empty_dir_from_file($file, $inc_map);
+        unlink $file or $self->diag_fail("$!: $file");
     }
-
-    for my $file (@not_exists_files) {
-        $self->diag_fail("Not found: $file\n");
-    }
-
-    # TODO remove .meta dirs
 
     $self->diag("\n");
 
-    return !$failed;
+    return 1;
 }
 
 sub rm_empty_dir_from_file {

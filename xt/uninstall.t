@@ -6,6 +6,9 @@ use Module::Metadata;
 run '--uninstall', 'NonExistent';
 like last_build_log, qr/is not found/;
 
+run '--uninstall', 'Pod::Usage';
+like last_build_log, qr/is not found/, 'Core module in perl path';
+
 run '--uninstall', 'utf8';
 like last_build_log, qr/is not found/;
 
@@ -16,6 +19,13 @@ like last_build_log, qr!Unlink.*/Hash/MultiValue\.pm!;
 run_L 'Hash::MultiValue';
 run_L '--uninstall', '-f', 'Hash::MultiValue';
 like last_build_log, qr!Unlink.*$ENV{PERL_CPANM_HOME}.*/Hash/MultiValue\.pm!;
+
+# shadow installs
+run 'Hash::MultiValue';
+run_L 'Hash::MultiValue';
+run_L '--uninstall', '-f', 'Hash::MultiValue';
+like last_build_log, qr!Unlink.*$ENV{PERL_CPANM_HOME}.*/Hash/MultiValue\.pm!;
+unlike last_build_log, qr!Unlink.*site_perl.*/Hash/MultiValue\.pm!;
 
 run_L 'Module::CoreList';
 run_L '--uninstall', '-f', 'Module::CoreList';
