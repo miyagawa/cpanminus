@@ -108,10 +108,22 @@ Download and unpack the distribution and then open the directory with
 your shell. Handy to poke around the source code or do manual
 testing.
 
-=item --uninstall
+=item -U, --uninstall
 
-B<EXPERIMENTAL>: Uninstalls the modules. Will remove the distribution files from
-C<<.packlist>>.
+B<EXPERIMENTAL>: Uninstalls the modules. Will remove the distribution
+files from your library path using the C<.packlist> file.
+
+When used with C<-l> or C<-L>, only the files under the local::lib
+directory will be removed.
+
+B<NOTE>: If you have the "dual-life" module in multiple locations
+(i.e. C<site_perl> and C<perl> library path, with perl 5.12 or later),
+only the files in C<site_perl> will be deleted.
+
+If the distribution has bin scripts and man, they will be kept in case
+the core installation still references that, although there's no
+guarantee that the script will continue working as expected with the
+older version of .pm files.
 
 =item -h, --help
 
