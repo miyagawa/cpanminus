@@ -1437,31 +1437,6 @@ sub uninstall_files {
     return 1;
 }
 
-sub rm_empty_dir_from_file {
-    my ($self, $file, $inc) = @_;
-    require File::Basename;
-    my $dir = File::Basename::dirname($file);
-    return unless -d $dir;
-    return if $inc->{+File::Spec->catfile($dir)};
-
-    my $failed;
-    if ($self->is_empty_dir($dir)) {
-        $self->puts("rmdir     : $dir") if $self->{verbose};
-        rmdir $dir or $self->puts("$dir: $!") and $failed++;
-        $self->rm_empty_dir_from_file($dir, $inc);
-    }
-
-    return !$failed;
-}
-
-sub is_empty_dir {
-    my ($self, $dir) = @_;
-    opendir my $dh, $dir or die "$dir: $!";
-    my @dir = grep !/^\.{1,2}$/, readdir $dh;
-    closedir $dh;
-    return @dir ? 0 : 1;
-}
-
 sub format_dist {
     my($self, $dist) = @_;
 
