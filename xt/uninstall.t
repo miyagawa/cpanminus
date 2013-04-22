@@ -32,11 +32,14 @@ run_L '--uninstall', '-f', 'Module::CoreList';
 like last_build_log, qr!Unlink.*$ENV{PERL_CPANM_HOME}.*/Module/CoreList\.pm!;
 like last_build_log, qr!Unlink.*$ENV{PERL_CPANM_HOME}.*/bin/corelist!;
 
-run 'Module::CoreList';
-run '-U', '-f', 'Module::CoreList';
-unlike last_build_log, qr!is a core module!, "Dual-life can be uninstalled";
-like last_build_log, qr!Unlink.*/Module/CoreList\.pm!;
-unlike last_build_log, qr!Unlink.*/bin/corelist!, "Do not uninstall bin/ when it is shared";
+# older perl installs dual-life modules to perl lib
+if ($] > 5.010) {
+    run 'Module::CoreList';
+    run '-U', '-f', 'Module::CoreList';
+    unlike last_build_log, qr!not found!, "Dual-life can be uninstalled";
+    like last_build_log, qr!Unlink.*/Module/CoreList\.pm!;
+    unlike last_build_log, qr!Unlink.*/bin/corelist!, "Do not uninstall bin/ when it is shared";
+}
 
 run 'App::mymeta_requires';
 run '-U', '-f', 'App::mymeta_requires';
