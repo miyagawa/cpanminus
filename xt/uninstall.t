@@ -33,21 +33,21 @@ like last_build_log, qr!Unlink.*$ENV{PERL_CPANM_HOME}.*/Module/CoreList\.pm!;
 like last_build_log, qr!Unlink.*$ENV{PERL_CPANM_HOME}.*/bin/corelist!;
 
 # older perl installs dual-life modules to perl lib
-if ($] > 5.010) {
+if ($] >= 5.012) {
     run 'Module::CoreList';
     run '-U', '-f', 'Module::CoreList';
     unlike last_build_log, qr!not found!, "Dual-life can be uninstalled";
     like last_build_log, qr!Unlink.*/Module/CoreList\.pm!;
     unlike last_build_log, qr!Unlink.*/bin/corelist!, "Do not uninstall bin/ when it is shared";
+
+    my $mod = Module::Metadata->new_from_module("Module::CoreList");
+    ok $mod;
+    unlike $mod->filename, qr/site_perl/;
 }
 
 run 'App::mymeta_requires';
 run '-U', '-f', 'App::mymeta_requires';
 like last_build_log, qr!Unlink:.*bin/mymeta-requires!, "Uninstall bin/ when it is not shared";
-
-my $mod = Module::Metadata->new_from_module("Module::CoreList");
-ok $mod;
-unlike $mod->filename, qr/site_perl/;
 
 run $_ for qw( Hash::MultiValue Module::CoreList App::mymeta_requires );
 
