@@ -1378,6 +1378,8 @@ sub packlists_containing {
 sub uninstall_target {
     my($self, $metadata, $packlist) = @_;
 
+    # If the module has a shadow install, or uses local::lib, then you can't just remove
+    # all files in .packlist since it might have shadows in there
     if ($self->has_shadow_install($metadata) or $self->{local_lib}) {
         grep $self->should_unlink($_), $self->unpack_packlist($packlist);
     } else {
@@ -1395,6 +1397,11 @@ sub has_shadow_install {
 
 sub should_unlink {
     my($self, $file) = @_;
+
+    # If local::lib is used, everything under the directory can be safely removed
+    # Otherwise, bin and man files might be shared with the shadows i.e. site_perl vs perl
+    # This is not 100% safe to keep the script there hoping to work with older version of .pm
+    # files in the shadow, but there's nothing you can do about it.
     if ($self->{local_lib}) {
         $file =~ /^\Q$self->{local_lib}\E/;
     } else {
