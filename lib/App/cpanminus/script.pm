@@ -1108,8 +1108,8 @@ sub configure {
 
     # Lancaster Consensus
     if ($self->{pure_perl}) {
-        $ENV{PERL_MM_OPT} .= "PUREPERL_ONLY=1";
-        $ENV{PERL_MB_OPT} .= "--pureperl-only";
+        $ENV{PERL_MM_OPT} .= " PUREPERL_ONLY=1";
+        $ENV{PERL_MB_OPT} .= " --pureperl-only";
     }
 
     $cmd = $self->append_args($cmd, 'configure') if $depth == 0;
