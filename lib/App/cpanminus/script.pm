@@ -104,6 +104,7 @@ sub new {
         report_perl_version => 1,
         build_args => {},
         features => {},
+        pure_perl => 0,
         @_,
     }, $class;
 }
@@ -206,6 +207,7 @@ sub parse_options {
         'with-feature=s' => sub { $self->{features}{$_[1]} = 1 },
         'without-feature=s' => sub { $self->{features}{$_[1]} = 0 },
         'with-all-features' => sub { $self->{features}{__all} = 1 },
+        'pp!' => \$self->{pure_perl},
         $self->install_type_handlers,
         $self->build_args_handlers,
     );
@@ -1102,6 +1104,12 @@ sub configure {
     unless ($self->{pod2man}) {
         $ENV{PERL_MM_OPT} .= " INSTALLMAN1DIR=none INSTALLMAN3DIR=none";
         $ENV{PERL_MB_OPT} .= " --config installman1dir= --config installsiteman1dir= --config installman3dir= --config installsiteman3dir=";
+    }
+
+    # Lancaster Consensus
+    if ($self->{pure_perl}) {
+        $ENV{PERL_MM_OPT} .= "PUREPERL_ONLY=1";
+        $ENV{PERL_MB_OPT} .= "--pureperl-only";
     }
 
     $cmd = $self->append_args($cmd, 'configure') if $depth == 0;
