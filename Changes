@@ -2,6 +2,10 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6904  2013-04-23 19:23:31 PDT
+   [Bug Fixes]
+      - Fixes installation failure when perl is in 'recommends' (sjn) #238
+
 1.6903  2013-04-22 09:05:50 CST
    [New Features]
       - EXPERIMENTAL --uninstall/-U command to uninstall modules
