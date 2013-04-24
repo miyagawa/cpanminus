@@ -1899,7 +1899,7 @@ sub install_deps {
     for my $dep (@deps) {
         next if $seen{$dep->module};
         if ($dep->module eq 'perl') {
-            unless ($self->check_perl_version($dep->version)) {
+            if ($dep->is_requirement && !$self->check_perl_version($dep->version)) {
                 $self->diag("Needs perl @{[$dep->version]}, you have $]\n");
                 push @fail, 'perl';
             }
