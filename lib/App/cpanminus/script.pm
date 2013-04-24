@@ -2086,9 +2086,14 @@ DIAG
         my $local   = $self->{local_versions}{$dist->{module} || ''};
         my $version = $dist->{module_version} || $dist->{meta}{version} || $dist->{version};
         my $reinstall = $local && ($local eq $version);
+        my $action  = $local && !$reinstall
+                    ? $self->numify_ver($version) < $self->numify_ver($local)
+                        ? "downgraded"
+                        : "upgraded"
+                    : undef;
 
         my $how = $reinstall ? "reinstalled $distname"
-                : $local     ? "installed $distname (upgraded from $local)"
+                : $local     ? "installed $distname ($action from $local)"
                              : "installed $distname" ;
         my $msg = "Successfully $how";
         $self->diag_ok;
