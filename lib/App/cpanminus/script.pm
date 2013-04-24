@@ -1134,6 +1134,9 @@ sub test {
     # https://rt.cpan.org/Ticket/Display.html?id=48965#txn-1013385
     local $ENV{PERL_MM_USE_DEFAULT} = !$self->{interactive};
 
+    # https://github.com/Perl-Toolchain-Gang/toolchain-site/blob/master/lancaster-consensus.md
+    local $ENV{NONINTERACTIVE_TESTING} = !$self->{interactive};
+
     $cmd = $self->append_args($cmd, 'test') if $depth == 0;
 
     return 1 if $self->run_timeout($cmd, $self->{test_timeout});
