@@ -1,0 +1,6 @@
+/CPAN-Dummy-Test-NonInteractive-*
+/.build
+/_build*
+/Build
+MYMETA.*
+!META.json
