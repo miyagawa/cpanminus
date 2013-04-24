@@ -1,0 +1,6 @@
+/CPAN-Dummy-Test-PP-*
+/.build
+/_build*
+/Build
+MYMETA.*
+!META.json
