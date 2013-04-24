@@ -2,6 +2,13 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6905  2013-04-23 20:03:36 PDT
+   [Improvements]
+      - Added NONINTERACTIVE_TESTING environment variables when it is not interactive
+        per Lancaster Consensus
+      - Added --pp, --pureperl command line option to prefer Pure perl build of the distribution
+        which supports Lancaster Consensus
+
 1.6904  2013-04-23 19:23:31 PDT
    [Bug Fixes]
       - Fixes installation failure when perl is in 'recommends' (sjn) #238
