@@ -207,7 +207,7 @@ sub parse_options {
         'with-feature=s' => sub { $self->{features}{$_[1]} = 1 },
         'without-feature=s' => sub { $self->{features}{$_[1]} = 0 },
         'with-all-features' => sub { $self->{features}{__all} = 1 },
-        'pp!' => \$self->{pure_perl},
+        'pp|pureperl!' => \$self->{pure_perl},
         $self->install_type_handlers,
         $self->build_args_handlers,
     );

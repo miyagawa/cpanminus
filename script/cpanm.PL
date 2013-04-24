@@ -284,7 +284,7 @@ requires custom configuration or Task:: distributions.
 Defaults to false, and you can say C<--no-interactive> to override
 when it's set in the default options in C<PERL_CPANM_OPT>.
 
-=item --pp
+=item --pp, --pureperl
 
 Prefer Pure perl build of modules by setting C<PUREPERL_ONLY=1> for
 MakeMaker and C<--pureperl-only> for Build.PL based
