@@ -7,6 +7,6 @@ perl:
 before_install:
   - cpanm -nq App::mymeta_requires
 install:
-  - mymeta-requires --develop | cpanm -nq
+  - (mymeta-requires --develop | cpanm -nq) || cat ~/.cpanm/build.log
 script:
   - prove -lr xt -j8
