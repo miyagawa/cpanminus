@@ -2,6 +2,12 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6906  2013-04-24 23:18:54 PDT
+   [Improvements]
+      - Fixed messaging so that downgrading says downgrades (@tsibley) #240
+      - Prepend space in pure-perl options so that other args can stay (@gfx) #242
+      - Add --skipdeps to PERL_AUTOINSTALL env for old versions of AutoInstall bundled in inc/
+
 1.6905  2013-04-23 20:03:36 PDT
    [Improvements]
       - Added NONINTERACTIVE_TESTING environment variables when it is not interactive

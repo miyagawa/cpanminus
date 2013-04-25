@@ -95,7 +95,7 @@
          "web" : "https://github.com/miyagawa/cpanminus"
       }
    },
-   "version" : "1.6905",
+   "version" : "1.6906",
    "x_contributors" : [
       "Alessandro Ghedini <al3xbio@gmail.com>",
       "Andrew Rodland <andrew@cleverdomain.org>",
@@ -105,6 +105,7 @@
       "Dagfinn Ilmari Manns\u00e5ker <ilmari@ilmari.org>",
       "Dave Goodell <davidjgoodell@gmail.com>",
       "Dave Rolsky <autarch@urth.org>",
+      "Fuji, Goro <g.psy.va@gmail.com>",
       "Ingy dot Net <ingy@ingy.net>",
       "J. Nick Koston <nick@cpanel.net>",
       "Jan Dubois <jand@activestate.com>",
@@ -130,6 +131,7 @@
       "Smylers <Smylers@stripey.com>",
       "Stoned Elipot <stoned.elipot@gmail.com>",
       "Tatsuhiko Miyagawa <miyagawa@gmail.com>",
+      "Thomas Sibley <tom@zulutango.org>",
       "Tokuhiro Matsuno <tokuhirom@gmail.com>",
       "Vyacheslav Matyukhin <mmcleric@yandex-team.ru>",
       "Yann Kerherve <yann@cyberion.net>",
