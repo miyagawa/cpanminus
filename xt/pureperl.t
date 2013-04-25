@@ -11,9 +11,9 @@ like last_build_log, qr/Pure Perl/;
 run '--test-only', '--pureperl', './testdist/CPAN-Dummy-Test-PP';
 like last_build_log, qr/Pure Perl/;
 
-run '--pp', 'Scalar::Induce@0.05';
+run '--pp', 'Scalar::Induce';
 like last_build_log, qr/Successfully .* Scalar-Induce/;
-unlike last_build_log, qr/Mkbootstrap/;
+unlike last_build_log, qr!cc.*Scalar/Induce\.o!;
 
 done_testing;
 
