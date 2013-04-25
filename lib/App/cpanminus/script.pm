@@ -1424,7 +1424,7 @@ sub should_unlink {
 sub ask_permission {
     my ($self, $module, $files) = @_;
 
-    $self->diag("$module containts the following:\n\n");
+    $self->diag("$module contains the following files:\n\n");
     for my $file (@$files) {
         $self->diag("  $file\n");
     }
