@@ -2,6 +2,10 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6907  2013-04-26 11:39:00 PDT
+   [Maintenance]
+      - Make this a non-dev release
+
 1.6906  2013-04-24 23:18:54 PDT
    [Improvements]
       - Fixed messaging so that downgrading says downgrades (@tsibley) #240
