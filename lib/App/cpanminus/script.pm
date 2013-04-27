@@ -1948,7 +1948,7 @@ sub unsatisfy_deps {
 
     my $reqs = CPAN::Meta::Requirements->new;
     for my $dep (grep $_->is_requirement, @deps) {
-        $reqs->add_string_requirement($dep->module => $dep->version);
+        $reqs->add_string_requirement($dep->module => $dep->version || '0');
     }
 
     my $ret = CPAN::Meta::Check::check_requirements($reqs, 'requires', $self->{search_inc});
