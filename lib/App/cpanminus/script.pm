@@ -1926,24 +1926,42 @@ sub install_deps {
     }
 
     for my $dep (@install) {
-        unless ($self->install_module($dep->module, $depth + 1, $dep->version)) {
-            push @fail, $dep->module if $dep->is_requirement;
-        }
+        $self->install_module($dep->module, $depth + 1, $dep->version);
     }
 
     $self->chdir($self->{base});
     $self->chdir($dir) if $dir;
 
-    return @fail;
+    my @not_ok = $self->unsatisfy_deps(@deps);
+    if (@not_ok) {
+        return 0, \@not_ok;
+    } else {
+        return 1;
+    }
+}
+
+sub unsatisfy_deps {
+    my($self, @deps) = @_;
+
+    require CPAN::Meta::Check;
+    require CPAN::Meta::Requirements;
+
+    my $reqs = CPAN::Meta::Requirements->new;
+    for my $dep (grep $_->is_requirement, @deps) {
+        $reqs->add_string_requirement($dep->module => $dep->version);
+    }
+
+    my $ret = CPAN::Meta::Check::check_requirements($reqs, 'requires', $self->{search_inc});
+    grep defined, values %$ret;
 }
 
 sub install_deps_bailout {
     my($self, $target, $dir, $depth, @deps) = @_;
 
-    my @fail = $self->install_deps($dir, $depth, @deps);
-    if (@fail) {
+    my($ok, $fail) = $self->install_deps($dir, $depth, @deps);
+    if (!$ok) {
         unless ($self->prompt_bool("Installing the following dependencies failed:\n==> " .
-                                   join(", ", @fail) . "\nDo you want to continue building $target anyway?", "n")) {
+                                   join(", ", @$fail) . "\nDo you want to continue building $target anyway?", "n")) {
             $self->diag_fail("Bailing out the installation for $target. Retry with --prompt or --force.", 1);
             return;
         }
