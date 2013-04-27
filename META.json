@@ -83,7 +83,7 @@
          }
       }
    },
-   "release_status" : "stable",
+   "release_status" : "testing",
    "resources" : {
       "bugtracker" : {
          "web" : "https://github.com/miyagawa/cpanminus/issues"
@@ -95,7 +95,7 @@
          "web" : "https://github.com/miyagawa/cpanminus"
       }
    },
-   "version" : "1.6907",
+   "version" : "1.6908",
    "x_contributors" : [
       "Alessandro Ghedini <al3xbio@gmail.com>",
       "Andrew Rodland <andrew@cleverdomain.org>",

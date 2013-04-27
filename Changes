@@ -2,6 +2,11 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6908  2013-04-26 18:11:38 PDT
+   [Improvements]
+      - Stop counting failures upon installing dependencies, rather check if dependencies
+        are satisfied once it's done. #237
+
 1.6907  2013-04-26 11:39:00 PDT
    [Maintenance]
       - Make this a non-dev release
