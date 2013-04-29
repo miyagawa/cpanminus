@@ -9,4 +9,4 @@ before_install:
 install:
   - (mymeta-requires --develop | cpanm -nq) || cat ~/.cpanm/build.log
 script:
-  - prove -lr xt -j8
+  - prove -lr xt
