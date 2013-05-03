@@ -2,6 +2,11 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6910  2013-05-03 00:29:22 PDT
+   [Bug Fixes]
+      - Do not output the "up to date" message when the requested version is higher than
+        what's on mirror index #246
+
 1.6909  2013-04-29 01:49:04 PDT
    [Improvements]
       - Fixed error messages and tests for #237
