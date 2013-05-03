@@ -1285,17 +1285,17 @@ sub install_module {
     $dist->{depth} = $depth; # ugly hack
 
     if ($dist->{module}) {
+        unless ($self->satisfy_version($dist->{module}, $dist->{module_version}, $version)) {
+            $self->diag("Found $dist->{module} $dist->{module_version} which doesn't satisfy $version.\n", 1);
+            return;
+        }
+
         # check if we already have the exact same version
         my $requirement = $dist->{module_version} ? "==$dist->{module_version}" : 0;
         my($ok, $local) = $self->check_module($dist->{module}, $requirement);
         if ($self->{skip_installed} && $ok) {
             $self->diag("$dist->{module} is up to date. ($local)\n", 1);
             return 1;
-        }
-
-        unless ($self->satisfy_version($dist->{module}, $dist->{module_version}, $version)) {
-            $self->diag("Found $dist->{module} $dist->{module_version} which doesn't satisfy $version.\n");
-            return;
         }
     }
 
