@@ -1932,7 +1932,7 @@ sub install_deps {
     $self->chdir($self->{base});
     $self->chdir($dir) if $dir;
 
-    my @not_ok = $self->unsatisfy_deps(@deps);
+    my @not_ok = $self->unsatisfied_deps(@deps);
     if (@not_ok) {
         return 0, \@not_ok;
     } else {
@@ -1940,7 +1940,7 @@ sub install_deps {
     }
 }
 
-sub unsatisfy_deps {
+sub unsatisfied_deps {
     my($self, @deps) = @_;
 
     require CPAN::Meta::Check;
