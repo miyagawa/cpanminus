@@ -92,7 +92,7 @@ sub new {
         auto_cleanup => 7, # days
         pod2man => 1,
         installed_dists => 0,
-        install_types => ['requires', 'recommends'],
+        install_types => ['requires'],
         with_develop => 0,
         showdeps => 0,
         scandeps => 0,
