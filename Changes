@@ -2,6 +2,10 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6911  2013-05-04 13:26:17 PDT
+   [Incompatible Changes]
+      - Turn off automatic installation of recommendations by default, for now
+
 1.6910  2013-05-03 00:29:22 PDT
    [Bug Fixes]
       - Do not output the "up to date" message when the requested version is higher than
