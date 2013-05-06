@@ -2,6 +2,11 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6912  2013-05-06 13:58:33 PDT
+   [Bug Fixes]
+      - `curl -L cpanmin.us | perl - --self-upgrade` should not complain about '-' not in the
+        install path (Thanks to jdb)
+
 1.6911  2013-05-04 13:26:17 PDT
    [Incompatible Changes]
       - Turn off automatic installation of recommendations by default, for now

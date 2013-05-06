@@ -1,5 +1,3 @@
-# encoding utf-8
-
 # NAME
 
 App::cpanminus - get, unpack, build and install modules from CPAN
