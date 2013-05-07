@@ -76,7 +76,7 @@ perl 5.8 or later.
 
 =item *
 
-'tar' executable (bsdtar or GNU tar version 1.22 are rcommended) or Archive::Tar to unpack files.
+'tar' executable (bsdtar or GNU tar version 1.22 are recommended) or Archive::Tar to unpack files.
 
 =item *
 
