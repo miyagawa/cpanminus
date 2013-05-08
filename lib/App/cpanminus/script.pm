@@ -1717,7 +1717,7 @@ sub cpan_module {
 sub cpan_dist {
     my($self, $dist, $url) = @_;
 
-    $dist =~ s!^([A-Z]{3})!substr($1,0,1)."/".substr($1,0,2)."/".$1!e;
+    $dist =~ s!^([A-Z]{2})!substr($1,0,1)."/".substr($1,0,2)."/".$1!e;
 
     require CPAN::DistnameInfo;
     my $d = CPAN::DistnameInfo->new($dist);
