@@ -224,8 +224,7 @@ scheme), it is considered as a file scheme as well.
   cpanm --mirror file:///path/to/mirror
   cpanm --mirror ~/minicpan      # Because shell expands ~ to /home/user
 
-Defaults to C<http://search.cpan.org/CPAN> which is a geo location
-aware redirector.
+Defaults to C<http://www.cpan.org/>.
 
 =item --mirror-only
 
