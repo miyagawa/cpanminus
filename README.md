@@ -67,7 +67,7 @@ upgrade because `--self-upgrade` might not work for this.
 
 perl 5.8 or later.
 
-- 'tar' executable (bsdtar or GNU tar version 1.22 are rcommended) or Archive::Tar to unpack files.
+- 'tar' executable (bsdtar or GNU tar version 1.22 are recommended) or Archive::Tar to unpack files.
 - C compiler, if you want to build XS modules.
 - make
 - Module::Build (core in 5.10)

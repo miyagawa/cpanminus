@@ -2,6 +2,11 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6913  2013-05-09 17:02:43 PDT
+   [Improvements]
+      - Fix download URL for 2-letter PAUSE-ID #255
+      - Documentation fixes
+
 1.6912  2013-05-06 13:58:33 PDT
    [Bug Fixes]
       - `curl -L cpanmin.us | perl - --self-upgrade` should not complain about '-' not in the
