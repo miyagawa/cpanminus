@@ -1255,6 +1255,7 @@ sub install_module {
     my($self, $module, $depth, $version) = @_;
 
     if ($self->{seen}{$module}++) {
+        # TODO: circular dependencies
         $self->chat("Already tried $module. Skipping.\n");
         return 1;
     }
@@ -1294,6 +1295,7 @@ sub install_module {
         }
 
         # check if we already have the exact same version
+        # TODO: if mirror has lower version than yours, it will be installed
         my $requirement = $dist->{module_version} ? "==$dist->{module_version}" : 0;
         my($ok, $local) = $self->check_module($dist->{module}, $requirement);
         if ($self->{skip_installed} && $ok) {
