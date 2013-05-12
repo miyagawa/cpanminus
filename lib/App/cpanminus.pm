@@ -184,10 +184,6 @@ tools that are mentioned.
 
 =item *
 
-Bundle:: module dependencies
-
-=item *
-
 CPAN testers reporting
 
 =item *
@@ -197,10 +193,6 @@ Building RPM packages from CPAN modules
 =item *
 
 Listing the outdated modules that needs upgrading. See L<App::cpanoutdated>
-
-=item *
-
-Uninstalling modules. See L<pm-uninstall>.
 
 =item *
 
