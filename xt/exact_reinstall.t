@@ -10,7 +10,7 @@ run './testdist/Hash-MultiValue-1.200';
 run '--skip-installed', 'Hash::MultiValue';
 like last_build_log, qr/is up to date\. \(1\.200\)/, "by default don't downgrade";
 
-run 'Hash::MultiValue@0.13';
+run '--reinstall', 'Hash::MultiValue';
 like last_build_log, qr/downgraded/;
 
 run '--skip-installed', 'Hash::MultiValue';
