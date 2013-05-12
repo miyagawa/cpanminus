@@ -148,11 +148,9 @@ right?
 If you need these features, use [CPAN](http://search.cpan.org/perldoc?CPAN), [CPANPLUS](http://search.cpan.org/perldoc?CPANPLUS) or the standalone
 tools that are mentioned.
 
-- Bundle:: module dependencies
 - CPAN testers reporting
 - Building RPM packages from CPAN modules
 - Listing the outdated modules that needs upgrading. See [App::cpanoutdated](http://search.cpan.org/perldoc?App::cpanoutdated)
-- Uninstalling modules. See [pm-uninstall](http://search.cpan.org/perldoc?pm-uninstall).
 - Showing the changes of the modules you're about to upgrade. See [cpan-listchanges](http://search.cpan.org/perldoc?cpan-listchanges)
 - Patching CPAN modules with distroprefs.
 

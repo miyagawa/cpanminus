@@ -2,6 +2,12 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6914  2013-05-12 16:02:28 PDT
+   [Incompatible Changes]
+      - When you have a 1.01 of module X and CPAN mirror has 1.00, `cpanm X` would not
+        overwrite with 1.00, unless you specify `--reinstall`. `cpanm X@1.00` will
+        continue installing the version (and ranges) you specify. #257
+
 1.6913  2013-05-09 17:02:43 PDT
    [Improvements]
       - Fix download URL for 2-letter PAUSE-ID #255
