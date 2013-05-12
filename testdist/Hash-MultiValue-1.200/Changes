@@ -1,0 +1,46 @@
+Revision history for Perl extension Hash::MultiValue
+
+0.13  Fri Oct 19 12:41:45 PDT 2012
+        - repackage with Module::Install > 1.04
+
+0.12  Wed Feb 15 07:45:50 CET 2012
+        - Reapply set method optimisation that was lost in 0.11
+        - *really* fix uninitialized warnings in tests (RT#74096)
+        - Add support for Storable serialization
+
+0.11  Sun Feb 12 13:04:54 PST 2012
+        - Fix segfaulting splice invocation on perls < 5.8.7
+        - Fix uninitialized warning on older perls
+
+0.10  Sun Sep 18 12:51:49 PDT 2011
+        - Implemented set (aristotle)
+
+0.09  Wed Jun 15 15:22:12 PDT 2011
+        - Implemented thread safety (chansen)
+
+0.08  Thu Feb 11 10:14:02 PST 2010
+        - Tries to import UNIVERSAL::ref if it's loaded. No need to monkeypatch
+
+0.07  Sat Feb  6 15:17:10 PST 2010
+        - No code change. Fixed the packaging
+
+0.06  Sat Jan 30 14:17:03 PST 2010
+        - Changed the interface of ->keys() so it now returns the duplicate key as well
+          in the original order. This is more useful and compatible to what MultiDict.py
+          does.
+        - Added ->each and ->values (confound)
+
+0.05  Thu Jan 28 19:27:45 PST 2010
+        - Added ->mixed and ->multi as aliases for as_hashref_mixed and as_hashref_multi.
+
+0.04  Sat Dec 19 10:55:31 PST 2009
+        - Some internal rewrites and merge methods (aristotle)
+
+0.03  Thu Dec 17 09:57:50 PST 2009
+        - Added ->from_mixed constructor
+
+0.02  Wed Dec 16 14:27:01 PST 2009
+        - Silenced warnings for ref() 
+
+0.01  Tue Dec 15 00:35:54 2009
+        - original version

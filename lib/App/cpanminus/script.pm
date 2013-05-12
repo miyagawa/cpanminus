@@ -1294,9 +1294,10 @@ sub install_module {
             return;
         }
 
-        # check if we already have the exact same version
-        # TODO: if mirror has lower version than yours, it will be installed
-        my $requirement = $dist->{module_version} ? "==$dist->{module_version}" : 0;
+        # If a version is requested, it has to be the exact same version, otherwise, check as if
+        # it is the minimum version you need.
+        my $cmp = $version ? "==" : "";
+        my $requirement = $dist->{module_version} ? "$cmp$dist->{module_version}" : 0;
         my($ok, $local) = $self->check_module($dist->{module}, $requirement);
         if ($self->{skip_installed} && $ok) {
             $self->diag("$dist->{module} is up to date. ($local)\n", 1);
