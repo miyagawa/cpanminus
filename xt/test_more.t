@@ -2,6 +2,8 @@ use strict;
 use Test::More;
 use xt::Run;
 
+plan skip_all => 'Skip with perl >= 5.17' if $] >= 5.017;
+
 # Test::More's exit.t has $^X -I../t/lib
 
 delete $ENV{$_} for qw(PERL5LIB PERL_MM_OPT MODULEBUILDRC);
