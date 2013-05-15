@@ -2634,6 +2634,17 @@ sub file_mirror {
     File::Copy::copy($file, $path);
 }
 
+sub has_working_lwp {
+    my($self, $mirrors) = @_;
+    my $https = grep /^https:/, @$mirrors;
+    eval {
+        require LWP::UserAgent;
+        LWP::UserAgent->VERSION(5.802);
+        require LWP::Protocol::https if $https;
+        1;
+    };
+}
+
 sub init_tools {
     my $self = shift;
 
@@ -2644,7 +2655,7 @@ sub init_tools {
     }
 
     # use --no-lwp if they have a broken LWP, to upgrade LWP
-    if ($self->{try_lwp} && eval { require LWP::UserAgent; LWP::UserAgent->VERSION(5.802) }) {
+    if ($self->{try_lwp} && $self->has_working_lwp($self->{mirrors})) {
         $self->chat("You have LWP $LWP::VERSION\n");
         my $ua = sub {
             LWP::UserAgent->new(
