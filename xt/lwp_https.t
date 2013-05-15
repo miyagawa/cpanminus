@@ -4,7 +4,7 @@ use Test::More;
 use Module::Metadata;
 
 my $has_https = Module::Metadata->new_from_module('LWP::Protocol::https');
-system 'cpanm', '-Uf', 'LWP::Protocol::https' if $has_https;
+run '-Uf', 'LWP::Protocol::https' if $has_https;
 
 run '--mirror', 'https://cpan.metacpan.org', 'Hash::MultiValue';
 unlike last_build_log, qr/You have LWP/;
