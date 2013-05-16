@@ -2638,9 +2638,9 @@ sub has_working_lwp {
     my($self, $mirrors) = @_;
     my $https = grep /^https:/, @$mirrors;
     eval {
-        require LWP::UserAgent;
+        require LWP::UserAgent; # no fatpack
         LWP::UserAgent->VERSION(5.802);
-        require LWP::Protocol::https if $https;
+        require LWP::Protocol::https if $https; # no fatpack
         1;
     };
 }
