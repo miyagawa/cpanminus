@@ -992,6 +992,7 @@ sub diag_progress {
 
 sub _diag {
     my($self, $msg, $always) = @_;
+    ($msg) = $self->mask_password_in_urls($msg); # Returns a list
     print STDERR $msg if $always or $self->{verbose} or !$self->{quiet};
 }
 
@@ -1003,12 +1004,14 @@ sub diag {
 
 sub chat {
     my $self = shift;
+    @_ = $self->mask_password_in_urls(@_);
     print STDERR @_ if $self->{verbose};
     $self->log(@_);
 }
 
 sub log {
     my $self = shift;
+    @_ = $self->mask_password_in_urls(@_);
     open my $out, ">>$self->{log}";
     print $out @_;
 }
@@ -2877,6 +2880,12 @@ sub safeexec {
     else {
         return;
     }
+}
+
+sub mask_password_in_urls {
+    my($self, @strings) = @_;
+    s{ (https?://) ([^:/]+) : [^@/]+ @ }{$1$2:*password*@}gx for @strings;
+    return @strings;
 }
 
 sub parse_meta {
