@@ -2,6 +2,11 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6915  2013-05-15 19:00:56 PDT
+   [Improvements]
+      - Skip LWP when HTTPS mirror is specified and SSL driver is not installed (thaljef) #258
+      - Fatpack Exporter to fix bootstrapping problems with perl 5.8.1/5.8.2 (tokuhirom)
+
 1.6914  2013-05-12 16:02:28 PDT
    [Incompatible Changes]
       - When you have a 1.01 of module X and CPAN mirror has 1.00, `cpanm X` would not
