@@ -774,7 +774,7 @@ Options:
   -L,--local-lib-contained  Specify the install base to install all non-core modules
   --self-contained          Install all non-core modules, even if they're already installed.
   --auto-cleanup            Number of days that cpanm's work directories expire in. Defaults to 7
-  --module-path             Path to the module within the package
+  --module-path             Specify the path to the module relative to package
 
 Commands:
   --self-upgrade            upgrades itself
