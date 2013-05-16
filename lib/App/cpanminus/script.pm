@@ -105,6 +105,7 @@ sub new {
         build_args => {},
         features => {},
         pure_perl => 0,
+        module_path => undef,
         @_,
     }, $class;
 }
@@ -208,6 +209,7 @@ sub parse_options {
         'without-feature=s' => sub { $self->{features}{$_[1]} = 0 },
         'with-all-features' => sub { $self->{features}{__all} = 1 },
         'pp|pureperl!' => \$self->{pure_perl},
+        'module-path=s' => \$self->{module_path},
         $self->install_type_handlers,
         $self->build_args_handlers,
     );
@@ -772,6 +774,7 @@ Options:
   -L,--local-lib-contained  Specify the install base to install all non-core modules
   --self-contained          Install all non-core modules, even if they're already installed.
   --auto-cleanup            Number of days that cpanm's work directories expire in. Defaults to 7
+  --module-path             Specify the path to the module relative to package
 
 Commands:
   --self-upgrade            upgrades itself
@@ -1314,6 +1317,11 @@ sub install_module {
     unless ($dist->{dir}) {
         $self->diag_fail("Failed to fetch distribution $dist->{distvname}", 1);
         return;
+    }
+    
+    if ($self->{module_path}) {
+        $self->{module_path} =~ s/^\///g;
+        $dist->{dir} .= "/$self->{module_path}";
     }
 
     $self->chat("Entering $dist->{dir}\n");
