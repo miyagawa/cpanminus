@@ -3,7 +3,7 @@ use Test::More;
 use xt::Run;
 
 # Miyagawa: these tests are vague: they only assert that the password 
-# doesn't appear anywhere in the last_build_log.  They do not assert 
+# doesn't appear anywhere in the output or build log.  They do not assert 
 # *how* the password is actually masked, so you're free to change the
 # implementation and the tests should still be somewhat useful.
 
