@@ -2927,6 +2927,12 @@ sub safeexec {
     }
 }
 
+sub mask_uri_passwords {
+    my($self, @strings) = @_;
+    s{ (https?://) ([^:/]+) : [^@/]+ @ }{$1$2:*password*@}gx for @strings;
+    return @strings;
+}
+
 sub parse_meta {
     my($self, $file) = @_;
     return eval { Parse::CPAN::Meta->load_file($file) };
