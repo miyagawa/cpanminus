@@ -221,11 +221,11 @@ sub parse_options {
 }
 
 sub check_upgrade {
-    my $install_path = ($ENV{PERL_MM_OPT} =~ /^INSTALL_BASE=(\S+)/)[0] || $Config{installsitebin};
+    my $install_base = $ENV{PERL_LOCAL_LIB_ROOT} || $Config{installsitebin};
     if ($0 eq '-') {
         # run from curl, that's fine
         return;
-    } elsif ($0 !~ /^$install_path/) {
+    } elsif ($0 !~ /^$install_base/) {
         if ($0 =~ m!perlbrew/bin!) {
             die <<DIE;
 It appears your cpanm executable was installed via `perlbrew install-cpanm`.
