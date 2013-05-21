@@ -1,3 +1,0 @@
-plugin architecture was removed from cpanminus when version 1.0 was
-released, to avoid confusions. We still have an idea to integrate
-these plugins to a new tool that's built around cpanminus.
