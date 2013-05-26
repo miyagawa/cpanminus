@@ -19,6 +19,7 @@ use aliased 'App::cpanminus::Dependency';
 
 use constant WIN32 => $^O eq 'MSWin32';
 use constant SUNOS => $^O eq 'solaris';
+use constant CAN_SYMLINK => eval { symlink("", ""); 1 };
 
 our $VERSION = $App::cpanminus::VERSION;
 
@@ -362,20 +363,27 @@ sub setup_home {
     $self->{base} = "$self->{home}/work/" . time . ".$$";
     File::Path::mkpath([ $self->{base} ], 0, 0777);
 
-    my $link = "$self->{home}/latest-build";
-    eval { unlink $link; symlink $self->{base}, $link };
-
-    $self->{log} = File::Spec->catfile($self->{home}, "build.log"); # because we use shell redirect
-
-    {
-        my $log = $self->{log}; my $base = $self->{base};
-        $self->{at_exit} = sub {
-            my $self = shift;
-            File::Copy::copy($self->{log}, "$self->{base}/build.log");
-        };
-    }
+    # native path because we use shell redirect
+    $self->{log} = File::Spec->catfile($self->{base}, "build.log");
+    my $final_log = "$self->{home}/build.log";
 
     { open my $out, ">$self->{log}" or die "$self->{log}: $!" }
+
+    if (CAN_SYMLINK) {
+        my $build_link = "$self->{home}/latest-build";
+        unlink $build_link;
+        symlink $self->{base}, $build_link;
+
+        unlink $final_log;
+        symlink $self->{log}, $final_log;
+    } else {
+        my $log = $self->{log}; my $home = $self->{home};
+        $self->{at_exit} = sub {
+            my $self = shift;
+            unlink $final_log;
+            File::Copy::copy($log, $final_log);
+        };
+    }
 
     $self->chat("cpanm (App::cpanminus) $VERSION on perl $] built for $Config{archname}\n" .
                 "Work directory is $self->{base}\n");
