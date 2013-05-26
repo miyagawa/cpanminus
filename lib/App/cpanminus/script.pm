@@ -380,9 +380,11 @@ sub setup_home {
         my $log = $self->{log}; my $home = $self->{home};
         $self->{at_exit} = sub {
             my $self = shift;
-            unlink $final_log;
-            File::Copy::copy($log, $final_log);
-        };
+            my $temp_log = "$home/build.log." . time . ".$$";
+            File::Copy::copy($log, $temp_log)
+                && unlink($final_log)
+                && rename($temp_log, $final_log);
+        }
     }
 
     $self->chat("cpanm (App::cpanminus) $VERSION on perl $] built for $Config{archname}\n" .
