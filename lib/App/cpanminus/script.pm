@@ -1700,7 +1700,7 @@ sub resolve_name {
 
     # PAUSEID/foo
     # P/PA/PAUSEID/foo
-    if ($module =~ m!^(?:[A-Z]/[A-Z]{2}/)?([A-Z]{2,}/.*)$!) {
+    if ($module =~ m!^(?:[A-Z]/[A-Z]{2}/)?([A-Z]{2}[\-A-Z0-9]*/.*)$!) {
         return $self->cpan_dist($1);
     }
 
