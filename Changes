@@ -2,6 +2,11 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6916  2013-06-04 19:54:36 JST
+   [Improvements]
+      - Do not complain upgrading cpanm in local::lib
+      - Accept 0-9_ in PAUSE ID (#265)
+
 1.6915  2013-05-15 19:00:56 PDT
    [Improvements]
       - Skip LWP when HTTPS mirror is specified and SSL driver is not installed (thaljef) #258
