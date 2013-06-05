@@ -2,6 +2,12 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6917  2013-06-05 10:07:12 JST
+   [Incompatible Changes]
+      - build.log is now created inside a work directory, then a symlink to the file is
+        made in ~/.cpanm. On platforms where symlink is not available (Win32), the build.log
+        file is copied from the build directory once the installation has finished. (ilmari)
+
 1.6916  2013-06-04 19:54:36 JST
    [Improvements]
       - Do not complain upgrading cpanm in local::lib
