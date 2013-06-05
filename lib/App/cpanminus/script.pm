@@ -1979,7 +1979,7 @@ sub install_deps_bailout {
     if (!$ok) {
         $self->diag_fail("Installing the dependencies failed: " . join(", ", @$fail), 1);
         unless ($self->prompt_bool("Do you want to continue building $target anyway?", "n")) {
-            $self->diag_fail("Bailing out the installation for $target. Retry with --prompt or --force.", 1);
+            $self->diag_fail("Bailing out the installation for $target.", 1);
             return;
         }
     }
@@ -2139,7 +2139,7 @@ DIAG
         return 1;
     } else {
         my $what = $self->{test_only} ? "Testing" : "Installing";
-        $self->diag_fail("$what $stuff failed. See $self->{log} for details.", 1);
+        $self->diag_fail("$what $stuff failed. See $self->{log} for details. Retry with --force to force install it.", 1);
         return;
     }
 }
