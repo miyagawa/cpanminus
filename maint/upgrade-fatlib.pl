@@ -66,7 +66,7 @@ sub pack_modules {
 }
 
 my @modules = grep !in_lib(mod_to_pm($_)), find_requires('lib/App/cpanminus/script.pm');
-pack_modules(cwd . "/fatlib", \@modules, [ 'local::lib' ]);
+pack_modules(cwd . "/fatlib", \@modules, [ 'local::lib', 'Exporter' ]);
 
 use Config;
 rmtree("fatlib/$Config{archname}");

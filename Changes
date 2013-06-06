@@ -2,6 +2,22 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6917  2013-06-05 10:07:12 JST
+   [Incompatible Changes]
+      - build.log is now created inside a work directory, then a symlink to the file is
+        made in ~/.cpanm. On platforms where symlink is not available (Win32), the build.log
+        file is copied from the build directory once the installation has finished. (ilmari)
+
+1.6916  2013-06-04 19:54:36 JST
+   [Improvements]
+      - Do not complain upgrading cpanm in local::lib
+      - Accept 0-9_ in PAUSE ID (#265)
+
+1.6915  2013-05-15 19:00:56 PDT
+   [Improvements]
+      - Skip LWP when HTTPS mirror is specified and SSL driver is not installed (thaljef) #258
+      - Fatpack Exporter to fix bootstrapping problems with perl 5.8.1/5.8.2 (tokuhirom)
+
 1.6914  2013-05-12 16:02:28 PDT
    [Incompatible Changes]
       - When you have a 1.01 of module X and CPAN mirror has 1.00, `cpanm X` would not

@@ -19,6 +19,7 @@ use aliased 'App::cpanminus::Dependency';
 
 use constant WIN32 => $^O eq 'MSWin32';
 use constant SUNOS => $^O eq 'solaris';
+use constant CAN_SYMLINK => eval { symlink("", ""); 1 };
 
 our $VERSION = $App::cpanminus::VERSION;
 
@@ -221,10 +222,11 @@ sub parse_options {
 }
 
 sub check_upgrade {
+    my $install_base = $ENV{PERL_LOCAL_LIB_ROOT} || $Config{installsitebin};
     if ($0 eq '-') {
         # run from curl, that's fine
         return;
-    } elsif ($0 !~ /^$Config{installsitebin}/) {
+    } elsif ($0 !~ /^$install_base/) {
         if ($0 =~ m!perlbrew/bin!) {
             die <<DIE;
 It appears your cpanm executable was installed via `perlbrew install-cpanm`.
@@ -361,20 +363,29 @@ sub setup_home {
     $self->{base} = "$self->{home}/work/" . time . ".$$";
     File::Path::mkpath([ $self->{base} ], 0, 0777);
 
-    my $link = "$self->{home}/latest-build";
-    eval { unlink $link; symlink $self->{base}, $link };
-
-    $self->{log} = File::Spec->catfile($self->{home}, "build.log"); # because we use shell redirect
-
-    {
-        my $log = $self->{log}; my $base = $self->{base};
-        $self->{at_exit} = sub {
-            my $self = shift;
-            File::Copy::copy($self->{log}, "$self->{base}/build.log");
-        };
-    }
+    # native path because we use shell redirect
+    $self->{log} = File::Spec->catfile($self->{base}, "build.log");
+    my $final_log = "$self->{home}/build.log";
 
     { open my $out, ">$self->{log}" or die "$self->{log}: $!" }
+
+    if (CAN_SYMLINK) {
+        my $build_link = "$self->{home}/latest-build";
+        unlink $build_link;
+        symlink $self->{base}, $build_link;
+
+        unlink $final_log;
+        symlink $self->{log}, $final_log;
+    } else {
+        my $log = $self->{log}; my $home = $self->{home};
+        $self->{at_exit} = sub {
+            my $self = shift;
+            my $temp_log = "$home/build.log." . time . ".$$";
+            File::Copy::copy($log, $temp_log)
+                && unlink($final_log)
+                && rename($temp_log, $final_log);
+        }
+    }
 
     $self->chat("cpanm (App::cpanminus) $VERSION on perl $] built for $Config{archname}\n" .
                 "Work directory is $self->{base}\n");
@@ -1702,7 +1713,7 @@ sub resolve_name {
 
     # PAUSEID/foo
     # P/PA/PAUSEID/foo
-    if ($module =~ m!^(?:[A-Z]/[A-Z]{2}/)?([A-Z]{2,}/.*)$!) {
+    if ($module =~ m!^(?:[A-Z]/[A-Z]{2}/)?([A-Z]{2}[\-A-Z0-9]*/.*)$!) {
         return $self->cpan_dist($1);
     }
 
@@ -1971,7 +1982,7 @@ sub install_deps_bailout {
     if (!$ok) {
         $self->diag_fail("Installing the dependencies failed: " . join(", ", @$fail), 1);
         unless ($self->prompt_bool("Do you want to continue building $target anyway?", "n")) {
-            $self->diag_fail("Bailing out the installation for $target. Retry with --prompt or --force.", 1);
+            $self->diag_fail("Bailing out the installation for $target.", 1);
             return;
         }
     }
@@ -2131,7 +2142,7 @@ DIAG
         return 1;
     } else {
         my $what = $self->{test_only} ? "Testing" : "Installing";
-        $self->diag_fail("$what $stuff failed. See $self->{log} for details.", 1);
+        $self->diag_fail("$what $stuff failed. See $self->{log} for details. Retry with --force to force install it.", 1);
         return;
     }
 }
@@ -2637,6 +2648,17 @@ sub file_mirror {
     File::Copy::copy($file, $path);
 }
 
+sub has_working_lwp {
+    my($self, $mirrors) = @_;
+    my $https = grep /^https:/, @$mirrors;
+    eval {
+        require LWP::UserAgent; # no fatpack
+        LWP::UserAgent->VERSION(5.802);
+        require LWP::Protocol::https if $https; # no fatpack
+        1;
+    };
+}
+
 sub init_tools {
     my $self = shift;
 
@@ -2647,7 +2669,7 @@ sub init_tools {
     }
 
     # use --no-lwp if they have a broken LWP, to upgrade LWP
-    if ($self->{try_lwp} && eval { require LWP::UserAgent; LWP::UserAgent->VERSION(5.802) }) {
+    if ($self->{try_lwp} && $self->has_working_lwp($self->{mirrors})) {
         $self->chat("You have LWP $LWP::VERSION\n");
         my $ua = sub {
             LWP::UserAgent->new(
