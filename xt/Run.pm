@@ -21,7 +21,7 @@ sub run {
     my($stdout, $stderr, $exit) = capture {
         system($^X, $executable, @notest, "--quiet", "--reinstall", @args);
     };
-    ::diag($stderr) if $stderr;
+    ::diag($stderr) if $stderr and !$ENV{NODIAG};  # Some tests actually want stderr
     return wantarray ? ($stdout, $stderr, $exit) : $stdout;
 }
 
