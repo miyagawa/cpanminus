@@ -179,8 +179,8 @@ configuration. (See --interactive)
 
 =item -q, --quiet
 
-Makes the output even more quiet than the default. It doesn't print
-anything to the STDERR.
+Makes the output even more quiet than the default. It only shows the
+successful/failed dependencies to the output.
 
 =item -l, --local-lib
 
