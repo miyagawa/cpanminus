@@ -2,6 +2,12 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6918  2013-06-10 13:02:06 PDT
+   [Improvements]
+      - Fix documentation about --quiet
+      - Find the best (non-backpan) match out of MetaCPAN results when there are multiple
+        results https://github.com/CPAN-API/cpan-api/issues/274
+
 1.6917  2013-06-05 10:07:12 JST
    [Incompatible Changes]
       - build.log is now created inside a work directory, then a symlink to the file is
