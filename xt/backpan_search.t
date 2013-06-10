@@ -10,5 +10,16 @@ run '--test-only', '--notest', '--dev', 'Test::More';
 unlike last_build_log, qr/backpan/;
 like last_build_log, qr/TB2/;
 
+{
+    my $out = run '--info', 'Moose::Util::TypeConstraints@2.0402';
+    like $out, qr/Moose-2.0402/;
+    unlike $out, qr/Crixa/;
+}
+
+{
+    my $out = run '--info', 'Moose::Util::TypeConstraints~<=2.0402';
+    like $out, qr/Moose-2.0402/;
+}
+
 done_testing;
 

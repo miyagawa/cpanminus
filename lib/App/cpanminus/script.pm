@@ -548,6 +548,21 @@ sub maturity_filter {
     return @filters;
 }
 
+sub by_score_and_status {
+    my %s = (
+        latest  => 3,
+        cpan    => 2,
+        backpan => 1,
+    );
+    $b->{_score} <=> $a->{_score} || $s{ $b->{fields}{status} } <=> $s{ $a->{fields}{status} };
+}
+
+sub find_best_match {
+    my($self, $match, $version) = @_;
+    return unless $match && @{$match->{hits}{hits} || []};
+    (sort by_score_and_status @{$match->{hits}{hits}})[0]->{fields};
+}
+
 sub search_metacpan {
     my($self, $module, $version) = @_;
 
@@ -581,14 +596,14 @@ sub search_metacpan {
     my $module_uri = "$metacpan_uri/file/_search?source=";
     $module_uri .= $self->encode_json({
         query => $query,
-        fields => [ 'release', 'module' ],
+        fields => [ 'release', 'module', 'status' ],
     });
 
     my($release, $module_version);
 
     my $module_json = $self->get($module_uri);
     my $module_meta = eval { JSON::PP::decode_json($module_json) };
-    my $match = $module_meta ? $module_meta->{hits}{hits}[0]{fields} : undef;
+    my $match = $self->find_best_match($module_meta);
     if ($match) {
         $release = $match->{release};
         my $module_matched = (grep { $_->{name} eq $module } @{$match->{module}})[0];
