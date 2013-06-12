@@ -860,6 +860,11 @@ sub bootstrap_local_lib {
         return $self->setup_local_lib($self->{local_lib});
     }
 
+    # PERL_LOCAL_LIB_ROOT is defined. Run as local::lib mode without overwriting ENV
+    if ($ENV{PERL_LOCAL_LIB_ROOT} && $ENV{PERL_MM_OPT}) {
+        return $self->setup_local_lib($ENV{PERL_LOCAL_LIB_ROOT}, 1);
+    }
+
     # root, locally-installed perl or --sudo: don't care about install_base
     return if $self->{sudo} or (_writable($Config{installsitelib}) and _writable($Config{installsitebin}));
 
@@ -914,7 +919,7 @@ sub _setup_local_lib_env {
 }
 
 sub setup_local_lib {
-    my($self, $base) = @_;
+    my($self, $base, $no_env) = @_;
     $base = undef if $base eq '_';
 
     require local::lib;
@@ -932,7 +937,7 @@ sub setup_local_lib {
                 @INC,
             ];
         }
-        $self->_setup_local_lib_env($base);
+        $self->_setup_local_lib_env($base) unless $no_env;
         $self->{local_lib} = $base;
     }
 
@@ -944,6 +949,20 @@ sub bootstrap_local_lib_deps {
     push @{$self->{bootstrap_deps}},
         Dependency->new('ExtUtils::MakeMaker' => 6.31),
         Dependency->new('ExtUtils::Install'   => 1.46);
+}
+
+# https://github.com/miyagawa/cpanminus/issues/263
+sub ensure_local_lib_arch {
+    my($self, $base) = @_;
+
+    require local::lib;
+    $self->{search_inc} = [
+        local::lib->install_base_arch_path($base),
+        local::lib->install_base_perl_path($base),
+        @INC,
+    ];
+
+    $self->{local_lib} = $base;
 }
 
 sub prompt_bool {
