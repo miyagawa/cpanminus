@@ -910,7 +910,7 @@ sub _diff {
 sub _setup_local_lib_env {
     my($self, $base) = @_;
     local $SIG{__WARN__} = sub { }; # catch 'Attempting to write ...'
-    local::lib->setup_env_hash_for($base);
+    local::lib->setup_env_hash_for($base, 0);
 }
 
 sub setup_local_lib {
