@@ -951,20 +951,6 @@ sub bootstrap_local_lib_deps {
         Dependency->new('ExtUtils::Install'   => 1.46);
 }
 
-# https://github.com/miyagawa/cpanminus/issues/263
-sub ensure_local_lib_arch {
-    my($self, $base) = @_;
-
-    require local::lib;
-    $self->{search_inc} = [
-        local::lib->install_base_arch_path($base),
-        local::lib->install_base_perl_path($base),
-        @INC,
-    ];
-
-    $self->{local_lib} = $base;
-}
-
 sub prompt_bool {
     my($self, $mess, $def) = @_;
 
