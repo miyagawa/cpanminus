@@ -2,6 +2,12 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6919  2013-06-12 08:32:06 PDT
+   [Incompatible Changes]
+      - Automatically detect local::lib mode when environment variables are already configured
+        on the shell. This is to fix the first time run when local::lib is configure but arch
+        library path doesn't exist. #263
+
 1.6918  2013-06-10 13:02:06 PDT
    [Improvements]
       - Fix documentation about --quiet
