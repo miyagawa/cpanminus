@@ -392,14 +392,6 @@ sub setup_home {
                 "Work directory is $self->{base}\n");
 }
 
-sub fetch_meta_sco {
-    my($self, $dist) = @_;
-    return if $self->{mirror_only};
-
-    my $meta_yml = $self->get("http://search.cpan.org/meta/$dist->{distvname}/META.yml");
-    return $self->parse_meta_string($meta_yml);
-}
-
 sub package_index_for {
     my ($self, $mirror) = @_;
     return $self->source_for($mirror) . "/02packages.details.txt";
@@ -2029,8 +2021,9 @@ sub build_stuff {
     }
 
     if (!$dist->{meta} && $dist->{source} eq 'cpan') {
-        $self->chat("META.yml/json not found or unparsable. Fetching META.yml from search.cpan.org\n");
-        $dist->{meta} = $self->fetch_meta_sco($dist);
+        $self->chat("META.yml/json not found or unparsable. Creating skelton for it.\n");
+        require CPAN::Meta;
+        $dist->{meta} = CPAN::Meta->new({ name => $dist->{dist}, version => $dist->{version} })->as_struct;
     }
 
     $dist->{meta} ||= {};
