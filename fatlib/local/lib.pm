@@ -10,7 +10,7 @@ use File::Spec ();
 use File::Path ();
 use Config;
 
-our $VERSION = '1.008009'; # 1.8.9
+our $VERSION = '1.008010'; # 1.8.10
 
 our @KNOWN_FLAGS = qw(--self-contained --deactivate --deactivate-all);
 
@@ -405,7 +405,7 @@ sub _env_list_value {
                  && (!$options{exists} || -e $_))
     } map {
       if (ref $_ eq 'SCALAR' && $options{interpolate} == INTERPOLATE_ENV) {
-        exists $ENV{${$_}} ? (split /\Q$Config{path_sep}/, $ENV{${$_}}) : ()
+        defined $ENV{${$_}} ? (split /\Q$Config{path_sep}/, $ENV{${$_}}) : ()
       } else {
         $_
       }
