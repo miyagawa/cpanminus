@@ -15,6 +15,7 @@ is $ver, 0.02;
 
 chdir "testdist/HelloWorld-0.01"; system "make distclean";
 chdir "../../testdist/HelloWorld-0.02"; system "make distclean";
+chdir "../..";
 
 run "-Uf", "HelloWorld";
 
