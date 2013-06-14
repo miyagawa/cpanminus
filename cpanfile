@@ -10,10 +10,12 @@ on develop => sub {
     requires 'App::FatPacker';
     requires 'CPAN::DistnameInfo';
     requires 'CPAN::Meta';
+    requires 'CPAN::Meta::Check';
     requires 'CPAN::Meta::Prereqs';
     requires 'CPAN::Meta::Requirements';
     requires 'CPAN::Meta::YAML';
     requires 'Digest::SHA';
+    requires 'Exporter', '5.63';
     requires 'File::Temp';
     requires 'File::pushd';
     requires 'Getopt::Long';
