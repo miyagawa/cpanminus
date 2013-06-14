@@ -2,6 +2,11 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6920  2013-06-14 14:08:44 PDT
+   [Improvements]
+      - Handle PERL_LOCAL_LIB_ROOT in case multiple paths are stacked (mst)
+      - Remove the search.cpan.org fallback where no META files exist. Generate stub using CPAN::Meta
+
 1.6919  2013-06-12 08:32:06 PDT
    [Incompatible Changes]
       - Automatically detect local::lib mode when environment variables are already configured

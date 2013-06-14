@@ -41,11 +41,13 @@
             "App::FatPacker" : "0",
             "CPAN::DistnameInfo" : "0",
             "CPAN::Meta" : "0",
+            "CPAN::Meta::Check" : "0",
             "CPAN::Meta::Prereqs" : "0",
             "CPAN::Meta::Requirements" : "0",
             "CPAN::Meta::YAML" : "0",
             "Capture::Tiny" : "0",
             "Digest::SHA" : "0",
+            "Exporter" : "5.63",
             "File::Temp" : "0",
             "File::pushd" : "0",
             "Getopt::Long" : "0",
@@ -83,7 +85,7 @@
          }
       }
    },
-   "release_status" : "testing",
+   "release_status" : "stable",
    "resources" : {
       "bugtracker" : {
          "web" : "https://github.com/miyagawa/cpanminus/issues"
@@ -95,7 +97,7 @@
          "web" : "https://github.com/miyagawa/cpanminus"
       }
    },
-   "version" : "1.6919",
+   "version" : "1.6920",
    "x_contributors" : [
       "Alessandro Ghedini <al3xbio@gmail.com>",
       "Andrew Rodland <andrew@cleverdomain.org>",
