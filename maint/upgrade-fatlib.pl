@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+#!/usr/bin/env PLENV_VERSION=5.8.9 perl
 use strict;
 use App::FatPacker ();
 use File::Path;
