@@ -12,7 +12,7 @@ local::lib->setup_env_hash_for($lib, 0);
 run 'Sub::Exporter';
 unlike last_build_log, qr/Installing the dependencies failed.*Params::Util/;
 
-local::lib->setup_env_hash_for($lib, 1); # deactivate
+local::lib->setup_env_hash_for($lib, local::lib::DEACTIVATE_ONE);
 run 'Params::Util';
 
 done_testing;
