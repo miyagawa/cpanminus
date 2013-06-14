@@ -222,7 +222,8 @@ sub parse_options {
 }
 
 sub check_upgrade {
-    my $install_base = $ENV{PERL_LOCAL_LIB_ROOT} || $Config{installsitebin};
+    my $self = shift;
+    my $install_base = $ENV{PERL_LOCAL_LIB_ROOT} ? $self->local_lib_target($ENV{PERL_LOCAL_LIB_ROOT}) : $Config{installsitebin};
     if ($0 eq '-') {
         # run from curl, that's fine
         return;
@@ -852,6 +853,11 @@ sub maybe_abs {
     }
 }
 
+sub local_lib_target {
+    my($self, $root) = @_;
+    (grep { $_ ne '' } split /\Q$Config{path_sep}/, $root)[-1];
+}
+
 sub bootstrap_local_lib {
     my $self = shift;
 
@@ -862,7 +868,7 @@ sub bootstrap_local_lib {
 
     # PERL_LOCAL_LIB_ROOT is defined. Run as local::lib mode without overwriting ENV
     if ($ENV{PERL_LOCAL_LIB_ROOT} && $ENV{PERL_MM_OPT}) {
-        return $self->setup_local_lib($ENV{PERL_LOCAL_LIB_ROOT}, 1);
+        return $self->setup_local_lib($self->local_lib_target($ENV{PERL_LOCAL_LIB_ROOT}), 1);
     }
 
     # root, locally-installed perl or --sudo: don't care about install_base
