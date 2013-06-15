@@ -290,6 +290,52 @@ MakeMaker and C<--pureperl-only> for Build.PL based
 distributions. Note that not all of the CPAN modules support this
 convention yet.
 
+=item --with-recommends, --with-suggests
+
+B<EXPERIMENTAL>: Installs dependencies declared as C<recommends> and
+C<suggests> respectively, per META spec. When these dependencies fail
+to install, cpanm continues the installation, since they're just
+recommendation/suggestion.
+
+Enabling this could potentially make a circular depednencies for a few
+modules on CPAN, when C<recommends> adds a module that C<recommends>
+back the module in return.
+
+There's also C<--without-recommends> and C<--without-suggests> to
+override the default decision earlier in C<PERL_CPANM_OPT>.
+
+Defaults to false for both.
+
+=item --with-feature, --without-feature, --with-all-features
+
+B<EXPERIMENTAL>: Specifies the feature to enable, if a module supports
+optional features per META spec 2.0.
+
+    cpanm --with-feature=opt_csv Spreadsheet::Read
+
+the features can also be interactively chosen when C<--interactive>
+option is enabled.
+
+C<--with-all-features> enables all the optional features, and
+C<--without-feature> can select a feature to disable.
+
+=item --configure-timeout, --build-timeout, --test-timeout
+
+Specify the timeout length (in seconds) to wait for the configure,
+build and test process. Current default values are: 60 for configure,
+3600 for build and 1800 for test.
+
+=item --configure-args, --build-args, --test-args, --install-args
+
+B<EXPERIMENTAL>: Pass arguments for configure/build/test/install
+commands respectively, for a given module to install.
+
+    cpanm DBD::mysql --configure-args="--cflags=... --libs=..."
+
+The argument is only enabled for the module passed as a command line
+argument, not dependencies.
+
+
 =item --scandeps
 
 Scans the depencencies of given modules and output the tree in a text
@@ -379,6 +425,22 @@ perl newer than 5.12, since with 5.12 @INC contains site_perl directory
 I<before> the perl core library path, and uninstalling shadows is not
 necessary anymore and does more harm by deleting files from the core
 library path.
+
+=item --uninstall, -U
+
+Uninstalls a module from the library path. It finds a packlist for
+given modules, and removes all the files included in the same
+distribution.
+
+If you enable local::lib, it only removes files from the local::lib
+directory.
+
+If you try to uninstall a module in C<perl> directory (i.e. core
+module), an error will be thrown.
+
+A dialog wil be prompted to confirm the files to be deleted. If you pass
+C<-f> option as well, the dialog will be skipped and uninstallation
+will be forced.
 
 =item --cascade-search
 
