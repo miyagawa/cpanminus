@@ -297,11 +297,11 @@ C<suggests> respectively, per META spec. When these dependencies fail
 to install, cpanm continues the installation, since they're just
 recommendation/suggestion.
 
-Enabling this could potentially make a circular depednencies for a few
+Enabling this could potentially make a circular dependency for a few
 modules on CPAN, when C<recommends> adds a module that C<recommends>
 back the module in return.
 
-There's also C<--without-recommends> and C<--without-suggests> to
+There's also C<--without-recommend> and C<--without-suggests> to
 override the default decision made earlier in C<PERL_CPANM_OPT>.
 
 Defaults to false for both.
@@ -334,7 +334,6 @@ commands respectively, for a given module to install.
 
 The argument is only enabled for the module passed as a command line
 argument, not dependencies.
-
 
 =item --scandeps
 
