@@ -1006,7 +1006,7 @@ sub diag_fail {
     }
 
     if ($msg) {
-        $self->_diag("! $msg\n", $always);
+        $self->_diag("! $msg\n", $always, 1);
         $self->log("-> FAIL $msg\n");
     }
 }
@@ -1020,8 +1020,9 @@ sub diag_progress {
 }
 
 sub _diag {
-    my($self, $msg, $always) = @_;
-    print STDERR $msg if $always or $self->{verbose} or !$self->{quiet};
+    my($self, $msg, $always, $error) = @_;
+    my $fh = $error ? *STDERR : *STDOUT;
+    print {$fh} $msg if $always or $self->{verbose} or !$self->{quiet};
 }
 
 sub diag {
