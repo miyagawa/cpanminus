@@ -2045,6 +2045,14 @@ sub build_stuff {
         );
     }
 
+    # workaround for bad M::B based dists with no configure_requires
+    # https://github.com/miyagawa/cpanminus/issues/273
+    if (-e 'Build.PL') {
+        push @config_deps, Dependency->from_versions(
+            { 'Module::Build' => '0.36' }, 'configure',
+        );
+    }
+
     my $target = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $dist->{dir};
 
     $self->install_deps_bailout($target, $dist->{dir}, $depth, @config_deps)
