@@ -2435,8 +2435,8 @@ sub extract_meta_prereqs {
 
     if (-e '_build/prereqs') {
         $self->chat("Checking dependencies from _build/prereqs ...\n");
-        my $mymeta = do { open my $in, "_build/prereqs"; $self->safe_eval(join "", <$in>) };
-        @deps = $self->extract_prereqs($mymeta, $dist);
+        my $prereqs = do { open my $in, "_build/prereqs"; $self->safe_eval(join "", <$in>) };
+        @deps = $self->extract_prereqs({ name => $meta->{name}, version => $meta->{version}, %$prereqs }, $dist);
     } elsif (-e 'Makefile') {
         $self->chat("Finding PREREQ from Makefile ...\n");
         open my $mf, "Makefile";
