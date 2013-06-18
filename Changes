@@ -2,6 +2,13 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6921  2013-06-18 03:18:55 PDT
+   [Bug Fixes]
+      - Fixes install with Module::Build < 0.35, i.e. vanilla perl 5.10.1
+        (Thanks to joshk for the report)
+      - Fixes install on 5.8 with Module::Build dists without configure_requires #273
+        (Thanks to gildegoma for the report)
+
 1.6920  2013-06-14 14:08:44 PDT
    [Improvements]
       - Handle PERL_LOCAL_LIB_ROOT in case multiple paths are stacked (mst)
