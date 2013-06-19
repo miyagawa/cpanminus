@@ -45,10 +45,10 @@ if ($] >= 5.012) {
     unlike $mod->filename, qr/site_perl/;
 }
 
-run 'App::mymeta_requires';
-run '-U', '-f', 'App::mymeta_requires';
-like last_build_log, qr!Unlink:.*bin/mymeta-requires!, "Uninstall bin/ when it is not shared";
+run '-n', 'App::Ack';
+run '-U', '-f', 'App::Ack';
+like last_build_log, qr!Unlink:.*bin/ack!, "Uninstall bin/ when it is not shared";
 
-run $_ for qw( Hash::MultiValue Module::CoreList App::mymeta_requires );
+run '-n', $_ for qw( Hash::MultiValue Module::CoreList App::Ack );
 
 done_testing;
