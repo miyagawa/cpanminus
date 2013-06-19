@@ -1,5 +1,5 @@
 package Foo;
-use 5.008_01;
+use 5.008_001;
 our $VERSION = 0.01;
 
 1;
