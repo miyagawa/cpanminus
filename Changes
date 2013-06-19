@@ -2,6 +2,11 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6922  2013-06-19 13:55:54 PDT
+   [Improvements]
+      - No changes in the code, packaging update so the fatpacked executable on cpanm has
+        the right version. #274
+
 1.6921  2013-06-18 03:18:55 PDT
    [Bug Fixes]
       - Fixes install with Module::Build < 0.35, i.e. vanilla perl 5.10.1

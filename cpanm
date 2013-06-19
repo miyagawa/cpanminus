@@ -18,7 +18,7 @@ BEGIN {
 my %fatpacked;
 
 $fatpacked{"App/cpanminus.pm"} = <<'APP_CPANMINUS';
-  package App::cpanminus;our$VERSION="1.6920";1;
+  package App::cpanminus;our$VERSION="1.6922";1;
 APP_CPANMINUS
 
 $fatpacked{"App/cpanminus/Dependency.pm"} = <<'APP_CPANMINUS_DEPENDENCY';
