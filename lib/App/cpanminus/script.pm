@@ -75,6 +75,7 @@ sub new {
         mirrors => [],
         mirror_only => undef,
         mirror_index => undef,
+        cpanmetadb => "http://cpanmetadb.plackperl.org/v1.0/",
         perl => $^X,
         argv => [],
         local_lib => undef,
@@ -172,6 +173,7 @@ sub parse_options {
         'mirror=s@' => $self->{mirrors},
         'mirror-only!' => \$self->{mirror_only},
         'mirror-index=s'  => \$self->{mirror_index},
+        'cpanmetadb=s'    => \$self->{cpanmetadb},
         'cascade-search!' => \$self->{cascade_search},
         'prompt!'   => \$self->{prompt},
         'installdeps' => \$self->{installdeps},
@@ -657,7 +659,7 @@ sub search_cpanmetadb {
 
     $self->chat("Searching $module on cpanmetadb ...\n");
 
-    my $uri  = "http://cpanmetadb.plackperl.org/v1.0/package/$module";
+    (my $uri = $self->{cpanmetadb}) =~ s{/?$}{/package/$module};
     my $yaml = $self->get($uri);
     my $meta = $self->parse_meta_string($yaml);
     if ($meta && $meta->{distfile}) {
