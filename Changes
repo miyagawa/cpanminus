@@ -2,6 +2,11 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6923  2013-07-03 22:16:04 PDT
+   [Bug Fixes]
+      - Reverted the --skipdeps in PERL_AUTOINSTALL since it breaks default
+        dependencies in Module::Install-based distributions
+
 1.6922  2013-06-19 13:55:54 PDT
    [Improvements]
       - No changes in the code, packaging update so the fatpacked executable on cpanm has
