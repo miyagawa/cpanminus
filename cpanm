@@ -464,7 +464,7 @@ will all work as you expect.
     cpanm MIYAGAWA/Plack-1.0000.tar.gz
     cpanm /path/to/Plack-1.0000.tar.gz
     cpanm http://cpan.metacpan.org/authors/id/M/MI/MIYAGAWA/Plack-0.9990.tar.gz
-    cpanm git://github.com/plack/Plack.git
+    cpanm git://github.com/miyagawa/Plack.git
 
 Additionally, you can use the notation using C<~> and C<@> to specify
 version for a given module. C<~> specifies the version requirement in
@@ -483,8 +483,8 @@ which case, archived versions will be filtered out.
 For a git repository, you can specify a branch, tag, or commit SHA to
 build. The default is C<master>
 
-    cpanm git://github.com/plack/Plack.git@1.0000        # tag
-    cpanm git://github.com/plack/Plack.git@devel         # branch
+    cpanm git://github.com/miyagawa/Plack.git@1.0000        # tag
+    cpanm git://github.com/miyagawa/Plack.git@devel         # branch
 
 =item -i, --install
 
