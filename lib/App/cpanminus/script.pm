@@ -672,12 +672,12 @@ sub search_module {
     my($self, $module, $version) = @_;
 
     if ($self->{mirror_index}) {
-        $self->chat("Searching $module on mirror index $self->{mirror_index} ...\n");
+        $self->mask_output( chat => "Searching $module on mirror index $self->{mirror_index} ...\n" );
         my $pkg = $self->search_mirror_index_file($self->{mirror_index}, $module, $version);
         return $pkg if $pkg;
 
         unless ($self->{cascade_search}) {
-           $self->diag_fail("Finding $module ($version) on mirror index $self->{mirror_index} failed.");
+           $self->mask_output( diag_fail => "Finding $module ($version) on mirror index $self->{mirror_index} failed." );
            return;
         }
     }
@@ -688,13 +688,13 @@ sub search_module {
     }
 
     MIRROR: for my $mirror (@{ $self->{mirrors} }) {
-        $self->chat("Searching $module on mirror $mirror ...\n");
+        $self->mask_output( chat => "Searching $module on mirror $mirror ...\n" );
         my $name = '02packages.details.txt.gz';
         my $uri  = "$mirror/modules/$name";
         my $gz_file = $self->package_index_for($mirror) . '.gz';
 
         unless ($self->{pkgs}{$uri}) {
-            $self->chat("Downloading index file $uri ...\n");
+            $self->mask_output( chat => "Downloading index file $uri ...\n" );
             $self->mirror($uri, $gz_file);
             $self->generate_mirror_index($mirror) or next MIRROR;
             $self->{pkgs}{$uri} = "!!retrieved!!";
@@ -703,7 +703,7 @@ sub search_module {
         my $pkg = $self->search_mirror_index($mirror, $module, $version);
         return $pkg if $pkg;
 
-        $self->diag_fail("Finding $module ($version) on mirror $mirror failed.");
+        $self->mask_output( diag_fail => "Finding $module ($version) on mirror $mirror failed." );
     }
 
     return;
@@ -1034,6 +1034,12 @@ sub chat {
     my $self = shift;
     print STDERR @_ if $self->{verbose};
     $self->log(@_);
+}
+
+sub mask_output {
+    my $self = shift;
+    my $method = shift;
+    $self->$method( $self->mask_uri_passwords(@_) );
 }
 
 sub log {
@@ -1510,7 +1516,7 @@ sub fetch_module {
     $self->chdir($self->{base});
 
     for my $uri (@{$dist->{uris}}) {
-        $self->diag_progress("Fetching $uri");
+        $self->mask_output( diag_progress => "Fetching $uri" );
 
         # Ugh, $dist->{filename} can contain sub directory
         my $filename = $dist->{filename} || $uri;
@@ -1612,7 +1618,7 @@ sub verify_archive {
 
     (my $chksum_uri = $uri) =~ s!/[^/]*$!/CHECKSUMS!;
     my $chk_file = $self->source_for($mirror) . "/$dist->{cpanid}.CHECKSUMS";
-    $self->diag_progress("Fetching $chksum_uri");
+    $self->mask_output( diag_progress => "Fetching $chksum_uri" );
     $self->mirror($chksum_uri, $chk_file);
 
     unless (-e $chk_file) {
@@ -1782,7 +1788,7 @@ sub git_uri {
 
     my $dir = File::Temp::tempdir(CLEANUP => 1);
 
-    $self->diag_progress("Cloning $uri");
+    $self->mask_output( diag_progress => "Cloning $uri" );
     $self->run([ 'git', 'clone', $uri, $dir ]);
 
     unless (-e "$dir/.git") {
