@@ -38,6 +38,7 @@ on develop => sub {
     requires 'Capture::Tiny';
     requires 'Test::Requires';
     requires 'Test::More', '0.90';
+    requires 'Perl::Strip';
     recommends 'Archive::Tar';
     recommends 'Archive::Zip';
     recommends 'Compress::Zlib';
