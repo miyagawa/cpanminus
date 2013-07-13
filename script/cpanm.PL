@@ -306,6 +306,11 @@ override the default decision made earlier in C<PERL_CPANM_OPT>.
 
 Defaults to false for both.
 
+=item --with-develop
+
+B<EXPERIMENTAL>: Installs develop phase dependencies in META files or
+C<cpanfile> when used with C<--installdeps>. Defaults to false.
+
 =item --with-feature, --without-feature, --with-all-features
 
 B<EXPERIMENTAL>: Specifies the feature to enable, if a module supports
