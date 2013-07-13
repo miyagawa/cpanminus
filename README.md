@@ -1,6 +1,6 @@
 # NAME
 
-App::cpanminus - get, unpack, build and install modules from CPAN
+**App::cpanminus - get, unpack, build and install modules from CPAN**
 
 # SYNOPSIS
 
@@ -13,9 +13,8 @@ Run `cpanm -h` or `perldoc cpanm` for more options.
 cpanminus is a script to get, unpack, build and install modules from
 CPAN and does nothing else.
 
-It's dependency free (can bootstrap itself), requires zero
-configuration, and stands alone. When running, it requires only 10MB
-of RAM.
+It's dependency free (can bootstrap itself), requires zero configuration, 
+and stands alone. When running, it requires only 10MB of RAM.
 
 # INSTALLATION
 
@@ -35,21 +34,23 @@ You can also use the latest cpanminus to install cpanminus itself:
 
     curl -L http://cpanmin.us | perl - --sudo App::cpanminus
 
-This will install `cpanm` to your bin directory like
-`/usr/local/bin` (unless you configured `INSTALL_BASE` with
-[local::lib](http://search.cpan.org/perldoc?local::lib)), so you probably need the `--sudo` option.
+This will install `cpanm` to your `bin` directory (like `/usr/local/bin`,
+unless you configured `INSTALL_BASE` with
+[`local::lib`](http://search.cpan.org/perldoc?local::lib)). 
+
+You probably need the `--sudo` option for this installation.
 
 ## Installing to local perl (perlbrew)
 
-If you have perl in your home directory, which is the case if you use
-tools like [perlbrew](http://search.cpan.org/perldoc?perlbrew), you don't need the `--sudo` option, since
-you're most likely to have a write permission to the perl's library
-path. You can just do:
+If you have perl in your home directory (which is the case if you use
+tools like [perlbrew](http://search.cpan.org/perldoc?perlbrew)), you don't
+need the `--sudo` option, since you're likely to have write permissions 
+to perl's library path. Just do this:
 
     curl -L http://cpanmin.us | perl - App::cpanminus
 
-to install the `cpanm` executable to the perl's bin path, like
-`~/perl5/perlbrew/bin/cpanm`.
+to install the `cpanm` executable to perl's bin path (like
+`~/perl5/perlbrew/bin/cpanm`).
 
 ## Downloading the standalone executable
 
@@ -61,36 +62,39 @@ You can also copy the standalone executable to whatever location you'd like.
     # edit shebang if you don't have /usr/bin/env
 
 This just works, but be sure to grab the new version manually when you
-upgrade because `--self-upgrade` might not work for this.
+upgrade, as `--self-upgrade` might not work for this.
 
 # DEPENDENCIES
 
 perl 5.8 or later.
 
-- 'tar' executable (bsdtar or GNU tar version 1.22 are recommended) or Archive::Tar to unpack files.
-- C compiler, if you want to build XS modules.
-- make
-- Module::Build (core in 5.10)
+- `tar` executable
+  - Recommended: `bsdtar` or GNU `tar` version 1.22
+  - `Archive::Tar` to unpack files
+- C compiler, if you want to build XS modules
+- `make`
+- `Module::Build` (core in `5.10`)
 
 # QUESTIONS
 
 ## Another CPAN installer?
 
-OK, the first motivation was this: the CPAN shell runs out of memory (or swaps
+Okay, the first motivation was this: the CPAN shell runs out of memory (or swaps
 heavily and gets really slow) on Slicehost/linode's most affordable plan with
-only 256MB RAM. Should I pay more to install perl modules from CPAN? I don't
-think so.
+only 256MB RAM. Should I pay more to install perl modules from CPAN? 
+
+I don't think so.
 
 ## But why a new client?
 
 First of all, let me be clear that CPAN and CPANPLUS are great tools
-I've used for _literally_ years (you know how many modules I have on
-CPAN, right?). I really respect their efforts of maintaining the most
+I've used for _literally_ years. (You know how many [modules](http://search.cpan.org/~miyagawa/) 
+I have on CPAN, right?) I really respect their efforts of maintaining the most
 important tools in the CPAN toolchain ecosystem.
 
-However, for less experienced users (mostly from outside the Perl community),
+However, for less experienced users (mostly from outside the Perl community)--
 or even really experienced Perl developers who know how to shoot themselves in
-their feet, setting up the CPAN toolchain often feels like yak shaving,
+their feet--setting up the CPAN toolchain often feels like shaving a yak,
 especially when all they want to do is just install some modules and start
 writing code.
 
@@ -101,52 +105,51 @@ The site is updated at least every hour to reflect the latest changes
 from fast syncing mirrors. The script then also falls back to query the
 module at [http://metacpan.org/](http://metacpan.org/) using its wonderful API.
 
-Upon calling these API hosts, cpanm (1.6004 or later) will send the
-local perl versions to the server in User-Agent string by default. You
-can turn it off with `--no-report-perl-version` option. Read more
-about the option with [cpanm](http://search.cpan.org/perldoc?cpanm), and read more about the privacy policy
-about this data collection at [http://cpanmetadb.plackperl.org/\#privacy](http://cpanmetadb.plackperl.org/\#privacy)
+Upon calling these API hosts, `cpanm` (since version 1.6004) will send the
+local `perl` versions to the server in the `User-Agent` string by default. 
+You can turn it off with `--no-report-perl-version` option. 
 
-Fetched files are unpacked in `~/.cpanm` and automatically cleaned up
-periodically.  You can configure the location of this with the
+Read more about the option with [cpanm](http://search.cpan.org/perldoc?cpanm), 
+and read more about the privacy policy about this data collection at 
+[http://cpanmetadb.plackperl.org/\#privacy](http://cpanmetadb.plackperl.org/\#privacy)
+
+Fetched files are unpacked in `~/.cpanm`, and are periodically cleaned up
+automatically. You can configure the location of this with the 
 `PERL_CPANM_HOME` environment variable.
 
 ## Where does this install modules to? Do I need root access?
 
-It installs to wherever ExtUtils::MakeMaker and Module::Build are
-configured to (via `PERL_MM_OPT` and `PERL_MB_OPT`). So if you're
-using local::lib, then it installs to your local perl5
-directory. Otherwise it installs to the site\_perl directory that
+It installs to wherever `ExtUtils::MakeMaker` and `Module::Build` are
+configured to (via `PERL_MM_OPT` and `PERL_MB_OPT`). So, if you're
+using `local::lib`, then it installs to your local perl5
+directory. Otherwise, it installs to the site\_perl directory that
 belongs to your perl.
 
-cpanminus at a boot time checks whether you have configured
-local::lib, or have the permission to install modules to the site\_perl
-directory.  If neither, it automatically sets up local::lib compatible
-installation path in a `perl5` directory under your home
-directory. To avoid this, run the script as the root user, with
-`--sudo` option or with `--local-lib` option.
+At boot time, cpanminus checks whether you have configured
+`local::lib`, or have the permission to install modules to the site\_perl
+directory.  If neither are true, it automatically sets up `local::lib` 
+compatible installation path in a `perl5` directory under your home
+directory. To avoid this, run the script as the `root` user (with either 
+the `--sudo` or `--local-lib` option).
 
 ## cpanminus can't install the module XYZ. Is it a bug?
 
 It is more likely a problem with the distribution itself. cpanminus
-doesn't support or is known to have issues with distributions like as
+doesn't support, or is known to have issues with distributions, as
 follows:
 
-- Tests that require input from STDIN.
-- Tests that might fail when `AUTOMATED_TESTING` is enabled.
+- Tests that require input from `STDIN`
+- Tests that might fail when `AUTOMATED_TESTING` is enabled
 - Modules that have invalid numeric values as VERSION (such as `1.1a`)
 
-These failures can be reported back to the author of the module so
-that they can fix it accordingly, rather than me.
+These failures can be reported back to the author of the module, so they can fix it, 
+rather than me.
 
 ## Does cpanm support the feature XYZ of [CPAN](http://search.cpan.org/perldoc?CPAN) and [CPANPLUS](http://search.cpan.org/perldoc?CPANPLUS)?
 
 Most likely not. Here are the things that cpanm doesn't do by
-itself. And it's a feature - you got that from the name _minus_,
-right?
-
-If you need these features, use [CPAN](http://search.cpan.org/perldoc?CPAN), [CPANPLUS](http://search.cpan.org/perldoc?CPANPLUS) or the standalone
-tools that are mentioned.
+itself. (And it's a feature--you got that from the name _minus_,
+right?)
 
 - CPAN testers reporting
 - Building RPM packages from CPAN modules
@@ -154,13 +157,16 @@ tools that are mentioned.
 - Showing the changes of the modules you're about to upgrade. See [cpan-listchanges](http://search.cpan.org/perldoc?cpan-listchanges)
 - Patching CPAN modules with distroprefs.
 
-See [cpanm](http://search.cpan.org/perldoc?cpanm) or `cpanm -h` to see what cpanminus _can_ do :)
+If you need these features, use [CPAN](http://search.cpan.org/perldoc?CPAN), [CPANPLUS](http://search.cpan.org/perldoc?CPANPLUS), or the standalone
+tools that are mentioned.
+
+See [cpanm](http://search.cpan.org/perldoc?cpanm) or `cpanm -h` to see what cpanminus _can_ do. :)
 
 # COPYRIGHT
 
-Copyright 2010- Tatsuhiko Miyagawa
+Copyright 2010, Tatsuhiko Miyagawa
 
-The standalone executable contains the following modules embedded.
+The standalone executable contains the following embedded modules:
 
 - [CPAN::DistnameInfo](http://search.cpan.org/perldoc?CPAN::DistnameInfo) Copyright 2003 Graham Barr
 - [Parse::CPAN::Meta](http://search.cpan.org/perldoc?Parse::CPAN::Meta) Copyright 2006-2009 Adam Kennedy
@@ -211,4 +217,6 @@ arising from the use of the software.
 
 # SEE ALSO
 
-[CPAN](http://search.cpan.org/perldoc?CPAN) [CPANPLUS](http://search.cpan.org/perldoc?CPANPLUS) [pip](http://search.cpan.org/perldoc?pip)
+- [CPAN](http://search.cpan.org/perldoc?CPAN) 
+- [CPANPLUS](http://search.cpan.org/perldoc?CPANPLUS) 
+- [pip](http://search.cpan.org/perldoc?pip)
