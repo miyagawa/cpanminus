@@ -541,19 +541,21 @@ sub maturity_filter {
     return @filters;
 }
 
-sub by_score_and_status {
+sub by_stability {
     my %s = (
         latest  => 3,
         cpan    => 2,
         backpan => 1,
     );
-    $b->{_score} <=> $a->{_score} || $s{ $b->{fields}{status} } <=> $s{ $a->{fields}{status} };
+    $b->{_score} <=> $a->{_score} ||                             # version: higher version that satisfies the query
+    $s{ $b->{fields}{status} } <=> $s{ $a->{fields}{status} } || # prefer non-BackPAN dist
+    $a->{fields}{date} cmp $b->{fields}{date};                   # first one wins, if all are in BackPAN/CPAN
 }
 
 sub find_best_match {
     my($self, $match, $version) = @_;
     return unless $match && @{$match->{hits}{hits} || []};
-    (sort by_score_and_status @{$match->{hits}{hits}})[0]->{fields};
+    (sort by_stability @{$match->{hits}{hits}})[0]->{fields};
 }
 
 sub search_metacpan {
@@ -589,7 +591,7 @@ sub search_metacpan {
     my $module_uri = "$metacpan_uri/file/_search?source=";
     $module_uri .= $self->encode_json({
         query => $query,
-        fields => [ 'release', 'module', 'status' ],
+        fields => [ 'date', 'release', 'module', 'status' ],
     });
 
     my($release, $module_version);
