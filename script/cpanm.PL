@@ -10,7 +10,7 @@
 #
 # For more details about this program, visit http://search.cpan.org/dist/App-cpanminus
 #
-# DEVELOPERS: Read script/build.PL in the repo how to update this
+# DEVELOPERS: Read maint/build.pl in the repo how to update this
 # __FATPACK__
 use strict;
 use FindBin qw($Bin);                        # For dev -- Auto-removed
