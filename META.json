@@ -61,6 +61,7 @@
             "Module::Install" : "0",
             "Module::Metadata" : "0",
             "Parse::CPAN::Meta" : "0",
+            "Perl::Strip" : "0",
             "String::ShellQuote" : "0",
             "Test::More" : "0.90",
             "Test::Pod" : "1.41",
@@ -97,7 +98,7 @@
          "web" : "https://github.com/miyagawa/cpanminus"
       }
    },
-   "version" : "1.6923",
+   "version" : "1.6924",
    "x_contributors" : [
       "Alessandro Ghedini <al3xbio@gmail.com>",
       "Andrew Rodland <andrew@cleverdomain.org>",

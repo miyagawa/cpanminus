@@ -2,6 +2,16 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6924  2013-07-16 11:36:56 PDT
+   [Bug Fixes]
+      - Sort MetaCPAN API results based on date (older one wins) to work around the issue
+        with Crixa-0.01 (https://github.com/CPAN-API/cpan-api/issues/274)
+
+   [Improvements]
+      - Document --with-develop
+      - Document fixes (oalders, garu)
+      - Added Perl::Strip for develop deps if you'd like to build fatpacked binary
+
 1.6923  2013-07-03 22:16:04 PDT
    [Bug Fixes]
       - Reverted the --skipdeps in PERL_AUTOINSTALL since it breaks default
