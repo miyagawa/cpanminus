@@ -17,3 +17,4 @@ my $new_ver = shift @ARGV;
 my $current_ver = find_version("cpanm") or die;
 
 system('perl-reversion', '-current', $current_ver, '-set', $new_ver, 'cpanm') == 0 or die $?;
+chmod 0755, 'cpanm';
