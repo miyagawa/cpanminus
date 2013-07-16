@@ -93,7 +93,7 @@ sub new {
         auto_cleanup => 7, # days
         pod2man => 1,
         installed_dists => 0,
-        install_types => ['requires', 'recommends'],
+        install_types => ['requires'],
         with_develop => 0,
         showdeps => 0,
         scandeps => 0,
@@ -223,7 +223,11 @@ sub parse_options {
 }
 
 sub check_upgrade {
-    if ($0 !~ /^$Config{installsitebin}/) {
+    my $install_base = $ENV{PERL_LOCAL_LIB_ROOT} || $Config{installsitebin};
+    if ($0 eq '-') {
+        # run from curl, that's fine
+        return;
+    } elsif ($0 !~ /^$install_base/) {
         if ($0 =~ m!perlbrew/bin!) {
             die <<DIE;
 It appears your cpanm executable was installed via `perlbrew install-cpanm`.
@@ -1267,6 +1271,7 @@ sub install_module {
     my($self, $module, $depth, $version) = @_;
 
     if ($self->{seen}{$module}++) {
+        # TODO: circular dependencies
         $self->chat("Already tried $module. Skipping.\n");
         return 1;
     }
@@ -1300,17 +1305,19 @@ sub install_module {
     $dist->{depth} = $depth; # ugly hack
 
     if ($dist->{module}) {
-        # check if we already have the exact same version
-        my $requirement = $dist->{module_version} ? "==$dist->{module_version}" : 0;
+        unless ($self->satisfy_version($dist->{module}, $dist->{module_version}, $version)) {
+            $self->diag("Found $dist->{module} $dist->{module_version} which doesn't satisfy $version.\n", 1);
+            return;
+        }
+
+        # If a version is requested, it has to be the exact same version, otherwise, check as if
+        # it is the minimum version you need.
+        my $cmp = $version ? "==" : "";
+        my $requirement = $dist->{module_version} ? "$cmp$dist->{module_version}" : 0;
         my($ok, $local) = $self->check_module($dist->{module}, $requirement);
         if ($self->{skip_installed} && $ok) {
             $self->diag("$dist->{module} is up to date. ($local)\n", 1);
             return 1;
-        }
-
-        unless ($self->satisfy_version($dist->{module}, $dist->{module_version}, $version)) {
-            $self->diag("Found $dist->{module} $dist->{module_version} which doesn't satisfy $version.\n");
-            return;
         }
     }
 
@@ -1439,7 +1446,7 @@ sub should_unlink {
 sub ask_permission {
     my ($self, $module, $files) = @_;
 
-    $self->diag("$module containts the following:\n\n");
+    $self->diag("$module contains the following files:\n\n");
     for my $file (@$files) {
         $self->diag("  $file\n");
     }
@@ -1708,7 +1715,7 @@ sub resolve_name {
 
     # PAUSEID/foo
     # P/PA/PAUSEID/foo
-    if ($module =~ m!^(?:[A-Z]/[A-Z]{2}/)?([A-Z]{2,}/.*)$!) {
+    if ($module =~ m!^(?:[A-Z]/[A-Z]{2}/)?([A-Z]{2}[\-A-Z0-9]*/.*)$!) {
         return $self->cpan_dist($1);
     }
 
@@ -1729,7 +1736,7 @@ sub cpan_module {
 sub cpan_dist {
     my($self, $dist, $url) = @_;
 
-    $dist =~ s!^([A-Z]{3})!substr($1,0,1)."/".substr($1,0,2)."/".$1!e;
+    $dist =~ s!^([A-Z]{2})!substr($1,0,1)."/".substr($1,0,2)."/".$1!e;
 
     require CPAN::DistnameInfo;
     my $d = CPAN::DistnameInfo->new($dist);
@@ -1941,24 +1948,42 @@ sub install_deps {
     }
 
     for my $dep (@install) {
-        unless ($self->install_module($dep->module, $depth + 1, $dep->version)) {
-            push @fail, $dep->module if $dep->is_requirement;
-        }
+        $self->install_module($dep->module, $depth + 1, $dep->version);
     }
 
     $self->chdir($self->{base});
     $self->chdir($dir) if $dir;
 
-    return @fail;
+    my @not_ok = $self->unsatisfied_deps(@deps);
+    if (@not_ok) {
+        return 0, \@not_ok;
+    } else {
+        return 1;
+    }
+}
+
+sub unsatisfied_deps {
+    my($self, @deps) = @_;
+
+    require CPAN::Meta::Check;
+    require CPAN::Meta::Requirements;
+
+    my $reqs = CPAN::Meta::Requirements->new;
+    for my $dep (grep $_->is_requirement, @deps) {
+        $reqs->add_string_requirement($dep->module => $dep->version || '0');
+    }
+
+    my $ret = CPAN::Meta::Check::check_requirements($reqs, 'requires', $self->{search_inc});
+    grep defined, values %$ret;
 }
 
 sub install_deps_bailout {
     my($self, $target, $dir, $depth, @deps) = @_;
 
-    my @fail = $self->install_deps($dir, $depth, @deps);
-    if (@fail) {
-        unless ($self->prompt_bool("Installing the following dependencies failed:\n==> " .
-                                   join(", ", @fail) . "\nDo you want to continue building $target anyway?", "n")) {
+    my($ok, $fail) = $self->install_deps($dir, $depth, @deps);
+    if (!$ok) {
+        $self->diag_fail("Installing the dependencies failed: " . join(", ", @$fail), 1);
+        unless ($self->prompt_bool("Do you want to continue building $target anyway?", "n")) {
             $self->diag_fail("Bailing out the installation for $target. Retry with --prompt or --force.", 1);
             return;
         }
@@ -2625,6 +2650,17 @@ sub file_mirror {
     File::Copy::copy($file, $path);
 }
 
+sub has_working_lwp {
+    my($self, $mirrors) = @_;
+    my $https = grep /^https:/, @$mirrors;
+    eval {
+        require LWP::UserAgent; # no fatpack
+        LWP::UserAgent->VERSION(5.802);
+        require LWP::Protocol::https if $https; # no fatpack
+        1;
+    };
+}
+
 sub init_tools {
     my $self = shift;
 
@@ -2635,7 +2671,7 @@ sub init_tools {
     }
 
     # use --no-lwp if they have a broken LWP, to upgrade LWP
-    if ($self->{try_lwp} && eval { require LWP::UserAgent; LWP::UserAgent->VERSION(5.802) }) {
+    if ($self->{try_lwp} && $self->has_working_lwp($self->{mirrors})) {
         $self->chat("You have LWP $LWP::VERSION\n");
         my $ua = sub {
             LWP::UserAgent->new(

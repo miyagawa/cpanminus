@@ -4,7 +4,7 @@
       "- Tatsuhiko Miyagawa"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Dist::Milla version v1.0.2, Dist::Zilla version 4.300034, CPAN::Meta::Converter version 2.130880",
+   "generated_by" : "Dist::Milla version v1.0.2, Dist::Zilla version 4.300034, CPAN::Meta::Converter version 2.131490",
    "license" : [
       "perl_5"
    ],
@@ -83,7 +83,7 @@
          }
       }
    },
-   "release_status" : "testing",
+   "release_status" : "stable",
    "resources" : {
       "bugtracker" : {
          "web" : "https://github.com/miyagawa/cpanminus/issues"
@@ -95,16 +95,18 @@
          "web" : "https://github.com/miyagawa/cpanminus"
       }
    },
-   "version" : "1.6906",
+   "version" : "1.6916",
    "x_contributors" : [
       "Alessandro Ghedini <al3xbio@gmail.com>",
       "Andrew Rodland <andrew@cleverdomain.org>",
       "Ash Berlin <ash_github@firemirror.com>",
       "Ben Bullock <benkasminbullock@gmail.com>",
+      "Breno G. de Oliveira <garu@cpan.org>",
       "Christian Walde <walde.christian@googlemail.com>",
       "Dagfinn Ilmari Manns\u00e5ker <ilmari@ilmari.org>",
       "Dave Goodell <davidjgoodell@gmail.com>",
       "Dave Rolsky <autarch@urth.org>",
+      "David Steinbrunner <dsteinbrunner@pobox.com>",
       "Fuji, Goro <g.psy.va@gmail.com>",
       "Ingy dot Net <ingy@ingy.net>",
       "J. Nick Koston <nick@cpanel.net>",

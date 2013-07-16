@@ -2,6 +2,54 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6916  2013-06-04 19:54:36 JST
+   [Improvements]
+      - Do not complain upgrading cpanm in local::lib
+      - Accept 0-9_ in PAUSE ID (#265)
+
+1.6915  2013-05-15 19:00:56 PDT
+   [Improvements]
+      - Skip LWP when HTTPS mirror is specified and SSL driver is not installed (thaljef) #258
+      - Fatpack Exporter to fix bootstrapping problems with perl 5.8.1/5.8.2 (tokuhirom)
+
+1.6914  2013-05-12 16:02:28 PDT
+   [Incompatible Changes]
+      - When you have a 1.01 of module X and CPAN mirror has 1.00, `cpanm X` would not
+        overwrite with 1.00, unless you specify `--reinstall`. `cpanm X@1.00` will
+        continue installing the version (and ranges) you specify. #257
+
+1.6913  2013-05-09 17:02:43 PDT
+   [Improvements]
+      - Fix download URL for 2-letter PAUSE-ID #255
+      - Documentation fixes
+
+1.6912  2013-05-06 13:58:33 PDT
+   [Bug Fixes]
+      - `curl -L cpanmin.us | perl - --self-upgrade` should not complain about '-' not in the
+        install path (Thanks to jdb)
+
+1.6911  2013-05-04 13:26:17 PDT
+   [Incompatible Changes]
+      - Turn off automatic installation of recommendations by default, for now
+
+1.6910  2013-05-03 00:29:22 PDT
+   [Bug Fixes]
+      - Do not output the "up to date" message when the requested version is higher than
+        what's on mirror index #246
+
+1.6909  2013-04-29 01:49:04 PDT
+   [Improvements]
+      - Fixed error messages and tests for #237
+
+1.6908  2013-04-26 18:11:38 PDT
+   [Improvements]
+      - Stop counting failures upon installing dependencies, rather check if dependencies
+        are satisfied once it's done. #237
+
+1.6907  2013-04-26 11:39:00 PDT
+   [Maintenance]
+      - Make this a non-dev release
+
 1.6906  2013-04-24 23:18:54 PDT
    [Improvements]
       - Fixed messaging so that downgrading says downgrades (@tsibley) #240

@@ -1,0 +1,69 @@
+{
+   "abstract" : "Store multiple values per key",
+   "author" : [
+      "Tatsuhiko Miyagawa <miyagawa@bulknews.net>"
+   ],
+   "dynamic_config" : 0,
+   "generated_by" : "Dist::Milla version v1.0.2, Dist::Zilla version 4.300034, CPAN::Meta::Converter version 2.130880",
+   "license" : [
+      "perl_5"
+   ],
+   "meta-spec" : {
+      "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
+      "version" : "2"
+   },
+   "name" : "Hash-MultiValue",
+   "no_index" : {
+      "directory" : [
+         "t",
+         "xt",
+         "inc",
+         "share",
+         "eg",
+         "examples"
+      ]
+   },
+   "prereqs" : {
+      "configure" : {
+         "requires" : {
+            "Module::Build::Tiny" : "0.019"
+         }
+      },
+      "develop" : {
+         "requires" : {
+            "Test::Pod" : "1.41"
+         }
+      },
+      "runtime" : {
+         "requires" : {
+            "perl" : "5.008001"
+         }
+      },
+      "test" : {
+         "requires" : {
+            "Test::More" : "0"
+         }
+      }
+   },
+   "release_status" : "stable",
+   "resources" : {
+      "bugtracker" : {
+         "web" : "https://github.com/miyagawa/Hash-MultiValue/issues"
+      },
+      "homepage" : "https://github.com/miyagawa/Hash-MultiValue",
+      "repository" : {
+         "type" : "git",
+         "url" : "https://github.com/miyagawa/Hash-MultiValue.git",
+         "web" : "https://github.com/miyagawa/Hash-MultiValue"
+      }
+   },
+   "version" : "1.200",
+   "x_contributors" : [
+      "Aristotle Pagaltzis <pagaltzis@gmx.de>",
+      "Hans Dieter Pearcey <hdp@weftsoar.net>",
+      "Peter Rabbitson <ribasushi@cpan.org>",
+      "Tatsuhiko Miyagawa <miyagawa@gmail.com>",
+      "chansen <chansen@cpan.org>"
+   ]
+}
+

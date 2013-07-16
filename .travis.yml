@@ -1,5 +1,6 @@
 language: perl
 perl:
+  - 5.17
   - 5.16
   - 5.14
   - 5.12
@@ -9,4 +10,4 @@ before_install:
 install:
   - (mymeta-requires --develop | cpanm -nq) || cat ~/.cpanm/build.log
 script:
-  - prove -lr xt -j8
+  - prove -lr xt

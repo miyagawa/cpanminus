@@ -1,5 +1,3 @@
-# encoding utf-8
-
 # NAME
 
 App::cpanminus - get, unpack, build and install modules from CPAN
@@ -69,7 +67,7 @@ upgrade because `--self-upgrade` might not work for this.
 
 perl 5.8 or later.
 
-- 'tar' executable (bsdtar or GNU tar version 1.22 are rcommended) or Archive::Tar to unpack files.
+- 'tar' executable (bsdtar or GNU tar version 1.22 are recommended) or Archive::Tar to unpack files.
 - C compiler, if you want to build XS modules.
 - make
 - Module::Build (core in 5.10)
@@ -150,11 +148,9 @@ right?
 If you need these features, use [CPAN](http://search.cpan.org/perldoc?CPAN), [CPANPLUS](http://search.cpan.org/perldoc?CPANPLUS) or the standalone
 tools that are mentioned.
 
-- Bundle:: module dependencies
 - CPAN testers reporting
 - Building RPM packages from CPAN modules
 - Listing the outdated modules that needs upgrading. See [App::cpanoutdated](http://search.cpan.org/perldoc?App::cpanoutdated)
-- Uninstalling modules. See [pm-uninstall](http://search.cpan.org/perldoc?pm-uninstall).
 - Showing the changes of the modules you're about to upgrade. See [cpan-listchanges](http://search.cpan.org/perldoc?cpan-listchanges)
 - Patching CPAN modules with distroprefs.
 

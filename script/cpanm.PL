@@ -4,7 +4,7 @@
 # install itself for you. You might want to run it as a root with sudo
 # if you want to install to places like /usr/local/bin.
 #
-#   % curl -L http://cpanmin.us | perl - --self-upgrade
+#   % curl -L http://cpanmin.us | perl - App::cpanminus
 #
 # If you don't have curl but wget, replace `curl -L` with `wget -O -`.
 #
@@ -230,8 +230,7 @@ scheme), it is considered as a file scheme as well.
   cpanm --mirror file:///path/to/mirror
   cpanm --mirror ~/minicpan      # Because shell expands ~ to /home/user
 
-Defaults to C<http://search.cpan.org/CPAN> which is a geo location
-aware redirector.
+Defaults to C<http://www.cpan.org/>.
 
 =item --mirror-only
 

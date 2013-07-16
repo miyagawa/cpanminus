@@ -1,7 +1,7 @@
 package App::cpanminus;
-our $VERSION = "1.6906";
+our $VERSION = "1.6916";
 
-=head1 encoding utf-8
+=encoding utf8
 
 =head1 NAME
 
@@ -76,7 +76,7 @@ perl 5.8 or later.
 
 =item *
 
-'tar' executable (bsdtar or GNU tar version 1.22 are rcommended) or Archive::Tar to unpack files.
+'tar' executable (bsdtar or GNU tar version 1.22 are recommended) or Archive::Tar to unpack files.
 
 =item *
 
@@ -184,10 +184,6 @@ tools that are mentioned.
 
 =item *
 
-Bundle:: module dependencies
-
-=item *
-
 CPAN testers reporting
 
 =item *
@@ -197,10 +193,6 @@ Building RPM packages from CPAN modules
 =item *
 
 Listing the outdated modules that needs upgrading. See L<App::cpanoutdated>
-
-=item *
-
-Uninstalling modules. See L<pm-uninstall>.
 
 =item *
 
