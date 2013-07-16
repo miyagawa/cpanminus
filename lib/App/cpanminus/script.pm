@@ -542,11 +542,7 @@ sub maturity_filter {
 }
 
 sub by_stability {
-    my %s = (
-        latest  => 3,
-        cpan    => 2,
-        backpan => 1,
-    );
+    my %s = qw( latest 3  cpan 2  backpan 1 );
     $b->{_score} <=> $a->{_score} ||                             # version: higher version that satisfies the query
     $s{ $b->{fields}{status} } <=> $s{ $a->{fields}{status} } || # prefer non-BackPAN dist
     $a->{fields}{date} cmp $b->{fields}{date};                   # first one wins, if all are in BackPAN/CPAN
