@@ -48,12 +48,12 @@ L<local::lib>), so you probably need the C<--sudo> option.
 
 If you have perl in your home directory, which is the case if you use
 tools like L<perlbrew>, you don't need the C<--sudo> option, since
-you're most likely to have a write permission to the perl's library
+you're most likely to have write permission to perl's library
 path. You can just do:
 
     curl -L http://cpanmin.us | perl - App::cpanminus
 
-to install the C<cpanm> executable to the perl's bin path, like
+To install the C<cpanm> executable to the perl's bin path, like
 C<~/perl5/perlbrew/bin/cpanm>.
 
 =head2 Downloading the standalone executable
@@ -65,7 +65,7 @@ You can also copy the standalone executable to whatever location you'd like.
     chmod +x cpanm
     # edit shebang if you don't have /usr/bin/env
 
-This just works, but be sure to grab the new version manually when you
+This just works. But be sure to grab the new version manually when you
 upgrade because C<--self-upgrade> might not work for this.
 
 =head1 DEPENDENCIES
@@ -76,7 +76,7 @@ perl 5.8 or later.
 
 =item *
 
-'tar' executable (bsdtar or GNU tar version 1.22 are recommended) or Archive::Tar to unpack files.
+C<tar> executable (bsdtar or GNU tar version 1.22 are recommended) or C<Archive::Tar> to unpack files.
 
 =item *
 
@@ -84,11 +84,11 @@ C compiler, if you want to build XS modules.
 
 =item *
 
-make
+C<make>
 
 =item *
 
-Module::Build (core in 5.10)
+C<Module::Build> (core in 5.10)
 
 =back
 
@@ -96,22 +96,23 @@ Module::Build (core in 5.10)
 
 =head2 Another CPAN installer?
 
-OK, the first motivation was this: the CPAN shell runs out of memory (or swaps
+Yep. The first motivation was this: the CPAN shell runs out of memory (or swaps
 heavily and gets really slow) on Slicehost/linode's most affordable plan with
-only 256MB RAM. Should I pay more to install perl modules from CPAN? I don't
-think so.
+only 256MB RAM. 
+
+Should I pay more to install perl modules from CPAN? I don't think so.
 
 =head2 But why a new client?
 
-First of all, let me be clear that CPAN and CPANPLUS are great tools
-I've used for I<literally> years (you know how many modules I have on
-CPAN, right?). I really respect their efforts of maintaining the most
+First of all, let me be clear that CPAN and CPANPLUS are great tools.
+I've used them for literally I<years>. (You know how many modules I have on
+CPAN, right?) I really respect their efforts of maintaining the most
 important tools in the CPAN toolchain ecosystem.
 
-However, for less experienced users (mostly from outside the Perl community),
+However, for less experienced users--mostly from outside the Perl community,
 or even really experienced Perl developers who know how to shoot themselves in
-their feet, setting up the CPAN toolchain often feels like yak shaving,
-especially when all they want to do is just install some modules and start
+their feet--setting up the CPAN toolchain often feels like shaving a yak...
+especially when all they want is simply to install some modules and start
 writing code.
 
 =head2 Zero-conf? How does this module get/parse/update the CPAN index?
@@ -121,42 +122,44 @@ The site is updated at least every hour to reflect the latest changes
 from fast syncing mirrors. The script then also falls back to query the
 module at L<http://metacpan.org/> using its wonderful API.
 
-Upon calling these API hosts, cpanm (1.6004 or later) will send the
-local perl versions to the server in User-Agent string by default. You
-can turn it off with C<--no-report-perl-version> option. Read more
-about the option with L<cpanm>, and read more about the privacy policy
-about this data collection at L<http://cpanmetadb.plackperl.org/#privacy>
+Upon calling these API hosts, C<cpanm> (1.6004 or later) will send the
+local perl versions to the server in C<User-Agent> string by default. You
+can turn it off with C<--no-report-perl-version> option. 
+
+Read more about the option with L<cpanm>, and read more about the privacy policy
+about this data collection at L<http://cpanmetadb.plackperl.org/#privacy>.
 
 Fetched files are unpacked in C<~/.cpanm> and automatically cleaned up
 periodically.  You can configure the location of this with the
 C<PERL_CPANM_HOME> environment variable.
 
-=head2 Where does this install modules to? Do I need root access?
+=head2 Where does this install modules to? Do I need C<root> access?
 
-It installs to wherever ExtUtils::MakeMaker and Module::Build are
-configured to (via C<PERL_MM_OPT> and C<PERL_MB_OPT>). So if you're
-using local::lib, then it installs to your local perl5
-directory. Otherwise it installs to the site_perl directory that
-belongs to your perl.
+It installs to wherever C<ExtUtils::MakeMaker> and C<Module::Build> are
+configured to (via C<PERL_MM_OPT> and C<PERL_MB_OPT>). So, if you're
+using C<local::lib>, it installs to your local perl5
+directory. Otherwise, it installs to your perl's C<site_perl> directory.
 
-cpanminus at a boot time checks whether you have configured
-local::lib, or have the permission to install modules to the site_perl
-directory.  If neither, it automatically sets up local::lib compatible
+At boot time, cpanminus checks whether you've configured
+C<local::lib>, or have permission to install modules to the C<site_perl>
+directory.  If neither, it automatically sets up C<local::lib> compatible
 installation path in a C<perl5> directory under your home
-directory. To avoid this, run the script as the root user, with
-C<--sudo> option or with C<--local-lib> option.
+directory. 
+
+To avoid this, run the script as the C<root> user, with
+either the C<--sudo> option or the C<--local-lib> option.
 
 =head2 cpanminus can't install the module XYZ. Is it a bug?
 
-It is more likely a problem with the distribution itself. cpanminus
-doesn't support or is known to have issues with distributions like as
+It's more likely a problem with the distribution itself. cpanminus
+doesn't support (or is known to have issues with) distributions as
 follows:
 
 =over 4
 
 =item *
 
-Tests that require input from STDIN.
+Tests that require input from C<STDIN>.
 
 =item *
 
@@ -164,7 +167,7 @@ Tests that might fail when C<AUTOMATED_TESTING> is enabled.
 
 =item *
 
-Modules that have invalid numeric values as VERSION (such as C<1.1a>)
+Modules that have invalid numeric values as C<VERSION> (such as C<1.1a>)
 
 =back
 
@@ -173,12 +176,12 @@ that they can fix it accordingly, rather than me.
 
 =head2 Does cpanm support the feature XYZ of L<CPAN> and L<CPANPLUS>?
 
-Most likely not. Here are the things that cpanm doesn't do by
-itself. And it's a feature - you got that from the name I<minus>,
-right?
+Probably not. Here are the things that cpanm doesn't do by
+itself. And it's a feature. (You got that from the name I<minus>,
+right?)
 
-If you need these features, use L<CPAN>, L<CPANPLUS> or the standalone
-tools that are mentioned.
+If you need these features, use L<CPAN>, L<CPANPLUS>, or the standalone
+tools mentioned.
 
 =over 4
 
@@ -192,15 +195,15 @@ Building RPM packages from CPAN modules
 
 =item *
 
-Listing the outdated modules that needs upgrading. See L<App::cpanoutdated>
+Listing outdated modules that needs upgrading (See L<App::cpanoutdated>)
 
 =item *
 
-Showing the changes of the modules you're about to upgrade. See L<cpan-listchanges>
+Listing which modules will change before an upgrade (See L<cpan-listchanges>)
 
 =item *
 
-Patching CPAN modules with distroprefs.
+Patching CPAN modules with C<distroprefs>
 
 =back
 
