@@ -1970,6 +1970,9 @@ sub install_deps {
     $self->chdir($self->{base});
     $self->chdir($dir) if $dir;
 
+    if ($self->{scandeps}) {
+        return 1; # Don't check if dependencies are installed, since with --scandeps they aren't
+    }
     my @not_ok = $self->unsatisfied_deps(@deps);
     if (@not_ok) {
         return 0, \@not_ok;
