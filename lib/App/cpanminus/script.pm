@@ -147,7 +147,7 @@ sub parse_options {
     my $self = shift;
 
     local @ARGV = @{$self->{argv}};
-    push @ARGV, split /\s+/, $self->env('OPT');
+    push @ARGV, grep length, split /\s+/, $self->env('OPT');
     push @ARGV, @_;
 
     Getopt::Long::Configure("bundling");
