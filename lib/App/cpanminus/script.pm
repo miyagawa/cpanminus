@@ -294,7 +294,30 @@ sub parse_module_args {
     }
 }
 
+sub _exit {
+    my($self, $code) = @_;
+    die App::cpanminus::CommandExit->new($code);
+}
+
 sub doit {
+    my $self = shift;
+
+    my $code;
+    eval {
+        $code = ($self->_doit == 0);
+    }; if (my $e = $@) {
+        if (ref $e eq 'App::cpanminus::CommandExit') {
+            $code = $e->code;
+        } else {
+            warn $e;
+            $code = 1;
+        }
+    }
+
+    return $code;
+}
+
+sub _doit {
     my $self = shift;
 
     $self->setup_home;
@@ -763,11 +786,12 @@ sub show_help {
     my $self = shift;
 
     if ($_[0]) {
-        die <<USAGE;
+        print <<USAGE;
 Usage: cpanm [options] Module [...]
 
 Try `cpanm --help` or `man cpanm` for more options.
 USAGE
+        $self->_exit(1);
     }
 
     print <<HELP;
@@ -1006,7 +1030,7 @@ sub diag_fail {
     }
 
     if ($msg) {
-        $self->_diag("! $msg\n", $always);
+        $self->_diag("! $msg\n", $always, 1);
         $self->log("-> FAIL $msg\n");
     }
 }
@@ -1020,8 +1044,9 @@ sub diag_progress {
 }
 
 sub _diag {
-    my($self, $msg, $always) = @_;
-    print STDERR $msg if $always or $self->{verbose} or !$self->{quiet};
+    my($self, $msg, $always, $error) = @_;
+    my $fh = $error ? *STDERR : *STDOUT;
+    print {$fh} $msg if $always or $self->{verbose} or !$self->{quiet};
 }
 
 sub diag {
@@ -2951,5 +2976,12 @@ sub parse_meta_string {
     my($self, $yaml) = @_;
     return eval { Parse::CPAN::Meta->load_yaml_string($yaml) };
 }
+
+package App::cpanminus::CommandExit;
+sub new {
+    bless { code => $_[1] }, $_[0];
+}
+
+sub code { $_[0]->{code} }
 
 1;
