@@ -346,8 +346,8 @@ argument, not dependencies.
 
 =item --scandeps
 
-Scans the depencencies of given modules and output the tree in a text
-format. (See C<--format> below for more options)
+B<DEPRECATED>: Scans the depencencies of given modules and output the
+tree in a text format. (See C<--format> below for more options)
 
 Because this command doesn't actually install any distributions, it
 will be useful that by typing:
@@ -363,8 +363,9 @@ combine it with C<-L> option.
 
 =item --format
 
-Determines what format to display the scanned dependency
-tree. Available options are C<tree>, C<json>, C<yaml> and C<dists>.
+B<DEPRECATED>: Determines what format to display the scanned
+dependency tree. Available options are C<tree>, C<json>, C<yaml> and
+C<dists>.
 
 =over 8
 
