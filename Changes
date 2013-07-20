@@ -2,6 +2,18 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6925  2013-07-19 22:07:21 PDT
+   [Bug Fixes]
+      - Ignore leading/trailing spaces in PERL_CPANM_OPT #288 (ribasushi)
+      - Stop checking dependencies with --scandeps mode #286 (tazle)
+
+   [Improvements]
+      - Mask passwords in URI when printing them in terminal and log files #281 (xdg, thaljef)
+      - Added link to App::cpanminus::reporter #284 (garu)
+
+   [New Features]
+      - Added experimental --cpanmetadb option #279 (xdg)
+
 1.6924  2013-07-16 11:36:56 PDT
    [Bug Fixes]
       - Sort MetaCPAN API results based on date (older one wins) to work around the issue

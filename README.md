@@ -148,7 +148,7 @@ right?
 If you need these features, use [CPAN](http://search.cpan.org/perldoc?CPAN), [CPANPLUS](http://search.cpan.org/perldoc?CPANPLUS) or the standalone
 tools that are mentioned.
 
-- CPAN testers reporting
+- CPAN testers reporting. See [App::cpanminus::reporter](http://search.cpan.org/perldoc?App::cpanminus::reporter)
 - Building RPM packages from CPAN modules
 - Listing the outdated modules that needs upgrading. See [App::cpanoutdated](http://search.cpan.org/perldoc?App::cpanoutdated)
 - Showing the changes of the modules you're about to upgrade. See [cpan-listchanges](http://search.cpan.org/perldoc?cpan-listchanges)
