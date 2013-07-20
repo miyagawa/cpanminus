@@ -184,7 +184,7 @@ tools that are mentioned.
 
 =item *
 
-CPAN testers reporting
+CPAN testers reporting. See L<App::cpanminus::reporter>
 
 =item *
 
