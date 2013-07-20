@@ -20,7 +20,7 @@ use App::cpanminus::script;
 unless (caller) {
     my $app = App::cpanminus::script->new;
     $app->parse_options(@ARGV);
-    $app->doit or exit(1);
+    exit $app->doit;
 }
 
 __END__

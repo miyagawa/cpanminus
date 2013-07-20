@@ -30,11 +30,11 @@ for my $test_case (@test_cases) {
         like last_build_log, qr{http:// .* cpan\.perl\.org}x, 'Mirror URL does appear in build log';
         unlike last_build_log, $password_rx, 'Password does not appear in the build log';
 
-        like $err, qr{http:// .* cpan\.perl\.org}x, 'Mirror URL does appear on STDERR';
-        unlike $err, $password_rx, 'Password does not appear on STDIN';
+        like $out, qr{http:// .* cpan\.perl\.org}x, 'Mirror URL does appear on STDERR';
+        unlike $out, $password_rx, 'Password does not appear on STDERR';
 
-        # The mirror URL usually never appears on STDOUT anyway
-        unlike $out, $password_rx, 'Password does not appear on STDOUT';
+        # The mirror URL usually never appears on STDERR anyway
+        unlike $err, $password_rx, 'Password does not appear on STDOUT';
     };
 }
 
