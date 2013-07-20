@@ -247,6 +247,10 @@ shell aliases, like:
 B<EXPERIMENTAL>: Specifies the file path to C<02packages.details.txt>
 for module search index.
 
+=item --cpanmetadb
+
+B<EXPERIMENTAL>: Specifies an alternate URI for CPAN MetaDB index lookups.
+
 =item --prompt
 
 Prompts when a test fails so that you can skip, force install, retry
