@@ -2,6 +2,11 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6928  2013-07-23 14:10:20 PDT
+   [New Features]
+      - Installs cpanm executable to share dir for App-cpanminus, so that other applications
+        can run the specific version of cpanm without relying on user's $PATH or shebang
+
 1.6927  2013-07-23 00:44:53 PDT
    [New Features]
       - Add experimental --cpanfile option to specify alternate cpanfile location

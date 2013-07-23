@@ -47,7 +47,6 @@
             "CPAN::Meta::YAML" : "0",
             "Capture::Tiny" : "0",
             "Digest::SHA" : "0",
-            "Dist::Milla" : "v1.0.3",
             "Exporter" : "5.63",
             "File::Temp" : "0",
             "File::pushd" : "0",
@@ -99,7 +98,7 @@
          "web" : "https://github.com/miyagawa/cpanminus"
       }
    },
-   "version" : "1.6927",
+   "version" : "1.6928",
    "x_contributors" : [
       "Alessandro Ghedini <al3xbio@gmail.com>",
       "Andrew Rodland <andrew@cleverdomain.org>",
