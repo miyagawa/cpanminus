@@ -6,8 +6,9 @@ blib
 *~
 !.gitignore
 !.gitkeep
+!/inc/
 bin/cpanm
 share/cpanm
+inc/File/ShareDir/Install.pm
 /App-cpanminus-*
 /.build
-!/inc
