@@ -6,18 +6,23 @@ use warnings;
 
 use ExtUtils::MakeMaker 6.30;
 
-# perl Makefile.PL (from git repo) copies 'cpanm' -> 'bin/cpanm'
+# perl Makefile.PL (from git repo) copies 'cpanm' -> '{bin,share}/cpanm'
 if (-e 'cpanm') {
-    print STDERR "Generating bin/cpanm from cpanm\n";
-    open my $in,  "<cpanm"     or die $!;
-    open my $out, ">bin/cpanm" or die $!;
-    while (<$in>) {
-        s|^#!/usr/bin/env perl|#!perl|; # so MakeMaker can fix it
-        print $out $_;
+    for my $dir ("bin", "share") {
+        print STDERR "Generating $dir/cpanm from cpanm\n";
+        open my $in,  "<cpanm"     or die $!;
+        open my $out, ">$dir/cpanm" or die $!;
+        while (<$in>) {
+            s|^#!/usr/bin/env perl|#!perl|; # so MakeMaker can fix it
+            print $out $_;
+        }
     }
 }
 
 
+use lib 'inc';
+use File::ShareDir::Install;
+install_share dist => "share";
 
 
 my %WriteMakefileArgs = (
@@ -79,5 +84,10 @@ delete $WriteMakefileArgs{CONFIGURE_REQUIRES}
 
 WriteMakefile(%WriteMakefileArgs);
 
+{
+package
+MY;
+use File::ShareDir::Install qw(postamble);
+}
 
 
