@@ -2,6 +2,10 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6927  2013-07-23 00:44:53 PDT
+   [New Features]
+      - Add experimental --cpanfile option to specify alternate cpanfile location
+
 1.6926  2013-07-20 09:02:39 PDT
    [Incompatible Changes]
       - Log messages are printed to STDOUT rather than STDERR, except errors.
