@@ -10,3 +10,4 @@ bin/cpanm
 share/cpanm
 /App-cpanminus-*
 /.build
+!/inc
