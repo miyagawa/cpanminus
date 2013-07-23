@@ -107,6 +107,7 @@ sub new {
         build_args => {},
         features => {},
         pure_perl => 0,
+        cpanfile_path => 'cpanfile',
         @_,
     }, $class;
 }
@@ -211,6 +212,7 @@ sub parse_options {
         'without-feature=s' => sub { $self->{features}{$_[1]} = 0 },
         'with-all-features' => sub { $self->{features}{__all} = 1 },
         'pp|pureperl!' => \$self->{pure_perl},
+        "cpanfile=s" => \$self->{cpanfile_path},
         $self->install_type_handlers,
         $self->build_args_handlers,
     );
@@ -2220,9 +2222,9 @@ sub perl_requirements {
 sub configure_this {
     my($self, $dist, $depth) = @_;
 
-    if (-e 'cpanfile' && $self->{installdeps} && $depth == 0) {
+    if (-e $self->{cpanfile_path} && $self->{installdeps} && $depth == 0) {
         require Module::CPANfile;
-        $dist->{cpanfile} = eval { Module::CPANfile->load('cpanfile') };
+        $dist->{cpanfile} = eval { Module::CPANfile->load($self->{cpanfile_path}) };
         $self->diag_fail($@, 1) if $@;
         return {
             configured       => 1,

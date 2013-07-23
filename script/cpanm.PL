@@ -251,6 +251,11 @@ for module search index.
 
 B<EXPERIMENTAL>: Specifies an alternate URI for CPAN MetaDB index lookups.
 
+=item --cpanfile
+
+B<EXPERIMENTAL>: Specified an alternate path for cpanfile to search for,
+when C<--installdeps> command is in use. Defaults to C<cpanfile>.
+
 =item --prompt
 
 Prompts when a test fails so that you can skip, force install, retry
