@@ -2080,6 +2080,8 @@ sub build_stuff {
         );
     }
 
+    $dist->{provides} = $self->extract_packages($dist->{meta}, ".");
+
     # workaround for bad M::B based dists with no configure_requires
     # https://github.com/miyagawa/cpanminus/issues/273
     if (-e 'Build.PL') {
@@ -2321,6 +2323,41 @@ sub find_module_name {
     return;
 }
 
+sub extract_packages {
+    my($self, $meta, $dir) = @_;
+
+    my $try = sub {
+        my $file = shift;
+        return 1 unless $meta->{no_index};
+        return 0 if grep { $file =~ m!^$_/! } @{$meta->{no_index}{directory} || []};
+        return 0 if grep { $file eq $_ } @{$meta->{no_index}{file} || []};
+        return 1;
+    };
+
+    require File::Find;
+    require Parse::PMFile;
+
+    my @files;
+    my $wanted = sub { s/^\Q$dir\E\///; push @files, $_ if /\.pm/ && $try->($_) };
+    File::Find::find({ wanted => $wanted, no_chdir => 1 }, $dir);
+
+    my $provides = {};
+
+    for my $file (@files) {
+        my $parser = Parse::PMFile->new($meta);
+        my $packages = $parser->parse($file);
+
+        while (my($package, $meta) = each %$packages) {
+            $provides->{$package} = {
+                file => $meta->{infile},
+                ($meta->{version} eq 'undef') ? () : (version => $meta->{version}),
+            };
+        }
+    }
+
+    return $provides;
+}
+
 sub save_meta {
     my($self, $module, $dist, $module_name, $config_deps, $build_deps) = @_;
 
@@ -2329,12 +2366,7 @@ sub save_meta {
     my $base = ($ENV{PERL_MM_OPT} || '') =~ /INSTALL_BASE=/
         ? ($self->install_base($ENV{PERL_MM_OPT}) . "/lib/perl5") : $Config{sitelibexp};
 
-    # FIXME this might raise exceptions
-    require Module::Metadata;
-    my $provides = $self->_merge_hashref(
-        map Module::Metadata->package_versions_from_directory($_),
-            qw( blib/lib blib/arch ) # FCGI.pm :(
-    );
+    my $provides = $dist->{provides};
 
     File::Path::mkpath("blib/meta", 0, 0777);
 
