@@ -21,6 +21,9 @@
          "share",
          "eg",
          "examples"
+      ],
+      "file" : [
+         "lib/App/cpanminus/fatscript.pm"
       ]
    },
    "prereqs" : {
