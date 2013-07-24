@@ -2335,7 +2335,7 @@ sub extract_packages {
     };
 
     require File::Find;
-    require Parse::PMFile;
+    require App::cpanminus::ParsePM;
 
     my @files;
     my $wanted = sub { s/^\Q$dir\E\///; push @files, $_ if /\.pm/ && $try->($_) };
@@ -2344,7 +2344,7 @@ sub extract_packages {
     my $provides = {};
 
     for my $file (@files) {
-        my $parser = Parse::PMFile->new($meta);
+        my $parser = App::cpanminus::ParsePM->new($meta);
         my $packages = $parser->parse($file);
 
         while (my($package, $meta) = each %$packages) {
