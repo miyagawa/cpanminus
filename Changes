@@ -2,6 +2,10 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6932  2013-07-24 15:28:05 PDT
+   [Bug Fixes]
+      - Stop scanning .pm files for root installdeps target (e.g. carton apps)
+
 1.6931  2013-07-24 14:50:59 PDT
    [Bug Fixes]
       - Use (patched) Parse::PMFile to parse packages and versions from current directory
