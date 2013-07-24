@@ -29,6 +29,7 @@ on develop => sub {
     requires 'Module::CoreList';
     requires 'Module::Metadata';
     requires 'Parse::CPAN::Meta';
+    requires 'Parse::PMFile';
     requires 'String::ShellQuote';
     requires 'YAML';
     requires 'YAML::Tiny';
