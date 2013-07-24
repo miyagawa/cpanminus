@@ -9,15 +9,16 @@
 # If you don't have curl but wget, replace `curl -L` with `wget -O -`.
 #
 # For more details about this program, visit http://search.cpan.org/dist/App-cpanminus
-#
+
+our $VERSION = "1.6928";
 # DEVELOPERS: Read maint/build.pl in the repo how to update this
 # __FATPACK__
+
 use strict;
 use FindBin qw($Bin);                        # For dev -- Auto-removed
 use lib "$Bin/../lib", "$Bin/../fatlib"; # For dev -- Auto-removed
 use App::cpanminus::script;
 
-our $VERSION = "1.6928";
 
 unless (caller) {
     my $app = App::cpanminus::script->new;
