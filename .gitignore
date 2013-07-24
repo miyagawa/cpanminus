@@ -8,7 +8,6 @@ blib
 !.gitkeep
 !/inc/
 bin/cpanm
-share/cpanm
-inc/File/ShareDir/Install.pm
+fatpacked/App/cpanminus/*.pm
 /App-cpanminus-*
 /.build

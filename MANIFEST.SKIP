@@ -1,6 +1,6 @@
 \.git-placeholder
 dist\.ini
-lib/App/cpanminus/.*\.pm
+lib/App/cpanminus/(?!fatscript)
 ^fatlib/
 ^plugins/
 ^script/
