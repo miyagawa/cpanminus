@@ -14,17 +14,39 @@ use File::Find;
 
 =cut
 
+sub generate_file {
+    my($base, $target, $fatpack, $shebang_replace) = @_;
+
+    open my $in,  "<", $base or die $!;
+    open my $out, ">", "$target.tmp" or die $!;
+
+    print STDERR "Generating $target from $base\n";
+
+    while (<$in>) {
+        next if /Auto-removed/;
+        s|^#!/usr/bin/env perl|$shebang_replace| if $shebang_replace;
+        s/DEVELOPERS:.*/DO NOT EDIT -- this is an auto generated file/;
+        s/.*__FATPACK__/$fatpack/;
+        print $out $_;
+    }
+
+    close $out;
+
+    unlink $target;
+    rename "$target.tmp", $target;
+}
+
+my $fatpack = `fatpack file`;
+
 mkdir ".build", 0777;
 system qw(cp -r fatlib lib .build/);
 
-my $fatpack = do {
+my $fatpack_compact = do {
     my $dir = pushd '.build';
 
     my @files;
     my $want = sub {
-        if (/\.pm$/) {
-            push @files, $_;
-        }
+        push @files, $_ if /\.pm$/;
     };
 
     find({ wanted => $want, no_chdir => 1 }, "fatlib", "lib");
@@ -33,25 +55,11 @@ my $fatpack = do {
     `fatpack file`;
 };
 
-open my $in,  "<", "script/cpanm.PL" or die $!;
-open my $out, ">", "cpanm.tmp" or die $!;
-
-print STDERR "Generating cpanm from script/cpanm.PL\n";
-
-while (<$in>) {
-    next if /Auto-removed/;
-    s/DEVELOPERS:.*/DO NOT EDIT -- this is an auto generated file/;
-    s/.*__FATPACK__/$fatpack/;
-    print $out $_;
-}
-
-close $out;
-
-unlink "cpanm";
-rename "cpanm.tmp", "cpanm";
+generate_file('script/cpanm.PL', "cpanm", $fatpack_compact);
+generate_file('script/cpanm.PL', "fatpacked/App/cpanminus/fatscript.pm", $fatpack, 'package App::cpanminus::fatscript;');
 chmod 0755, "cpanm";
 
 END {
-    unlink "cpanm.tmp";
+    unlink $_ for "cpanm.tmp", "fatpacked/App/cpanminus/fatscript.pm.tmp";
     system "rm", "-r", ".build";
 }
