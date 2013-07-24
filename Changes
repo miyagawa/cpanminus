@@ -2,6 +2,14 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6931  2013-07-24 14:50:59 PDT
+   [Bug Fixes]
+      - Use (patched) Parse::PMFile to parse packages and versions from current directory
+        rather than Module::Metadata from blib.
+      - Fixes a bug where install.json has bogus file path in provides
+      - Honor no_index metadata when scanning provides from .pm files
+      - no_index fatscript.pm since fatpacks bunch of external modules
+
 1.6930  2013-07-24 13:46:10 PDT
    [Bug Fixes]
       - Fixed fatscript.pm being stripped, causing issues with Metadata inspection
