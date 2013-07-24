@@ -2,6 +2,13 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6929  2013-07-24 11:45:48 PDT
+   [New Features]
+      - Include App/cpanminus/fatscript.pm which is exactly the same content as cpanm.
+        This allows both calling .pm as a script or reading the content to call with Scriptlet,
+        which would also make fatpacking cpanm (in another program!) easier.
+      - Removed the Share dir feature added in 1.6928 in favor of fatscript
+
 1.6928  2013-07-23 14:10:20 PDT
    [New Features]
       - Installs cpanm executable to share dir for App-cpanminus, so that other applications
