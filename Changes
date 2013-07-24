@@ -2,6 +2,11 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6930  2013-07-24 13:46:10 PDT
+   [Bug Fixes]
+      - Fixed fatscript.pm being stripped, causing issues with Metadata inspection
+      - Bumped Module::CPANfile
+
 1.6929  2013-07-24 11:45:48 PDT
    [New Features]
       - Include App/cpanminus/fatscript.pm which is exactly the same content as cpanm.
