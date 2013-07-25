@@ -2096,15 +2096,12 @@ sub build_stuff {
     $self->diag_progress("Configuring $target");
 
     my $configure_state = $self->configure_this($dist, $depth);
-
     $self->diag_ok($configure_state->{configured_ok} ? "OK" : "N/A");
 
-    my $root_target = (($self->{installdeps} or $self->{showdeps}) and $depth == 0);
-
-    # Do not scan packages for apps, especially with Carton and local libs in them
-    $dist->{provides} = $self->extract_packages($dist->{meta}, ".") unless $root_target;
+    $dist->{provides} = $self->extract_packages($dist->{meta}, ".") if -e 'MANIFEST';
 
     # install direct 'test' dependencies for --installdeps, even with --notest
+    my $root_target = (($self->{installdeps} or $self->{showdeps}) and $depth == 0);
     $dist->{want_phases} = $self->{notest} && !$root_target
                          ? [qw( build runtime )] : [qw( build test runtime )];
 
