@@ -2,6 +2,13 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6933  2013-07-25 09:57:38 PDT
+   [Bug Fixes]
+      - inline CPAN::Version since it wasn't core on older perls #293
+
+   [Improvements]
+      - Use MANIFEST to find files to scan packages for rather than finding them
+
 1.6932  2013-07-24 15:28:05 PDT
    [Bug Fixes]
       - Stop scanning .pm files for root installdeps target (e.g. carton apps)
