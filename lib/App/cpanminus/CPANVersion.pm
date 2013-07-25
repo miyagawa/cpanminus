@@ -1,4 +1,4 @@
-package App::cpanminus::Version;
+package App::cpanminus::CPANVersion;
 # copy of CPAN::Version since it's not core on older 5.8
 
 use strict;

@@ -11,7 +11,7 @@ use version ();
 use File::Spec ();
 use File::Temp ();
 use POSIX ':sys_wait_h';
-use App::cpanminus::Version;
+use App::cpanminus::CPANVersion;
 
 our $VERSION = '0.04';
 our $VERBOSE = 0;
@@ -479,7 +479,7 @@ sub _normalize_version {
 # from PAUSE::pmfile;
 sub _force_numeric {
     my($self,$v) = @_;
-    $v = App::cpanminus::Version->readable($v);
+    $v = App::cpanminus::CPANVersion->readable($v);
 
     if (
         $v =~
