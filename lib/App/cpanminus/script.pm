@@ -2336,12 +2336,11 @@ sub extract_packages {
         return 1;
     };
 
-    require File::Find;
+    require ExtUtils::Manifest;
     require App::cpanminus::ParsePM;
 
-    my @files;
-    my $wanted = sub { s/^\Q$dir\E\///; push @files, $_ if /\.pm/ && $try->($_) };
-    File::Find::find({ wanted => $wanted, no_chdir => 1 }, $dir);
+    my $manifest = eval { ExtUtils::Manifest::maniread() } || {};
+    my @files = grep { /\.pm$/ && $try->($_) } keys %$manifest;
 
     my $provides = {};
 
