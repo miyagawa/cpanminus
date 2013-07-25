@@ -6,7 +6,6 @@ use warnings;
 use Safe;
 use JSON::PP;
 use Dumpvalue;
-use CPAN::Version;
 use version ();
 use File::Spec ();
 use File::Temp ();
@@ -478,7 +477,9 @@ sub _normalize_version {
 # from PAUSE::pmfile;
 sub _force_numeric {
     my($self,$v) = @_;
-    $v = CPAN::Version->readable($v);
+    if (eval { require CPAN::Version }) {
+        $v = CPAN::Version->readable($v);
+    }
 
     if (
         $v =~
