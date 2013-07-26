@@ -2,6 +2,10 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6934  2013-07-26 16:16:57 PDT
+   [Bug Fixes]
+      - Fix install failure when non-array version of no_index is used in META.yml #294
+
 1.6933  2013-07-25 09:57:38 PDT
    [Bug Fixes]
       - inline CPAN::Version since it wasn't core on older perls #293
