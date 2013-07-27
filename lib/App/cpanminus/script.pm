@@ -2372,7 +2372,8 @@ sub save_meta {
     my $local = {
         name => $module_name,
         target => $module,
-        version => $provides->{$module_name}{version} || $dist->{version},
+        version => exists $provides->{$module_name}
+            ? ($provides->{$module_name}{version} || $dist->{version}) : $dist->{version},
         dist => $dist->{distvname},
         pathname => $dist->{pathname},
         provides => $provides,
