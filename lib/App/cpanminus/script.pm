@@ -1333,7 +1333,8 @@ sub install_module {
 
     my $dist = $self->resolve_name($module, $version);
     unless ($dist) {
-        $self->diag_fail("Couldn't find module or a distribution $module ($version)", 1);
+        my $what = $module . ($version ? " ($version)" : "");
+        $self->diag_fail("Couldn't find module or a distribution $what", 1);
         return;
     }
 
