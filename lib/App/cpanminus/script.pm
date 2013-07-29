@@ -1819,7 +1819,7 @@ sub git_uri {
     $self->run([ 'git', 'clone', $uri, $dir ]);
 
     unless (-e "$dir/.git") {
-        $self->diag_fail("Failed cloning git repository $uri");
+        $self->diag_fail("Failed cloning git repository $uri", 1);
         return;
     }
 
