@@ -2339,7 +2339,7 @@ sub extract_packages {
     require App::cpanminus::ParsePM;
 
     my $manifest = eval { ExtUtils::Manifest::manifind() } || {};
-    my @files = grep { /\.pm$/ && $try->($_) } keys %$manifest;
+    my @files = grep { /\.pm(?:\.PL)?$/ && $try->($_) } keys %$manifest;
 
     my $provides = {};
 
