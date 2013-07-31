@@ -2,6 +2,15 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6935  2013-07-31 11:36:03 PDT
+   [Bug Fixes]
+      - Fix install meta information where it populates empty key for the dist name
+      - Collect packages from .pm.PL like PAUSE (using Parse::PMFile)
+      - Don't display () in error messages when version is not specified
+
+   [Improvements]
+      - Display git cloning errors even under -q
+
 1.6934  2013-07-26 16:16:57 PDT
    [Bug Fixes]
       - Fix install failure when non-array version of no_index is used in META.yml #294
