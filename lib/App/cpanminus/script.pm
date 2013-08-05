@@ -900,7 +900,7 @@ sub bootstrap_local_lib {
 
     $self->setup_local_lib;
 
-    $self->diag(<<DIAG);
+    $self->diag(<<DIAG, 1);
 !
 ! Can't write to $Config{installsitelib} and $Config{installsitebin}: Installing modules to $ENV{HOME}/perl5
 ! To turn off this warning, you have to do one of the following:
@@ -938,6 +938,11 @@ sub _diff {
 
 sub _setup_local_lib_env {
     my($self, $base) = @_;
+
+    $self->diag(<<WARN, 1) if $base =~ /\s/;
+WARNING: Your lib directory name ($base) contains a space in it. It's known to cause issues with perl builder tools such as local::lib and MakeMaker. You're recommended to rename your directory.
+WARN
+
     local $SIG{__WARN__} = sub { }; # catch 'Attempting to write ...'
     local::lib->setup_env_hash_for($base, 0);
 }
