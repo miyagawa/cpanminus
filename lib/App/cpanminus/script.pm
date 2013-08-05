@@ -2058,12 +2058,12 @@ sub build_stuff {
 
     require CPAN::Meta;
 
-    if (!$dist->{meta}) {
+    if ($dist->{meta} && keys %{$dist->{meta}}) {
+        $dist->{cpanmeta} = CPAN::Meta->new($dist->{meta}, { lazy_validation => 1 });
+    } elsif ($dist->{dist} && $dist->{version}) {
         $self->chat("META.yml/json not found or unparsable. Creating skelton for it.\n");
         $dist->{cpanmeta} = CPAN::Meta->new({ name => $dist->{dist}, version => $dist->{version} });
         $dist->{meta} = $dist->{cpanmeta}->as_struct;
-    }  else {
-        $dist->{cpanmeta} = CPAN::Meta->new($dist->{meta}, { lazy_validation => 1 });
     }
 
     my @config_deps;
