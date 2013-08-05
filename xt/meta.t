@@ -40,11 +40,23 @@ my $local_lib = "$ENV{PERL_CPANM_HOME}/perl5";
     ok !exists $data->{provides}{"xt::Utils"};
 }
 
-{
-    run_L 'Text::Xslate@2.0009';
-    my $file = "$local_lib/lib/perl5/$Config{archname}/.meta/Text-Xslate-2.0009/install.json";
+my @modules = (
+    'Text::Xslate', '2.0009',
+    'Algorithm::Diff', '1.1902',
+    'Test::Object', '0.07',
+    'IO::String', '1.08',
+    'Class::Accessor::Chained', '0.01',
+    'Readonly', '1.03',
+);
+
+while (@modules) {
+    my($module, $version) = splice @modules, 0, 2;
+    (my $dist = $module) =~ s/::/-/g;
+    run_L "-n", "$module\@$version";
+    my $file = "$local_lib/lib/perl5/$Config{archname}/.meta/$dist-$version/install.json";
     my $data = load_json $file;
-    is $data->{provides}{"Text::Xslate"}{version}, '2.0009';
+    ok exists $data->{provides}{$module};
+    is $data->{provides}{$module}{version}, $version;
 }
 
 done_testing;
