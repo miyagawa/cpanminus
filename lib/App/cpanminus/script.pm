@@ -2056,16 +2056,13 @@ sub build_stuff {
         $dist->{meta} = $self->parse_meta('META.yml');
     }
 
-    if (!$dist->{meta} && $dist->{source} eq 'cpan') {
+    require CPAN::Meta;
+
+    if (!$dist->{meta}) {
         $self->chat("META.yml/json not found or unparsable. Creating skelton for it.\n");
-        require CPAN::Meta;
-        $dist->{meta} = CPAN::Meta->new({ name => $dist->{dist}, version => $dist->{version} })->as_struct;
-    }
-
-    $dist->{meta} ||= {};
-
-    if ($dist->{meta}{'meta-spec'}) {
-        require CPAN::Meta;
+        $dist->{cpanmeta} = CPAN::Meta->new({ name => $dist->{dist}, version => $dist->{version} });
+        $dist->{meta} = $dist->{cpanmeta}->as_struct;
+    }  else {
         $dist->{cpanmeta} = CPAN::Meta->new($dist->{meta}, { lazy_validation => 1 });
     }
 
