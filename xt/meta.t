@@ -40,5 +40,12 @@ my $local_lib = "$ENV{PERL_CPANM_HOME}/perl5";
     ok !exists $data->{provides}{"xt::Utils"};
 }
 
+{
+    run_L 'Text::Xslate@2.0009';
+    my $file = "$local_lib/lib/perl5/$Config{archname}/.meta/Text-Xslate-2.0009/install.json";
+    my $data = load_json $file;
+    is $data->{provides}{"Text::Xslate"}{version}, '2.0009';
+}
+
 done_testing;
 

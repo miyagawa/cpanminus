@@ -2339,7 +2339,8 @@ sub extract_packages {
     require App::cpanminus::ParsePM;
 
     my $manifest = eval { ExtUtils::Manifest::manifind() } || {};
-    my @files = grep { /\.pm(?:\.PL)?$/ && $try->($_) } keys %$manifest;
+    my @files = grep { /\.pm(?:\.PL)?$/ && $try->($_) }
+        sort { lc $a cmp lc $b } keys %$manifest;
 
     my $provides = {};
 
@@ -2348,7 +2349,7 @@ sub extract_packages {
         my $packages = $parser->parse($file);
 
         while (my($package, $meta) = each %$packages) {
-            $provides->{$package} = {
+            $provides->{$package} ||= {
                 file => $meta->{infile},
                 ($meta->{version} eq 'undef') ? () : (version => $meta->{version}),
             };
