@@ -2,6 +2,11 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6936  2013-08-04 21:37:32 PDT
+   [Bug Fixes]
+      - Create correct install info for dists with ancient META.yml (tokuhirom)
+      - Extract packages based on the sorted filenames order to eliminate randomness
+
 1.6935  2013-07-31 11:36:03 PDT
    [Bug Fixes]
       - Fix install meta information where it populates empty key for the dist name
