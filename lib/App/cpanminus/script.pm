@@ -2048,23 +2048,18 @@ sub build_stuff {
         $self->verify_signature($dist) or return;
     }
 
-    if (-e 'META.json') {
-        $self->chat("Checking configure dependencies from META.json\n");
-        $dist->{meta} = $self->parse_meta('META.json');
-    } elsif (-e 'META.yml') {
-        $self->chat("Checking configure dependencies from META.yml\n");
-        $dist->{meta} = $self->parse_meta('META.yml');
-    }
-
     require CPAN::Meta;
 
-    if ($dist->{meta} && keys %{$dist->{meta}}) {
-        $dist->{cpanmeta} = CPAN::Meta->new($dist->{meta}, { lazy_validation => 1 });
+    my($meta_file) = grep -f, qw(META.json META.yml);
+    if ($meta_file) {
+        $self->chat("Checking configure dependencies from $meta_file\n");
+        $dist->{cpanmeta} = eval { CPAN::Meta->load_file($meta_file) };
     } elsif ($dist->{dist} && $dist->{version}) {
-        $self->chat("META.yml/json not found or unparsable. Creating skelton for it.\n");
+        $self->chat("META.yml/json not found. Creating skelton for it.\n");
         $dist->{cpanmeta} = CPAN::Meta->new({ name => $dist->{dist}, version => $dist->{version} });
-        $dist->{meta} = $dist->{cpanmeta}->as_struct;
     }
+
+    $dist->{meta} = $dist->{cpanmeta} ? $dist->{cpanmeta}->as_struct : {};
 
     my @config_deps;
 
