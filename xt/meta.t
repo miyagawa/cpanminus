@@ -47,6 +47,7 @@ my @modules = (
     'IO::String', '1.08',
     'Class::Accessor::Chained', '0.01',
     'Readonly', '1.03',
+    'CPAN::Test::Dummy::Perl5::VersionDeclare', 'v0.0.1',
 );
 
 while (@modules) {
@@ -56,7 +57,8 @@ while (@modules) {
     my $file = "$local_lib/lib/perl5/$Config{archname}/.meta/$dist-$version/install.json";
     my $data = load_json $file;
     ok exists $data->{provides}{$module};
-    is $data->{provides}{$module}{version}, $version;
+    my $want_ver = $version =~ /^v/ ? version->new($version)->numify : $version;
+    is $data->{provides}{$module}{version}, $want_ver;
 }
 
 done_testing;
