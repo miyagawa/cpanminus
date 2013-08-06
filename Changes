@@ -2,6 +2,10 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6938  2013-08-05 23:11:16 PDT
+   [Bug Fixes]
+      - Fix extracting version from modules with qv(). #299 (lestrrat)
+
 1.6937  2013-08-05 18:54:31 PDT
    [Bug Fixes]
       - Fix a bug where version is not correctly scanned for VERSIONs using version.pm (lestrrat)
