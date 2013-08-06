@@ -2,6 +2,15 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6937  2013-08-05 18:54:31 PDT
+   [Bug Fixes]
+      - Fix a bug where version is not correctly scanned for VERSIONs using version.pm (lestrrat)
+
+   [Improvements]
+      - Gives a warning when local::lib directory contains spaces in its name, since it will
+        likely cause issues with local::lib and MakeMaker #298
+      - Upgrade bundled CPAN::Meta, CPAN::Meta::Check, local::lib and Module::CPANfile
+
 1.6936  2013-08-04 21:37:32 PDT
    [Bug Fixes]
       - Create correct install info for dists with ancient META.yml (tokuhirom)
