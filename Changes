@@ -2,6 +2,10 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6939  2013-08-06 02:55:08 PDT
+   [Bug Fixes]
+      - Fix extracting version from Parse::RecDescent (lestrrat)
+
 1.6938  2013-08-05 23:11:16 PDT
    [Bug Fixes]
       - Fix extracting version from modules with qv(). #299 (lestrrat)
