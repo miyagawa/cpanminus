@@ -3,6 +3,7 @@ use Test::More;
 use JSON;
 use Config;
 use xt::Run;
+use version;
 
 sub load_json {
     open my $in, "<", $_[0] or die "$_[0]: $!";
