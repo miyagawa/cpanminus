@@ -49,6 +49,7 @@ my @modules = (
     'Class::Accessor::Chained', '0.01',
     'Readonly', '1.03',
     'CPAN::Test::Dummy::Perl5::VersionDeclare', 'v0.0.1',
+    'CPAN::Test::Dummy::Perl5::VersionQV', 'v0.1.0',
 );
 
 while (@modules) {

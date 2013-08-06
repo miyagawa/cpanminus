@@ -168,6 +168,7 @@ sub _parse_version {
                 if (ref $err) {
                     if ($err->{line} =~ /[\$*]([\w\:\']*)\bVERSION\b.*?\=(.*)/) {
                         # $v = $comp->reval($2);
+                        local *qv = \&version::qv; # equiv. of $comp->share_from('version', ['&qv']);
                         $v = eval "$2";
                     }
                     if ($@) {
