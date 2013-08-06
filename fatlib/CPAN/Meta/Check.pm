@@ -1,6 +1,6 @@
 package CPAN::Meta::Check;
 {
-  $CPAN::Meta::Check::VERSION = '0.005';
+  $CPAN::Meta::Check::VERSION = '0.007';
 }
 use strict;
 use warnings;
@@ -32,7 +32,7 @@ sub _check_conflict {
 	return if not defined $metadata;
 	my $version = eval { $metadata->version };
 	return "Missing version info for module '$module'" if not $version;
-	return sprintf 'Installed version (%s) of %s is in range \'%s\'', $version, $module, $$reqs->requirements_for_module($module) if $reqs->accepts_module($module, $version);
+	return sprintf 'Installed version (%s) of %s is in range \'%s\'', $version, $module, $reqs->requirements_for_module($module) if $reqs->accepts_module($module, $version);
 	return;
 }
 
@@ -75,11 +75,12 @@ sub verify_dependencies {
 	return grep { defined } values %{ $issues };
 }
 
+# vi:noet:sts=2:sw=2:ts=2
 1;
 
 #ABSTRACT: Verify requirements in a CPAN::Meta object
 
-
+__END__
 
 =pod
 
@@ -89,7 +90,7 @@ CPAN::Meta::Check - Verify requirements in a CPAN::Meta object
 
 =head1 VERSION
 
-version 0.005
+version 0.007
 
 =head1 SYNOPSIS
 
@@ -103,7 +104,7 @@ This module verifies if requirements described in a CPAN::Meta object are presen
 
 =head2 check_requirements($reqs, $type)
 
-This function checks if all dependencies in C<$reqs> (a L<CPAN::Meta::Requirements|CPAN::Meta::Requirements> object) are met, taking into account that 'conflicts' dependencies have to be checked in reverse. It returns a hash with the modules as values and any problems as keys, the value for a succesfully found module will be undef.
+This function checks if all dependencies in C<$reqs> (a L<CPAN::Meta::Requirements|CPAN::Meta::Requirements> object) are met, taking into account that 'conflicts' dependencies have to be checked in reverse. It returns a hash with the modules as keys and any problems as values; the value for a successfully found module will be undef.
 
 =head2 verify_dependencies($meta, $phases, $types, $incdirs)
 
@@ -111,7 +112,7 @@ Check all requirements in C<$meta> for phases C<$phases> and types C<$types>. Mo
 
 =head2 requirements_for($meta, $phases, $types, incdirs)
 
-This function returns a unified L<CPAN::Meta::Requirements|CPAN::Meta::Requirements> object for all C<$type> requirements for C<$phases>. $phases may be either one (scalar) value or an arrayref of valid values as defined by the L<CPAN::Meta spec|CPAN::Meta::Spec>. C<$type> must be a a relationship as defined by the same spec. Modules are searched for in C<@$incdirs>, defaulting to C<@INC>.
+This function returns a unified L<CPAN::Meta::Requirements|CPAN::Meta::Requirements> object for all C<$type> requirements for C<$phases>. $phases may be either one (scalar) value or an arrayref of valid values as defined by the L<CPAN::Meta spec|CPAN::Meta::Spec>. C<$type> must be a relationship as defined by the same spec. Modules are searched for in C<@$incdirs>, defaulting to C<@INC>.
 
 =head1 SEE ALSO
 
@@ -135,7 +136,3 @@ This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
 
 =cut
-
-
-__END__
-

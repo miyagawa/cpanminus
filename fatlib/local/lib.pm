@@ -10,7 +10,7 @@ use File::Spec ();
 use File::Path ();
 use Config;
 
-our $VERSION = '1.008010'; # 1.8.10
+our $VERSION = '1.008011'; # 1.8.11
 
 our @KNOWN_FLAGS = qw(--self-contained --deactivate --deactivate-all);
 
@@ -1021,6 +1021,14 @@ local::lib looks at the user's C<SHELL> environment variable when printing out
 commands to add to the shell configuration file.
 
 On Win32 systems, C<COMSPEC> is also examined.
+
+=back
+
+=head1 SEE ALSO
+
+=over 4
+
+=item * L<Perl Advent article, 2011|http://perladvent.org/2011/2011-12-01.html>
 
 =back
 
