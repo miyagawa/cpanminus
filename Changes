@@ -2,6 +2,11 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6940  2013-08-08 12:35:36 PDT
+   [Bug Fixes]
+      - Support extracting packages from dists without MANIFEST
+        https://github.com/miyagawa/carton/issues/126
+
 1.6939  2013-08-06 02:55:08 PDT
    [Bug Fixes]
       - Fix extracting version from Parse::RecDescent (lestrrat)
