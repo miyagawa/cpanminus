@@ -2097,7 +2097,7 @@ sub build_stuff {
     $self->diag_ok($configure_state->{configured_ok} ? "OK" : "N/A");
 
     $dist->{provides} = $self->extract_packages($dist->{cpanmeta}, ".")
-        if $dist->{cpanmeta} && -e 'MANIFEST';
+        if $dist->{cpanmeta} && $dist->{source} eq 'cpan';
 
     # install direct 'test' dependencies for --installdeps, even with --notest
     my $root_target = (($self->{installdeps} or $self->{showdeps}) and $depth == 0);
@@ -2321,6 +2321,26 @@ sub find_module_name {
     return;
 }
 
+sub list_files {
+    my $self = shift;
+
+    if (-e 'MANIFEST') {
+        require ExtUtils::Manifest;
+        my $manifest = eval { ExtUtils::Manifest::manifind() } || {};
+        return sort { lc $a cmp lc $b } keys %$manifest;
+    } else {
+        require File::Find;
+        my @files;
+        my $finder = sub {
+            my $name = $File::Find::name;
+            $name =~ s!\.[/\\]!!;
+            push @files, $name;
+        };
+        File::Find::find($finder, ".");
+        return sort { lc $a cmp lc $b } @files;
+    }
+}
+
 sub extract_packages {
     my($self, $meta, $dir) = @_;
 
@@ -2332,12 +2352,9 @@ sub extract_packages {
         return 1;
     };
 
-    require ExtUtils::Manifest;
     require App::cpanminus::ParsePM;
 
-    my $manifest = eval { ExtUtils::Manifest::manifind() } || {};
-    my @files = grep { /\.pm(?:\.PL)?$/ && $try->($_) }
-        sort { lc $a cmp lc $b } keys %$manifest;
+    my @files = grep { /\.pm(?:\.PL)?$/ && $try->($_) } $self->list_files;
 
     my $provides = {};
 
