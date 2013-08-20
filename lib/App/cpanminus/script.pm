@@ -10,6 +10,7 @@ use File::Spec ();
 use File::Copy ();
 use File::Temp ();
 use Getopt::Long ();
+use File::Fetch ();
 use Parse::CPAN::Meta;
 use Symbol ();
 use String::ShellQuote ();
@@ -2710,51 +2711,55 @@ sub which {
     return;
 }
 
-sub get {
-    my($self, $uri) = @_;
-    if ($uri =~ /^file:/) {
-        $self->file_get($uri);
-    } else {
-        $self->{_backends}{get}->(@_);
+sub _ff {
+    my ( $self, $code ) = @_;
+    my $blacklist = [ @{$File::Fetch::BLACKLIST}  ];
+    my $methods   = {};
+
+    for my $method ( keys %{$File::Fetch::METHODS} ){
+        $methods->{$method} = [ @{ $File::Fetch::METHODS->{$method} } ];
     }
+
+    $methods->{http} = [qw( lwp wget curl httptiny )];
+
+    push @$blacklist, 'lwp'     if !$self->{try_lwp} && $self->has_working_lwp;
+    push @$blacklist, 'wget'    if !$self->{try_wget};
+    push @$blacklist, 'curl'    if !$self->{try_curl};
+
+    local $File::Fetch::BLACKLIST = $blacklist;
+    local $File::Fetch::METHODS   = $methods;
+    local $File::Fetch::WARN       = 1;
+    local $File::Fetch::DEBUG      = 1 if $self->{verbose};
+    local $File::Fetch::USER_AGENT = "cpanminus/$VERSION";
+    local $File::Fetch::TIMEOUT    = 30;
+    return $code->();
+}
+
+sub get {
+    my ( $self, $uri ) = @_;
+    return $self->_ff( sub {
+            my $ff = File::Fetch->new( uri => $uri );
+            my $output;
+            my $where = $ff->fetch( to => \$output );
+            return if $ff->error();
+            return $output;
+    });
 }
 
 sub mirror {
-    my($self, $uri, $local) = @_;
-    if ($uri =~ /^file:/) {
-        $self->file_mirror($uri, $local);
-    } else {
-        $self->{_backends}{mirror}->(@_);
-    }
+    my ( $self, $uri, $target ) = @_;
+    return $self->_ff( sub {
+            my $ff = File::Fetch->new( uri => $uri );
+            my $where = $ff->fetch( to => Cwd::cwd );
+            if ( $where ne File::Spec->catdir( Cwd::cwd, $target ) ) {
+                File::Copy::copy( $where, $target );
+            }
+            return $ff->error();
+    });
 }
 
 sub untar    { $_[0]->{_backends}{untar}->(@_) };
 sub unzip    { $_[0]->{_backends}{unzip}->(@_) };
-
-sub uri_to_file {
-    my($self, $uri) = @_;
-
-    # file:///path/to/file -> /path/to/file
-    # file://C:/path       -> C:/path
-    if ($uri =~ s!file:/+!!) {
-        $uri = "/$uri" unless $uri =~ m![a-zA-Z]:!;
-    }
-
-    return $uri;
-}
-
-sub file_get {
-    my($self, $uri) = @_;
-    my $file = $self->uri_to_file($uri);
-    open my $fh, "<$file" or return;
-    join '', <$fh>;
-}
-
-sub file_mirror {
-    my($self, $uri, $path) = @_;
-    my $file = $self->uri_to_file($uri);
-    File::Copy::copy($file, $path);
-}
 
 sub has_working_lwp {
     my($self, $mirrors) = @_;
@@ -2774,87 +2779,6 @@ sub init_tools {
 
     if ($self->{make} = $self->which($Config{make})) {
         $self->chat("You have make $self->{make}\n");
-    }
-
-    # use --no-lwp if they have a broken LWP, to upgrade LWP
-    if ($self->{try_lwp} && $self->has_working_lwp($self->{mirrors})) {
-        $self->chat("You have LWP $LWP::VERSION\n");
-        my $ua = sub {
-            LWP::UserAgent->new(
-                parse_head => 0,
-                env_proxy => 1,
-                agent => $self->agent,
-                timeout => 30,
-                @_,
-            );
-        };
-        $self->{_backends}{get} = sub {
-            my $self = shift;
-            my $res = $ua->()->request(HTTP::Request->new(GET => $_[0]));
-            return unless $res->is_success;
-            return $res->decoded_content;
-        };
-        $self->{_backends}{mirror} = sub {
-            my $self = shift;
-            my $res = $ua->()->mirror(@_);
-            die $res->content if $res->code == 501;
-            $res->code;
-        };
-    } elsif ($self->{try_wget} and my $wget = $self->which('wget')) {
-        $self->chat("You have $wget\n");
-        my @common = (
-            '--user-agent', $self->agent,
-            '--retry-connrefused',
-            ($self->{verbose} ? () : ('-q')),
-        );
-        $self->{_backends}{get} = sub {
-            my($self, $uri) = @_;
-            $self->safeexec( my $fh, $wget, $uri, @common, '-O', '-' ) or die "wget $uri: $!";
-            local $/;
-            <$fh>;
-        };
-        $self->{_backends}{mirror} = sub {
-            my($self, $uri, $path) = @_;
-            $self->safeexec( my $fh, $wget, $uri, @common, '-O', $path ) or die "wget $uri: $!";
-            local $/;
-            <$fh>;
-        };
-    } elsif ($self->{try_curl} and my $curl = $self->which('curl')) {
-        $self->chat("You have $curl\n");
-        my @common = (
-            '--location',
-            '--user-agent', $self->agent,
-            ($self->{verbose} ? () : '-s'),
-        );
-        $self->{_backends}{get} = sub {
-            my($self, $uri) = @_;
-            $self->safeexec( my $fh, $curl, @common, $uri ) or die "curl $uri: $!";
-            local $/;
-            <$fh>;
-        };
-        $self->{_backends}{mirror} = sub {
-            my($self, $uri, $path) = @_;
-            $self->safeexec( my $fh, $curl, @common, $uri, '-#', '-o', $path ) or die "curl $uri: $!";
-            local $/;
-            <$fh>;
-        };
-    } else {
-        require HTTP::Tiny;
-        $self->chat("Falling back to HTTP::Tiny $HTTP::Tiny::VERSION\n");
-        my %common = (
-            agent => $self->agent,
-        );
-        $self->{_backends}{get} = sub {
-            my $self = shift;
-            my $res = HTTP::Tiny->new(%common)->get($_[0]);
-            return unless $res->{success};
-            return $res->{content};
-        };
-        $self->{_backends}{mirror} = sub {
-            my $self = shift;
-            my $res = HTTP::Tiny->new(%common)->mirror(@_);
-            return $res->{status};
-        };
     }
 
     my $tar = $self->which('tar');
