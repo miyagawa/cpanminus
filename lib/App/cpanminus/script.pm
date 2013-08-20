@@ -158,7 +158,7 @@ sub parse_options {
         'n|notest!' => \$self->{notest},
         'test-only' => sub { $self->{notest} = 0; $self->{skip_installed} = 0; $self->{test_only} = 1 },
         'S|sudo!'   => \$self->{sudo},
-        'v|verbose' => sub { $self->{verbose} = $self->{interactive} = 1 },
+        'v|verbose' => \$self->{verbose},
         'verify!'   => \$self->{verify},
         'q|quiet!'  => \$self->{quiet},
         'h|help'    => sub { $self->{action} = 'show_help' },
