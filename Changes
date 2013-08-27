@@ -2,6 +2,10 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6942  2013-08-27 11:10:40 PDT
+   [Bug Fixes]
+      - Fixed the date sort for developer releases with MetaCPAN #308
+
 1.6941  2013-08-20 11:32:09 PDT
    [Incompatible Changes]
       - -v/--verbose doesn't imply --interactive anymore. It was added as a backward compatibility
