@@ -2,6 +2,11 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.6943  2013-09-03 16:39:27 PDT
+   [Bug Fixes]
+      - Localize PERL_MB_OPT for --pureperl-only since it leaks out in build/test/install process
+        (Thanks to doyster and leont)
+
 1.6942  2013-08-27 11:10:40 PDT
    [Bug Fixes]
       - Fixed the date sort for developer releases with MetaCPAN #308
