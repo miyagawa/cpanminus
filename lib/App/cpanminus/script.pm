@@ -1179,8 +1179,10 @@ sub configure {
     my $use_default = !$self->{interactive};
     local $ENV{PERL_MM_USE_DEFAULT} = $use_default;
 
-    # skip man page generation
     local $ENV{PERL_MM_OPT} = $ENV{PERL_MM_OPT};
+    local $ENV{PERL_MB_OPT} = $ENV{PERL_MB_OPT};
+
+    # skip man page generation
     unless ($self->{pod2man}) {
         $ENV{PERL_MM_OPT} .= " INSTALLMAN1DIR=none INSTALLMAN3DIR=none";
         $ENV{PERL_MB_OPT} .= " --config installman1dir= --config installsiteman1dir= --config installman3dir= --config installsiteman3dir=";
