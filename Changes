@@ -2,6 +2,20 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7000  2013-09-04 15:01:34 PDT
+      - Same as 1.6943. Some of the major changes between 1.61 are:
+      - Add --uninstall/-U command
+      - Support installing recommends/suggests/develop dependencies
+      - Support features selection with --with-feature, --without-feature etc.
+      - Support passing arguments to configure, build, test and install with --configure-args etc.
+      - Add experimental --cpanfile option
+      - Add experimental --pp option
+      - Now much safer to run multiple instances of cpanm
+      - Improved local::lib support
+      - Improved MetaCPAN query
+      - Improved version extraction for install metadata (for Carton)
+      - Completely eliminated dependency on search.cpan.org
+
 1.6943  2013-09-03 16:39:27 PDT
    [Bug Fixes]
       - Localize PERL_MB_OPT for --pureperl-only since it leaks out in build/test/install process
