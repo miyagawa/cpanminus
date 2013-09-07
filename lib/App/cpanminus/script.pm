@@ -1332,13 +1332,13 @@ sub self_upgrade {
 sub install_module {
     my($self, $module, $depth, $version) = @_;
 
+    $self->check_libs;
+
     if ($self->{seen}{$module}++) {
         # TODO: circular dependencies
         $self->chat("Already tried $module. Skipping.\n");
         return 1;
     }
-
-    $self->check_libs;
 
     if ($self->{skip_satisfied}) {
         my($ok, $local) = $self->check_module($module, $version || 0);
@@ -2092,7 +2092,7 @@ sub build_stuff {
 
     # workaround for bad M::B based dists with no configure_requires
     # https://github.com/miyagawa/cpanminus/issues/273
-    if (-e 'Build.PL') {
+    if (-e 'Build.PL' && !$self->should_use_mm($dist->{dist})) {
         push @config_deps, Dependency->from_versions(
             { 'Module::Build' => '0.36' }, 'configure',
         );
@@ -2231,6 +2231,16 @@ sub perl_requirements {
     return @perl;
 }
 
+sub should_use_mm {
+    my($self, $dist) = @_;
+
+    # Module::Build deps should use MakeMaker because that causes circular deps and fail
+    # Otherwise we should prefer Build.PL
+    my %should_use_mm = map { $_ => 1 } qw( version ExtUtils-ParseXS ExtUtils-Install ExtUtils-Manifest );
+
+    $should_use_mm{$dist};
+}
+
 sub configure_this {
     my($self, $dist, $depth) = @_;
 
@@ -2283,12 +2293,8 @@ sub configure_this {
         }
     };
 
-    # Module::Build deps should use MakeMaker because that causes circular deps and fail
-    # Otherwise we should prefer Build.PL
-    my %should_use_mm = map { $_ => 1 } qw( version ExtUtils-ParseXS ExtUtils-Install ExtUtils-Manifest );
-
     my @try;
-    if ($dist->{dist} && $should_use_mm{$dist->{dist}}) {
+    if ($dist->{dist} && $self->should_use_mm($dist->{dist})) {
         @try = ($try_eumm, $try_mb);
     } else {
         @try = ($try_mb, $try_eumm);
