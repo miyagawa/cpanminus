@@ -190,6 +190,10 @@ directory C<extlib>, which can be loaded from your application with:
 
   use local::lib '/path/to/extlib';
 
+Note that this option does B<NOT> reliably work with perl
+installations supplied by operating system vendors that strips
+standard modules from perl, such as RHEL, Fedora and CentOS.
+
 =item --self-contained
 
 When examining the dependencies, assume no non-core modules are
