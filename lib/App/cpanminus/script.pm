@@ -65,6 +65,7 @@ sub new {
         notest => undef,
         test_only => undef,
         installdeps => undef,
+        installalldepsfromlocalcpanfiles => undef,
         force => undef,
         sudo => undef,
         make  => undef,
@@ -178,6 +179,7 @@ sub parse_options {
         'cascade-search!' => \$self->{cascade_search},
         'prompt!'   => \$self->{prompt},
         'installdeps' => \$self->{installdeps},
+        'installalldepsfromlocalcpanfiles' => \$self->{installalldepsfromlocalcpanfiles},
         'skip-installed!' => \$self->{skip_installed},
         'skip-satisfied!' => \$self->{skip_satisfied},
         'reinstall'    => sub { $self->{skip_installed} = 0 },
@@ -2234,7 +2236,7 @@ sub perl_requirements {
 sub configure_this {
     my($self, $dist, $depth) = @_;
 
-    if (-e $self->{cpanfile_path} && $self->{installdeps} && $depth == 0) {
+    if (-e $self->{cpanfile_path} && ( ( $self->{installdeps} && $depth == 0 ) || ( $self->{installalldepsfromlocalcpanfiles} && $dist->{source} eq 'local' ) ) ) {
         require Module::CPANfile;
         $dist->{cpanfile} = eval { Module::CPANfile->load($self->{cpanfile_path}) };
         $self->diag_fail($@, 1) if $@;
