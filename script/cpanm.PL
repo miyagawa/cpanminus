@@ -442,7 +442,7 @@ directory.
 If you try to uninstall a module in C<perl> directory (i.e. core
 module), an error will be thrown.
 
-A dialog wil be prompted to confirm the files to be deleted. If you pass
+A dialog will be prompted to confirm the files to be deleted. If you pass
 C<-f> option as well, the dialog will be skipped and uninstallation
 will be forced.
 
