@@ -1847,20 +1847,34 @@ sub git_uri {
         return;
     }
 
-    if ($commitish) {
+    my $name = File::Basename::basename($uri);
+    $name =~ s/\.git$//;
+
+    my $rev;
+    {
         require File::pushd;
         my $dir = File::pushd::pushd($dir);
 
-        unless ($self->run([ 'git', 'checkout', $commitish ])) {
-            $self->diag_fail("Failed to checkout '$commitish' in git repository $uri\n");
-            return;
+        if ($commitish) {
+            unless ($self->run([ 'git', 'checkout', $commitish ])) {
+                $self->diag_fail("Failed to checkout '$commitish' in git repository $uri\n");
+                return;
+            }
         }
+
+        chomp($rev = `git rev-parse --short HEAD`);
     }
 
     $self->diag_ok;
 
     return {
-        source => 'local',
+        source => 'git',
+        dist   => $name,
+        version  => $rev,
+        revision => $rev,
+        distvname => "$name-$rev",
+        uri    => $uri,
+        ref    => $commitish,
         dir    => $dir,
     };
 }
@@ -2115,7 +2129,7 @@ sub build_stuff {
     $self->diag_ok($configure_state->{configured_ok} ? "OK" : "N/A");
 
     $dist->{provides} = $self->extract_packages($dist->{cpanmeta}, ".")
-        if $dist->{cpanmeta} && $dist->{source} eq 'cpan';
+        if $dist->{cpanmeta} && ($dist->{source} eq 'cpan' or $dist->{source} eq 'git');
 
     # install direct 'test' dependencies for --installdeps, even with --notest
     my $root_target = (($self->{installdeps} or $self->{showdeps}) and $depth == 0);
@@ -2400,7 +2414,7 @@ sub extract_packages {
 sub save_meta {
     my($self, $module, $dist, $module_name, $config_deps, $build_deps) = @_;
 
-    return unless $dist->{distvname} && $dist->{source} eq 'cpan';
+    return unless $dist->{distvname} && ($dist->{source} eq 'cpan' or $dist->{source} eq 'git');
 
     my $base = ($ENV{PERL_MM_OPT} || '') =~ /INSTALL_BASE=/
         ? ($self->install_base($ENV{PERL_MM_OPT}) . "/lib/perl5") : $Config{sitelibexp};
@@ -2410,13 +2424,17 @@ sub save_meta {
     File::Path::mkpath("blib/meta", 0, 0777);
 
     my $local = {
-        name => $module_name,
+        source => $dist->{source},
+        name   => $module_name,
         target => $module,
         version => exists $provides->{$module_name}
             ? ($provides->{$module_name}{version} || $dist->{version}) : $dist->{version},
         dist => $dist->{distvname},
         pathname => $dist->{pathname},
         provides => $provides,
+        # for git
+        uri => $dist->{uri},
+        revision => $dist->{revision},
     };
 
     require JSON::PP;
