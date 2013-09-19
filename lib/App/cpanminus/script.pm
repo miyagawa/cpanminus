@@ -102,6 +102,7 @@ sub new {
         format   => 'tree',
         save_dists => undef,
         cache_dir => undef,
+        trust_cache => 0,
         skip_configure => 0,
         verify => 0,
         report_perl_version => 1,
@@ -204,6 +205,7 @@ sub parse_options {
             $self->{save_dists} = $self->maybe_abs($_[1]);
         },
         'cache-dir=s' => sub { $self->{cache_dir} = $self->maybe_abs($_[1]); },
+        'trust-cache' => \$self->{trust_cache},
         'skip-configure!' => \$self->{skip_configure},
         'dev!'       => \$self->{dev_release},
         'metacpan!'  => \$self->{metacpan},
@@ -1579,6 +1581,9 @@ sub fetch_module {
         my $cancelled;
         my $fetch = sub {
             my $file;
+            if ($self->{trust_cache} && $self->{cache_dir}) {
+                return $name if -e $name;
+            }
             eval {
                 local $SIG{INT} = sub { $cancelled = 1; die "SIGINT\n" };
                 $self->mirror($uri, $name);
