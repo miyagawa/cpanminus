@@ -2,6 +2,10 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7101  2013-09-19 20:15:40 JST
+   [New Features]
+      - Experimental support of saving install.json for git based installations
+
 1.7100  2013-09-19 14:30:05 JST
    [New Features]
       - Support git+ pseudo URL scheme to remove ambiguity for git URLs
