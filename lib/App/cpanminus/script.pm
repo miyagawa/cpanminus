@@ -1744,6 +1744,11 @@ sub verify_signature {
 sub resolve_name {
     my($self, $module, $version) = @_;
 
+    # Git
+    if ($module =~ /(?:^git(?:\+\w+)?:|\.git(?:@.+)?$)/) {
+        return $self->git_uri($module);
+    }
+
     # URL
     if ($module =~ /^(ftp|https?|file):/) {
         if ($module =~ m!authors/id/(.*)!) {
@@ -1767,11 +1772,6 @@ sub resolve_name {
             source => 'local',
             uris => [ "file://" . Cwd::abs_path($module) ],
         };
-    }
-
-    # Git
-    if ($module =~ /(?:^git:|\.git(?:@.+)?$)/) {
-        return $self->git_uri($module);
     }
 
     # cpan URI
@@ -1833,6 +1833,9 @@ sub git_uri {
     # git URL has to end with .git when you need to use pin @ commit/tag/branch
 
     ($uri, my $commitish) = split /(?<=\.git)@/i, $uri, 2;
+
+    # git CLI doesn't support git+http:// etc.
+    $uri =~ s/^git\+//;
 
     my $dir = File::Temp::tempdir(CLEANUP => 1);
 
