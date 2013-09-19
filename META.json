@@ -89,7 +89,7 @@
          }
       }
    },
-   "release_status" : "stable",
+   "release_status" : "testing",
    "resources" : {
       "bugtracker" : {
          "web" : "https://github.com/miyagawa/cpanminus/issues"
@@ -101,7 +101,7 @@
          "web" : "https://github.com/miyagawa/cpanminus"
       }
    },
-   "version" : "1.7001",
+   "version" : "1.7100",
    "x_contributors" : [
       "Alessandro Ghedini <al3xbio@gmail.com>",
       "Andrew Rodland <andrew@cleverdomain.org>",
@@ -140,6 +140,7 @@
       "Slaven Rezic <slaven@rezic.de>",
       "Smylers <Smylers@stripey.com>",
       "Stoned Elipot <stoned.elipot@gmail.com>",
+      "Syohei YOSHIDA <syohex@gmail.com>",
       "Tatsuhiko Miyagawa <miyagawa@gmail.com>",
       "Thomas Sibley <tom@zulutango.org>",
       "Tokuhiro Matsuno <tokuhirom@gmail.com>",

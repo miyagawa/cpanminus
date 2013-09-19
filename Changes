@@ -2,6 +2,13 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7100  2013-09-19 14:30:05 JST
+   [New Features]
+      - Support git+ pseudo URL scheme to remove ambiguity for git URLs
+
+   [Improvements]
+      - Prefer http URLs that ends with .git as git rather than regular tarballs (#296)
+
 1.7001  2013-09-08 13:11:16 PDT
    [Bug Fixes]
       - Fix bootstrap with perl 5.8 and MakeMaker/Module::Build (haarg) #311
