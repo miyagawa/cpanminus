@@ -2,7 +2,7 @@ use strict;
 use Test::More;
 use xt::Run;
 
-plan skip_all => "Don't run without a checkout" unless -e '.git';
+plan skip_all => "Don't run ssh test on Travis" if $ENV{TRAVIS};
 
 my @urls = (
     [ 'git+ssh://git@github.com/miyagawa/CPAN-Test-Dummy-FromGit.git', '0.01' ],
