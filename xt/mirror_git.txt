@@ -7,4 +7,4 @@ Written-By:   PAUSE version 1.14
 Line-Count:   1
 Last-Updated: Sun, 09 Oct 2011 17:27:24 GMT
 
-CPAN::Test::Dummy::FromGit                   0.01 git://github.com/miyagawa/CPAN-Test-Dummy-FromGit.git
+CPAN::Test::Dummy::FromGit                   0.02 git://github.com/miyagawa/CPAN-Test-Dummy-FromGit.git@devel
