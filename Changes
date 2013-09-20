@@ -2,6 +2,10 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7102  2013-09-20 13:32:36 JST
+   [New Features]
+      - Allow URLs (http, git etc.) in distfile in cpanmetadb and 02packages
+
 1.7101  2013-09-19 20:15:40 JST
    [New Features]
       - Experimental support of saving install.json for git based installations

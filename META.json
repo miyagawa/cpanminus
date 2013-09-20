@@ -4,7 +4,7 @@
       "- Tatsuhiko Miyagawa"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Dist::Milla version v1.0.4, Dist::Zilla version 4.300038, CPAN::Meta::Converter version 2.132510",
+   "generated_by" : "Dist::Milla version v1.0.4, Dist::Zilla version 4.300039, CPAN::Meta::Converter version 2.132620",
    "license" : [
       "perl_5"
    ],
@@ -101,7 +101,7 @@
          "web" : "https://github.com/miyagawa/cpanminus"
       }
    },
-   "version" : "1.7101",
+   "version" : "1.7102",
    "x_contributors" : [
       "Alessandro Ghedini <al3xbio@gmail.com>",
       "Andrew Rodland <andrew@cleverdomain.org>",
