@@ -1351,7 +1351,7 @@ sub install_module {
         }
     }
 
-    my $dist = $self->resolve_name($module, $version);
+    my $dist = $self->resolve_name($module, $version, 1);
     unless ($dist) {
         my $what = $module . ($version ? " ($version)" : "");
         $self->diag_fail("Couldn't find module or a distribution $what", 1);
@@ -1742,7 +1742,7 @@ sub verify_signature {
 }
 
 sub resolve_name {
-    my($self, $module, $version) = @_;
+    my($self, $module, $version, $allow_file) = @_;
 
     # Git
     if ($module =~ /(?:^git(?:\+\w+)?:|\.git(?:@.+)?$)/) {
@@ -1759,7 +1759,7 @@ sub resolve_name {
     }
 
     # Directory
-    if ($module =~ m!^[\./]! && -d $module) {
+    if ($allow_file && $module =~ m!^[\./]! && -d $module) {
         return {
             source => 'local',
             dir => Cwd::abs_path($module),
@@ -1767,7 +1767,7 @@ sub resolve_name {
     }
 
     # File
-    if (-f $module) {
+    if ($allow_file && -f $module) {
         return {
             source => 'local',
             uris => [ "file://" . Cwd::abs_path($module) ],
@@ -1792,7 +1792,7 @@ sub resolve_name {
 sub cpan_module {
     my($self, $module, $dist, $version) = @_;
 
-    my $dist = $self->cpan_dist($dist);
+    my $dist = $self->resolve_name($dist, undef, 0);
     $dist->{module} = $module;
     $dist->{module_version} = $version if $version && $version ne 'undef';
 
