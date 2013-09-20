@@ -12,4 +12,9 @@ like last_build_log, qr/installed URI-1.60/;
 run_L "--mirror-index", "xt/mirror.txt", "--mirror-only", "TimeDate";
 like last_build_log, qr/installed TimeDate-1.20/;
 
+run "Module::Build::Tiny"; # from CPAN
+run "--mirror-index", "xt/mirror_git.txt", "--mirror-only", "CPAN::Test::Dummy::FromGit";
+like last_build_log, qr/Cloning/;
+like last_build_log, qr/installed CPAN-Test-Dummy-FromGit-0\.01/;
+
 done_testing;
