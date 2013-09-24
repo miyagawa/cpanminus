@@ -101,6 +101,8 @@ sub new {
         scandeps_tree => [],
         format   => 'tree',
         save_dists => undef,
+        cache_dir => undef,
+        trust_cache => 0,
         skip_configure => 0,
         verify => 0,
         report_perl_version => 1,
@@ -202,6 +204,8 @@ sub parse_options {
         'save-dists=s' => sub {
             $self->{save_dists} = $self->maybe_abs($_[1]);
         },
+        'cache-dir=s' => sub { $self->{cache_dir} = $self->maybe_abs($_[1]); },
+        'trust-cache' => \$self->{trust_cache},
         'skip-configure!' => \$self->{skip_configure},
         'dev!'       => \$self->{dev_release},
         'metacpan!'  => \$self->{metacpan},
@@ -1569,10 +1573,17 @@ sub fetch_module {
         # Ugh, $dist->{filename} can contain sub directory
         my $filename = $dist->{filename} || $uri;
         my $name = File::Basename::basename($filename);
+        if ($self->{cache_dir}) {
+            $name = File::Spec->catfile($self->{cache_dir}, $name);
+            File::Path::mkpath([ File::Basename::dirname($name) ], 0, 0777);
+        }
 
         my $cancelled;
         my $fetch = sub {
             my $file;
+            if ($self->{trust_cache} && $self->{cache_dir}) {
+                return $name if -e $name;
+            }
             eval {
                 local $SIG{INT} = sub { $cancelled = 1; die "SIGINT\n" };
                 $self->mirror($uri, $name);
