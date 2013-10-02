@@ -2634,7 +2634,7 @@ sub cleanup_workdirs {
 
     if (@targets) {
         if (@targets >= 64) {
-            $self->diag("Expiring " . scalar(@targets) . " work directories. This might take long...\n");
+            $self->diag("Expiring " . scalar(@targets) . " work directories. This might take a while...\n");
         } else {
             $self->chat("Expiring " . scalar(@targets) . " work directories.\n");
         }
