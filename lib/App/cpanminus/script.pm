@@ -18,7 +18,7 @@ use version ();
 use aliased 'App::cpanminus::Dependency';
 
 use constant WIN32 => $^O eq 'MSWin32';
-use constant SUNOS => $^O eq 'solaris';
+use constant BAD_TAR => ( WIN32 || $^O eq 'solaris' || $^O eq 'hpux' );
 use constant CAN_SYMLINK => eval { symlink("", ""); 1 };
 
 our $VERSION = $App::cpanminus::VERSION;
@@ -2901,7 +2901,7 @@ sub init_tools {
 
     my $tar = $self->which('tar');
     my $tar_ver;
-    my $maybe_bad_tar = sub { WIN32 || SUNOS || (($tar_ver = `$tar --version 2>/dev/null`) =~ /GNU.*1\.13/i) };
+    my $maybe_bad_tar = sub { BAD_TAR || (($tar_ver = `$tar --version 2>/dev/null`) =~ /GNU.*1\.13/i) };
 
     if ($tar && !$maybe_bad_tar->()) {
         chomp $tar_ver;
