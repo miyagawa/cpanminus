@@ -108,6 +108,7 @@ sub new {
         features => {},
         pure_perl => 0,
         cpanfile_path => 'cpanfile',
+        git_branch => undef,
         @_,
     }, $class;
 }
@@ -213,6 +214,7 @@ sub parse_options {
         'with-all-features' => sub { $self->{features}{__all} = 1 },
         'pp|pureperl!' => \$self->{pure_perl},
         "cpanfile=s" => \$self->{cpanfile_path},
+        "git-branch=s" => \$self->{git_branch},
         $self->install_type_handlers,
         $self->build_args_handlers,
     );
@@ -1841,12 +1843,27 @@ sub git_uri {
         return;
     }
 
-    if ($commitish) {
+    if ( defined $self->{git_branch} ) {
+      require File::pushd;
+      my $dir = File::pushd::pushd( $dir );
+
+      $self->run( [ 'git', 'checkout', '-b', $self->{git_branch}, "origin/$self->{git_branch}" ] );
+    }
+    elsif ($commitish) {
         require File::pushd;
         my $dir = File::pushd::pushd($dir);
 
         unless ($self->run([ 'git', 'checkout', $commitish ])) {
             $self->diag_fail("Failed to checkout '$commitish' in git repository $uri\n");
+            return;
+        }
+    }
+    else {
+        require File::pushd;
+        my $dir = File::pushd::pushd($dir);
+
+        unless ($self->run([ 'git', 'checkout', 'master' ])) {
+            $self->diag_fail("Failed to checkout 'master' in git repository $uri\n");
             return;
         }
     }
