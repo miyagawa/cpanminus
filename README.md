@@ -185,7 +185,7 @@ Patches and code improvements were contributed by:
 
 Goro Fuji, Kazuhiro Osawa, Tokuhiro Matsuno, Kenichi Ishigaki, Ian
 Wells, Pedro Melo, Masayoshi Sekimura, Matt S Trout (mst), squeeky,
-horus and Ingy dot Net.
+horus, Ingy dot Net, and Joshua Keroes.
 
 ## ACKNOWLEDGEMENTS
 
