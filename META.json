@@ -4,7 +4,7 @@
       "- Tatsuhiko Miyagawa"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Dist::Milla version v1.0.4, Dist::Zilla version 4.300039, CPAN::Meta::Converter version 2.132620",
+   "generated_by" : "Dist::Milla version v1.0.4, Dist::Zilla version 4.300039, CPAN::Meta::Converter version 2.132830",
    "license" : [
       "perl_5"
    ],
@@ -79,8 +79,8 @@
       "runtime" : {
          "requires" : {
             "ExtUtils::Install" : "1.46",
-            "ExtUtils::MakeMaker" : "6.31",
-            "Module::Build" : "0.36"
+            "ExtUtils::MakeMaker" : "6.58",
+            "Module::Build" : "0.38"
          }
       },
       "test" : {
@@ -89,27 +89,29 @@
          }
       }
    },
-   "release_status" : "testing",
+   "release_status" : "stable",
    "resources" : {
       "bugtracker" : {
-         "web" : "https://github.com/miyagawa/cpanminus/issues"
+         "web" : "https://github.com/jkeroes/cpanminus/issues"
       },
-      "homepage" : "https://github.com/miyagawa/cpanminus",
+      "homepage" : "https://github.com/jkeroes/cpanminus",
       "repository" : {
          "type" : "git",
-         "url" : "https://github.com/miyagawa/cpanminus.git",
-         "web" : "https://github.com/miyagawa/cpanminus"
+         "url" : "https://github.com/jkeroes/cpanminus.git",
+         "web" : "https://github.com/jkeroes/cpanminus"
       }
    },
-   "version" : "1.7102",
+   "version" : "1.7103",
    "x_contributors" : [
       "Alessandro Ghedini <al3xbio@gmail.com>",
       "Andrew Rodland <andrew@cleverdomain.org>",
       "Ash Berlin <ash_github@firemirror.com>",
       "Ben Bullock <benkasminbullock@gmail.com>",
       "Breno G. de Oliveira <garu@cpan.org>",
+      "Brian Wightman <MidLifeXis@wightmanfam.org>",
       "Christian Walde <walde.christian@googlemail.com>",
       "Dagfinn Ilmari Manns\u00e5ker <ilmari@ilmari.org>",
+      "Dana M. Diederich <diederich@gmail.com>",
       "Dave Goodell <davidjgoodell@gmail.com>",
       "Dave Rolsky <autarch@urth.org>",
       "David Golden <dagolden@cpan.org>",
@@ -141,6 +143,7 @@
       "Smylers <Smylers@stripey.com>",
       "Stoned Elipot <stoned.elipot@gmail.com>",
       "Syohei YOSHIDA <syohex@gmail.com>",
+      "Tatsuhiko Miyagawa <miyagawa@bulknews.net>",
       "Tatsuhiko Miyagawa <miyagawa@gmail.com>",
       "Thomas Sibley <tom@zulutango.org>",
       "Tokuhiro Matsuno <tokuhirom@gmail.com>",
