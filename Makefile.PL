@@ -38,13 +38,13 @@ my %WriteMakefileArgs = (
   "NAME" => "App::cpanminus",
   "PREREQ_PM" => {
     "ExtUtils::Install" => "1.46",
-    "ExtUtils::MakeMaker" => "6.31",
-    "Module::Build" => "0.36"
+    "ExtUtils::MakeMaker" => "6.58",
+    "Module::Build" => "0.38"
   },
   "TEST_REQUIRES" => {
     "Test::More" => 0
   },
-  "VERSION" => "1.7102",
+  "VERSION" => "1.7103",
   "test" => {
     "TESTS" => "t/*.t"
   }
