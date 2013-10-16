@@ -2,6 +2,10 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7103  2013-10-16 11:13:53 PDT
+   [New Features]
+      - Add --jobs/sj jobs for parallel testing (jkeroes)
+
 1.7102  2013-09-20 13:32:36 JST
    [New Features]
       - Allow URLs (http, git etc.) in distfile in cpanmetadb and 02packages
@@ -418,7 +422,7 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 1.59_11 Mon Feb 11 14:10:26 PST 2013
    [Improvements]
       - Support META.json in addition to META.yml for pre-configure requirements
-      - Fatpack JSON::PP and CPAN::Meta::YAML properly 
+      - Fatpack JSON::PP and CPAN::Meta::YAML properly
 
 1.59_10 Thu Feb  7 16:27:03 PST 2013
    [New Features]
@@ -678,7 +682,7 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 1.4003  Wed Mar  9 18:13:21 PST 2011
       - Fixed a weird bug that -L fails to bootstrap Module::Build when an old version
-        such as 0.28 is installed 
+        such as 0.28 is installed
       - Do not show help if it reads args from STDIN and nothing is supplied
       - Stripped down the `cpanm` executable size for 20% by stripping POD for fatpacked
         dependencies :)
@@ -916,7 +920,7 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
    [Developer Fixes]
       - Upgrade local::lib #33
-      - Delay local::lib configuration as late as possible #35 (doy) 
+      - Delay local::lib configuration as late as possible #35 (doy)
       - Redirect tar's stderr (stoned)
       - Shows an error message when CPANM home is not writable #37 (avar)
       - Fixed how to handle duplicated dependencies #6, #32
@@ -964,7 +968,7 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 0.99_25 Mon Mar 22 19:52:12 PDT 2010
    [Improvements]
       - Log version information of build tools in build.log
-   
+
    [Developer Fixes]
       - Fixed the way it passes DumpedINC
       - Fixes tools initialization like LWP with -L
@@ -1055,14 +1059,14 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
    [Developer fixes]
       - --self-upgrade skips if it's already the latest
-      - Improved perl Makefile.PL --author 
+      - Improved perl Makefile.PL --author
       - --help and --version won't bother ~/perl5 initialization (rjbs, ingy)
       - LWP dependency is injected only if you run from CPAN clients (ingy, marcus)
 
 0.9911 Mon Mar  1 16:27:52 PST 2010
    [Developer fixes]
       - Removed build_timeout and test_timeout by default (rafl)
-   
+
    [Bug fixes]
       - Fixed broken --self-upgrade (chocolateboy)
 
