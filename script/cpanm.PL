@@ -43,6 +43,7 @@ cpanm - get, unpack build and install modules from CPAN
   cpanm --installdeps .                            # install all the deps for the current directory
   cpanm -L extlib Plack                            # install Plack and all non-core deps into extlib
   cpanm --mirror http://cpan.cpantesters.org/ DBI  # use the fast-syncing mirror
+  cpanm --jobs=9 Task::Kensho                      # test in parallel
 
 =head1 COMMANDS
 
@@ -110,6 +111,10 @@ controlled repository such as git.
 Download and unpack the distribution and then open the directory with
 your shell. Handy to poke around the source code or do manual
 testing.
+
+=item -j N, --jobs=N
+
+Run N test jobs in parallel.
 
 =item -h, --help
 
