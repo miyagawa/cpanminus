@@ -160,7 +160,7 @@ Tests that require input from STDIN.
 
 =item *
 
-Tests that might fail when C<AUTOMATED_TESTING> is enabled.
+Build.PL or Makefile.PL that prompts for input when C<PERL_MM_USE_DEFAULT> is enabled.
 
 =item *
 
