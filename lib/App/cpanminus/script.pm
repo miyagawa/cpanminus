@@ -1343,15 +1343,15 @@ sub install_module {
         return 1;
     }
 
+    my $dist = $self->resolve_name($module, $version, 1);
     if ($self->{skip_satisfied}) {
-        my($ok, $local) = $self->check_module($module, $version || 0);
+        my($ok, $local) = $self->check_module($dist->{module}, $dist->{module_version} || 0);
         if ($ok) {
             $self->diag("You have $module ($local)\n", 1);
             return 1;
         }
     }
 
-    my $dist = $self->resolve_name($module, $version, 1);
     unless ($dist) {
         my $what = $module . ($version ? " ($version)" : "");
         $self->diag_fail("Couldn't find module or a distribution $what", 1);
@@ -1768,9 +1768,12 @@ sub resolve_name {
 
     # File
     if ($allow_file && -f $module) {
+      my ($file_name, $file_version) = $self->_filename_parse($module);
         return {
             source => 'local',
             uris => [ "file://" . Cwd::abs_path($module) ],
+            module => $file_name,
+            module_version => $file_version,
         };
     }
 
@@ -2454,6 +2457,14 @@ sub save_meta {
         qq[install({ 'blib/meta' => '$base/$Config{archname}/.meta/$dist->{distvname}' })],
     );
     $self->run(\@cmd);
+}
+
+sub _filename_parse {
+  my($self, $filename) = @_;
+
+  my ($module, $version) = ($filename =~ /(?:\/|)([\w-]+)-(?:v|)(\d+.*).(?:tar\.gz|tgz|zip|bz2)/);
+  $module =~ s/-/::/g;
+  return $module, $version;
 }
 
 sub _merge_hashref {
