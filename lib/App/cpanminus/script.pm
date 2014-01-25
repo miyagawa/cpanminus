@@ -1345,9 +1345,15 @@ sub install_module {
 
     my $dist = $self->resolve_name($module, $version, 1);
     if ($self->{skip_satisfied}) {
-        my($ok, $local) = $self->check_module($dist->{module}, $dist->{module_version} || 0);
+        my($ok, $local);
+        if( $dist->{source} eq 'local' ){
+          ($ok, $local) = $self->check_module($dist->{module}, $dist->{module_version} || 0);
+        } else {
+          ($ok, $local) = $self->check_module($module, $version || 0);
+        }
+
         if ($ok) {
-            $self->diag("You have $module ($local)\n", 1);
+            $self->diag("You have $dist->{module} ($local)\n", 1);
             return 1;
         }
     }
