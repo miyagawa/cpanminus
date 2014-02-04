@@ -1867,12 +1867,14 @@ sub git_uri {
 
     $self->diag_ok;
 
+    my $ver = '9999.9999';
+
     return {
         source => 'git',
         dist   => $name,
-        version  => $rev,
+        version  => $ver,
         revision => $rev,
-        distvname => "$name-$rev",
+        distvname => "$name-$ver",
         uri    => $uri,
         ref    => $commitish,
         dir    => $dir,
