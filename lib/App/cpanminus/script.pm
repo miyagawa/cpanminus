@@ -43,6 +43,8 @@ sub agent {
 sub determine_home {
     my $class = shift;
 
+	return $ENV{PERL_CPANM_HOME} if $ENV{PERL_CPANM_HOME};
+
     my $homedir = $ENV{HOME}
       || eval { require File::HomeDir; File::HomeDir->my_home }
       || join('', @ENV{qw(HOMEDRIVE HOMEPATH)}); # Win32
