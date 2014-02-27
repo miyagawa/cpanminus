@@ -2368,6 +2368,7 @@ sub extract_packages {
 
     my $try = sub {
         my $file = shift;
+        return 0 if $file =~ m!^(?:x?t|inc|local|perl5|fatlib)/!;
         return 1 unless $meta->{no_index};
         return 0 if grep { $file =~ m!^$_/! } @{$meta->{no_index}{directory} || []};
         return 0 if grep { $file eq $_ } @{$meta->{no_index}{file} || []};
