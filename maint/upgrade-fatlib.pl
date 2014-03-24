@@ -54,7 +54,7 @@ sub pack_modules {
     $modules = exclude_modules($modules, $no_trace);
 
     my $packer = App::FatPacker->new;
-    my @requires = grep !is_core(pm_to_mod($_)), split /\n/,
+    my @requires = grep !is_core(pm_to_mod($_)), grep /\.pm$/, split /\n/,
       $packer->trace(use => $modules, args => ['-e', 1]);
     push @requires, map mod_to_pm($_), @$no_trace;
 

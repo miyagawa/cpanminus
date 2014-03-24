@@ -19,12 +19,17 @@ lib::core::only - Remove all non-core paths from @INC to avoid site/vendor dirs
 
 To get only the core directories plus the ones for the local::lib in scope:
 
-  $ perl -Mlib::core::only -Mlocal::lib=~/perl5 myscript.pl
+  $ perl -mlocal::lib -Mlib::core::only -Mlocal::lib=~/perl5 myscript.pl
 
 To attempt to do a self-contained build (but note this will not reliably
 propagate into subprocesses, see the CAVEATS below):
 
-  $ PERL5OPT='-Mlib::core::only -Mlocal::lib=~/perl5' cpan
+  $ PERL5OPT='-mlocal::lib -Mlib::core::only -Mlocal::lib=~/perl5' cpan
+
+Please note that it is necessary to use C<local::lib> twice for this to work.
+First so that C<lib::core::only> doesn't prevent C<local::lib> from loading
+(it's not currently in core) and then again after C<lib::core::only> so that
+the local paths are not removed.
 
 =head1 DESCRIPTION
 

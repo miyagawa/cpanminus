@@ -116,12 +116,20 @@ sub currstr {
 }
 
 package version::vpp;
+
+use 5.006002;
 use strict;
 
-use POSIX qw/locale_h/;
-use locale;
-use vars qw ($VERSION @ISA @REGEXS);
-$VERSION = 0.9902;
+use Config;
+use vars qw($VERSION $CLASS @ISA $LAX $STRICT);
+$VERSION = 0.9908;
+$CLASS = 'version::vpp';
+
+require version::regex;
+*version::vpp::is_strict = \&version::regex::is_strict;
+*version::vpp::is_lax = \&version::regex::is_lax;
+*LAX = \$version::regex::LAX;
+*STRICT = \$version::regex::STRICT;
 
 use overload (
     '""'       => \&stringify,
@@ -148,6 +156,64 @@ if ($@) {
 	sub enabled {return $^W;}
 	1;
     ';
+}
+
+sub import {
+    no strict 'refs';
+    my ($class) = shift;
+
+    # Set up any derived class
+    unless ($class eq $CLASS) {
+	local $^W;
+	*{$class.'::declare'} =  \&{$CLASS.'::declare'};
+	*{$class.'::qv'} = \&{$CLASS.'::qv'};
+    }
+
+    my %args;
+    if (@_) { # any remaining terms are arguments
+	map { $args{$_} = 1 } @_
+    }
+    else { # no parameters at all on use line
+	%args =
+	(
+	    qv => 1,
+	    'UNIVERSAL::VERSION' => 1,
+	);
+    }
+
+    my $callpkg = caller();
+
+    if (exists($args{declare})) {
+	*{$callpkg.'::declare'} =
+	    sub {return $class->declare(shift) }
+	  unless defined(&{$callpkg.'::declare'});
+    }
+
+    if (exists($args{qv})) {
+	*{$callpkg.'::qv'} =
+	    sub {return $class->qv(shift) }
+	  unless defined(&{$callpkg.'::qv'});
+    }
+
+    if (exists($args{'UNIVERSAL::VERSION'})) {
+	local $^W;
+	*UNIVERSAL::VERSION
+		= \&{$CLASS.'::_VERSION'};
+    }
+
+    if (exists($args{'VERSION'})) {
+	*{$callpkg.'::VERSION'} = \&{$CLASS.'::_VERSION'};
+    }
+
+    if (exists($args{'is_strict'})) {
+	*{$callpkg.'::is_strict'} = \&{$CLASS.'::is_strict'}
+	  unless defined(&{$callpkg.'::is_strict'});
+    }
+
+    if (exists($args{'is_lax'})) {
+	*{$callpkg.'::is_lax'} = \&{$CLASS.'::is_lax'}
+	  unless defined(&{$callpkg.'::is_lax'});
+    }
 }
 
 my $VERSION_MAX = 0x7FFFFFFF;
@@ -412,7 +478,7 @@ sub scan_version {
     if ($errstr) {
 	# 'undef' is a special case and not an error
 	if ( $s ne 'undef') {
-	    use Carp;
+	    require Carp;
 	    Carp::croak($errstr);
 	}
     }
@@ -568,25 +634,49 @@ sub scan_version {
     return $s;
 }
 
-sub new
-{
-	my ($class, $value) = @_;
-	unless (defined $class) {
-	    require Carp;
-	    Carp::croak('Usage: version::new(class, version)');
-	}
-	my $self = bless ({}, ref ($class) || $class);
-	my $qv = FALSE;
+sub new {
+    my $class = shift;
+    unless (defined $class or $#_ > 1) {
+	require Carp;
+	Carp::croak('Usage: version::new(class, version)');
+    }
 
-	if ( ref($value) && eval('$value->isa("version")') ) {
-	    # Can copy the elements directly
-	    $self->{version} = [ @{$value->{version} } ];
-	    $self->{qv} = 1 if $value->{qv};
-	    $self->{alpha} = 1 if $value->{alpha};
-	    $self->{original} = ''.$value->{original};
-	    return $self;
-	}
+    my $self = bless ({}, ref ($class) || $class);
+    my $qv = FALSE;
 
+    if ( $#_ == 1 ) { # must be CVS-style
+	$qv = TRUE;
+    }
+    my $value = pop; # always going to be the last element
+
+    if ( ref($value) && eval('$value->isa("version")') ) {
+	# Can copy the elements directly
+	$self->{version} = [ @{$value->{version} } ];
+	$self->{qv} = 1 if $value->{qv};
+	$self->{alpha} = 1 if $value->{alpha};
+	$self->{original} = ''.$value->{original};
+	return $self;
+    }
+
+    if ( not defined $value or $value =~ /^undef$/ ) {
+	# RT #19517 - special case for undef comparison
+	# or someone forgot to pass a value
+	push @{$self->{version}}, 0;
+	$self->{original} = "0";
+	return ($self);
+    }
+
+
+    if (ref($value) =~ m/ARRAY|HASH/) {
+	require Carp;
+	Carp::croak("Invalid version format (non-numeric data)");
+    }
+
+    $value = _un_vstring($value);
+
+    if ($Config{d_setlocale}) {
+	use POSIX qw/locale_h/;
+	use if $Config{d_setlocale}, 'locale';
 	my $currlocale = setlocale(LC_ALL);
 
 	# if the current locale uses commas for decimal points, we
@@ -595,42 +685,27 @@ sub new
 	if ( localeconv()->{decimal_point} eq ',' ) {
 	    $value =~ tr/,/./;
 	}
+    }
 
-	if ( not defined $value or $value =~ /^undef$/ ) {
-	    # RT #19517 - special case for undef comparison
-	    # or someone forgot to pass a value
-	    push @{$self->{version}}, 0;
-	    $self->{original} = "0";
-	    return ($self);
-	}
+    # exponential notation
+    if ( $value =~ /\d+.?\d*e[-+]?\d+/ ) {
+	$value = sprintf("%.9f",$value);
+	$value =~ s/(0+)$//; # trim trailing zeros
+    }
 
-	if ( $#_ == 2 ) { # must be CVS-style
-	    $value = $_[2];
-	    $qv = TRUE;
-	}
+    my $s = scan_version($value, \$self, $qv);
 
-	$value = _un_vstring($value);
+    if ($s) { # must be something left over
+	warn("Version string '%s' contains invalid data; "
+		   ."ignoring: '%s'", $value, $s);
+    }
 
-	# exponential notation
-	if ( $value =~ /\d+.?\d*e[-+]?\d+/ ) {
-	    $value = sprintf("%.9f",$value);
-	    $value =~ s/(0+)$//; # trim trailing zeros
-	}
-
-	my $s = scan_version($value, \$self, $qv);
-
-	if ($s) { # must be something left over
-	    warn("Version string '%s' contains invalid data; "
-                       ."ignoring: '%s'", $value, $s);
-	}
-
-	return ($self);
+    return ($self);
 }
 
 *parse = \&new;
 
-sub numify
-{
+sub numify {
     my ($self) = @_;
     unless (_verify($self)) {
 	require Carp;
@@ -670,8 +745,7 @@ sub numify
     return $string;
 }
 
-sub normal
-{
+sub normal {
     my ($self) = @_;
     unless (_verify($self)) {
 	require Carp;
@@ -706,8 +780,7 @@ sub normal
     return $string;
 }
 
-sub stringify
-{
+sub stringify {
     my ($self) = @_;
     unless (_verify($self)) {
 	require Carp;
@@ -720,8 +793,7 @@ sub stringify
 	    : $self->numify;
 }
 
-sub vcmp
-{
+sub vcmp {
     require UNIVERSAL;
     my ($left,$right,$swap) = @_;
     my $class = ref($left);
@@ -806,7 +878,7 @@ sub is_alpha {
 
 sub qv {
     my $value = shift;
-    my $class = 'version';
+    my $class = $CLASS;
     if (@_) {
 	$class = ref($value) || $value;
 	$value = shift;
@@ -814,7 +886,7 @@ sub qv {
 
     $value = _un_vstring($value);
     $value = 'v'.$value unless $value =~ /(^v|\d+\.\d+\.\d)/;
-    my $obj = version->new($value);
+    my $obj = $CLASS->new($value);
     return bless $obj, $class;
 }
 

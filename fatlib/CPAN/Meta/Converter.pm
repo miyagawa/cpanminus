@@ -2,13 +2,31 @@ use 5.006;
 use strict;
 use warnings;
 package CPAN::Meta::Converter;
-our $VERSION = '2.132510'; # VERSION
+our $VERSION = '2.140640'; # VERSION
 
+# =head1 SYNOPSIS
+#
+#   my $struct = decode_json_file('META.json');
+#
+#   my $cmc = CPAN::Meta::Converter->new( $struct );
+#
+#   my $new_struct = $cmc->convert( version => "2" );
+#
+# =head1 DESCRIPTION
+#
+# This module converts CPAN Meta structures from one form to another.  The
+# primary use is to convert older structures to the most modern version of
+# the specification, but other transformations may be implemented in the
+# future as needed.  (E.g. stripping all custom fields or stripping all
+# optional fields.)
+#
+# =cut
 
 use CPAN::Meta::Validator;
 use CPAN::Meta::Requirements;
 use version 0.88 ();
 use Parse::CPAN::Meta 1.4400 ();
+use List::Util 1.33 qw/all/;
 
 sub _dclone {
   my $ref = shift;
@@ -60,7 +78,7 @@ sub _generated_by {
   my $sig = __PACKAGE__ . " version " . (__PACKAGE__->VERSION || "<dev>");
 
   return $sig unless defined $gen and length $gen;
-  return $gen if $gen =~ /(, )\Q$sig/;
+  return $gen if $gen =~ /\Q$sig/;
   return "$gen, $sig";
 }
 
@@ -88,12 +106,13 @@ sub _no_prefix_ucfirst_custom {
 
 sub _change_meta_spec {
   my ($element, undef, undef, $version) = @_;
-  $element->{version} = $version;
-  $element->{url} = $known_specs{$version};
-  return $element;
+  return {
+    version => $version,
+    url => $known_specs{$version},
+  };
 }
 
-my @valid_licenses_1 = (
+my @open_source = (
   'perl',
   'gpl',
   'apache',
@@ -105,6 +124,12 @@ my @valid_licenses_1 = (
   'mit',
   'mozilla',
   'open_source',
+);
+
+my %is_open_source = map {; $_ => 1 } @open_source;
+
+my @valid_licenses_1 = (
+  @open_source,
   'unrestricted',
   'restrictive',
   'unknown',
@@ -121,7 +146,9 @@ sub _license_1 {
   if ( $license_map_1{lc $element} ) {
     return $license_map_1{lc $element};
   }
-  return 'unknown';
+  else {
+    return 'unknown';
+  }
 }
 
 my @valid_licenses_2 = qw(
@@ -219,12 +246,20 @@ sub _downgrade_license {
     return "unknown";
   }
   elsif( ref $element eq 'ARRAY' ) {
-    if ( @$element == 1 ) {
-      return $license_downgrade_map{$element->[0]} || "unknown";
+    if ( @$element > 1) {
+      if ( all { $is_open_source{ $license_downgrade_map{lc $_} || 'unknown' } } @$element ) {
+        return 'open_source';
+      }
+      else {
+        return 'unknown';
+      }
+    }
+    elsif ( @$element == 1 ) {
+      return $license_downgrade_map{lc $element->[0]} || "unknown";
     }
   }
   elsif ( ! ref $element ) {
-    return $license_downgrade_map{$element} || "unknown";
+    return $license_downgrade_map{lc $element} || "unknown";
   }
   return "unknown";
 }
@@ -348,7 +383,7 @@ sub _version_map {
     # XXX turn this into CPAN::Meta::Requirements with bad version hook
     # and then turn it back into a hash
     my $new_map = CPAN::Meta::Requirements->new(
-      { bad_version_hook => sub { version->new(0) } } # punt
+      { bad_version_hook => \&_bad_version_hook } # punt
     );
     while ( my ($k,$v) = each %$element ) {
       next unless _is_module_name($k);
@@ -1199,6 +1234,15 @@ my %cleanup = (
 # Code
 #--------------------------------------------------------------------------#
 
+# =method new
+#
+#   my $cmc = CPAN::Meta::Converter->new( $struct );
+#
+# The constructor should be passed a valid metadata structure but invalid
+# structures are accepted.  If no meta-spec version is provided, version 1.0 will
+# be assumed.
+#
+# =cut
 
 sub new {
   my ($class,$data) = @_;
@@ -1206,13 +1250,80 @@ sub new {
   # create an attributes hash
   my $self = {
     'data'    => $data,
-    'spec'    => $data->{'meta-spec'}{'version'} || "1.0",
+    'spec'    => _extract_spec_version($data),
   };
 
   # create the object
   return bless $self, $class;
 }
 
+sub _extract_spec_version {
+    my ($data) = @_;
+    my $spec = $data->{'meta-spec'};
+
+    # is meta-spec there and valid?
+    return "1.0" unless defined $spec && ref $spec eq 'HASH'; # before meta-spec?
+
+    # does the version key look like a valid version?
+    my $v = $spec->{version};
+    if ( defined $v && $v =~ /^\d+(?:\.\d+)?$/ ) {
+        return $v if defined $v && grep { $v eq $_ } keys %known_specs; # known spec
+        return $v+0 if defined $v && grep { $v == $_ } keys %known_specs; # 2.0 => 2
+    }
+
+    # otherwise, use heuristics: look for 1.x vs 2.0 fields
+    return "2" if exists $data->{prereqs};
+    return "1.4" if exists $data->{configure_requires};
+    return "1.2"; # when meta-spec was first defined
+}
+
+# =method convert
+#
+#   my $new_struct = $cmc->convert( version => "2" );
+#
+# Returns a new hash reference with the metadata converted to a different form.
+# C<convert> will die if any conversion/standardization still results in an
+# invalid structure.
+#
+# Valid parameters include:
+#
+# =over
+#
+# =item *
+#
+# C<version> -- Indicates the desired specification version (e.g. "1.0", "1.1" ... "1.4", "2").
+# Defaults to the latest version of the CPAN Meta Spec.
+#
+# =back
+#
+# Conversion proceeds through each version in turn.  For example, a version 1.2
+# structure might be converted to 1.3 then 1.4 then finally to version 2. The
+# conversion process attempts to clean-up simple errors and standardize data.
+# For example, if C<author> is given as a scalar, it will converted to an array
+# reference containing the item. (Converting a structure to its own version will
+# also clean-up and standardize.)
+#
+# When data are cleaned and standardized, missing or invalid fields will be
+# replaced with sensible defaults when possible.  This may be lossy or imprecise.
+# For example, some badly structured META.yml files on CPAN have prerequisite
+# modules listed as both keys and values:
+#
+#   requires => { 'Foo::Bar' => 'Bam::Baz' }
+#
+# These would be split and each converted to a prerequisite with a minimum
+# version of zero.
+#
+# When some mandatory fields are missing or invalid, the conversion will attempt
+# to provide a sensible default or will fill them with a value of 'unknown'.  For
+# example a missing or unrecognized C<license> field will result in a C<license>
+# field of 'unknown'.  Fields that may get an 'unknown' include:
+#
+# =for :list
+# * abstract
+# * author
+# * license
+#
+# =cut
 
 sub convert {
   my ($self, %args) = @_;
@@ -1272,7 +1383,7 @@ __END__
 
 =pod
 
-=encoding utf-8
+=encoding UTF-8
 
 =head1 NAME
 
@@ -1280,7 +1391,7 @@ CPAN::Meta::Converter - Convert CPAN distribution metadata structures
 
 =head1 VERSION
 
-version 2.132510
+version 2.140640
 
 =head1 SYNOPSIS
 
