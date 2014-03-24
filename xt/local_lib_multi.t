@@ -8,15 +8,15 @@ run '-Uf', 'Params::Util';
 my $lib = "$ENV{PERL_CPANM_HOME}/perl5";
 
 {
-    local::lib->setup_local_lib_for("$lib-shadow", 0);
-    local::lib->setup_local_lib_for("$lib", 0);
+    local::lib->setup_local_lib_for("$lib-shadow");
+    local::lib->setup_local_lib_for("$lib");
 
     run 'Sub::Exporter';
     unlike last_build_log, qr/Installing the dependencies failed.*Params::Util/;
     like last_build_log, qr!Installing .*$lib/lib!;
 }
 
-local::lib->setup_local_lib_for($lib, local::lib::DEACTIVATE_ALL);
+local::lib->deactivate($lib);
 run 'Params::Util';
 
 done_testing;

@@ -883,7 +883,8 @@ sub maybe_abs {
 
 sub local_lib_target {
     my($self, $root) = @_;
-    (grep { $_ ne '' } split /\Q$Config{path_sep}/, $root)[-1];
+    # local::lib 1.008025 changed the order of PERL_LOCAL_LIB_ROOT
+    (grep { $_ ne '' } split /\Q$Config{path_sep}/, $root)[0];
 }
 
 sub bootstrap_local_lib {
