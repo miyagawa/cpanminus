@@ -1587,7 +1587,7 @@ sub fetch_module {
         while ($try++ < 3) {
             $file = $fetch->();
             last if $cancelled or $file;
-            $self->diag_fail("Download $uri failed. Retrying ... ");
+            $self->mask_output( diag_fail => "Download $uri failed. Retrying ... ");
         }
 
         if ($cancelled) {
@@ -1596,7 +1596,7 @@ sub fetch_module {
         }
 
         unless ($file) {
-            $self->diag_fail("Failed to download $uri");
+            $self->mask_output( diag_fail => "Failed to download $uri");
             next;
         }
 
