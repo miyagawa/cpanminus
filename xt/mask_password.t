@@ -7,10 +7,13 @@ use xt::Run;
 # *how* the password is actually masked, so you're free to change the
 # implementation and the tests should still be somewhat useful.
 
+my $password = 's3cr3t';
+
 my @test_cases = (
-    [LWP   => [ qw(--no-curl --no-wget) ]],
-    [curl  => [ qw(--no-lwp  --no-wget) ]],
-    [wget  => [ qw(--no-lwp  --no-curl) ]],
+    [LWP            => [ qw(--no-curl --no-wget) ]],
+    [curl           => [ qw(--no-lwp  --no-wget) ]],
+    [wget           => [ qw(--no-lwp  --no-curl) ]],
+    ["Mirror fails" => [ ('--mirror', "http://username:$password\@perl.org") ]],
 );
 
 for my $test_case (@test_cases) {
@@ -19,12 +22,11 @@ for my $test_case (@test_cases) {
 
     subtest $case_name => sub {
 
-        my $password = 's3cr3t';
         my $password_rx = qr/$password/;
         my $mirror_url = "http://username:$password\@cpan.perl.org";
 
         local $ENV{NODIAG} = 1; # So the output isn't dumped to screen
-        my @cpanm_options = ("--verbose", "--mirror=$mirror_url", @{ $backend_options } );
+        my @cpanm_options = (  @{ $backend_options }, "--verbose", "--mirror=$mirror_url" );
         my ($out, $err, $exit) = run @cpanm_options, "Try::Tiny";
 
         like last_build_log, qr{http:// .* cpan\.perl\.org}x, 'Mirror URL does appear in build log';
