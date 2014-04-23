@@ -413,8 +413,8 @@ sub setup_home {
             my $self = shift;
             my $temp_log = "$home/build.log." . time . ".$$";
             File::Copy::copy($log, $temp_log)
-                && unlink($final_log)
-                && rename($temp_log, $final_log);
+                && unlink($final_log);
+            rename($temp_log, $final_log);
         }
     }
 
