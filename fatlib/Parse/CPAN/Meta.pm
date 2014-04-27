@@ -315,7 +315,7 @@ Ricardo SIGNES <rjbs@cpan.org>
 
 =item *
 
-Steffen Müller <smueller@cpan.org>
+Steffen MÃ¼ller <smueller@cpan.org>
 
 =back
 
