@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 package CPAN::Meta::Requirements;
-our $VERSION = '2.125'; # VERSION
+our $VERSION = '2.123'; # VERSION
 # ABSTRACT: a set of version requirements for a CPAN dist
 
 
@@ -444,7 +444,7 @@ CPAN::Meta::Requirements - a set of version requirements for a CPAN dist
 
 =head1 VERSION
 
-version 2.125
+version 2.123
 
 =head1 SYNOPSIS
 
@@ -694,7 +694,7 @@ CPAN::Meta::Requirements object.
 =head2 Bugs / Feature Requests
 
 Please report any bugs or feature requests through the issue tracker
-at L<https://github.com/dagolden/CPAN-Meta-Requirements/issues>.
+at L<https://rt.cpan.org/Public/Dist/Display.html?Name=CPAN-Meta-Requirements>.
 You will be notified automatically of any progress on your issue.
 
 =head2 Source Code
@@ -702,9 +702,9 @@ You will be notified automatically of any progress on your issue.
 This is open source software.  The code repository is available for
 public review and contribution under the terms of the license.
 
-L<https://github.com/dagolden/CPAN-Meta-Requirements>
+L<https://github.com/dagolden/cpan-meta-requirements>
 
-  git clone https://github.com/dagolden/CPAN-Meta-Requirements.git
+  git clone git://github.com/dagolden/cpan-meta-requirements.git
 
 =head1 AUTHORS
 

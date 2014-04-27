@@ -7,7 +7,7 @@ use 5.006;
 use strict;
 use warnings;
 package CPAN::Meta::Spec;
-our $VERSION = '2.140640'; # VERSION
+our $VERSION = '2.132510'; # VERSION
 
 1;
 
@@ -20,7 +20,7 @@ __END__
 
 =pod
 
-=encoding UTF-8
+=encoding utf-8
 
 =head1 NAME
 
@@ -28,7 +28,7 @@ CPAN::Meta::Spec - specification for CPAN distribution metadata
 
 =head1 VERSION
 
-version 2.140640
+version 2.132510
 
 =head1 SYNOPSIS
 
@@ -82,7 +82,7 @@ version 2.140640
     keywords => [ qw/ toolchain cpan dual-life / ],
     'meta-spec' => {
       version => '2',
-      url     => 'https://metacpan.org/pod/CPAN::Meta::Spec',
+      url     => 'http://search.cpan.org/perldoc?CPAN::Meta::Spec',
     },
     generated_by => 'Module::Build version 0.36',
   };
@@ -315,7 +315,7 @@ Example:
 
   license => [ 'perl_5' ]
 
-  license => [ 'apache_2_0', 'mozilla_1_0' ]
+  license => [ 'apache_2', 'mozilla_1_0' ]
 
 (Spec 2) [required] {List of one or more License Strings}
 
@@ -395,20 +395,6 @@ This is a I<URL> of the metadata specification document corresponding to
 the given version.  This is strictly for human-consumption and should
 not impact the interpretation of the document.
 
-For the version 2 spec, either of these are recommended:
-
-=over 4
-
-=item *
-
-C<https://metacpan.org/pod/CPAN::Meta::Spec>
-
-=item *
-
-C<http://search.cpan.org/perldoc?CPAN::Meta::Spec>
-
-=back
-
 =back
 
 =head3 name
@@ -422,8 +408,7 @@ Example:
 This field is the name of the distribution.  This is often created by
 taking the "main package" in the distribution and changing C<::> to
 C<->, but the name may be completely unrelated to the packages within
-the distribution.  For example, L<LWP::UserAgent> is distributed as part
-of the distribution name "libwww-perl".
+the distribution.  C.f. L<http://search.cpan.org/dist/libwww-perl/>.
 
 =head3 release_status
 
@@ -677,8 +662,8 @@ Example:
 
 This describes all packages provided by this distribution.  This
 information is used by distribution and automation mechanisms like
-PAUSE, CPAN, metacpan.org and search.cpan.org to build indexes saying in
-which distribution various packages can be found.
+PAUSE, CPAN, and search.cpan.org to build indexes saying in which
+distribution various packages can be found.
 
 The keys of C<provides> are package names that can be found within
 the distribution.  If a package name key is provided, it must
@@ -1105,41 +1090,21 @@ this presents security implications.
 
 =head1 SEE ALSO
 
-=over 4
-
-=item *
-
 CPAN, L<http://www.cpan.org/>
 
-=item *
+CPAN.pm, L<http://search.cpan.org/dist/CPAN/>
+
+CPANPLUS, L<http://search.cpan.org/dist/CPANPLUS/>
+
+ExtUtils::MakeMaker, L<http://search.cpan.org/dist/ExtUtils-MakeMaker/>
+
+Module::Build, L<http://search.cpan.org/dist/Module-Build/>
+
+Module::Install, L<http://search.cpan.org/dist/Module-Install/>
 
 JSON, L<http://json.org/>
 
-=item *
-
 YAML, L<http://www.yaml.org/>
-
-=item *
-
-L<CPAN>
-
-=item *
-
-L<CPANPLUS>
-
-=item *
-
-L<ExtUtils::MakeMaker>
-
-=item *
-
-L<Module::Build>
-
-=item *
-
-L<Module::Install>
-
-=back
 
 =head1 HISTORY
 

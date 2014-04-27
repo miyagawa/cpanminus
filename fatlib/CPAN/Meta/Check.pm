@@ -1,6 +1,6 @@
 package CPAN::Meta::Check;
 {
-  $CPAN::Meta::Check::VERSION = '0.008';
+  $CPAN::Meta::Check::VERSION = '0.007';
 }
 use strict;
 use warnings;
@@ -39,7 +39,16 @@ sub _check_conflict {
 sub requirements_for {
 	my ($meta, $phases, $type) = @_;
 	my $prereqs = ref($meta) eq 'CPAN::Meta' ? $meta->effective_prereqs : $meta;
-	return $prereqs->merged_requirements(ref($phases) ? $phases : [ $phases ], [ $type ]);
+	if (!ref $phases) {
+		return $prereqs->requirements_for($phases, $type);
+	}
+	else {
+		my $ret = CPAN::Meta::Requirements->new;
+		for my $phase (@{ $phases }) {
+			$ret->add_requirements($prereqs->requirements_for($phase, $type));
+		}
+		return $ret;
+	}
 }
 
 sub check_requirements {
@@ -81,7 +90,7 @@ CPAN::Meta::Check - Verify requirements in a CPAN::Meta object
 
 =head1 VERSION
 
-version 0.008
+version 0.007
 
 =head1 SYNOPSIS
 
@@ -93,19 +102,17 @@ This module verifies if requirements described in a CPAN::Meta object are presen
 
 =head1 FUNCTIONS
 
-=head2 check_requirements($reqs, $type, $incdirs)
+=head2 check_requirements($reqs, $type)
 
-This function checks if all dependencies in C<$reqs> (a L<CPAN::Meta::Requirements|CPAN::Meta::Requirements> object) are met, taking into account that 'conflicts' dependencies have to be checked in reverse. It returns a hash with the modules as keys and any problems as values; the value for a successfully found module will be undef. Modules are searched for in C<@$incdirs>, defaulting to C<@INC>.
+This function checks if all dependencies in C<$reqs> (a L<CPAN::Meta::Requirements|CPAN::Meta::Requirements> object) are met, taking into account that 'conflicts' dependencies have to be checked in reverse. It returns a hash with the modules as keys and any problems as values; the value for a successfully found module will be undef.
 
 =head2 verify_dependencies($meta, $phases, $types, $incdirs)
 
-Check all requirements in C<$meta> for phases C<$phases> and types C<$types>. Modules are searched for in C<@$incdirs>, defaulting to C<@INC>. C<$meta> should be a L<CPAN::Meta::Prereqs> or L<CPAN::Meta> object.
+Check all requirements in C<$meta> for phases C<$phases> and types C<$types>. Modules are searched for in C<@$incdirs>, defaulting to C<@INC>.
 
-=head2 requirements_for($meta, $phases, $types)
+=head2 requirements_for($meta, $phases, $types, incdirs)
 
-B<< This function is deprecated and may be removed at some point in the future, please use CPAN::Meta::Prereqs->merged_requirements instead. >>
-
-This function returns a unified L<CPAN::Meta::Requirements|CPAN::Meta::Requirements> object for all C<$type> requirements for C<$phases>. C<$phases> may be either one (scalar) value or an arrayref of valid values as defined by the L<CPAN::Meta spec|CPAN::Meta::Spec>. C<$type> must be a relationship as defined by the same spec. C<$meta> should be a L<CPAN::Meta::Prereqs> or L<CPAN::Meta> object.
+This function returns a unified L<CPAN::Meta::Requirements|CPAN::Meta::Requirements> object for all C<$type> requirements for C<$phases>. $phases may be either one (scalar) value or an arrayref of valid values as defined by the L<CPAN::Meta spec|CPAN::Meta::Spec>. C<$type> must be a relationship as defined by the same spec. Modules are searched for in C<@$incdirs>, defaulting to C<@INC>.
 
 =head1 SEE ALSO
 
