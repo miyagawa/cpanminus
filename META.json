@@ -101,7 +101,7 @@
          "web" : "https://github.com/miyagawa/cpanminus"
       }
    },
-   "version" : "1.7002",
+   "version" : "1.7003",
    "x_contributors" : [
       "Alessandro Ghedini <al3xbio@gmail.com>",
       "Andrew Rodland <andrew@cleverdomain.org>",
@@ -156,6 +156,7 @@
       "kmx <kmx@cpan.org>",
       "lestrrat <lestrrat+github@gmail.com>",
       "motemen <motemen@gmail.com>",
+      "moznion <moznion@gmail.com>",
       "reezer <kind@gmx.at>",
       "robario <webmaster@robario.com>",
       "vti <viacheslav.t@gmail.com>",

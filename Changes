@@ -2,6 +2,10 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7003  2014-04-27 17:11:14 CEST
+   [Bug Fixes]
+      - Downgrade CPAN::Meta (moznion) #372
+
 1.7002  2014-04-27 07:45:53 CEST
    [Bug Fixes]
       - Bump fatpacked local::lib #364
