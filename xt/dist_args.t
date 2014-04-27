@@ -2,10 +2,10 @@ use strict;
 use Test::More;
 use xt::Run;
 
-run 'J/JV/JV/Getopt-Long-2.41.tar.gz';
+run 'J/JV/JV/Getopt-Long-2.42.tar.gz';
 like last_build_log, qr/installed/;
 
-run 'JV/Getopt-Long-2.41.tar.gz';
+run 'JV/Getopt-Long-2.42.tar.gz';
 like last_build_log, qr/installed/;
 
 run 'MIYAGAWA/Hash-MultiValue-0.13.tar.gz';
