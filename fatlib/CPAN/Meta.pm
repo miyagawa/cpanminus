@@ -783,7 +783,7 @@ Olaf Alders <olaf@wundersolutions.com>
 
 =item *
 
-Olivier Mengué <dolmen@cpan.org>
+Olivier MenguÃ© <dolmen@cpan.org>
 
 =item *
 
