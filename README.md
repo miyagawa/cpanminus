@@ -37,12 +37,12 @@ You can also use the latest cpanminus to install cpanminus itself:
 
 This will install `cpanm` to your bin directory like
 `/usr/local/bin` (unless you configured `INSTALL_BASE` with
-[local::lib](http://search.cpan.org/perldoc?local::lib)), so you probably need the `--sudo` option.
+[local::lib](https://metacpan.org/pod/local::lib)), so you probably need the `--sudo` option.
 
 ## Installing to local perl (perlbrew)
 
 If you have perl in your home directory, which is the case if you use
-tools like [perlbrew](http://search.cpan.org/perldoc?perlbrew), you don't need the `--sudo` option, since
+tools like [perlbrew](https://metacpan.org/pod/perlbrew), you don't need the `--sudo` option, since
 you're most likely to have a write permission to the perl's library
 path. You can just do:
 
@@ -104,8 +104,8 @@ module at [http://metacpan.org/](http://metacpan.org/) using its wonderful API.
 Upon calling these API hosts, cpanm (1.6004 or later) will send the
 local perl versions to the server in User-Agent string by default. You
 can turn it off with `--no-report-perl-version` option. Read more
-about the option with [cpanm](http://search.cpan.org/perldoc?cpanm), and read more about the privacy policy
-about this data collection at [http://cpanmetadb.plackperl.org/\#privacy](http://cpanmetadb.plackperl.org/\#privacy)
+about the option with [cpanm](https://metacpan.org/pod/cpanm), and read more about the privacy policy
+about this data collection at [http://cpanmetadb.plackperl.org/#privacy](http://cpanmetadb.plackperl.org/#privacy)
 
 Fetched files are unpacked in `~/.cpanm` and automatically cleaned up
 periodically.  You can configure the location of this with the
@@ -139,22 +139,22 @@ follows:
 These failures can be reported back to the author of the module so
 that they can fix it accordingly, rather than me.
 
-## Does cpanm support the feature XYZ of [CPAN](http://search.cpan.org/perldoc?CPAN) and [CPANPLUS](http://search.cpan.org/perldoc?CPANPLUS)?
+## Does cpanm support the feature XYZ of [CPAN](https://metacpan.org/pod/CPAN) and [CPANPLUS](https://metacpan.org/pod/CPANPLUS)?
 
 Most likely not. Here are the things that cpanm doesn't do by
 itself. And it's a feature - you got that from the name _minus_,
 right?
 
-If you need these features, use [CPAN](http://search.cpan.org/perldoc?CPAN), [CPANPLUS](http://search.cpan.org/perldoc?CPANPLUS) or the standalone
+If you need these features, use [CPAN](https://metacpan.org/pod/CPAN), [CPANPLUS](https://metacpan.org/pod/CPANPLUS) or the standalone
 tools that are mentioned.
 
-- CPAN testers reporting. See [App::cpanminus::reporter](http://search.cpan.org/perldoc?App::cpanminus::reporter)
+- CPAN testers reporting. See [App::cpanminus::reporter](https://metacpan.org/pod/App::cpanminus::reporter)
 - Building RPM packages from CPAN modules
-- Listing the outdated modules that needs upgrading. See [App::cpanoutdated](http://search.cpan.org/perldoc?App::cpanoutdated)
-- Showing the changes of the modules you're about to upgrade. See [cpan-listchanges](http://search.cpan.org/perldoc?cpan-listchanges)
+- Listing the outdated modules that needs upgrading. See [App::cpanoutdated](https://metacpan.org/pod/App::cpanoutdated)
+- Showing the changes of the modules you're about to upgrade. See [cpan-listchanges](https://metacpan.org/pod/cpan-listchanges)
 - Patching CPAN modules with distroprefs.
 
-See [cpanm](http://search.cpan.org/perldoc?cpanm) or `cpanm -h` to see what cpanminus _can_ do :)
+See [cpanm](https://metacpan.org/pod/cpanm) or `cpanm -h` to see what cpanminus _can_ do :)
 
 # COPYRIGHT
 
@@ -162,16 +162,16 @@ Copyright 2010- Tatsuhiko Miyagawa
 
 The standalone executable contains the following modules embedded.
 
-- [CPAN::DistnameInfo](http://search.cpan.org/perldoc?CPAN::DistnameInfo) Copyright 2003 Graham Barr
-- [Parse::CPAN::Meta](http://search.cpan.org/perldoc?Parse::CPAN::Meta) Copyright 2006-2009 Adam Kennedy
-- [local::lib](http://search.cpan.org/perldoc?local::lib) Copyright 2007-2009 Matt S Trout
-- [HTTP::Tiny](http://search.cpan.org/perldoc?HTTP::Tiny) Copyright 2011 Christian Hansen
-- [Module::Metadata](http://search.cpan.org/perldoc?Module::Metadata) Copyright 2001-2006 Ken Williams. 2010 Matt S Trout
-- [version](http://search.cpan.org/perldoc?version) Copyright 2004-2010 John Peacock
-- [JSON::PP](http://search.cpan.org/perldoc?JSON::PP) Copyright 2007-2011 by Makamaka Hannyaharamitu
-- [CPAN::Meta](http://search.cpan.org/perldoc?CPAN::Meta), [CPAN::Meta::Requirements](http://search.cpan.org/perldoc?CPAN::Meta::Requirements) Copyright (c) 2010 by David Golden and Ricardo Signes
-- [CPAN::Meta::YAML](http://search.cpan.org/perldoc?CPAN::Meta::YAML) Copyright 2010 Adam Kennedy
-- [File::pushd](http://search.cpan.org/perldoc?File::pushd) Copyright 2012 David Golden
+- [CPAN::DistnameInfo](https://metacpan.org/pod/CPAN::DistnameInfo) Copyright 2003 Graham Barr
+- [Parse::CPAN::Meta](https://metacpan.org/pod/Parse::CPAN::Meta) Copyright 2006-2009 Adam Kennedy
+- [local::lib](https://metacpan.org/pod/local::lib) Copyright 2007-2009 Matt S Trout
+- [HTTP::Tiny](https://metacpan.org/pod/HTTP::Tiny) Copyright 2011 Christian Hansen
+- [Module::Metadata](https://metacpan.org/pod/Module::Metadata) Copyright 2001-2006 Ken Williams. 2010 Matt S Trout
+- [version](https://metacpan.org/pod/version) Copyright 2004-2010 John Peacock
+- [JSON::PP](https://metacpan.org/pod/JSON::PP) Copyright 2007-2011 by Makamaka Hannyaharamitu
+- [CPAN::Meta](https://metacpan.org/pod/CPAN::Meta), [CPAN::Meta::Requirements](https://metacpan.org/pod/CPAN::Meta::Requirements) Copyright (c) 2010 by David Golden and Ricardo Signes
+- [CPAN::Meta::YAML](https://metacpan.org/pod/CPAN::Meta::YAML) Copyright 2010 Adam Kennedy
+- [File::pushd](https://metacpan.org/pod/File::pushd) Copyright 2012 David Golden
 
 # LICENSE
 
@@ -201,7 +201,7 @@ Arnfjord Bjarmason, Eric Wilhelm, Florian Ragwitz and xaicron.
 # COMMUNITY
 
 - [http://github.com/miyagawa/cpanminus](http://github.com/miyagawa/cpanminus) - source code repository, issue tracker
-- [irc://irc.perl.org/\#toolchain](irc://irc.perl.org/\#toolchain) - discussions about Perl toolchain. I'm there.
+- [irc://irc.perl.org/#toolchain](irc://irc.perl.org/#toolchain) - discussions about Perl toolchain. I'm there.
 
 # NO WARRANTY
 
@@ -211,4 +211,4 @@ arising from the use of the software.
 
 # SEE ALSO
 
-[CPAN](http://search.cpan.org/perldoc?CPAN) [CPANPLUS](http://search.cpan.org/perldoc?CPANPLUS) [pip](http://search.cpan.org/perldoc?pip)
+[CPAN](https://metacpan.org/pod/CPAN) [CPANPLUS](https://metacpan.org/pod/CPANPLUS) [pip](https://metacpan.org/pod/pip)

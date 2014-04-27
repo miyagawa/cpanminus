@@ -2,6 +2,11 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7002  2014-04-27 07:45:53 CEST
+   [Bug Fixes]
+      - Bump fatpacked local::lib #364
+      - Fix a bug where build.log files are not properly renamed on the first run on Win32 (haarg) #368
+
 1.7001  2013-09-08 13:11:16 PDT
    [Bug Fixes]
       - Fix bootstrap with perl 5.8 and MakeMaker/Module::Build (haarg) #311
