@@ -11,7 +11,7 @@ use File::Spec ();
 use File::Temp ();
 use POSIX ':sys_wait_h';
 
-our $VERSION = '0.18';
+our $VERSION = '0.19';
 our $VERBOSE = 0;
 our $ALLOW_DEV_VERSION = 0;
 our $FORK = 0;
@@ -257,18 +257,27 @@ sub _restore_overloaded_stuff {
     no strict 'refs';
     no warnings 'redefine';
 
+    # version XS in CPAN
     if (version->isa('version::vxs')) {
         *{'version::(""'} = \&version::vxs::stringify;
         *{'version::(0+'} = \&version::vxs::numify;
         *{'version::(cmp'} = \&version::vxs::VCMP;
         *{'version::(<=>'} = \&version::vxs::VCMP;
         *{'version::(bool'} = \&version::vxs::boolean;
-    } else {
+    # version PP in CPAN
+    } elsif (version->isa('version::vpp')) {
         *{'version::(""'} = \&version::vpp::stringify;
         *{'version::(0+'} = \&version::vpp::numify;
         *{'version::(cmp'} = \&version::vpp::vcmp;
         *{'version::(<=>'} = \&version::vpp::vcmp;
         *{'version::(bool'} = \&version::vpp::vbool;
+    # version in core
+    } else {
+        *{'version::(""'} = \&version::stringify;
+        *{'version::(0+'} = \&version::numify;
+        *{'version::(cmp'} = \&version::vcmp;
+        *{'version::(<=>'} = \&version::vcmp;
+        *{'version::(bool'} = \&version::boolean;
     }
 }
 
