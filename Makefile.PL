@@ -35,6 +35,7 @@ my %WriteMakefileArgs = (
     "bin/cpanm"
   ],
   "LICENSE" => "perl",
+  "MIN_PERL_VERSION" => "5.008",
   "NAME" => "App::cpanminus",
   "PREREQ_PM" => {
     "ExtUtils::Install" => "1.46",
