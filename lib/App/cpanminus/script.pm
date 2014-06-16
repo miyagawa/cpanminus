@@ -2096,7 +2096,7 @@ sub build_stuff {
 
     # workaround for bad M::B based dists with no configure_requires
     # https://github.com/miyagawa/cpanminus/issues/273
-    if (-e 'Build.PL' && !$self->should_use_mm($dist->{dist})) {
+    if (-e 'Build.PL' && !$self->should_use_mm($dist->{dist}) && !@config_deps) {
         push @config_deps, Dependency->from_versions(
             { 'Module::Build' => '0.36' }, 'configure',
         );
