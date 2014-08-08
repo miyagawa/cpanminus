@@ -22,8 +22,8 @@ sub from_versions {
     my($class, $versions, $type) = @_;
 
     my @deps;
-    while (my($module, $version) = each %$versions) {
-        push @deps, $class->new($module, $version, $type)
+    for my $module (sort { lc $a cmp lc $b } keys %$versions) {
+        push @deps, $class->new($module, $versions->{$module}, $type);
     }
 
     @deps;
