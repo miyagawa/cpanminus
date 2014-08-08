@@ -1660,6 +1660,7 @@ sub verify_archive {
 
     unless ($dist->{cpanid}) {
         $self->chat("Archive '$file' does not seem to be from PAUSE. Skip verification.\n");
+        return 1;
     }
 
     (my $mirror = $uri) =~ s!/authors/id.*$!!;
