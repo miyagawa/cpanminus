@@ -8,6 +8,31 @@
 #
 # If you don't have curl but wget, replace `curl -L` with `wget -O -`.
 #
+# HOWEVER, If you have Windows Powershell, 
+# it's curl and wget are incompatible with the above approach.
+# A workaround for Windows Powershell is to 
+#   1) <Browse to here:>http://cpanmin.us
+#   2) From your browser save page as cpanm.txt (so it wont try any conversions)
+#   3) type cpanm.txt | perl - App::cpanminus
+#
+#  HOWEVER, Windows preconditions for installing cpanminus are:
+#    Pre-1) Both dmake.exe and perl.exe are already installed.
+#           (dmake.exe is available in mingw package.)
+#  AND 
+#    Pre-2) Both ;<perl folder>/bin;<mingw folder>/bin 
+#           are added to the END of the Windows PATH environment variable.
+#           (System/advanced/environment variables.)
+#           Caution! Append to the end without making any other changes!
+#  AND
+#    Pre-3, Confirm your version of perl.exe is consistent with path.
+#    Type "where.exe perl.exe" in the Powershell window used to install cpanminus.
+#    Confirm it is the desired perl installation folder before beginning.
+#    GitHubSetup.exe on Windows silently loads an ancient, archaic, old,
+#    outdated, deprecated, obsolete, and unused version of perl.exe.
+#    and to insure you remain in the last century, GitHubSetup
+#    installs the OLD perl.exe in the FRONT of your PATH variable,
+#    but mainly only in the GitHun scripts and consoles.
+#
 # For more details about this program, visit http://search.cpan.org/dist/App-cpanminus
 
 our $VERSION = "1.6928";
