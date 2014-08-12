@@ -1841,7 +1841,7 @@ sub git_uri {
     my $dir = File::Temp::tempdir(CLEANUP => 1);
 
     $self->mask_output( diag_progress => "Cloning $uri" );
-    $self->run([ 'git', 'clone', $uri, $dir ]);
+    $self->run([ 'git', 'clone', '--recursive', $uri, $dir ]);
 
     unless (-e "$dir/.git") {
         $self->diag_fail("Failed cloning git repository $uri", 1);
