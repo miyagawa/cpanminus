@@ -3,8 +3,11 @@ use Test::More;
 use xt::Run;
 
 run_L "MIYAGAWA/Hash-MultiValue-0.03.tar.gz";
-run_L '--skip-satisfied', "Hash::MultiValue~0.02";
 
+run_L '--skip-satisfied', "Hash::MultiValue~0.02";
+like last_build_log, qr/You have Hash::MultiValue \(0\.03\)/;
+
+run_L '--skip-satisfied', "./testdist/Hash-MultiValue-0.03.tar.gz";
 like last_build_log, qr/You have Hash::MultiValue \(0\.03\)/;
 
 run_L '--skip-satisfied', "Hash::MultiValue~0.04";
