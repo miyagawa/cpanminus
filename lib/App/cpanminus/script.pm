@@ -108,6 +108,7 @@ sub new {
         features => {},
         pure_perl => 0,
         cpanfile_path => 'cpanfile',
+        jobs => undef,
         @_,
     }, $class;
 }
@@ -216,6 +217,7 @@ sub parse_options {
         'with-all-features' => sub { $self->{features}{__all} = 1 },
         'pp|pureperl!' => \$self->{pure_perl},
         "cpanfile=s" => \$self->{cpanfile_path},
+        'jobs|j=i' => \$self->{jobs},
         $self->install_type_handlers,
         $self->build_args_handlers,
     );
@@ -1230,6 +1232,8 @@ sub test {
     # https://github.com/Perl-Toolchain-Gang/toolchain-site/blob/master/lancaster-consensus.md
     local $ENV{NONINTERACTIVE_TESTING} = !$self->{interactive};
 
+    local $ENV{HARNESS_OPTIONS} = $self->harness_options($self->{jobs}) if $self->{jobs};
+
     $cmd = $self->append_args($cmd, 'test') if $depth == 0;
 
     return 1 if $self->run_timeout($cmd, $self->{test_timeout});
@@ -1248,6 +1252,26 @@ sub test {
         }
     }
 }
+
+sub harness_options {
+    my ($self, $jobs) = @_;
+
+    return unless defined $jobs;
+
+    my $harness_options = $ENV{HARNESS_OPTIONS};
+
+    if ($harness_options =~ /\bj\d+/) {
+        $harness_options =~ s/j\d+/j$jobs/;
+        return $harness_options;
+    }
+    elsif ($harness_options) {
+        return "$harness_options:j$jobs";
+    }
+    else {
+        return "j$jobs";
+    }
+}
+
 
 sub install {
     my($self, $cmd, $uninst_opts, $depth) = @_;
