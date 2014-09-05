@@ -2,6 +2,14 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7006  2014-09-05 15:44:15 PDT
+   [Bug Fixes]
+      - Work around MetaCPAN bugs in numifying dev release versions (#367, #377)
+      - Bump bootstrapping MakeMaker version recent enough to support MYMETA
+
+   [Incompatible Changes]
+      - Removed undocumented --metacpan option that was only for testing purposes
+
 1.7005  2014-09-05 05:04:06 PDT
    [Bug Fixes]
       - Do not index common directories such as t, xt or inc in install.json
