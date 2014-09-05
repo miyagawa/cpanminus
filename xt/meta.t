@@ -42,7 +42,6 @@ my $local_lib = "$ENV{PERL_CPANM_HOME}/perl5";
 }
 
 my @modules = (
-    'Text::Xslate', '2.0009',
     'Algorithm::Diff', '1.1902',
     'Test::Object', '0.07',
     'IO::String', '1.08',
