@@ -3,10 +3,87 @@ use 5.006;
 use strict;
 use warnings;
 use Config;
-use File::Spec ();
 
-our $VERSION = '2.000008'; # 2.0.8
+our $VERSION = '2.000014';
 $VERSION = eval $VERSION;
+
+BEGIN {
+  *_WIN32 = ($^O eq 'MSWin32' || $^O eq 'NetWare' || $^O eq 'symbian')
+    ? sub(){1} : sub(){0};
+  # punt on these systems
+  *_USE_FSPEC = ($^O eq 'MacOS' || $^O eq 'VMS' || $INC{'File/Spec.pm'})
+    ? sub(){1} : sub(){0};
+}
+our $_DIR_JOIN = _WIN32 ? '\\' : '/';
+our $_DIR_SPLIT = (_WIN32 || $^O eq 'cygwin') ? qr{[\\/]}
+                                              : qr{/};
+our $_ROOT = _WIN32 ? do {
+  my $UNC = qr{[\\/]{2}[^\\/]+[\\/][^\\/]+};
+  qr{^(?:$UNC|[A-Za-z]:|)$_DIR_SPLIT};
+} : qr{^/};
+our $_PERL;
+
+sub _cwd {
+  my $drive = shift;
+  if (!$_PERL) {
+    ($_PERL) = $^X =~ /(.+)/; # $^X is internal how could it be tainted?!
+    if (_is_abs($_PERL)) {
+    }
+    elsif (-x $Config{perlpath}) {
+      $_PERL = $Config{perlpath};
+    }
+    else {
+      ($_PERL) =
+        map { /(.*)/ }
+        grep { -x $_ }
+        map { join($_DIR_JOIN, $_, $_PERL) }
+        split /\Q$Config{path_sep}\E/, $ENV{PATH};
+    }
+  }
+  local @ENV{qw(PATH IFS CDPATH ENV BASH_ENV)};
+  my $cmd = $drive ? "eval { Cwd::getdcwd(q($drive)) }"
+                   : 'getcwd';
+  my $cwd = `"$_PERL" -MCwd -le "print $cmd"`;
+  chomp $cwd;
+  if (!length $cwd && $drive) {
+    $cwd = $drive;
+  }
+  $cwd =~ s/$_DIR_SPLIT?$/$_DIR_JOIN/;
+  $cwd;
+}
+
+sub _catdir {
+  if (_USE_FSPEC) {
+    require File::Spec;
+    File::Spec->catdir(@_);
+  }
+  else {
+    my $dir = join($_DIR_JOIN, @_);
+    $dir =~ s{($_DIR_SPLIT)(?:\.?$_DIR_SPLIT)+}{$1}g;
+    $dir;
+  }
+}
+
+sub _is_abs {
+  if (_USE_FSPEC) {
+    require File::Spec;
+    File::Spec->file_name_is_absolute($_[0]);
+  }
+  else {
+    $_[0] =~ $_ROOT;
+  }
+}
+
+sub _rel2abs {
+  my ($dir, $base) = @_;
+  return $dir
+    if _is_abs($dir);
+
+  $base = _WIN32 && $dir =~ s/^([A-Za-z]:)// ? _cwd("$1")
+        : $base                              ? $base
+                                             : _cwd;
+  return _catdir($base, $dir);
+}
 
 sub import {
   my ($class, @args) = @_;
@@ -133,21 +210,21 @@ my @_lib_subdirs = (
 
 sub install_base_bin_path {
   my ($class, $path) = @_;
-  return File::Spec->catdir($path, 'bin');
+  return _catdir($path, 'bin');
 }
 sub install_base_perl_path {
   my ($class, $path) = @_;
-  return File::Spec->catdir($path, 'lib', 'perl5');
+  return _catdir($path, 'lib', 'perl5');
 }
 sub install_base_arch_path {
   my ($class, $path) = @_;
-  File::Spec->catdir($class->install_base_perl_path($path), $_archname);
+  _catdir($class->install_base_perl_path($path), $_archname);
 }
 
 sub lib_paths_for {
   my ($class, $path) = @_;
   my $base = $class->install_base_perl_path($path);
-  return map { File::Spec->catdir($base, @$_) } @_lib_subdirs;
+  return map { _catdir($base, @$_) } @_lib_subdirs;
 }
 
 sub _mm_escape_path {
@@ -280,6 +357,18 @@ sub build_environment_vars_for {
   my $self = $_[0]->new->activate($_[1]);
   $self->build_environment_vars;
 }
+sub build_activate_environment_vars_for {
+  my $self = $_[0]->new->activate($_[1]);
+  $self->build_environment_vars;
+}
+sub build_deactivate_environment_vars_for {
+  my $self = $_[0]->new->deactivate($_[1]);
+  $self->build_environment_vars;
+}
+sub build_deact_all_environment_vars_for {
+  my $self = $_[0]->new->deactivate_all;
+  $self->build_environment_vars;
+}
 sub build_environment_vars {
   my $self = shift;
   (
@@ -297,6 +386,12 @@ sub setup_local_lib_for {
 
 sub setup_local_lib {
   my $self = shift;
+
+  # if Carp is already loaded, ensure Carp::Heavy is also loaded, to avoid
+  # $VERSION mismatch errors (Carp::Heavy loads Carp, so we do not need to
+  # check in the other direction)
+  require Carp::Heavy if $INC{'Carp.pm'};
+
   $self->setup_env_hash;
   @INC = @{$self->inc};
 }
@@ -331,8 +426,6 @@ sub environment_vars_string {
 
   $shelltype ||= $self->guess_shelltype;
 
-  my $build_method = "build_${shelltype}_env_declaration";
-
   my $extra = $self->extra;
   my @envs = (
     PATH                => $self->bins,
@@ -340,6 +433,15 @@ sub environment_vars_string {
     PERL_LOCAL_LIB_ROOT => $self->roots,
     map { $_ => $extra->{$_} } sort keys %$extra,
   );
+  $self->_build_env_string($shelltype, \@envs);
+}
+
+sub _build_env_string {
+  my ($self, $shelltype, $envs) = @_;
+  my @envs = @$envs;
+
+  my $build_method = "build_${shelltype}_env_declaration";
+
   my $out = '';
   while (@envs) {
     my ($name, $value) = (shift(@envs), shift(@envs));
@@ -349,14 +451,6 @@ sub environment_vars_string {
         && ref $value->[0]
         && ref $value->[0] eq 'SCALAR'
         && ${$value->[0]} eq $name) {
-      next;
-    }
-    if (
-        !ref $value
-        and defined $value
-          ? (defined $ENV{$name} && $value eq $ENV{$name})
-          : !defined $ENV{$name}
-    ) {
       next;
     }
     $out .= $self->$build_method($name, $value);
@@ -370,21 +464,21 @@ sub environment_vars_string {
 
 sub build_bourne_env_declaration {
   my ($class, $name, $args) = @_;
-  my $value = $class->_interpolate($args, '$%s', '"', '\\%s');
+  my $value = $class->_interpolate($args, '${%s}', qr/["\\\$!`]/, '\\%s');
 
   if (!defined $value) {
     return qq{unset $name;\n};
   }
 
-  $value =~ s/(^|\G|$_path_sep)\$$name$_path_sep/$1\$$name\${$name+$_path_sep}/g;
-  $value =~ s/$_path_sep\$$name$/\${$name+$_path_sep}\$$name/;
+  $value =~ s/(^|\G|$_path_sep)\$\{$name\}$_path_sep/$1\${$name}\${$name+$_path_sep}/g;
+  $value =~ s/$_path_sep\$\{$name\}$/\${$name+$_path_sep}\${$name}/;
 
   qq{${name}="$value"; export ${name};\n}
 }
 
 sub build_csh_env_declaration {
   my ($class, $name, $args) = @_;
-  my ($value, @vars) = $class->_interpolate($args, '$%s', '"', '"\\%s"');
+  my ($value, @vars) = $class->_interpolate($args, '${%s}', '"', '"\\%s"');
   if (!defined $value) {
     return qq{unsetenv $name;\n};
   }
@@ -395,9 +489,9 @@ sub build_csh_env_declaration {
   }
 
   my $value_without = $value;
-  if ($value_without =~ s/(?:^|$_path_sep)\$$name(?:$_path_sep|$)//g) {
-    $out .= qq{if "\$$name" != '' setenv $name "$value";\n};
-    $out .= qq{if "\$$name" == '' };
+  if ($value_without =~ s/(?:^|$_path_sep)\$\{$name\}(?:$_path_sep|$)//g) {
+    $out .= qq{if "\${$name}" != '' setenv $name "$value";\n};
+    $out .= qq{if "\${$name}" == '' };
   }
   $out .= qq{setenv $name "$value_without";\n};
   return $out;
@@ -405,7 +499,7 @@ sub build_csh_env_declaration {
 
 sub build_cmd_env_declaration {
   my ($class, $name, $args) = @_;
-  my $value = $class->_interpolate($args, '%%%s%%', qr([()!^"<>&|]), '^%s');
+  my $value = $class->_interpolate($args, '%%%s%%', qr(%), '%s');
   if (!$value) {
     return qq{\@set $name=\n};
   }
@@ -413,10 +507,10 @@ sub build_cmd_env_declaration {
   my $out = '';
   my $value_without = $value;
   if ($value_without =~ s/(?:^|$_path_sep)%$name%(?:$_path_sep|$)//g) {
-    $out .= qq{\@if not "%$name%"=="" set $name=$value\n};
+    $out .= qq{\@if not "%$name%"=="" set "$name=$value"\n};
     $out .= qq{\@if "%$name%"=="" };
   }
-  $out .= qq{\@set $name=$value_without\n};
+  $out .= qq{\@set "$name=$value_without"\n};
   return $out;
 }
 
@@ -441,7 +535,7 @@ sub wrap_powershell_output {
 
 sub build_fish_env_declaration {
   my ($class, $name, $args) = @_;
-  my $value = $class->_interpolate($args, '$%s', '"', '\\%s');
+  my $value = $class->_interpolate($args, '$%s', qr/[\\"' ]/, '\\%s');
   if (!defined $value) {
     return qq{set -e $name;\n};
   }
@@ -519,7 +613,7 @@ sub resolve_home_path {
     }
   };
   unless (defined $homedir) {
-    require Carp;
+    require Carp; require Carp::Heavy;
     Carp::croak(
       "Couldn't resolve homedir for "
       .(defined $user ? $user : 'current user')
@@ -531,7 +625,7 @@ sub resolve_home_path {
 
 sub resolve_relative_path {
   my ($class, $path) = @_;
-  $path = File::Spec->rel2abs($path);
+  _rel2abs($path);
 }
 
 sub ensure_dir_structure_for {
@@ -1207,11 +1301,10 @@ not set, a Bourne-compatible shell is assumed.
 
 =item * Should probably auto-fixup CPAN config if not already done.
 
-=item * local::lib loads L<File::Spec>.  When used to set shell variables,
-this isn't a problem.  When used inside a perl script, any L<File::Spec>
-version inside the local::lib will be ignored.  A workaround for this is using
-C<use lib "$ENV{HOME}/perl5/lib/perl5";> inside the script instead of using
-C<local::lib> directly.
+=item * On VMS and MacOS Classic (pre-OS X), local::lib loads L<File::Spec>.
+This means any L<File::Spec> version installed in the local::lib will be
+ignored by scripts using local::lib.  A workaround for this is using
+C<use lib "$local_lib/lib/perl5";> instead of using C<local::lib> directly.
 
 =item * Conflicts with L<ExtUtils::MakeMaker>'s C<PREFIX> option.
 C<local::lib> uses the C<INSTALL_BASE> option, as it has more predictable and

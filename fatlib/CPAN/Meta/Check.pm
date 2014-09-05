@@ -1,7 +1,5 @@
 package CPAN::Meta::Check;
-{
-  $CPAN::Meta::Check::VERSION = '0.008';
-}
+$CPAN::Meta::Check::VERSION = '0.009';
 use strict;
 use warnings;
 
@@ -16,11 +14,11 @@ use Module::Metadata;
 sub _check_dep {
 	my ($reqs, $module, $dirs) = @_;
 
-	my $version = $module eq 'perl' ? $] : do { 
-		my $metadata = Module::Metadata->new_from_module($module, inc => $dirs);
-		return "Module '$module' is not installed" if not defined $metadata;
-		eval { $metadata->version };
-	};
+	$module eq 'perl' and return ($reqs->accepts_module($module, $]) ? () : sprintf "Your Perl (%s) is not in the range '%s'", $], $reqs->requirements_for_module($module));
+
+	my $metadata = Module::Metadata->new_from_module($module, inc => $dirs);
+	return "Module '$module' is not installed" if not defined $metadata;
+	my $version = eval { $metadata->version };
 	return "Missing version info for module '$module'" if $reqs->requirements_for_module($module) and not $version;
 	return sprintf 'Installed version (%s) of %s is not in range \'%s\'', $version, $module, $reqs->requirements_for_module($module) if not $reqs->accepts_module($module, $version || 0);
 	return;
@@ -75,17 +73,19 @@ __END__
 
 =pod
 
+=encoding UTF-8
+
 =head1 NAME
 
 CPAN::Meta::Check - Verify requirements in a CPAN::Meta object
 
 =head1 VERSION
 
-version 0.008
+version 0.009
 
 =head1 SYNOPSIS
 
- warn "$_\n" for verify_requirements($meta, [qw/runtime build test/], 'requires');
+ warn "$_\n" for verify_dependencies($meta, [qw/runtime build test/], 'requires');
 
 =head1 DESCRIPTION
 
@@ -99,7 +99,7 @@ This function checks if all dependencies in C<$reqs> (a L<CPAN::Meta::Requiremen
 
 =head2 verify_dependencies($meta, $phases, $types, $incdirs)
 
-Check all requirements in C<$meta> for phases C<$phases> and types C<$types>. Modules are searched for in C<@$incdirs>, defaulting to C<@INC>. C<$meta> should be a L<CPAN::Meta::Prereqs> or L<CPAN::Meta> object.
+Check all requirements in C<$meta> for phases C<$phases> and type C<$type>. Modules are searched for in C<@$incdirs>, defaulting to C<@INC>. C<$meta> should be a L<CPAN::Meta::Prereqs> or L<CPAN::Meta> object.
 
 =head2 requirements_for($meta, $phases, $types)
 

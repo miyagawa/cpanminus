@@ -6,7 +6,7 @@ use strict;
 
 use vars qw(@ISA $VERSION $CLASS $STRICT $LAX *declare *qv);
 
-$VERSION = 0.9908;
+$VERSION = 0.9909;
 $CLASS = 'version';
 
 # !!!!Delete this next block completely when adding to Perl core!!!!

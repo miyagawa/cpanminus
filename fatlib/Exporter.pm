@@ -9,7 +9,7 @@ require 5.006;
 our $Debug = 0;
 our $ExportLevel = 0;
 our $Verbose ||= 0;
-our $VERSION = '5.68';
+our $VERSION = '5.70';
 our (%Cache);
 
 sub as_heavy {
@@ -280,7 +280,7 @@ import function:
     package A;
 
     @ISA = qw(Exporter);
-    @EXPORT_OK = qw ($b);
+    @EXPORT_OK = qw($b);
 
     sub import
     {
@@ -294,7 +294,7 @@ Instead, say the following:
 
     package A;
     @ISA = qw(Exporter);
-    @EXPORT_OK = qw ($b);
+    @EXPORT_OK = qw($b);
 
     sub import
     {
@@ -312,10 +312,10 @@ Note: Be careful not to modify C<@_> at all before you call export_to_level
 
 By including Exporter in your C<@ISA> you inherit an Exporter's import() method
 but you also inherit several other helper methods which you probably don't
-want.  To avoid this you can do
+want.  To avoid this you can do:
 
   package YourModule;
-  use Exporter qw( import );
+  use Exporter qw(import);
 
 which will export Exporter's own import() method into YourModule.
 Everything will work as before but you won't need to include Exporter in
@@ -471,7 +471,7 @@ one must write instead a C<use vars> statement.
 
 There are some caveats with the use of runtime statements
 like C<require Exporter> and the assignment to package
-variables, which can very subtle for the unaware programmer.
+variables, which can be very subtle for the unaware programmer.
 This may happen for instance with mutually recursive
 modules, which are affected by the time the relevant
 constructions are executed.
@@ -500,9 +500,9 @@ or just plain wrong.
 With respect to loading C<Exporter> and inheriting, there
 are alternatives with the use of modules like C<base> and C<parent>.
 
-  use base qw( Exporter );
+  use base qw(Exporter);
   # or
-  use parent qw( Exporter );
+  use parent qw(Exporter);
 
 Any of these statements are nice replacements for
 C<BEGIN { require Exporter; @ISA = qw(Exporter); }>
@@ -553,11 +553,11 @@ There's one more item to add to this list.  Do B<not>
 export variable names.  Just because C<Exporter> lets you
 do that, it does not mean you should.
 
-  @EXPORT_OK = qw( $svar @avar %hvar ); # DON'T!
+  @EXPORT_OK = qw($svar @avar %hvar); # DON'T!
 
 Exporting variables is not a good idea.  They can
 change under the hood, provoking horrible
-effects at-a-distance, that are too hard to track
+effects at-a-distance that are too hard to track
 and to fix.  Trust me: they are not worth it.
 
 To provide the capability to set/get class-wide
@@ -569,7 +569,7 @@ as subroutines or class methods instead.
 C<Exporter> is definitely not the only module with
 symbol exporter capabilities.  At CPAN, you may find
 a bunch of them.  Some are lighter.  Some
-provide improved APIs and features.  Peek the one
+provide improved APIs and features.  Pick the one
 that fits your needs.  The following is
 a sample list of such modules.
 
