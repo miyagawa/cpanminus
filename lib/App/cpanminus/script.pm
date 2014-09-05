@@ -990,7 +990,7 @@ sub setup_local_lib {
 sub bootstrap_local_lib_deps {
     my $self = shift;
     push @{$self->{bootstrap_deps}},
-        Dependency->new('ExtUtils::MakeMaker' => 6.31),
+        Dependency->new('ExtUtils::MakeMaker' => 6.58),
         Dependency->new('ExtUtils::Install'   => 1.46);
 }
 
