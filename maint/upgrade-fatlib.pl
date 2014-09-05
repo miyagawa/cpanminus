@@ -65,14 +65,23 @@ sub pack_modules {
     $packer->packlists_to_tree($path, \@packlists);
 }
 
-my @modules = grep !in_lib(mod_to_pm($_)), find_requires('lib/App/cpanminus/script.pm');
-pack_modules(cwd . "/fatlib", \@modules, [ 'local::lib', 'Exporter' ]);
+sub run {
+    my($upgrade) = @_;
 
-use Config;
-rmtree("fatlib/$Config{archname}");
-rmtree("fatlib/POD2");
+    my @modules = grep !in_lib(mod_to_pm($_)), find_requires('lib/App/cpanminus/script.pm');
 
-find({ wanted => \&want, no_chdir => 1 }, "fatlib");
+    if ($upgrade) {
+        system 'cpanm', @modules;
+    }
+
+    pack_modules(cwd . "/fatlib", \@modules, [ 'local::lib', 'Exporter' ]);
+
+    use Config;
+    rmtree("fatlib/$Config{archname}");
+    rmtree("fatlib/POD2");
+
+    find({ wanted => \&want, no_chdir => 1 }, "fatlib");
+}
 
 sub want {
     if (/\.pod$/) {
@@ -80,3 +89,5 @@ sub want {
         unlink $_;
     }
 }
+
+run(@ARGV);
