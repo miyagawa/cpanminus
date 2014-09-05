@@ -2728,7 +2728,7 @@ sub which {
     my $exe_ext = $Config{_exe};
     for my $dir (File::Spec->path) {
         my $fullpath = File::Spec->catfile($dir, $name);
-        if ((-x $fullpath || -x ($fullpath .= $exe_ext)) && -d _) {
+        if ((-x $fullpath || -x ($fullpath .= $exe_ext)) && !-d _) {
             if ($fullpath =~ /\s/) {
                 $fullpath = $self->shell_quote($fullpath);
             }
