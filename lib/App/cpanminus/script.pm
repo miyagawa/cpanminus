@@ -519,7 +519,7 @@ sub version_to_query {
         };
     } elsif ($req !~ /\s/) {
         return {
-            range => { 'module.version_numified' => { 'gte' => $self->numify_ver($req) } },
+            range => { 'module.version_numified' => { 'gte' => $self->numify_ver_metacpan($req) } },
         };
     } else {
         my %ops = qw(< lt <= lte > gt >= gte);
@@ -527,9 +527,9 @@ sub version_to_query {
         my @requirements = split /,\s*/, $req;
         for my $r (@requirements) {
             if ($r =~ s/^([<>]=?)\s*//) {
-                $range{$ops{$1}} = $self->numify_ver($r);
+                $range{$ops{$1}} = $self->numify_ver_metacpan($r);
             } elsif ($r =~ s/\!=\s*//) {
-                push @exclusion, $self->numify_ver($r);
+                push @exclusion, $self->numify_ver_metacpan($r);
             }
         }
 
@@ -539,7 +539,7 @@ sub version_to_query {
 
         if (@exclusion) {
             push @filters, {
-                not => { or => [ map { +{ term => { 'module.version_numified' => $self->numify_ver($_) } } } @exclusion ] },
+                not => { or => [ map { +{ term => { 'module.version_numified' => $self->numify_ver_metacpan($_) } } } @exclusion ] },
             };
         }
 
@@ -547,9 +547,19 @@ sub version_to_query {
     }
 }
 
+# Apparently MetaCPAN numifies devel releases by stripping _ first
+sub numify_ver_metacpan {
+    my($self, $ver) = @_;
+    $ver =~ s/_//g;
+    version->new($ver)->numify;
+}
+
+# version->new("1.00_00")->numify => "1.00_00" :/
 sub numify_ver {
     my($self, $ver) = @_;
-    version->new($ver)->numify;
+    my $number = version->new($ver)->numify;
+    $number =~ s/_//g;
+    $number + 0;
 }
 
 sub maturity_filter {
