@@ -163,7 +163,10 @@ sub parse_options {
         'q|quiet!'  => \$self->{quiet},
         'h|help'    => sub { $self->{action} = 'show_help' },
         'V|version' => sub { $self->{action} = 'show_version' },
-        'perl=s'    => \$self->{perl},
+        'perl=s'    => sub {
+            $self->diag("--perl is deprecated since it's known to be fragile in figuring out dependencies. Run `$_[1] -S cpanm` instead.\n", 1);
+            $self->{perl} = $_[1];
+        },
         'l|local-lib=s' => sub { $self->{local_lib} = $self->maybe_abs($_[1]) },
         'L|local-lib-contained=s' => sub {
             $self->{local_lib} = $self->maybe_abs($_[1]);
