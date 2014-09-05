@@ -557,9 +557,7 @@ sub numify_ver_metacpan {
 # version->new("1.00_00")->numify => "1.00_00" :/
 sub numify_ver {
     my($self, $ver) = @_;
-    my $number = version->new($ver)->numify;
-    $number =~ s/_//g;
-    $number + 0;
+    eval version->new($ver)->numify;
 }
 
 sub maturity_filter {
