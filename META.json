@@ -4,7 +4,7 @@
       "- Tatsuhiko Miyagawa"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Dist::Milla version v1.0.4, Dist::Zilla version 5.015, CPAN::Meta::Converter version 2.140640",
+   "generated_by" : "Dist::Milla version v1.0.5, Dist::Zilla version 5.020, CPAN::Meta::Converter version 2.142060",
    "license" : [
       "perl_5"
    ],
@@ -29,7 +29,7 @@
    "prereqs" : {
       "configure" : {
          "requires" : {
-            "ExtUtils::MakeMaker" : "6.30"
+            "ExtUtils::MakeMaker" : "0"
          }
       },
       "develop" : {
@@ -79,8 +79,9 @@
       "runtime" : {
          "requires" : {
             "ExtUtils::Install" : "1.46",
-            "ExtUtils::MakeMaker" : "6.31",
-            "Module::Build" : "0.36"
+            "ExtUtils::MakeMaker" : "6.58",
+            "Module::Build" : "0.38",
+            "perl" : "5.008000"
          }
       },
       "test" : {
@@ -89,7 +90,7 @@
          }
       }
    },
-   "release_status" : "stable",
+   "release_status" : "testing",
    "resources" : {
       "bugtracker" : {
          "web" : "https://github.com/miyagawa/cpanminus/issues"
@@ -101,21 +102,25 @@
          "web" : "https://github.com/miyagawa/cpanminus"
       }
    },
-   "version" : "1.7004",
+   "version" : "1.7005",
    "x_contributors" : [
       "Alessandro Ghedini <al3xbio@gmail.com>",
       "Andrew Rodland <andrew@cleverdomain.org>",
+      "Andy Jones <andy@broadbean.com>",
       "Ash Berlin <ash_github@firemirror.com>",
       "Ben Bullock <benkasminbullock@gmail.com>",
       "Breno G. de Oliveira <garu@cpan.org>",
+      "Brian Wightman <MidLifeXis@wightmanfam.org>",
       "Christian Walde <walde.christian@googlemail.com>",
       "Dagfinn Ilmari Mannsåker <ilmari@ilmari.org>",
+      "Dana M. Diederich <diederich@gmail.com>",
       "Dave Goodell <davidjgoodell@gmail.com>",
       "Dave Rolsky <autarch@urth.org>",
       "David Golden <dagolden@cpan.org>",
       "David Steinbrunner <dsteinbrunner@pobox.com>",
       "Fuji, Goro <g.psy.va@gmail.com>",
       "Graham Knop <haarg@haarg.org>",
+      "Graham Ollis <perl@wdlabs.com>",
       "Ingy dot Net <ingy@ingy.net>",
       "J. Nick Koston <nick@cpanel.net>",
       "Jan Dubois <jand@activestate.com>",
@@ -141,12 +146,14 @@
       "Slaven Rezic <slaven@rezic.de>",
       "Smylers <Smylers@stripey.com>",
       "Stoned Elipot <stoned.elipot@gmail.com>",
+      "Syohei YOSHIDA <syohex@gmail.com>",
       "Tatsuhiko Miyagawa <miyagawa@gmail.com>",
       "Thomas Sibley <tom@zulutango.org>",
       "Tokuhiro Matsuno <tokuhirom@gmail.com>",
       "Tuure Laurinolli <tuure.laurinolli@portalify.com>",
       "Vyacheslav Matyukhin <mmcleric@yandex-team.ru>",
       "Yann Kerherve <yann@cyberion.net>",
+      "andyjones <andy_jones@outgun.com>",
       "cho45 <cho45@lowreal.net>",
       "chromatic <chromatic@wgz.org>",
       "fREW Schmidt <frioux@gmail.com>",

@@ -133,7 +133,7 @@ doesn't support or is known to have issues with distributions like as
 follows:
 
 - Tests that require input from STDIN.
-- Tests that might fail when `AUTOMATED_TESTING` is enabled.
+- Build.PL or Makefile.PL that prompts for input when `PERL_MM_USE_DEFAULT` is enabled.
 - Modules that have invalid numeric values as VERSION (such as `1.1a`)
 
 These failures can be reported back to the author of the module so
