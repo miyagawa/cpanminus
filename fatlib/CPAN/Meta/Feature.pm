@@ -2,10 +2,28 @@ use 5.006;
 use strict;
 use warnings;
 package CPAN::Meta::Feature;
-our $VERSION = '2.132510'; # VERSION
+our $VERSION = '2.142060'; # VERSION
 
 use CPAN::Meta::Prereqs;
 
+#pod =head1 DESCRIPTION
+#pod
+#pod A CPAN::Meta::Feature object describes an optional feature offered by a CPAN
+#pod distribution and specified in the distribution's F<META.json> (or F<META.yml>)
+#pod file.
+#pod
+#pod For the most part, this class will only be used when operating on the result of
+#pod the C<feature> or C<features> methods on a L<CPAN::Meta> object.
+#pod
+#pod =method new
+#pod
+#pod   my $feature = CPAN::Meta::Feature->new( $identifier => \%spec );
+#pod
+#pod This returns a new Feature object.  The C<%spec> argument to the constructor
+#pod should be the same as the value of the C<optional_feature> entry in the
+#pod distmeta.  It must contain entries for C<description> and C<prereqs>.
+#pod
+#pod =cut
 
 sub new {
   my ($class, $identifier, $spec) = @_;
@@ -19,12 +37,28 @@ sub new {
   bless \%guts => $class;
 }
 
+#pod =method identifier
+#pod
+#pod This method returns the feature's identifier.
+#pod
+#pod =cut
 
 sub identifier  { $_[0]{identifier}  }
 
+#pod =method description
+#pod
+#pod This method returns the feature's long description.
+#pod
+#pod =cut
 
 sub description { $_[0]{description} }
 
+#pod =method prereqs
+#pod
+#pod This method returns the feature's prerequisites as a L<CPAN::Meta::Prereqs>
+#pod object.
+#pod
+#pod =cut
 
 sub prereqs     { $_[0]{prereqs} }
 
@@ -36,7 +70,7 @@ __END__
 
 =pod
 
-=encoding utf-8
+=encoding UTF-8
 
 =head1 NAME
 
@@ -44,7 +78,7 @@ CPAN::Meta::Feature - an optional feature provided by a CPAN distribution
 
 =head1 VERSION
 
-version 2.132510
+version 2.142060
 
 =head1 DESCRIPTION
 

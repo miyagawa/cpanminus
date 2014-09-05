@@ -7,7 +7,7 @@ use 5.006;
 use strict;
 use warnings;
 package CPAN::Meta::Spec;
-our $VERSION = '2.132510'; # VERSION
+our $VERSION = '2.142060'; # VERSION
 
 1;
 
@@ -20,7 +20,7 @@ __END__
 
 =pod
 
-=encoding utf-8
+=encoding UTF-8
 
 =head1 NAME
 
@@ -28,7 +28,7 @@ CPAN::Meta::Spec - specification for CPAN distribution metadata
 
 =head1 VERSION
 
-version 2.132510
+version 2.142060
 
 =head1 SYNOPSIS
 
@@ -82,7 +82,7 @@ version 2.132510
     keywords => [ qw/ toolchain cpan dual-life / ],
     'meta-spec' => {
       version => '2',
-      url     => 'http://search.cpan.org/perldoc?CPAN::Meta::Spec',
+      url     => 'https://metacpan.org/pod/CPAN::Meta::Spec',
     },
     generated_by => 'Module::Build version 0.36',
   };
@@ -289,11 +289,17 @@ etc.) as part of its configuration.  This field should be set to a false
 value to indicate that prerequisites included in metadata may be
 considered final and valid for static analysis.
 
+Note: when this field is true, post-configuration prerequisites are not
+guaranteed to bear any relation whatsoever to those stated in the metadata,
+and relying on them doing so is an error. See also
+L</Prerequisites for dynamically configured distributions> in the implementors'
+notes.
+
 This field explicitly B<does not> indicate whether installation may be
 safely performed without using a Makefile or Build file, as there may be
 special files to install or custom installation targets (e.g. for
 dual-life modules that exist on CPAN as well as in the Perl core).  This
-field only defines whether prerequisites are complete as given in the
+field only defines whether or not prerequisites are exactly as given in the
 metadata.
 
 =head3 generated_by
@@ -315,7 +321,7 @@ Example:
 
   license => [ 'perl_5' ]
 
-  license => [ 'apache_2', 'mozilla_1_0' ]
+  license => [ 'apache_2_0', 'mozilla_1_0' ]
 
 (Spec 2) [required] {List of one or more License Strings}
 
@@ -395,6 +401,20 @@ This is a I<URL> of the metadata specification document corresponding to
 the given version.  This is strictly for human-consumption and should
 not impact the interpretation of the document.
 
+For the version 2 spec, either of these are recommended:
+
+=over 4
+
+=item *
+
+C<https://metacpan.org/pod/CPAN::Meta::Spec>
+
+=item *
+
+C<http://search.cpan.org/perldoc?CPAN::Meta::Spec>
+
+=back
+
 =back
 
 =head3 name
@@ -408,7 +428,8 @@ Example:
 This field is the name of the distribution.  This is often created by
 taking the "main package" in the distribution and changing C<::> to
 C<->, but the name may be completely unrelated to the packages within
-the distribution.  C.f. L<http://search.cpan.org/dist/libwww-perl/>.
+the distribution.  For example, L<LWP::UserAgent> is distributed as part
+of the distribution name "libwww-perl".
 
 =head3 release_status
 
@@ -662,8 +683,8 @@ Example:
 
 This describes all packages provided by this distribution.  This
 information is used by distribution and automation mechanisms like
-PAUSE, CPAN, and search.cpan.org to build indexes saying in which
-distribution various packages can be found.
+PAUSE, CPAN, metacpan.org and search.cpan.org to build indexes saying in
+which distribution various packages can be found.
 
 The keys of C<provides> are package names that can be found within
 the distribution.  If a package name key is provided, it must
@@ -675,7 +696,8 @@ have a Map with the following valid subkeys:
 
 This field is required.  It must contain a Unix-style relative file path
 from the root of the distribution directory to a file that contains or
-generates the package.
+generates the package.  It may be given as C<META.yml> or C<META.json>
+to claim a package for indexing without needing a C<*.pm>.
 
 =item version
 
@@ -1088,23 +1110,71 @@ and version prerequisite C<$prereq>:
 If the values of C<$mod> and C<$prereq> have not been scrubbed, however,
 this presents security implications.
 
+=head2 Prerequisites for dynamically configured distributions
+
+When C<dynamic_config> is true, it is an error to presume that the
+prerequisites given in distribution metadata will have any relationship
+whatsoever to the actual prerequisites of the distribution.
+
+In practice, however, one can generally expect such prerequisites to be
+one of two things:
+
+=over 4
+
+=item *
+
+The minimum prerequisites for the distribution, to which dynamic configuration will only add items
+
+=item *
+
+Whatever the distribution configured with on the releaser's machine at release time
+
+=back
+
+The second case often turns out to have identical results to the first case,
+albeit only by accident.
+
+As such, consumers may use this data for informational analysis, but
+presenting it to the user as canonical or relying on it as such is
+invariably the height of folly.
+
 =head1 SEE ALSO
+
+=over 4
+
+=item *
 
 CPAN, L<http://www.cpan.org/>
 
-CPAN.pm, L<http://search.cpan.org/dist/CPAN/>
-
-CPANPLUS, L<http://search.cpan.org/dist/CPANPLUS/>
-
-ExtUtils::MakeMaker, L<http://search.cpan.org/dist/ExtUtils-MakeMaker/>
-
-Module::Build, L<http://search.cpan.org/dist/Module-Build/>
-
-Module::Install, L<http://search.cpan.org/dist/Module-Install/>
+=item *
 
 JSON, L<http://json.org/>
 
+=item *
+
 YAML, L<http://www.yaml.org/>
+
+=item *
+
+L<CPAN>
+
+=item *
+
+L<CPANPLUS>
+
+=item *
+
+L<ExtUtils::MakeMaker>
+
+=item *
+
+L<Module::Build>
+
+=item *
+
+L<Module::Install>
+
+=back
 
 =head1 HISTORY
 
