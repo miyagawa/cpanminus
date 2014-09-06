@@ -6,17 +6,30 @@ use xt::Run;
 
 my $local_lib = "$ENV{PERL_CPANM_HOME}/perl5";
 
-run_L '--notest', 'DSKOLL/IO-stringy-2.110.tar.gz';
+sub install_json {
+    my($path, $dist) = @_;
 
-my $file = "$local_lib/lib/perl5/$Config{archname}/.meta/IO-stringy-2.110/install.json";
-open my $in, "<", $file or die $!;
+    run_L '--notest', $path;
 
-my $data = JSON::decode_json(join "", <$in>);
-is $data->{name}, "IO::Stringy";
-is $data->{version}, '2.110';
+    my $file = "$local_lib/lib/perl5/$Config{archname}/.meta/$dist/install.json";
+    open my $in, "<", $file or die $!;
+    JSON::decode_json(join "", <$in>);
+}
 
-# pmfiles in t/ should be excluded
-ok !$data->{provides}{"Common"};
-ok !$data->{provides}{"ExtUtils::TBone"};
+
+{
+    my $data = install_json('DSKOLL/IO-stringy-2.110.tar.gz', 'IO-stringy-2.110');
+    is $data->{name}, "IO::Stringy";
+    is $data->{version}, '2.110';
+
+    # pmfiles in t/ should be excluded
+    ok !$data->{provides}{"Common"};
+    ok !$data->{provides}{"ExtUtils::TBone"};
+}
+
+{
+    my $data = install_json('Test::TCP@2.00', 'Test-TCP-2.00');
+    ok !$data->{provides}{MyBuilder};
+}
 
 done_testing;
