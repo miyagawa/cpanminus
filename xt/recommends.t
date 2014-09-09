@@ -2,6 +2,8 @@ use strict;
 use xt::Run;
 use Test::More;
 
+$ENV{NOTEST} = 1;
+
 run_L '--with-recommends', './testdist/TestDist-Recommend';
 like last_build_log, qr/Checking if you have Try::Tiny/;
 like last_build_log, qr/Checking if you have CPAN::Test::Dummy::Perl5::Build::Fails/;

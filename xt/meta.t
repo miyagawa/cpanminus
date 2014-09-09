@@ -5,6 +5,8 @@ use Config;
 use xt::Run;
 use version;
 
+$ENV{NOTEST} = 1;
+
 sub load_json {
     open my $in, "<", $_[0] or die "$_[0]: $!";
     JSON::decode_json(join "", <$in>);
