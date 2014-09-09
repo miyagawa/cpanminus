@@ -3042,7 +3042,7 @@ sub safeexec {
 
 sub mask_uri_passwords {
     my($self, @strings) = @_;
-    s{ (https?://) ([^:/]+) : [^@/]+ @ }{$1$2:*password*@}gx for @strings;
+    s{ (https?://) ([^:/]+) : [^@/]+ @ }{$1$2:********@}gx for @strings;
     return @strings;
 }
 
