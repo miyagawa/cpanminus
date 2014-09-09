@@ -2,6 +2,11 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7007  2014-09-09 09:25:46 PDT
+   [Improvements]
+      - Make sure MetaCPAN search looks up the dist by right author #405
+      - Ignore Module::Build artifacts in _build when indexing modules metadata
+
 1.7006  2014-09-05 15:44:15 PDT
    [Bug Fixes]
       - Work around MetaCPAN bugs in numifying dev release versions (#367, #377)
