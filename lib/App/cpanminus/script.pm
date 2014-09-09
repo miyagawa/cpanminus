@@ -696,7 +696,7 @@ sub search_cpanmetadb {
 
     (my $uri = $self->{cpanmetadb}) =~ s{/?$}{/package/$module};
     my $yaml = $self->get($uri);
-    my $meta = $self->parse_meta_string($yaml);
+    my $meta = eval { Parse::CPAN::Meta->load_yaml_string($yaml) };
     if ($meta && $meta->{distfile}) {
         return $self->cpan_module($module, $meta->{distfile}, $meta->{version});
     }
@@ -2541,7 +2541,7 @@ sub extract_meta_prereqs {
 
     if (-e 'MYMETA.yml') {
         $self->chat("Checking dependencies from MYMETA.yml ...\n");
-        my $mymeta = $self->parse_meta('MYMETA.yml');
+        my $mymeta = eval { Parse::CPAN::Meta->load_file('MYMETA.yml') };
         if ($mymeta) {
             $meta->{$_} = $mymeta->{$_} for qw(name version);
             return $self->extract_prereqs($mymeta, $dist);
@@ -3043,16 +3043,6 @@ sub mask_uri_passwords {
     my($self, @strings) = @_;
     s{ (https?://) ([^:/]+) : [^@/]+ @ }{$1$2:********@}gx for @strings;
     return @strings;
-}
-
-sub parse_meta {
-    my($self, $file) = @_;
-    return eval { Parse::CPAN::Meta->load_file($file) };
-}
-
-sub parse_meta_string {
-    my($self, $yaml) = @_;
-    return eval { Parse::CPAN::Meta->load_yaml_string($yaml) };
 }
 
 1;
