@@ -11,7 +11,6 @@ use File::Spec ();
 use File::Copy ();
 use File::Temp ();
 use Getopt::Long ();
-use Parse::CPAN::Meta;
 use Symbol ();
 use String::ShellQuote ();
 use version ();
@@ -692,11 +691,13 @@ sub search_database {
 sub search_cpanmetadb {
     my($self, $module, $version) = @_;
 
+    require CPAN::Meta::YAML;
+
     $self->chat("Searching $module on cpanmetadb ...\n");
 
     (my $uri = $self->{cpanmetadb}) =~ s{/?$}{/package/$module};
     my $yaml = $self->get($uri);
-    my $meta = eval { Parse::CPAN::Meta->load_yaml_string($yaml) };
+    my $meta = eval { CPAN::Meta::YAML::Load($yaml) };
     if ($meta && $meta->{distfile}) {
         return $self->cpan_module($module, $meta->{distfile}, $meta->{version});
     }

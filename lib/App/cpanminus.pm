@@ -216,8 +216,6 @@ The standalone executable contains the following modules embedded.
 
 =item L<CPAN::DistnameInfo> Copyright 2003 Graham Barr
 
-=item L<Parse::CPAN::Meta> Copyright 2006-2009 Adam Kennedy
-
 =item L<local::lib> Copyright 2007-2009 Matt S Trout
 
 =item L<HTTP::Tiny> Copyright 2011 Christian Hansen
