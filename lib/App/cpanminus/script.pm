@@ -658,7 +658,7 @@ sub search_metacpan {
     $dist_uri .= $self->encode_json({
         filter => { and => [
             { term => { 'release.name' => $release } },
-            { term => { 'release.author' => $author }, }
+            { term => { 'release.author' => $author } },
         ]},
         fields => [ 'download_url', 'stat', 'status' ],
     });
