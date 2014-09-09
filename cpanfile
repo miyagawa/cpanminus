@@ -35,7 +35,6 @@ on develop => sub {
     requires 'String::ShellQuote';
     requires 'YAML';
     requires 'YAML::Tiny';
-    requires 'aliased';
     requires 'local::lib';
     requires 'version';
     requires 'Capture::Tiny';
