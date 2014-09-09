@@ -2525,25 +2525,17 @@ sub extract_meta_prereqs {
         return App::cpanminus::Dependency->from_prereqs($prereqs, $dist->{want_phases}, $self->{install_types});
     }
 
+    require CPAN::Meta;
     my $meta = $dist->{meta};
 
     my @deps;
-    if (-e "MYMETA.json") {
-        require JSON::PP;
-        $self->chat("Checking dependencies from MYMETA.json ...\n");
-        my $json = do { open my $in, "<MYMETA.json"; local $/; <$in> };
-        my $mymeta = JSON::PP::decode_json($json);
+    my($meta_file) = grep -f, qw(MYMETA.json MYMETA.yml);
+    if ($meta_file) {
+        $self->chat("Checking dependencies from $meta_file ...\n");
+        my $mymeta = eval { CPAN::Meta->load_file($meta_file, { lazy_validation => 1 }) };
         if ($mymeta) {
-            $meta->{$_} = $mymeta->{$_} for qw(name version);
-            return $self->extract_prereqs($mymeta, $dist);
-        }
-    }
-
-    if (-e 'MYMETA.yml') {
-        $self->chat("Checking dependencies from MYMETA.yml ...\n");
-        my $mymeta = eval { Parse::CPAN::Meta->load_file('MYMETA.yml') };
-        if ($mymeta) {
-            $meta->{$_} = $mymeta->{$_} for qw(name version);
+            $meta->{name}    = $mymeta->name;
+            $meta->{version} = $mymeta->version;
             return $self->extract_prereqs($mymeta, $dist);
         }
     }
@@ -2551,7 +2543,11 @@ sub extract_meta_prereqs {
     if (-e '_build/prereqs') {
         $self->chat("Checking dependencies from _build/prereqs ...\n");
         my $prereqs = do { open my $in, "_build/prereqs"; $self->safe_eval(join "", <$in>) };
-        @deps = $self->extract_prereqs({ name => $meta->{name}, version => $meta->{version}, %$prereqs }, $dist);
+        my $meta = CPAN::Meta->new(
+            { name => $meta->{name}, version => $meta->{version}, %$prereqs },
+            { lazy_validation => 1 },
+        );
+        @deps = $self->extract_prereqs($meta, $dist);
     } elsif (-e 'Makefile') {
         $self->chat("Finding PREREQ from Makefile ...\n");
         open my $mf, "Makefile";
@@ -2609,12 +2605,9 @@ sub maybe_version {
 }
 
 sub extract_prereqs {
-    my($self, $metadata, $dist) = @_;
+    my($self, $meta, $dist) = @_;
 
-    require CPAN::Meta;
-    my $meta = CPAN::Meta->new($metadata, { lazy_validation => 1 });
     my @features = $self->configure_features($dist, $meta->features);
-
     return App::cpanminus::Dependency->from_prereqs($meta->effective_prereqs(\@features), $dist->{want_phases}, $self->{install_types});
 }
 
