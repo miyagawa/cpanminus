@@ -298,11 +298,6 @@ sub parse_module_args {
     }
 }
 
-sub _exit {
-    my($self, $code) = @_;
-    die App::cpanminus::CommandExit->new($code);
-}
-
 sub doit {
     my $self = shift;
 
@@ -310,12 +305,8 @@ sub doit {
     eval {
         $code = ($self->_doit == 0);
     }; if (my $e = $@) {
-        if (ref $e eq 'App::cpanminus::CommandExit') {
-            $code = $e->code;
-        } else {
-            warn $e;
-            $code = 1;
-        }
+        warn $e;
+        $code = 1;
     }
 
     return $code;
@@ -332,7 +323,7 @@ sub _doit {
         $self->$action() and return 1;
     }
 
-    $self->show_help(1)
+    return $self->show_help(1)
         unless @{$self->{argv}} or $self->{load_from_stdin};
 
     $self->configure_mirrors;
@@ -815,7 +806,7 @@ Usage: cpanm [options] Module [...]
 
 Try `cpanm --help` or `man cpanm` for more options.
 USAGE
-        $self->_exit(1);
+        return;
     }
 
     print <<HELP;
@@ -3064,12 +3055,5 @@ sub parse_meta_string {
     my($self, $yaml) = @_;
     return eval { Parse::CPAN::Meta->load_yaml_string($yaml) };
 }
-
-package App::cpanminus::CommandExit;
-sub new {
-    bless { code => $_[1] }, $_[0];
-}
-
-sub code { $_[0]->{code} }
 
 1;
