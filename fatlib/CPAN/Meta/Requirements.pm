@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 package CPAN::Meta::Requirements;
-our $VERSION = '2.127'; # VERSION
+our $VERSION = '2.128'; # VERSION
 # ABSTRACT: a set of version requirements for a CPAN dist
 
 #pod =head1 SYNOPSIS
@@ -40,7 +40,12 @@ use Scalar::Util ();
 # install of CPAN::Meta::Requirements, as version.pm will be picked up from
 # prereqs and be available at runtime.
 
-BEGIN { eval "use version ()" or eval "use ExtUtils::MakeMaker::version" } ## no critic
+BEGIN {
+  eval "use version ()"; ## no critic
+  if ( my $err = $@ ) {
+    eval "use ExtUtils::MakeMaker::version" or die $err; ## no critic
+  }
+}
 
 # Perl 5.10.0 didn't have "is_qv" in version.pm
 *_is_qv = version->can('is_qv') ? sub { $_[0]->is_qv } : sub { exists $_[0]->{qv} };
@@ -730,7 +735,7 @@ CPAN::Meta::Requirements - a set of version requirements for a CPAN dist
 
 =head1 VERSION
 
-version 2.127
+version 2.128
 
 =head1 SYNOPSIS
 
