@@ -6,6 +6,9 @@ use File::Find;
 use Module::CoreList;
 use Cwd;
 
+# IO::Socket::IP requires newer Socket, which is C-based
+$ENV{PERL_HTTP_TINY_IPV4_ONLY} = 1;
+
 sub find_requires {
     my $file = shift;
 
