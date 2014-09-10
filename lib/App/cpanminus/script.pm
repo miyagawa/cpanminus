@@ -2084,14 +2084,9 @@ sub build_stuff {
     $dist->{meta} = $dist->{cpanmeta} ? $dist->{cpanmeta}->as_struct : {};
 
     my @config_deps;
-
     if ($dist->{cpanmeta}) {
         push @config_deps, App::cpanminus::Dependency->from_prereqs(
             $dist->{cpanmeta}->effective_prereqs, ['configure'], $self->{install_types},
-        );
-    } else {
-        push @config_deps, App::cpanminus::Dependency->from_versions(
-            $dist->{meta}{configure_requires} || {}, 'configure',
         );
     }
 
@@ -2527,7 +2522,6 @@ sub extract_meta_prereqs {
     }
 
     require CPAN::Meta;
-    my $meta = $dist->{meta};
 
     my @deps;
     my($meta_file) = grep -f, qw(MYMETA.json MYMETA.yml);
@@ -2535,8 +2529,8 @@ sub extract_meta_prereqs {
         $self->chat("Checking dependencies from $meta_file ...\n");
         my $mymeta = eval { CPAN::Meta->load_file($meta_file, { lazy_validation => 1 }) };
         if ($mymeta) {
-            $meta->{name}    = $mymeta->name;
-            $meta->{version} = $mymeta->version;
+            $dist->{meta}{name}    = $mymeta->name;
+            $dist->{meta}{version} = $mymeta->version;
             return $self->extract_prereqs($mymeta, $dist);
         }
     }
@@ -2545,7 +2539,7 @@ sub extract_meta_prereqs {
         $self->chat("Checking dependencies from _build/prereqs ...\n");
         my $prereqs = do { open my $in, "_build/prereqs"; $self->safe_eval(join "", <$in>) };
         my $meta = CPAN::Meta->new(
-            { name => $meta->{name}, version => $meta->{version}, %$prereqs },
+            { name => $dist->{meta}{name}, version => $dist->{meta}{version}, %$prereqs },
             { lazy_validation => 1 },
         );
         @deps = $self->extract_prereqs($meta, $dist);
