@@ -163,7 +163,6 @@ Copyright 2010- Tatsuhiko Miyagawa
 The standalone executable contains the following modules embedded.
 
 - [CPAN::DistnameInfo](https://metacpan.org/pod/CPAN::DistnameInfo) Copyright 2003 Graham Barr
-- [Parse::CPAN::Meta](https://metacpan.org/pod/Parse::CPAN::Meta) Copyright 2006-2009 Adam Kennedy
 - [local::lib](https://metacpan.org/pod/local::lib) Copyright 2007-2009 Matt S Trout
 - [HTTP::Tiny](https://metacpan.org/pod/HTTP::Tiny) Copyright 2011 Christian Hansen
 - [Module::Metadata](https://metacpan.org/pod/Module::Metadata) Copyright 2001-2006 Ken Williams. 2010 Matt S Trout

@@ -2,6 +2,11 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7008  2014-09-10 01:19:04 PDT
+   [Improvements]
+      - Show **** instead of *password* when masking passwords
+      - Internal code refactoring
+
 1.7007  2014-09-09 09:25:46 PDT
    [Improvements]
       - Make sure MetaCPAN search looks up the dist by right author #405
