@@ -2,6 +2,10 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7009  2014-09-10 01:43:45 PDT
+   [Bug Fixes]
+      - Fix fatpacked executable to include Parse::CPAN::Meta
+
 1.7008  2014-09-10 01:19:04 PDT
    [Improvements]
       - Show **** instead of *password* when masking passwords
