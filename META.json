@@ -4,7 +4,7 @@
       "- Tatsuhiko Miyagawa"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Dist::Milla version v1.0.5, Dist::Zilla version 5.020, CPAN::Meta::Converter version 2.142060",
+   "generated_by" : "Dist::Milla version v1.0.6, Dist::Zilla version 5.020, CPAN::Meta::Converter version 2.142060",
    "license" : [
       "perl_5"
    ],
@@ -111,7 +111,7 @@
       "Breno G. de Oliveira <garu@cpan.org>",
       "Brian Wightman <MidLifeXis@wightmanfam.org>",
       "Christian Walde <walde.christian@googlemail.com>",
-      "Dagfinn Ilmari Mannsåker <ilmari@ilmari.org>",
+      "Dagfinn Ilmari Mannsaker <ilmari@ilmari.org>",
       "Dana M. Diederich <diederich@gmail.com>",
       "Dave Goodell <davidjgoodell@gmail.com>",
       "Dave Rolsky <autarch@urth.org>",
@@ -136,6 +136,7 @@
       "Michael G. Schwern <schwern@pobox.com>",
       "Norman Nunley <nnunley@gmail.com>",
       "Olaf Alders <olaf@wundersolutions.com>",
+      "Olivier Mengue <dolmen@cpan.org>",
       "Pedro Melo <melo@simplicidade.org>",
       "Rafal Pocztarski <r.pocztarski@gmail.com>",
       "Ricardo Signes <rjbs@cpan.org>",
