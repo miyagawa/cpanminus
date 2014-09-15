@@ -63,7 +63,7 @@ while (@modules) {
     my $data = load_json $file;
     ok exists $data->{provides}{$module};
     my $want_ver = $version =~ /^v/ ? version->new($version)->numify : $version;
-    is $data->{provides}{$module}{version}, $want_ver;
+    is $data->{provides}{$module}{version}, $want_ver, "$module $want_ver";
 }
 
 done_testing;
