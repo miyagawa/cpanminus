@@ -2371,14 +2371,14 @@ sub extract_packages {
         return 1;
     };
 
-    require App::cpanminus::ParsePM;
+    require Parse::PMFile;
 
     my @files = grep { /\.pm(?:\.PL)?$/ && $try->($_) } $self->list_files;
 
     my $provides = {};
 
     for my $file (@files) {
-        my $parser = App::cpanminus::ParsePM->new($meta);
+        my $parser = Parse::PMFile->new($meta);
         my $packages = $parser->parse($file);
 
         while (my($package, $meta) = each %$packages) {
