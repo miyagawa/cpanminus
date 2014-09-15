@@ -10,7 +10,7 @@ use File::Spec ();
 use File::Temp ();
 use POSIX ':sys_wait_h';
 
-our $VERSION = '0.22';
+our $VERSION = '0.23';
 our $VERBOSE = 0;
 our $ALLOW_DEV_VERSION = 0;
 our $FORK = 0;
@@ -208,6 +208,7 @@ sub _parse_version {
             $comp->share("*version::new");
             $comp->share("*version::numify");
             $comp->share_from('main', ['*version::',
+                                        '*charstar::',
                                         '*Exporter::',
                                         '*DynaLoader::']);
             $comp->share_from('version', ['&qv']);
