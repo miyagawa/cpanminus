@@ -27,6 +27,7 @@ if ($INC{"App/FatPacker/Trace.pm"}) {
     require CPAN::Meta::Prereqs;
     require version::vpp;
     require File::pushd;
+    require Parse::PMFile;
 }
 
 my $quote = WIN32 ? q/"/ : q/'/;
