@@ -11,14 +11,14 @@ use File::Spec ();
 use File::Temp ();
 use POSIX ':sys_wait_h';
 
-our $VERSION = '0.19';
+our $VERSION = '0.23';
 our $VERBOSE = 0;
 our $ALLOW_DEV_VERSION = 0;
 our $FORK = 0;
 
 sub new {
-    my ($class, $meta) = @_;
-    bless {META_CONTENT => $meta}, $class;
+    my ($class, $meta, $opts) = @_;
+    bless {%{ $opts || {} }, META_CONTENT => $meta}, $class;
 }
 
 # from PAUSE::pmfile::examine_fio
@@ -41,7 +41,7 @@ sub parse {
         $self->{VERSION} = $version;
         if ($self->{VERSION} =~ /^\{.*\}$/) {
             # JSON error message
-        } elsif ($self->{VERSION} =~ /[_\s]/ && !$ALLOW_DEV_VERSION){   # ignore developer releases and "You suck!"
+        } elsif ($self->{VERSION} =~ /[_\s]/ && !$self->{ALLOW_DEV_VERSION} && !$ALLOW_DEV_VERSION){   # ignore developer releases and "You suck!"
             return;
         }
     }
@@ -71,7 +71,10 @@ sub parse {
             next;
         }
 
-        # Can't do perm_check() here.
+        if ($self->{USERID} && $self->{PERMISSIONS} && !$self->_perm_check($package)) {
+            delete $ppp->{$package};
+            next;
+        }
 
         # Check that package name matches case of file name
         {
@@ -151,6 +154,17 @@ sub parse {
     return (wantarray && %errors) ? (\%checked_in, \%errors) : \%checked_in;
 }
 
+sub _perm_check {
+    my ($self, $package) = @_;
+    my $userid = $self->{USERID};
+    my $module = $self->{PERMISSIONS}->module_permissions($package);
+    return 1 if !$module; # not listed yet
+    return 1 if defined $module->m && $module->m eq $userid;
+    return 1 if defined $module->f && $module->f eq $userid;
+    return 1 if defined $module->c && grep {$_ eq $userid} @{$module->c};
+    return;
+}
+
 # from PAUSE::pmfile;
 sub _parse_version {
     my $self = shift;
@@ -173,7 +187,7 @@ sub _parse_version {
         # XXX: do we need to fork as PAUSE does?
         # or, is alarm() just fine?
         my $pid;
-        if ($FORK) {
+        if ($self->{FORK} || $FORK) {
             $pid = fork();
             die "Can't fork: $!" unless defined $pid;
         }
@@ -195,6 +209,7 @@ sub _parse_version {
             $comp->share("*version::new");
             $comp->share("*version::numify");
             $comp->share_from('main', ['*version::',
+                                        '*charstar::',
                                         '*Exporter::',
                                         '*DynaLoader::']);
             $comp->share_from('version', ['&qv']);
@@ -232,7 +247,7 @@ sub _parse_version {
             } else {
                 $v = "";
             }
-            if ($FORK) {
+            if ($self->{FORK} || $FORK) {
                 open my $fh, '>:utf8', $tmpfile;
                 print $fh $v;
                 exit 0;
@@ -245,7 +260,7 @@ sub _parse_version {
             }
         }
     }
-    unlink $tmpfile if $FORK && -e $tmpfile;
+    unlink $tmpfile if ($self->{FORK} || $FORK) && -e $tmpfile;
 
     return $self->_normalize_version($v);
 }
@@ -357,7 +372,7 @@ sub _packages_per_pmfile {
                     if (exists $provides->{$pkg}) {
                         if (exists $provides->{$pkg}{version}) {
                             my $v = $provides->{$pkg}{version};
-                            if ($v =~ /[_\s]/ && !$ALLOW_DEV_VERSION){   # ignore developer releases and "You suck!"
+                            if ($v =~ /[_\s]/ && !$self->{ALLOW_DEV_VERSION} && !$ALLOW_DEV_VERSION){   # ignore developer releases and "You suck!"
                                 next PLINE;
                             }
 
@@ -431,7 +446,7 @@ sub _packages_per_pmfile {
             }
 
             # next unless /\$(([\w\:\']*)\bVERSION)\b.*\=/;
-            next unless /([\$*])(([\w\:\']*)\bVERSION)\b.*(?<![!><=])\=(?![=>])/;
+            next unless /(?<!\\)([\$*])(([\w\:\']*)\bVERSION)\b.*(?<![!><=])\=(?![=>])/;
             my $current_parsed_line = $_;
             my $eval = qq{
                 package #
@@ -634,7 +649,7 @@ sub _version_from_meta_ok {
 
 sub _verbose {
     my($self,$level,@what) = @_;
-    warn @what if $level <= $VERBOSE;
+    warn @what if $level <= ((ref $self && $self->{VERBOSE}) || $VERBOSE);
 }
 
 # all of the following methods are stripped from CPAN::Version
