@@ -41,6 +41,7 @@ on develop => sub {
     requires 'Test::Requires';
     requires 'Test::More', '0.90';
     requires 'Perl::Strip';
+    requires 'Parse::PMFile';
     recommends 'Archive::Tar';
     recommends 'Archive::Zip';
     recommends 'Compress::Zlib';
