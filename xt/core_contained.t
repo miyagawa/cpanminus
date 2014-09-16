@@ -8,9 +8,6 @@ if ($] >= 5.014) {
 
 run "--skip-installed", "CGI"; # this upgrades CGI in core
 
-delete $ENV{$_} for qw(PERL5LIB PERL_MM_OPT MODULEBUILDRC);
-$ENV{PERL5LIB} = 'fatlib';
-
 run_L "--skip-installed", "CGI";
 like last_build_log, qr/installed CGI/, "Upgraded modules in 'perl' should be upgraded";
 
