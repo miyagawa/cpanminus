@@ -42,7 +42,6 @@ on develop => sub {
     requires 'Test::More', '0.90';
     requires 'Perl::Strip';
     requires 'Parse::PMFile', '0.25';
-    requires 'Tie::File';
     recommends 'Archive::Tar';
     recommends 'Archive::Zip';
     recommends 'Compress::Zlib';
