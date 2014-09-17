@@ -12,14 +12,6 @@
 
 our $VERSION = "1.6928";
 
-# If reasonably new version.pm ships with core, load it instead of from fatpack
-BEGIN {
-    eval "use version 0.88";
-    if ($@) {
-        delete $INC{$_} for qw( version.pm version/vpp.pm version/vxs.pm );
-    }
-}
-
 # DEVELOPERS: Read maint/build.pl in the repo how to update this
 # __FATPACK__
 
