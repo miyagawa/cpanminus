@@ -10,7 +10,7 @@ use File::Spec ();
 use File::Temp ();
 use POSIX ':sys_wait_h';
 
-our $VERSION = '0.25';
+our $VERSION = '0.26';
 our $VERBOSE = 0;
 our $ALLOW_DEV_VERSION = 0;
 our $FORK = 0;
@@ -241,7 +241,7 @@ sub _parse_version {
                 }
             }
             if (defined $v) {
-                $v = $v->numify if ref($v) eq 'version';
+                $v = $v->numify if ref($v) =~ /^version(::vpp)?$/;
             } else {
                 $v = "";
             }
