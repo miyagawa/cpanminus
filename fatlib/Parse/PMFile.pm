@@ -10,7 +10,7 @@ use File::Spec ();
 use File::Temp ();
 use POSIX ':sys_wait_h';
 
-our $VERSION = '0.23';
+our $VERSION = '0.25';
 our $VERBOSE = 0;
 our $ALLOW_DEV_VERSION = 0;
 our $FORK = 0;
@@ -225,6 +225,7 @@ sub _parse_version {
                 if (ref $err) {
                     if ($err->{line} =~ /([\$*])([\w\:\']*)\bVERSION\b.*?\=(.*)/) {
                         local($^W) = 0;
+                        $self->_restore_overloaded_stuff if version->isa('version::vpp');
                         $v = $comp->reval($3);
                         $v = $$v if $1 eq '*' && ref $v;
                     }
@@ -278,11 +279,27 @@ sub _restore_overloaded_stuff {
         *{'version::(bool'} = \&version::vxs::boolean;
     # version PP in CPAN
     } elsif (version->isa('version::vpp')) {
+        {
+            package # hide from PAUSE
+                charstar;
+            overload->import;
+        }
         *{'version::(""'} = \&version::vpp::stringify;
         *{'version::(0+'} = \&version::vpp::numify;
         *{'version::(cmp'} = \&version::vpp::vcmp;
         *{'version::(<=>'} = \&version::vpp::vcmp;
         *{'version::(bool'} = \&version::vpp::vbool;
+        *{'charstar::(""'} = \&charstar::thischar;
+        *{'charstar::(0+'} = \&charstar::thischar;
+        *{'charstar::(++'} = \&charstar::increment;
+        *{'charstar::(--'} = \&charstar::decrement;
+        *{'charstar::(+'} = \&charstar::plus;
+        *{'charstar::(-'} = \&charstar::minus;
+        *{'charstar::(*'} = \&charstar::multiply;
+        *{'charstar::(cmp'} = \&charstar::cmp;
+        *{'charstar::(<=>'} = \&charstar::spaceship;
+        *{'charstar::(bool'} = \&charstar::thischar;
+        *{'charstar::(='} = \&charstar::clone;
     # version in core
     } else {
         *{'version::(""'} = \&version::stringify;
