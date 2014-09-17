@@ -75,6 +75,7 @@ sub rewrite_version_pm {
     for (0..$#file) {
         if ($file[$_] =~ /^\s*eval "use version::vxs.*/) {
             splice @file, $_, 2, "    if (1) { # always pretend there's no XS";
+            last;
         }
     }
 }
