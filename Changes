@@ -2,6 +2,10 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7010  2014-09-17 18:27:53 JST
+   [Improvements]
+      - Use Parse::PMFile rather than our own fork (charsbar) #409
+
 1.7009  2014-09-10 01:43:45 PDT
    [Bug Fixes]
       - Fix fatpacked executable to include Parse::CPAN::Meta
