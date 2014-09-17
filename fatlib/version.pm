@@ -12,8 +12,7 @@ $CLASS = 'version';
 # !!!!Delete this next block completely when adding to Perl core!!!!
 {
     local $SIG{'__DIE__'};
-    eval "use version::vxs $VERSION";
-    if ( $@ ) { # don't have the XS version installed
+    if (1) { # always pretend there's no XS
 	eval "use version::vpp $VERSION"; # don't tempt fate
 	die "$@" if ( $@ );
 	push @ISA, "version::vpp";

@@ -5,6 +5,7 @@ use File::Path;
 use File::Find;
 use Module::CoreList;
 use Cwd;
+use Tie::File;
 
 # IO::Socket::IP requires newer Socket, which is C-based
 $ENV{PERL_HTTP_TINY_IPV4_ONLY} = 1;
@@ -68,6 +69,17 @@ sub pack_modules {
     $packer->packlists_to_tree($path, \@packlists);
 }
 
+sub rewrite_version_pm {
+    my $file = shift;
+    tie my @file, 'Tie::File', $file or die $!;
+    for (0..$#file) {
+        if ($file[$_] =~ /^\s*eval "use version::vxs.*/) {
+            splice @file, $_, 2, "    if (1) { # always pretend there's no XS";
+            last;
+        }
+    }
+}
+
 sub run {
     my($upgrade) = @_;
 
@@ -78,6 +90,7 @@ sub run {
     }
 
     pack_modules(cwd . "/fatlib", \@modules, [ 'local::lib', 'Exporter' ]);
+    rewrite_version_pm("fatlib/version.pm");
 
     use Config;
     rmtree("fatlib/$Config{archname}");

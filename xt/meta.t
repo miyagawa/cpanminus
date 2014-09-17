@@ -50,8 +50,7 @@ my @modules = (
     'Class::Accessor::Chained', '0.01',
     'Readonly', '1.03',
     'CPAN::Test::Dummy::Perl5::VersionDeclare', 'v0.0.1',
-# FIXME somehow fail on Travis CI
-#    'CPAN::Test::Dummy::Perl5::VersionQV', 'v0.1.0',
+    'CPAN::Test::Dummy::Perl5::VersionQV', 'v0.1.0',
     'Scrabble::Dict', '0.01',
 );
 
@@ -63,7 +62,7 @@ while (@modules) {
     my $data = load_json $file;
     ok exists $data->{provides}{$module};
     my $want_ver = $version =~ /^v/ ? version->new($version)->numify : $version;
-    is $data->{provides}{$module}{version}, $want_ver;
+    is $data->{provides}{$module}{version}, $want_ver, "$module $want_ver";
 }
 
 done_testing;
