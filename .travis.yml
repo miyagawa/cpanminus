@@ -13,3 +13,4 @@ install:
   - cpanm -nq --installdeps --with-develop --with-recommends --with-suggests .
 script:
   - prove -lr xt
+sudo: false
