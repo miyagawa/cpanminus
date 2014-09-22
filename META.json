@@ -65,7 +65,7 @@
             "Module::Install" : "0",
             "Module::Metadata" : "0",
             "Parse::CPAN::Meta" : "0",
-            "Parse::PMFile" : "0.25",
+            "Parse::PMFile" : "0.26",
             "Perl::Strip" : "0",
             "String::ShellQuote" : "0",
             "Test::More" : "0.90",
@@ -92,7 +92,7 @@
          }
       }
    },
-   "release_status" : "testing",
+   "release_status" : "stable",
    "resources" : {
       "bugtracker" : {
          "web" : "https://github.com/miyagawa/cpanminus/issues"
@@ -104,7 +104,7 @@
          "web" : "https://github.com/miyagawa/cpanminus"
       }
    },
-   "version" : "1.7010",
+   "version" : "1.7011",
    "x_contributors" : [
       "Alessandro Ghedini <al3xbio@gmail.com>",
       "Andrew Rodland <andrew@cleverdomain.org>",
