@@ -1899,12 +1899,23 @@ sub core_version_for {
     return $Module::CoreList::version{$]+0}{$module};
 }
 
+sub search_inc {
+    my $self = shift;
+    $self->{search_inc} ||= do {
+        # strip lib/ and fatlib/ from search path when booted from dev
+        if (defined $::Bin) {
+            [grep !/^\Q$::Bin\E\/..\/(?:fat)?lib$/, @INC]
+        } else {
+            [@INC]
+        }
+    };
+}
 
 sub check_module {
     my($self, $mod, $want_ver) = @_;
 
     require Module::Metadata;
-    my $meta = Module::Metadata->new_from_module($mod, inc => $self->{search_inc})
+    my $meta = Module::Metadata->new_from_module($mod, inc => $self->search_inc)
         or return 0, undef;
 
     my $version = $meta->version;
