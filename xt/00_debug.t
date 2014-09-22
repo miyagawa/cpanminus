@@ -14,6 +14,10 @@ sub debug_meta {
 diag "$CPAN::Meta::VERSION from $INC{'CPAN/Meta.pm'}";
 debug_meta;
 
+run '-Uf', 'Module::Build', 'CPAN::Meta';
+run 'CPAN::Meta@2.141520';
+debug_meta;
+
 run 'Test::Pod';
 diag last_build_log;
 debug_meta;
