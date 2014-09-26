@@ -31,7 +31,7 @@
       },
       "runtime" : {
          "recommends" : {
-            "Try::Tiny" : "0.10",
+            "HTTP::Server::Simple" : "0",
             "CPAN::Test::Dummy::Perl5::Build::Fails" : "0"
          },
          "requires" : {
@@ -43,7 +43,7 @@
       },
       "test" : {
          "recommends" : {
-            "Test::NoWarnings" : "0"
+            "Test::Requires" : "0"
          },
          "requires" : {
             "Test::More" : "0.88"
