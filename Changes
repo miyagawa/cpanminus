@@ -2,6 +2,12 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7012  2014-09-26 19:28:25 PDT
+   [Improvements]
+      - Upgrade CPAN::Meta and HTTP::Tiny in fatpack
+      - Skip @INC on dev directory when running from git checkout when to search
+        for an installed module
+
 1.7011  2014-09-22 15:08:22 JST
       - Same as 1.7010. Make it a non-trial release.
 
