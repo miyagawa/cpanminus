@@ -15,7 +15,6 @@ use xt::Run;
 
 {
     my($out, $err) = run '--info', '--dev', 'Test::More';
-    like $out, qr/Test-More-1\.30/, '2.0 is backpanned';
     unlike $out, qr/Test-Simple-1\.005000_001/, '1.005 gets sorted based on dates';
 }
 
