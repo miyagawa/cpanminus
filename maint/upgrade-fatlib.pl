@@ -7,6 +7,8 @@ use Module::CoreList;
 use Cwd;
 use Tie::File;
 
+$] == 5.008009 or die "Run this script as ./upgrade-fatlib.pl, rather than 'perl upgrade-fatlib.pl'\n";
+
 # IO::Socket::IP requires newer Socket, which is C-based
 $ENV{PERL_HTTP_TINY_IPV4_ONLY} = 1;
 
