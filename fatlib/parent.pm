@@ -1,5 +1,4 @@
 package parent;
-warn caller;
 use strict;
 use vars qw($VERSION);
 $VERSION = '0.228';
