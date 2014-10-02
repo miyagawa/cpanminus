@@ -1,8 +1,10 @@
 use strict;
 use xt::Run;
+use Module::CoreList;
 use Test::More;
 
-plan skip_all => "only on 5.8.9" if $] != 5.008009;
+plan skip_all => "Module::Build is in core on $]"
+  if $Module::CoreList::version{$]}{"Module::Build"};
 
 run '-Uf', 'Module::Build';
 
