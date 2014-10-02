@@ -2,6 +2,10 @@
 use strict;
 use ExtUtils::Installed;
 
+system 'cpanm', '--reinstall',
+  'JSON::PP', 'Parse::CPAN::Meta', 'CPAN::Meta', 'CPAN::Meta::Requirements',
+  'File::Copy::Recursive', 'File::Temp', 'version';
+
 my $packlist = ExtUtils::Installed->new->packlist("ExtUtils::MakeMaker");
 $packlist->validate;
 
@@ -39,7 +43,4 @@ sub has_site {
 
     return;
 }
-
-
-
 
