@@ -6,9 +6,6 @@ use Module::Metadata;
 run '--uninstall', 'NonExistent';
 like last_build_log, qr/is not found/;
 
-run '--uninstall', 'Pod::Usage';
-like last_build_log, qr/is not found/, 'Core module in perl path';
-
 run '--uninstall', 'utf8';
 like last_build_log, qr/is not found/;
 
