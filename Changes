@@ -2,6 +2,10 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7014  2014-10-07 20:52:58 PDT
+   [Improvements]
+      - Bump Parse::PMFile to 0.28
+
 1.7013  2014-10-06 23:52:14 PDT
    [Improvements]
       - Update bundled JSON::PP to fix issues with JSON parsing on older perl 5.8
