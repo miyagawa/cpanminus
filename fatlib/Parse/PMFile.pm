@@ -3,17 +3,16 @@ package Parse::PMFile;
 use strict;
 use warnings;
 use Safe;
-use JSON::PP;
+use JSON::PP ();
 use Dumpvalue;
 use version ();
 use File::Spec ();
-use File::Temp ();
-use POSIX ':sys_wait_h';
 
-our $VERSION = '0.26';
+our $VERSION = '0.27';
 our $VERBOSE = 0;
 our $ALLOW_DEV_VERSION = 0;
 our $FORK = 0;
+our $UNSAFE = $] < 5.010000 ? 1 : 0;
 
 sub new {
     my ($class, $meta, $opts) = @_;
@@ -217,7 +216,7 @@ sub _parse_version {
             $comp->deny(qw/enteriter iter unstack goto/); # minimum protection against Acme::BadExample
             {
                 no strict;
-                $v = $comp->reval($eval);
+                $v = ($self->{UNSAFE} || $UNSAFE) ? eval $eval : $comp->reval($eval);
             }
             if ($@){ # still in the child process, out of Safe::reval
                 my $err = $@;
@@ -226,7 +225,7 @@ sub _parse_version {
                     if ($err->{line} =~ /([\$*])([\w\:\']*)\bVERSION\b.*?\=(.*)/) {
                         local($^W) = 0;
                         $self->_restore_overloaded_stuff if version->isa('version::vpp');
-                        $v = $comp->reval($3);
+                        $v = ($self->{UNSAFE} || $UNSAFE) ? eval $3 : $comp->reval($3);
                         $v = $$v if $1 eq '*' && ref $v;
                     }
                     if ($@ or !$v) {
@@ -265,10 +264,15 @@ sub _parse_version {
 
 sub _restore_overloaded_stuff {
     my $self = shift;
-    return unless $] >= 5.009000;
 
     no strict 'refs';
     no warnings 'redefine';
+
+    {
+        package # hide from PAUSE
+            version;
+        overload->import;
+    }
 
     # version XS in CPAN
     if (version->isa('version::vxs')) {
@@ -433,7 +437,7 @@ sub _packages_per_pmfile {
         }
     }
 
-    $fh->close;
+    close $fh;
     $ppp;
 }
 
@@ -840,6 +844,10 @@ As of version 0.17, Parse::PMFile stops forking while parsing a version for bett
 =item USERID, PERMISSIONS
 
 As of version 0.21, Parse::PMFile checks permissions of a package if both USERID and PERMISSIONS (which should be an instance of L<PAUSE::Permissions>) are provided. Unauthorized packages are removed.
+
+=item UNSAFE
+
+Parse::PMFile usually parses a module version in a Safe compartment. However, this approach doesn't work smoothly under older perls (prior to 5.10) plus some combinations of recent versions of Safe.pm (2.24 and above) and version.pm (0.9905 and above) for various reasons. As of version 0.27, Parse::PMFile simply uses C<eval> to parse a version under older perls. If you want it to use always C<eval> (even under recent perls), set this to true.
 
 =back
 
