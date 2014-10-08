@@ -8,7 +8,7 @@ use Dumpvalue;
 use version ();
 use File::Spec ();
 
-our $VERSION = '0.27';
+our $VERSION = '0.28';
 our $VERBOSE = 0;
 our $ALLOW_DEV_VERSION = 0;
 our $FORK = 0;
@@ -214,6 +214,8 @@ sub _parse_version {
             $comp->permit(":base_math"); # atan2 (Acme-Pi)
             # $comp->permit("require"); # no strict!
             $comp->deny(qw/enteriter iter unstack goto/); # minimum protection against Acme::BadExample
+
+            version->import('qv') if $self->{UNSAFE} || $UNSAFE;
             {
                 no strict;
                 $v = ($self->{UNSAFE} || $UNSAFE) ? eval $eval : $comp->reval($eval);
@@ -264,15 +266,10 @@ sub _parse_version {
 
 sub _restore_overloaded_stuff {
     my $self = shift;
+    return if $self->{UNSAFE} || $UNSAFE;
 
     no strict 'refs';
     no warnings 'redefine';
-
-    {
-        package # hide from PAUSE
-            version;
-        overload->import;
-    }
 
     # version XS in CPAN
     if (version->isa('version::vxs')) {
