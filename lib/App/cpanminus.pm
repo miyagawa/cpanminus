@@ -41,8 +41,8 @@ You can also use the latest cpanminus to install cpanminus itself:
     curl -L http://cpanmin.us | perl - --sudo App::cpanminus
 
 This will install C<cpanm> to your bin directory like
-C</usr/local/bin> (unless you configured C<INSTALL_BASE> with
-L<local::lib>), so you probably need the C<--sudo> option.
+C</usr/local/bin> and you'll need the C<--sudo> option to write to
+the directory, unless you configured C<INSTALL_BASE> with L<local::lib>.
 
 =head2 Installing to local perl (perlbrew)
 
