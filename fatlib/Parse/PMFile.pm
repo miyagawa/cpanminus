@@ -8,7 +8,7 @@ use Dumpvalue;
 use version ();
 use File::Spec ();
 
-our $VERSION = '0.28';
+our $VERSION = '0.29';
 our $VERBOSE = 0;
 our $ALLOW_DEV_VERSION = 0;
 our $FORK = 0;
@@ -197,7 +197,7 @@ sub _parse_version {
         } else {
             # XXX Limit Resources too
 
-            my($comp) = Safe->new("_pause::mldistwatch");
+            my($comp) = Safe->new;
             my $eval = qq{
                 local(\$^W) = 0;
                 Parse::PMFile::_parse_version_safely("$pmcp");
