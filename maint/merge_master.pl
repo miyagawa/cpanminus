@@ -6,6 +6,7 @@ my $meta = CPAN::Meta->load_file('META.json');
 if ($meta->release_status eq 'stable') {
     system 'git', 'checkout', 'master';
     system 'git', 'merge', '--ff-only', 'devel';
+    system 'git', 'push';
     system 'git', 'checkout', '-';
 } else {
     warn "release_status is devel, not merging\n";
