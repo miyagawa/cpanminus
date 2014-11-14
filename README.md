@@ -36,8 +36,8 @@ You can also use the latest cpanminus to install cpanminus itself:
     curl -L http://cpanmin.us | perl - --sudo App::cpanminus
 
 This will install `cpanm` to your bin directory like
-`/usr/local/bin` (unless you configured `INSTALL_BASE` with
-[local::lib](https://metacpan.org/pod/local::lib)), so you probably need the `--sudo` option.
+`/usr/local/bin` and you'll need the `--sudo` option to write to
+the directory, unless you configured `INSTALL_BASE` with [local::lib](https://metacpan.org/pod/local::lib).
 
 ## Installing to local perl (perlbrew)
 

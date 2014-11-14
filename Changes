@@ -2,6 +2,11 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7015  2014-11-14 13:14:07 PST
+   [Improvements]
+      - Bump Parse::PMFile to 0.29
+      - Bump CPAN::Meta::Requirements to 2.129
+
 1.7014  2014-10-07 20:52:58 PDT
    [Improvements]
       - Bump Parse::PMFile to 0.28
