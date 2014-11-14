@@ -27,12 +27,12 @@ my $local_lib = "$ENV{PERL_CPANM_HOME}/perl5";
 }
 
 {
-    run_L "MLEHMANN/common-sense-3.72.tar.gz";
-    my $file = "$local_lib/lib/perl5/$Config{archname}/.meta/common-sense-3.72/install.json";
+    run_L "MLEHMANN/common-sense-3.73.tar.gz";
+    my $file = "$local_lib/lib/perl5/$Config{archname}/.meta/common-sense-3.73/install.json";
 
     my $data = load_json $file;
     is $data->{name}, "common::sense";
-    is_deeply $data->{provides}{"common::sense"}, { file => "sense.pm.PL", version => "3.72" };
+    is_deeply $data->{provides}{"common::sense"}, { file => "sense.pm.PL", version => "3.73" };
 }
 
 {
