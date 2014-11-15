@@ -176,7 +176,7 @@ sub parse_options {
         'mirror=s@' => $self->{mirrors},
         'mirror-only!' => \$self->{mirror_only},
         'mirror-index=s' => \$self->{mirror_index},
-        'from=s' => sub {
+        'M|from=s' => sub {
             $self->{mirrors}     = [$_[1]];
             $self->{mirror_only} = 1;
         },
@@ -830,7 +830,7 @@ Options:
   --reinstall               Reinstall the distribution even if you already have the latest version installed
   --mirror                  Specify the base URL for the mirror (e.g. http://cpan.cpantesters.org/)
   --mirror-only             Use the mirror's index file instead of the CPAN Meta DB
-  --from                    Use only this mirror base URL and its index file
+  -M,--from                 Use only this mirror base URL and its index file
   --prompt                  Prompt when configure/build/test fails
   -l,--local-lib            Specify the install base to install modules
   -L,--local-lib-contained  Specify the install base to install all non-core modules
@@ -855,7 +855,7 @@ Examples:
   cpanm --installdeps .                                     # install all the deps for the current directory
   cpanm -L extlib Plack                                     # install Plack and all non-core deps into extlib
   cpanm --mirror http://cpan.cpantesters.org/ DBI           # use the fast-syncing mirror
-  cpanm --from https://cpan.metacpan.org App::perlbrew      # use only this secure mirror and its index
+  cpanm -M https://cpan.metacpan.org App::perlbrew          # use only this secure mirror and its index
 
 You can also specify the default options in PERL_CPANM_OPT environment variable in the shell rc:
 
