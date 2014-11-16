@@ -2,6 +2,14 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7016  2014-11-16 11:46:32 PST
+   [New Features]
+      - Added -M and --from to set --mirror and --mirror-only at the same time while
+        overriding previously set mirrors (sri) #175, #417
+
+   [Improvements]
+      - cpanmin.us is now available under HTTPS (marcus)
+
 1.7015  2014-11-14 13:14:07 PST
    [Improvements]
       - Bump Parse::PMFile to 0.29
