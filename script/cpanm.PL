@@ -44,6 +44,7 @@ cpanm - get, unpack build and install modules from CPAN
   cpanm --installdeps .                            # install all the deps for the current directory
   cpanm -L extlib Plack                            # install Plack and all non-core deps into extlib
   cpanm --mirror http://cpan.cpantesters.org/ DBI  # use the fast-syncing mirror
+  cpanm --from https://cpan.metacpan.org/ Plack    # use only the HTTPS mirror
 
 =head1 COMMANDS
 
@@ -227,11 +228,27 @@ DB and MetaCPAN.
 Select this option if you are using a local mirror of CPAN, such as
 minicpan when you're offline, or your own CPAN index (a.k.a darkpan).
 
-B<Tip:> It might be useful if you name these mirror options with your
-shell aliases, like:
+=item --from, -M
 
-  alias minicpanm='cpanm --mirror ~/minicpan --mirror-only'
-  alias darkpan='cpanm --mirror http://mycompany.example.com/DPAN --mirror-only'
+  cpanm -M https://cpan.metacpan.org/
+  cpanm --from https://cpan.metacpan.org/
+
+Use the given mirror URL and its index as the I<only> source to search
+and download modules from.
+
+It works similar to C<--mirror> and C<--mirror-only> combined, with a
+small difference: unlike C<--mirror> which I<appends> the URL to the
+list of mirrors, C<--from> (or C<-M> for short) uses the specified URL
+as its I<only> source to download index and modules from. This makes
+the option always override the default mirror, which might have been
+set via global options such as the one set by C<PERL_CPANM_OPT>
+environment variable.
+
+B<Tip:> It might be useful if you name these options with your shell
+aliases, like:
+
+  alias minicpanm='cpanm --from ~/minicpan'
+  alias darkpan='cpanm --from http://mycompany.example.com/DPAN'
 
 =item --mirror-index
 
