@@ -2,6 +2,11 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7017  2014-11-25 14:00:40 PST
+   [Improvements]
+      - Bump fatpacked CPAN::Meta and HTTP::Tiny
+      - Added documentation for -M and --from in man page
+
 1.7016  2014-11-16 11:46:32 PST
    [New Features]
       - Added -M and --from to set --mirror and --mirror-only at the same time while
