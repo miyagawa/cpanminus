@@ -10,7 +10,7 @@
 #
 # For more details about this program, visit http://search.cpan.org/dist/App-cpanminus
 
-our $VERSION = "1.6928";
+our $VERSION = "1.7017";
 
 # DEVELOPERS: Read maint/build.pl in the repo how to update this
 # __FATPACK__
