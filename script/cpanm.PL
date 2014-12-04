@@ -1,14 +1,17 @@
 #!/usr/bin/env perl
 #
-# You want to install cpanminus? Run the following command and it will
-# install itself for you. You might want to run it as a root with sudo
-# if you want to install to places like /usr/local/bin.
+# This is a pre-compiled source code for the cpanm (cpanminus) program.
+# For more details about how to install cpanm, go to the following URL:
+#
+#   https://github.com/miyagawa/cpanminus
+#
+# Quickstart: Run the following command and it will install itself for
+# you. You might want to run it as a root with sudo if you want to install
+# to places like /usr/local/bin.
 #
 #   % curl -L https://cpanmin.us | perl - App::cpanminus
 #
 # If you don't have curl but wget, replace `curl -L` with `wget -O -`.
-#
-# For more details about this program, visit http://search.cpan.org/dist/App-cpanminus
 
 our $VERSION = "1.7017";
 
