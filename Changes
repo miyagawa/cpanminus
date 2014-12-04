@@ -2,6 +2,10 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7019  2014-12-04 12:51:41 PST
+   [Improvements]
+      - Bump Parse::PMFile to 0.30
+
 1.7018  2014-11-25 14:08:41 PST
    [Maintenance]
       - bump $VERSION correctly in cpanm executable
