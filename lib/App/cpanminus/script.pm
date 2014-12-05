@@ -79,6 +79,7 @@ sub new {
         argv => [],
         local_lib => undef,
         self_contained => undef,
+        include_vendor => undef,
         prompt_timeout => 0,
         prompt => undef,
         configure_timeout => 60,
@@ -173,6 +174,7 @@ sub parse_options {
             $self->{pod2man} = undef;
         },
         'self-contained!' => \$self->{self_contained},
+        'include-vendor!' => \$self->{include_vendor},
         'mirror=s@' => $self->{mirrors},
         'mirror-only!' => \$self->{mirror_only},
         'mirror-index=s' => \$self->{mirror_index},
@@ -339,7 +341,6 @@ sub _doit {
             my ($volume, $dirs, $file) = File::Spec->splitpath($module);
             $module = join '::', grep { $_ } File::Spec->splitdir($dirs), $file;
         }
-
         ($module, my $version) = $self->parse_module_args($module);
 
         $self->chdir($cwd);
@@ -785,8 +786,8 @@ sub show_version {
 
     print "  \%Config:\n";
     for my $key (qw( archname installsitelib installsitebin installman1dir installman3dir
-                     sitelibexp archlibexp privlibexp )) {
-        print "    $key=$Config{$key}\n";
+                     sitearchexp sitelibexp vendorarch vendorlibexp archlibexp privlibexp )) {
+        print "    $key=$Config{$key}\n" if $Config{$key};
     }
 
     print "  \%ENV:\n";
@@ -941,6 +942,7 @@ sub _core_only_inc {
     (
         local::lib->resolve_path(local::lib->install_base_perl_path($base)),
         local::lib->resolve_path(local::lib->install_base_arch_path($base)),
+        ($self->{include_vendor} ? @Config{qw(vendorarch vendorlibexp)} : ()),
         @Config{qw(privlibexp archlibexp)},
     );
 }
@@ -1981,7 +1983,11 @@ sub loaded_from_perl_lib {
     my($self, $meta) = @_;
 
     require Config;
-    for my $dir (qw(archlibexp privlibexp)) {
+    my @dirs = qw(archlibexp privlibexp);
+    if ($self->{self_contained} && $self->{include_vendor}) {
+        push @dirs, qw(vendorarch vendorlibexp);
+    }
+    for my $dir (@dirs) {
         my $confdir = $Config{$dir};
         if ($confdir eq substr($meta->filename, 0, length($confdir))) {
             return 1;
