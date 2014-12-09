@@ -2,6 +2,10 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7020  2014-12-08 17:53:18 PST
+   [Improvements]
+      - Bump Parse::PMFile to 0.31
+
 1.7019  2014-12-04 12:51:41 PST
    [Improvements]
       - Bump Parse::PMFile to 0.30
