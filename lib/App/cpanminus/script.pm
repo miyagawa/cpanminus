@@ -2396,7 +2396,7 @@ sub extract_packages {
     my $provides = {};
 
     for my $file (@files) {
-        my $parser = Parse::PMFile->new($meta);
+        my $parser = Parse::PMFile->new($meta, { UNSAFE => 1, ALLOW_DEV_VERSION => 1 });
         my $packages = $parser->parse($file);
 
         while (my($package, $meta) = each %$packages) {
