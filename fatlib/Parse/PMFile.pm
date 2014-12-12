@@ -8,7 +8,7 @@ use Dumpvalue;
 use version ();
 use File::Spec ();
 
-our $VERSION = '0.31';
+our $VERSION = '0.32';
 our $VERBOSE = 0;
 our $ALLOW_DEV_VERSION = 0;
 our $FORK = 0;
@@ -216,6 +216,7 @@ sub _parse_version {
             $comp->deny(qw/enteriter iter unstack goto/); # minimum protection against Acme::BadExample
 
             version->import('qv') if $self->{UNSAFE} || $UNSAFE;
+            $self->_store_overloaded_stuff;
             {
                 no strict;
                 $v = ($self->{UNSAFE} || $UNSAFE) ? eval $eval : $comp->reval($eval);
@@ -265,6 +266,19 @@ sub _parse_version {
     return $self->_normalize_version($v);
 }
 
+sub _store_overloaded_stuff {
+    my $self = shift;
+    my %overloaded;
+    no strict 'refs';
+    for my $package (qw/version version::vpp charstar/) {
+        for my $op (qw/"" 0+ cmp <=> bool ++ -- + - * =/) {
+            my $key = "$package\::($op";
+            $overloaded{$key} = *{$key} if defined *{$key};
+        }
+    }
+    $self->{overloaded} = \%overloaded;
+}
+
 sub _restore_overloaded_stuff {
     my ($self, $used_version_in_safe) = @_;
     return if $self->{UNSAFE} || $UNSAFE;
@@ -272,60 +286,18 @@ sub _restore_overloaded_stuff {
     no strict 'refs';
     no warnings 'redefine';
 
-    # version XS in CPAN
-    my $restored;
-    if ($INC{'version/vxs.pm'}) {
-        *{'version::(""'} = \&version::vxs::stringify;
-        *{'version::(0+'} = \&version::vxs::numify;
-        *{'version::(cmp'} = \&version::vxs::VCMP;
-        *{'version::(<=>'} = \&version::vxs::VCMP;
-        *{'version::(bool'} = \&version::vxs::boolean;
-        $restored = 1;
+    for my $key (%{ $self->{overloaded} || {} }) {
+        *{$key} = $self->{overloaded}{$key} if $self->{overloaded}{$key};
     }
-    # version PP in CPAN
-    if ($INC{'version/vpp.pm'}) {
-        {
-            package # hide from PAUSE
-                charstar;
-            overload->import;
-        }
-        if (!$used_version_in_safe) {
-            package # hide from PAUSE
-                version::vpp;
-            overload->import;
-        }
-        unless ($restored) {
-            *{'version::(""'} = \&version::vpp::stringify;
-            *{'version::(0+'} = \&version::vpp::numify;
-            *{'version::(cmp'} = \&version::vpp::vcmp;
-            *{'version::(<=>'} = \&version::vpp::vcmp;
-            *{'version::(bool'} = \&version::vpp::vbool;
-        }
-        *{'version::vpp::(""'} = \&version::vpp::stringify;
-        *{'version::vpp::(0+'} = \&version::vpp::numify;
-        *{'version::vpp::(cmp'} = \&version::vpp::vcmp;
-        *{'version::vpp::(<=>'} = \&version::vpp::vcmp;
-        *{'version::vpp::(bool'} = \&version::vpp::vbool;
-        *{'charstar::(""'} = \&charstar::thischar;
-        *{'charstar::(0+'} = \&charstar::thischar;
-        *{'charstar::(++'} = \&charstar::increment;
-        *{'charstar::(--'} = \&charstar::decrement;
-        *{'charstar::(+'} = \&charstar::plus;
-        *{'charstar::(-'} = \&charstar::minus;
-        *{'charstar::(*'} = \&charstar::multiply;
-        *{'charstar::(cmp'} = \&charstar::cmp;
-        *{'charstar::(<=>'} = \&charstar::spaceship;
-        *{'charstar::(bool'} = \&charstar::thischar;
-        *{'charstar::(='} = \&charstar::clone;
-        $restored = 1;
+    if ($self->{overloaded}{'charstar::(""'}) {
+        package #
+            charstar;
+        overload->import;
     }
-    # version in core
-    if (!$restored) {
-        *{'version::(""'} = \&version::stringify;
-        *{'version::(0+'} = \&version::numify;
-        *{'version::(cmp'} = \&version::vcmp;
-        *{'version::(<=>'} = \&version::vcmp;
-        *{'version::(bool'} = \&version::boolean;
+    if ($self->{overloaded}{'version::vpp::(""'} && !$used_version_in_safe) {
+        package #
+            version::vpp;
+        overload->import;
     }
 }
 
@@ -507,6 +479,9 @@ sub _packages_per_pmfile {
         close FH;
 
         $result = "undef" unless defined $result;
+        if ((ref $result) =~ /^version(?:::vpp)?\b/) {
+            $result = $result->numify;
+        }
         return $result;
     }
 }
