@@ -2,6 +2,10 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7022  2014-12-12 16:41:47 PST
+   [Improvements]
+      - Enabled unsafe option to parse version with PMFile to avoid segfaults and weird errors
+
 1.7021  2014-12-11 21:42:36 PST
    [Improvements]
       - Bump Parse::PMFile to 0.32
