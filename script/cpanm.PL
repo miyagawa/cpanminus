@@ -13,8 +13,6 @@
 #
 # If you don't have curl but wget, replace `curl -L` with `wget -O -`.
 
-our $VERSION = "1.7017";
-
 # DEVELOPERS: Read maint/build.pl in the repo how to update this
 # __FATPACK__
 
