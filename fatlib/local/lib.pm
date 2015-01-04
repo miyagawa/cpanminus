@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Config;
 
-our $VERSION = '2.000014';
+our $VERSION = '2.000015';
 $VERSION = eval $VERSION;
 
 BEGIN {
@@ -229,9 +229,9 @@ sub lib_paths_for {
 
 sub _mm_escape_path {
   my $path = shift;
-  $path =~ s/\\/\\\\\\\\/g;
+  $path =~ s/\\/\\\\/g;
   if ($path =~ s/ /\\ /g) {
-    $path = qq{"\\"$path\\""};
+    $path = qq{"$path"};
   }
   return $path;
 }
