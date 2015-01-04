@@ -2,6 +2,14 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7023  2015-01-05 07:59:52 JST
+   [Improvements]
+      - Bump Parse::PMFile to 0.34
+      - Bump CPAN::Meta::Requirements to 2.131
+      - Bump HTTP::Tiny to 0.53
+      - Bump Module::Metadata to 1.000025
+      - Bump local::lib to 2.000015
+
 1.7022  2014-12-12 16:41:47 PST
    [Improvements]
       - Enabled unsafe option to parse version with PMFile to avoid segfaults and weird errors
