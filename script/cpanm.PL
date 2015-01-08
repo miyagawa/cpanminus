@@ -207,17 +207,17 @@ dependencies in one directory so you can distribute to other machines.
 
 =item --include-vendor
 
-B<EXPERIMENTAL>: On the RedHat family of systems (RHEL, CentOS, Fedora), the
-C<perl> package does not include all of the 'core' modules that are shipped
-with the Perl distribution.  These modules are split out into their own
-packages and install under the 'vendor' prefixes rather than the 'core'
-prefixes.  This is a problem since many of the modules that are required to
-build CPAN distributions have been moved to separate packages.  We can install
-these missing modules as needed, or all at once via the C<perl-core>
-meta-package, but, they will be installed under the 'vendor' prefixes.  This
-creates a problem with the --self-contained flag which expects all the core
-modules to be installed under the 'core' prefixes.  Running C<cpanm> with this
-flag will trigger an attempt to build the core bootstrapping modules
+On the RedHat family of systems (RHEL, CentOS, Fedora), the C<perl> package
+does not include all of the 'core' modules that are shipped with the Perl
+distribution.  These modules are split out into their own packages and install
+under the 'vendor' prefixes rather than the 'core' prefixes.  This is
+a problem since many of the modules that are required to build CPAN
+distributions have been moved to separate packages.  We can install these
+missing modules as needed, or all at once via the C<perl-core> meta-package,
+but, they will be installed under the 'vendor' prefixes.  This creates
+a problem with the --self-contained flag which expects all the core modules to
+be installed under the 'core' prefixes.  Running C<cpanm> with this flag
+will trigger an attempt to build the core bootstrapping modules
 L<ExtUtils::MakeMaker> and L<ExtUtils::Install> and this will fail due to
 circular dependencies.
 
