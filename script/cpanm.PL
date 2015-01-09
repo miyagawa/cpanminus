@@ -554,7 +554,7 @@ L<App::cpanminus>
 
 =head1 COPYRIGHT
 
-Copyright 2010 Tatsuhiko Miyagawa.
+Copyright 2010- Tatsuhiko Miyagawa.
 
 =head1 AUTHOR
 
