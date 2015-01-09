@@ -193,15 +193,23 @@ directory C<extlib>, which can be loaded from your application with:
 
   use local::lib '/path/to/extlib';
 
-Note that this option does B<NOT> reliably work with perl
-installations supplied by operating system vendors that strips
-standard modules from perl, such as RHEL, Fedora and CentOS.
+Note that this option does B<NOT> reliably work with perl installations
+supplied by operating system vendors that strips standard modules from perl,
+such as RHEL, Fedora and CentOS, B<UNLESS> you also install packages supplying
+all the modules that have been stripped.  For these systems you will probably
+want to install the C<perl-core> meta-package which does just that.
 
 =item --self-contained
 
 When examining the dependencies, assume no non-core modules are
 installed on the system. Handy if you want to bundle application
 dependencies in one directory so you can distribute to other machines.
+
+=item --exclude-vendor
+
+Don't include modules installed under the 'vendor' paths when searching for
+core modules when the C<--self-contained> flag is in effect.  This restores
+the behaviour from before version 1.7023
 
 =item --mirror
 
