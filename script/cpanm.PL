@@ -203,6 +203,30 @@ When examining the dependencies, assume no non-core modules are
 installed on the system. Handy if you want to bundle application
 dependencies in one directory so you can distribute to other machines.
 
+=item --include-vendor
+
+On the RedHat family of systems (RHEL, CentOS, Fedora), the C<perl> package
+does not include all of the 'core' modules that are shipped with the Perl
+distribution.  These modules are split out into their own packages and install
+under the 'vendor' prefixes rather than the 'core' prefixes.  This is
+a problem since many of the modules that are required to build CPAN
+distributions have been moved to separate packages.  We can install these
+missing modules as needed, or all at once via the C<perl-core> meta-package,
+but, they will be installed under the 'vendor' prefixes.  This creates
+a problem with the --self-contained flag which expects all the core modules to
+be installed under the 'core' prefixes.  Running C<cpanm> with this flag
+will trigger an attempt to build the core bootstrapping modules
+L<ExtUtils::MakeMaker> and L<ExtUtils::Install> and this will fail due to
+circular dependencies.
+
+The C<--include-vendor> option modifies the C<--self-contained> flag so that
+modules installed under the vendor prefixes are treated like 'core' modules.
+This allows us to perform the above application dependency bundling exercise
+for machines with the same set of vendor supplied Perl packages installed.
+Handy if we are using isolated versions of Perl from
+L<Software Collections|https://www.softwarecollections.org/> where we can
+more easily control which vendor supplied Perl modules are installed.
+
 =item --mirror
 
 Specifies the base URL for the CPAN mirror to use, such as

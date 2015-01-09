@@ -18,8 +18,9 @@ sub run_L {
 sub run {
     my @args = @_;
     my @notest = $ENV{NOTEST} ? ("--notest") : ();
+    my @redhat = $ENV{REDHAT} ? ("--include-vendor") : ();
     my($stdout, $stderr, $exit) = capture {
-        system($^X, $executable, @notest, "--quiet", "--reinstall", @args);
+        system($^X, $executable, @notest, @redhat, "--quiet", "--reinstall", @args);
     };
     ::diag($stderr) if $stderr and !$ENV{NODIAG};  # Some tests actually want stderr
     return wantarray ? ($stdout, $stderr, $exit) : $stdout;
