@@ -942,7 +942,7 @@ sub _core_only_inc {
     (
         local::lib->resolve_path(local::lib->install_base_arch_path($base)),
         local::lib->resolve_path(local::lib->install_base_perl_path($base)),
-        (!$self->{exclude_vendor} ? grep @Config{qw(vendorarch vendorlibexp)} : ()),
+        (!$self->{exclude_vendor} ? grep {$_} @Config{qw(vendorarch vendorlibexp)} : ()),
         @Config{qw(archlibexp privlibexp)},
     );
 }
