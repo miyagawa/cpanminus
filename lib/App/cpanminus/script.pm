@@ -942,7 +942,7 @@ sub _core_only_inc {
     (
         local::lib->resolve_path(local::lib->install_base_arch_path($base)),
         local::lib->resolve_path(local::lib->install_base_perl_path($base)),
-        (!$self->{exclude_vendor} ? @Config{qw(vendorarch vendorlibexp)} : ()),
+        (!$self->{exclude_vendor} ? grep @Config{qw(vendorarch vendorlibexp)} : ()),
         @Config{qw(archlibexp privlibexp)},
     );
 }
@@ -1984,7 +1984,7 @@ sub loaded_from_perl_lib {
 
     require Config;
     my @dirs = qw(archlibexp privlibexp);
-    if ($self->{self_contained} && ! $self->{exclude_vendor}) {
+    if ($self->{self_contained} && ! $self->{exclude_vendor} && $Config{vendorarch}) {
         unshift @dirs, qw(vendorarch vendorlibexp);
     }
     for my $dir (@dirs) {
