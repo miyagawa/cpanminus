@@ -2,6 +2,11 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7024  2015-01-12 13:31:19 PST
+   [New Features]
+      - Includes vendor lib and arch path to search for core modules, when installing self-contained
+        lib by default. This behavior can be turned off with --exclude-vendor (tartansandal) #426
+
 1.7023  2015-01-05 07:59:52 JST
    [Improvements]
       - Bump Parse::PMFile to 0.34
