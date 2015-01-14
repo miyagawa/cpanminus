@@ -9,6 +9,7 @@ use File::Find ();
 use File::Path ();
 use File::Spec ();
 use File::Copy ();
+use File::Copy::Recursive ();
 use File::Temp ();
 use Getopt::Long ();
 use Symbol ();
@@ -2234,6 +2235,7 @@ DIAG
         $self->diag("$msg\n", 1);
         $self->{installed_dists}++;
         $self->save_meta($stuff, $dist, $module_name, \@config_deps, \@deps);
+        $self->copy_artifacts($dist);
         return 1;
     } else {
         my $what = $self->{test_only} ? "Testing" : "Installing";
@@ -2414,6 +2416,13 @@ sub extract_packages {
     }
 
     return $provides;
+}
+
+sub copy_artifacts {
+    my($self, $dist) = @_;
+    my $target = "$self->{home}/builds";
+    mkdir $target, 0777 unless -d $target;
+    File::Copy::Recursive::dircopy("$self->{base}/$dist->{dir}", "$target/$dist->{dir}");
 }
 
 sub save_meta {
