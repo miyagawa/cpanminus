@@ -4,7 +4,7 @@
       "- Tatsuhiko Miyagawa"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Dist::Zilla version 5.031, Dist::Milla version v1.0.9, CPAN::Meta::Converter version 2.143240",
+   "generated_by" : "Dist::Zilla version 5.031, Dist::Milla version v1.0.10, CPAN::Meta::Converter version 2.143240",
    "license" : [
       "perl_5"
    ],
@@ -50,7 +50,7 @@
             "CPAN::Meta::YAML" : "0",
             "Capture::Tiny" : "0",
             "Digest::SHA" : "0",
-            "Dist::Milla" : "v1.0.9",
+            "Dist::Milla" : "v1.0.10",
             "Exporter" : "5.63",
             "File::Temp" : "0",
             "File::pushd" : "0",
