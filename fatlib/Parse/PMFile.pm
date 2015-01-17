@@ -10,7 +10,7 @@ use Dumpvalue;
 use version ();
 use File::Spec ();
 
-our $VERSION = '0.34';
+our $VERSION = '0.35';
 our $VERBOSE = 0;
 our $ALLOW_DEV_VERSION = 0;
 our $FORK = 0;
@@ -95,7 +95,6 @@ sub parse {
 
         my $pp = $ppp->{$package};
         if ($pp->{version} && $pp->{version} =~ /^\{.*\}$/) { # JSON parser error
-            my $dont_delete;
             my $err = JSON::PP::decode_json($pp->{version});
             if ($err->{x_normalize}) {
                 $errors{$package} = {
@@ -103,8 +102,8 @@ sub parse {
                     infile => $pp->{infile},
                 };
                 $pp->{version} = "undef";
-                $dont_delete = 1;
             } elsif ($err->{openerr}) {
+                $pp->{version} = "undef";
                 $self->_verbose(1,
                               qq{Parse::PMFile was not able to
         read the file. It issued the following error: C< $err->{r} >},
@@ -114,6 +113,7 @@ sub parse {
                     infile => $pp->{infile},
                 };
             } else {
+                $pp->{version} = "undef";
                 $self->_verbose(1, 
                               qq{Parse::PMFile was not able to
         parse the following line in that file: C< $err->{line} >
@@ -130,10 +130,6 @@ sub parse {
                     parse_version => $err->{line},
                     infile => $err->{file},
                 };
-            }
-            unless ($dont_delete) {
-                delete $ppp->{$package};
-                next;
             }
         }
 
