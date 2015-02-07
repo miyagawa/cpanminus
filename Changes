@@ -2,6 +2,15 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7025  2015-02-07 07:58:21 CET
+   [Improvements]
+      - Bump Parse::PMFile to 0.35
+      - Bump CPAN::Meta::Check to 0.020
+      - Bump CPAN::Meta::Requirements to 2.132
+      - Bump HTTP::Tiny to 0.054
+      - Bump Module::Metadata to 1.000026
+      - Bump version.pm to 0.9912
+
 1.7024  2015-01-12 13:31:19 PST
    [New Features]
       - Includes vendor lib and arch path to search for core modules, when installing self-contained
