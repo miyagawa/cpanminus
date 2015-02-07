@@ -1,5 +1,5 @@
 package CPAN::Meta::Check;
-$CPAN::Meta::Check::VERSION = '0.009';
+$CPAN::Meta::Check::VERSION = '0.010';
 use strict;
 use warnings;
 
@@ -8,8 +8,8 @@ our @EXPORT = qw//;
 our @EXPORT_OK = qw/check_requirements requirements_for verify_dependencies/;
 our %EXPORT_TAGS = (all => [ @EXPORT, @EXPORT_OK ] );
 
-use CPAN::Meta::Requirements 2.120920;
-use Module::Metadata;
+use CPAN::Meta::Requirements 2.121;
+use Module::Metadata 1.000023;
 
 sub _check_dep {
 	my ($reqs, $module, $dirs) = @_;
@@ -43,18 +43,13 @@ sub requirements_for {
 sub check_requirements {
 	my ($reqs, $type, $dirs) = @_;
 
-	my %ret;
-	if ($type ne 'conflicts') {
-		for my $module ($reqs->required_modules) {
-			$ret{$module} = _check_dep($reqs, $module, $dirs);
-		}
-	}
-	else {
-		for my $module ($reqs->required_modules) {
-			$ret{$module} = _check_conflict($reqs, $module, $dirs);
-		}
-	}
-	return \%ret;
+	return +{
+		map {
+			$_ => $type ne 'conflicts'
+				? scalar _check_dep($reqs, $_, $dirs)
+				: scalar _check_conflict($reqs, $_, $dirs)
+		} $reqs->required_modules
+	};
 }
 
 sub verify_dependencies {
@@ -64,7 +59,6 @@ sub verify_dependencies {
 	return grep { defined } values %{ $issues };
 }
 
-# vi:noet:sts=2:sw=2:ts=2
 1;
 
 #ABSTRACT: Verify requirements in a CPAN::Meta object
@@ -81,7 +75,7 @@ CPAN::Meta::Check - Verify requirements in a CPAN::Meta object
 
 =head1 VERSION
 
-version 0.009
+version 0.010
 
 =head1 SYNOPSIS
 
@@ -114,6 +108,8 @@ This function returns a unified L<CPAN::Meta::Requirements|CPAN::Meta::Requireme
 =item * L<Test::CheckDeps|Test::CheckDeps>
 
 =item * L<CPAN::Meta|CPAN::Meta>
+
+=for comment # vi:noet:sts=2:sw=2:ts=2
 
 =back
 

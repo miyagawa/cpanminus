@@ -4,7 +4,7 @@ use strict;
 
 use vars qw($VERSION $CLASS $STRICT $LAX);
 
-$VERSION = 0.9911;
+$VERSION = 0.9912;
 
 #--------------------------------------------------------------------------#
 # Version regexp components

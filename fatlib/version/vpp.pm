@@ -119,11 +119,18 @@ package version::vpp;
 
 use 5.006002;
 use strict;
+use warnings::register;
 
 use Config;
-use vars qw($VERSION $CLASS @ISA $LAX $STRICT);
-$VERSION = 0.9911;
+use vars qw($VERSION $CLASS @ISA $LAX $STRICT $WARN_CATEGORY);
+$VERSION = 0.9912;
 $CLASS = 'version::vpp';
+if ($] > 5.015) {
+    warnings::register_categories(qw/version/);
+    $WARN_CATEGORY = 'version';
+} else {
+    $WARN_CATEGORY = 'numeric';
+}
 
 require version::regex;
 *version::vpp::is_strict = \&version::regex::is_strict;
@@ -147,16 +154,6 @@ use overload (
     '/='        => \&vnoop,
     'abs'      => \&vnoop,
 );
-
-eval "use warnings";
-if ($@) {
-    eval '
-	package
-	warnings;
-	sub enabled {return $^W;}
-	1;
-    ';
-}
 
 sub import {
     no strict 'refs';
@@ -196,7 +193,7 @@ sub import {
     }
 
     if (exists($args{'UNIVERSAL::VERSION'})) {
-	local $^W;
+	no warnings qw/redefine/;
 	*UNIVERSAL::VERSION
 		= \&{$CLASS.'::_VERSION'};
     }
@@ -564,7 +561,14 @@ sub scan_version {
 		last;
 	    }
 	    elsif ( $pos eq '.' ) {
-		$s = ++$pos;
+		$pos++;
+		if ($qv) {
+		    # skip leading zeros
+		    while ($pos eq '0') {
+			$pos++;
+		    }
+		}
+		$s = $pos;
 	    }
 	    elsif ( $pos eq '_' && isDIGIT($pos+1) ) {
 		$s = ++$pos;
@@ -721,6 +725,10 @@ sub numify {
     my $digit = $self->{version}[0];
     my $string = sprintf("%d.", $digit );
 
+    if ($alpha and warnings::enabled()) {
+	warnings::warn($WARN_CATEGORY, 'alpha->numify() is lossy');
+    }
+
     for ( my $i = 1 ; $i < $len ; $i++ ) {
 	$digit = $self->{version}[$i];
 	if ( $width < 3 ) {
@@ -757,11 +765,7 @@ sub normal {
     }
     my $alpha = $self->{alpha} || "";
     my $qv = $self->{qv} || "";
-    if ($alpha and not $qv) {
-	# can't do this
-	require Carp;
-	Carp::croak("Invalid version method call");
-    }
+
     my $len = $#{$self->{version}};
     my $digit = $self->{version}[0];
     my $string = sprintf("v%d", $digit );
