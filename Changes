@@ -1,6 +1,8 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
+   [Improvements]
+      - Respect provides in META file before loading from Parse::PMFile
 
 1.7025  2015-02-07 07:58:21 CET
    [Improvements]
