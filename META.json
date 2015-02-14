@@ -104,7 +104,7 @@
          "web" : "https://github.com/miyagawa/cpanminus"
       }
    },
-   "version" : "1.7025",
+   "version" : "1.7026",
    "x_contributors" : [
       "Alessandro Ghedini <al3xbio@gmail.com>",
       "Andrew Rodland <andrew@cleverdomain.org>",
@@ -125,6 +125,7 @@
       "David Steinbrunner <dsteinbrunner@pobox.com>",
       "fREW Schmidt <frioux@gmail.com>",
       "Fuji, Goro <g.psy.va@gmail.com>",
+      "Gareth Kirwan <gbjk@thermeon.com>",
       "gfx <gfuji@cpan.org>",
       "Graham Knop <haarg@haarg.org>",
       "Graham Ollis <perl@wdlabs.com>",
