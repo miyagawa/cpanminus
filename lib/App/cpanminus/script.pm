@@ -2399,7 +2399,7 @@ sub extract_packages {
 
     my @files = grep { /\.pm(?:\.PL)?$/ && $try->($_) } $self->list_files;
 
-    my $provides = {};
+    my $provides = $meta->{provides} || { };
 
     for my $file (@files) {
         my $parser = Parse::PMFile->new($meta, { UNSAFE => 1, ALLOW_DEV_VERSION => 1 });
