@@ -2132,8 +2132,9 @@ sub build_stuff {
     my $configure_state = $self->configure_this($dist, $depth);
     $self->diag_ok($configure_state->{configured_ok} ? "OK" : "N/A");
 
-    $dist->{provides} = $self->extract_packages($dist->{cpanmeta}, ".")
-        if $dist->{cpanmeta} && $dist->{source} eq 'cpan';
+    if ($dist->{cpanmeta} && $dist->{source} eq 'cpan') {
+        $dist->{provides} = $dist->{cpanmeta}{provides} || $self->extract_packages($dist->{cpanmeta}, ".");
+    }
 
     # install direct 'test' dependencies for --installdeps, even with --notest
     my $root_target = (($self->{installdeps} or $self->{showdeps}) and $depth == 0);
@@ -2399,7 +2400,7 @@ sub extract_packages {
 
     my @files = grep { /\.pm(?:\.PL)?$/ && $try->($_) } $self->list_files;
 
-    my $provides = $meta->{provides} || { };
+    my $provides = { };
 
     for my $file (@files) {
         my $parser = Parse::PMFile->new($meta, { UNSAFE => 1, ALLOW_DEV_VERSION => 1 });
