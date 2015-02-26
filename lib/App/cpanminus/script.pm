@@ -177,7 +177,7 @@ sub parse_options {
         'exclude-vendor!' => \$self->{exclude_vendor},
         'mirror=s@' => $self->{mirrors},
         'mirror-only!' => \$self->{mirror_only},
-        'mirror-index=s' => \$self->{mirror_index},
+        'mirror-index=s' => sub { $self->{mirror_index} = $self->maybe_abs($_[1]) },
         'M|from=s' => sub {
             $self->{mirrors}     = [$_[1]];
             $self->{mirror_only} = 1;
