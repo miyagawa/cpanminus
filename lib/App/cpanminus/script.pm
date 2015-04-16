@@ -695,7 +695,11 @@ sub search_cpanmetadb {
     $self->chat("Searching $module on cpanmetadb ...\n");
 
     my $index = CPAN::Common::Index::MetaDB->new({ uri => $self->{cpanmetadb} });
-    return $self->search_common($index, $module, $version);
+    my $pkg = $self->search_common($index, $module, $version);
+    return $pkg if $pkg;
+
+    $self->diag_fail("Finding $module on cpanmetadb failed.");
+    return;
 }
 
 sub search_module {
