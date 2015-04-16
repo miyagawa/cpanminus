@@ -4,8 +4,6 @@ use Config;
 use Cwd ();
 use App::cpanminus;
 use App::cpanminus::Dependency;
-use CPAN::Common::Index::LocalPackage;
-use CPAN::Common::Index::Mirror;
 use File::Basename ();
 use File::Find ();
 use File::Path ();
@@ -453,12 +451,14 @@ sub generate_mirror_index {
 
 sub search_mirror_index_local {
     my ($self, $local, $module, $version) = @_;
+    require CPAN::Common::Index::LocalPackage;
     my $index = CPAN::Common::Index::LocalPackage->new({ source => $local });
     $self->search_common($index, $module, $version);
 }
 
 sub search_mirror_index {
     my ($self, $mirror, $module, $version) = @_;
+    require CPAN::Common::Index::Mirror;
     my $index = CPAN::Common::Index::Mirror->new({ mirror => $mirror, cache => $self->source_for($mirror) });
     $self->search_common($index, $module, $version);
 }
