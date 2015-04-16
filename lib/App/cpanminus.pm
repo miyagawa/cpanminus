@@ -67,6 +67,16 @@ You can also copy the standalone executable to whatever location you'd like.
 This just works, but be sure to grab the new version manually when you
 upgrade because C<--self-upgrade> might not work with this installation setup.
 
+=head2 Troubleshoot: HTTPS warnings
+
+When you run C<curl> commands above, you may encounter SSL handshake
+errors or certification warnings. This is due to your HTTP client
+(curl) being old, or SSL certificates installed on your system needs
+to be updated.
+
+You might need to update the software or system if you can, or
+use the C<-k> option with curl.
+
 =head1 DEPENDENCIES
 
 perl 5.8 or later.
