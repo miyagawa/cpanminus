@@ -473,7 +473,7 @@ sub search_common {
             version => sub {
                 my($found) = @_;
                 my $bool = $self->satisfy_version($module, $found, $version)
-                    or $self->chat("Found $module $found wihch doesn't satisfy $version.\n");
+                    or $self->chat("Found $module $found which doesn't satisfy $version.\n");
                 $bool;
             },
         });
