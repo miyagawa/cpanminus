@@ -8,5 +8,5 @@ Line-Count:   1
 Last-Updated: Sun, 09 Oct 2011 17:27:24 GMT
 
 Hash::MultiValue                   0.02  M/MI/MIYAGAWA/Hash-MultiValue-0.02.tar.gz
-URI::Escape                        3.31  G/GA/GAAS/URI-1.60.tar.gz
 TimeDate                           undef G/GB/GBARR/TimeDate-1.20.tar.gz
+URI::Escape                        3.31  G/GA/GAAS/URI-1.60.tar.gz
