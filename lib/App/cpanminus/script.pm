@@ -417,38 +417,6 @@ sub setup_home {
                 "Work directory is $self->{base}\n");
 }
 
-sub generate_mirror_index {
-    my ($self, $mirror) = @_;
-    my $file = $self->package_index_for($mirror);
-    my $gz_file = $file . '.gz';
-    my $index_mtime = (stat $gz_file)[9];
-
-    unless (-e $file && (stat $file)[9] >= $index_mtime) {
-        $self->chat("Uncompressing index file...\n");
-        if (eval {require Compress::Zlib}) {
-            my $gz = Compress::Zlib::gzopen($gz_file, "rb")
-                or do { $self->diag_fail("$Compress::Zlib::gzerrno opening compressed index"); return};
-            open my $fh, '>', $file
-                or do { $self->diag_fail("$! opening uncompressed index for write"); return };
-            my $buffer;
-            while (my $status = $gz->gzread($buffer)) {
-                if ($status < 0) {
-                    $self->diag_fail($gz->gzerror . " reading compressed index");
-                    return;
-                }
-                print $fh $buffer;
-            }
-        } else {
-            if (system("gunzip -c $gz_file > $file")) {
-                $self->diag_fail("Cannot uncompress -- please install gunzip or Compress::Zlib");
-                return;
-            }
-        }
-        utime $index_mtime, $index_mtime, $file;
-    }
-    return 1;
-}
-
 sub search_mirror_index_local {
     my ($self, $local, $module, $version) = @_;
     require CPAN::Common::Index::LocalPackage;
