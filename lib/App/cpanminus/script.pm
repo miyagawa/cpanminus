@@ -691,20 +691,11 @@ sub search_database {
 
 sub search_cpanmetadb {
     my($self, $module, $version) = @_;
-
-    require CPAN::Meta::YAML;
-
+    require CPAN::Common::Index::MetaDB;
     $self->chat("Searching $module on cpanmetadb ...\n");
 
-    (my $uri = $self->{cpanmetadb}) =~ s{/?$}{/package/$module};
-    my $yaml = $self->get($uri);
-    my $meta = eval { CPAN::Meta::YAML::Load($yaml) };
-    if ($meta && $meta->{distfile}) {
-        return $self->cpan_module($module, $meta->{distfile}, $meta->{version});
-    }
-
-    $self->diag_fail("Finding $module on cpanmetadb failed.");
-    return;
+    my $index = CPAN::Common::Index::MetaDB->new({ uri => $self->{cpanmetadb} });
+    return $self->search_common($index, $module, $version);
 }
 
 sub search_module {
