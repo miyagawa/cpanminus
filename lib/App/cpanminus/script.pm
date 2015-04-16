@@ -421,32 +421,31 @@ sub search_mirror_index_local {
     my ($self, $local, $module, $version) = @_;
     require CPAN::Common::Index::LocalPackage;
     my $index = CPAN::Common::Index::LocalPackage->new({ source => $local });
-    $self->search_common($index, $module, $version);
+    $self->search_common($index, { package => $module }, $version);
 }
 
 sub search_mirror_index {
     my ($self, $mirror, $module, $version) = @_;
     require CPAN::Common::Index::Mirror;
     my $index = CPAN::Common::Index::Mirror->new({ mirror => $mirror, cache => $self->source_for($mirror) });
-    $self->search_common($index, $module, $version);
+    $self->search_common($index, { package => $module }, $version);
 }
 
 sub search_common {
-    my($self, $index, $module, $version) = @_;
+    my($self, $index, $search_args, $want_version) = @_;
 
-    my $found = $index->search_packages({ package => $module });
+    my $found = $index->search_packages($search_args);
     $found = $self->cpan_module_common($found) if $found;
 
     return $found unless $self->{cascade_search};
 
     if ($found) {
-        if ($self->satisfy_version($module, $found->{module_version}, $version)) {
+        if ($self->satisfy_version($found->{module}, $found->{module_version}, $want_version)) {
             return $found;
         } else {
-            $self->chat("Found $found->{module} $found->{module_version} which doesn't satisfy $version.\n");
+            $self->chat("Found $found->{module} $found->{module_version} which doesn't satisfy $want_version.\n");
         }
     }
-
     
     return;
 }
@@ -456,193 +455,23 @@ sub with_version_range {
     defined($version) && $version =~ /(?:<|!=|==)/;
 }
 
-sub encode_json {
-    my($self, $data) = @_;
-    require JSON::PP;
-
-    my $json = JSON::PP::encode_json($data);
-    $json =~ s/([^a-zA-Z0-9_\-.])/uc sprintf("%%%02x",ord($1))/eg;
-    $json;
-}
-
-# TODO extract this as a module?
-sub version_to_query {
-    my($self, $module, $version) = @_;
-
-    require CPAN::Meta::Requirements;
-
-    my $requirements = CPAN::Meta::Requirements->new;
-    $requirements->add_string_requirement($module, $version || '0');
-
-    my $req = $requirements->requirements_for_module($module);
-
-    if ($req =~ s/^==\s*//) {
-        return {
-            term => { 'module.version' => $req },
-        };
-    } elsif ($req !~ /\s/) {
-        return {
-            range => { 'module.version_numified' => { 'gte' => $self->numify_ver_metacpan($req) } },
-        };
-    } else {
-        my %ops = qw(< lt <= lte > gt >= gte);
-        my(%range, @exclusion);
-        my @requirements = split /,\s*/, $req;
-        for my $r (@requirements) {
-            if ($r =~ s/^([<>]=?)\s*//) {
-                $range{$ops{$1}} = $self->numify_ver_metacpan($r);
-            } elsif ($r =~ s/\!=\s*//) {
-                push @exclusion, $self->numify_ver_metacpan($r);
-            }
-        }
-
-        my @filters= (
-            { range => { 'module.version_numified' => \%range } },
-        );
-
-        if (@exclusion) {
-            push @filters, {
-                not => { or => [ map { +{ term => { 'module.version_numified' => $self->numify_ver_metacpan($_) } } } @exclusion ] },
-            };
-        }
-
-        return @filters;
-    }
-}
-
-# Apparently MetaCPAN numifies devel releases by stripping _ first
-sub numify_ver_metacpan {
-    my($self, $ver) = @_;
-    $ver =~ s/_//g;
-    version->new($ver)->numify;
-}
-
 # version->new("1.00_00")->numify => "1.00_00" :/
 sub numify_ver {
     my($self, $ver) = @_;
     eval version->new($ver)->numify;
 }
 
-sub maturity_filter {
-    my($self, $module, $version) = @_;
-
-    if ($version =~ /==/) {
-        # specific version: allow dev release
-        return;
-    } elsif ($self->{dev_release}) {
-        # backpan'ed dev releases are considered cancelled
-        return +{ not => { term => { status => 'backpan' } } };
-    } else {
-        return (
-            { not => { term => { status => 'backpan' } } },
-            { term => { maturity => 'released' } },
-        );
-    }
-}
-
-sub by_version {
-    my %s = qw( latest 3  cpan 2  backpan 1 );
-    $b->{_score} <=> $a->{_score} ||                             # version: higher version that satisfies the query
-    $s{ $b->{fields}{status} } <=> $s{ $a->{fields}{status} };   # prefer non-BackPAN dist
-}
-
-sub by_first_come {
-    $a->{fields}{date} cmp $b->{fields}{date};                   # first one wins, if all are in BackPAN/CPAN
-}
-
-sub by_date {
-    $b->{fields}{date} cmp $a->{fields}{date};                   # prefer new uploads, when searching for dev
-}
-
-sub find_best_match {
-    my($self, $match, $version) = @_;
-    return unless $match && @{$match->{hits}{hits} || []};
-    my @hits = $self->{dev_release}
-        ? sort { by_version || by_date } @{$match->{hits}{hits}}
-        : sort { by_version || by_first_come } @{$match->{hits}{hits}};
-    $hits[0]->{fields};
-}
-
 sub search_metacpan {
     my($self, $module, $version) = @_;
 
-    require JSON::PP;
-
+    require CPAN::Common::Index::MetaCPAN;
     $self->chat("Searching $module ($version) on metacpan ...\n");
 
-    my $metacpan_uri = 'http://api.metacpan.org/v0';
+    my $index = CPAN::Common::Index::MetaCPAN->new({ include_dev => $self->{dev_release} });
+    my $pkg = $self->search_common($index, { package => $module, version_range => $version }, $version);
+    return $pkg if $pkg;
 
-    my @filter = $self->maturity_filter($module, $version);
-
-    my $query = { filtered => {
-        (@filter ? (filter => { and => \@filter }) : ()),
-        query => { nested => {
-            score_mode => 'max',
-            path => 'module',
-            query => { custom_score => {
-                metacpan_script => "score_version_numified",
-                query => { constant_score => {
-                    filter => { and => [
-                        { term => { 'module.authorized' => JSON::PP::true() } },
-                        { term => { 'module.indexed' => JSON::PP::true() } },
-                        { term => { 'module.name' => $module } },
-                        $self->version_to_query($module, $version),
-                    ] }
-                } },
-            } },
-        } },
-    } };
-
-    my $module_uri = "$metacpan_uri/file/_search?source=";
-    $module_uri .= $self->encode_json({
-        query => $query,
-        fields => [ 'date', 'release', 'author', 'module', 'status' ],
-    });
-
-    my($release, $author, $module_version);
-
-    my $module_json = $self->get($module_uri);
-    my $module_meta = eval { JSON::PP::decode_json($module_json) };
-    my $match = $self->find_best_match($module_meta);
-    if ($match) {
-        $release = $match->{release};
-        $author = $match->{author};
-        my $module_matched = (grep { $_->{name} eq $module } @{$match->{module}})[0];
-        $module_version = $module_matched->{version};
-    }
-
-    unless ($release) {
-        $self->chat("! Could not find a release matching $module ($version) on MetaCPAN.\n");
-        return;
-    }
-
-    my $dist_uri = "$metacpan_uri/release/_search?source=";
-    $dist_uri .= $self->encode_json({
-        filter => { and => [
-            { term => { 'release.name' => $release } },
-            { term => { 'release.author' => $author } },
-        ]},
-        fields => [ 'download_url', 'stat', 'status' ],
-    });
-
-    my $dist_json = $self->get($dist_uri);
-    my $dist_meta = eval { JSON::PP::decode_json($dist_json) };
-
-    if ($dist_meta) {
-        $dist_meta = $dist_meta->{hits}{hits}[0]{fields};
-    }
-    if ($dist_meta && $dist_meta->{download_url}) {
-        (my $distfile = $dist_meta->{download_url}) =~ s!.+/authors/id/!!;
-        local $self->{mirrors} = $self->{mirrors};
-        if ($dist_meta->{status} eq 'backpan') {
-            $self->{mirrors} = [ 'http://backpan.perl.org' ];
-        } elsif ($dist_meta->{stat}{mtime} > time()-24*60*60) {
-            $self->{mirrors} = [ 'http://cpan.metacpan.org' ];
-        }
-        return $self->cpan_module($module, $distfile, $module_version);
-    }
-
-    $self->diag_fail("Finding $module on metacpan failed.");
+    $self->diag_fail("Finding $module ($version) on metacpan failed.");
     return;
 }
 
@@ -667,7 +496,7 @@ sub search_cpanmetadb {
     $self->chat("Searching $module on cpanmetadb ...\n");
 
     my $index = CPAN::Common::Index::MetaDB->new({ uri => $self->{cpanmetadb} });
-    my $pkg = $self->search_common($index, $module, $version);
+    my $pkg = $self->search_common($index, { package => $module }, $version);
     return $pkg if $pkg;
 
     $self->diag_fail("Finding $module on cpanmetadb failed.");
@@ -1756,6 +1585,14 @@ sub cpan_module_common {
     my($self, $match) = @_;
 
     (my $distfile = $match->{uri}) =~ s!^cpan:///distfile/!!;
+
+    my $mirrors = $self->{mirrors};
+    if ($match->{download_uri}) {
+        (my $mirror = $match->{download_uri}) =~ s!/authors/id/.*$!!;
+        $mirrors = [$mirror];
+    }
+
+    local $self->{mirrors} = $mirrors;
     return $self->cpan_module($match->{package}, $distfile, $match->{version});
 }
 
