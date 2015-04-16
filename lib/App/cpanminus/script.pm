@@ -4,6 +4,8 @@ use Config;
 use Cwd ();
 use App::cpanminus;
 use App::cpanminus::Dependency;
+use CPAN::Common::Index::LocalPackage;
+use CPAN::Common::Index::Mirror;
 use File::Basename ();
 use File::Find ();
 use File::Path ();
@@ -417,11 +419,6 @@ sub setup_home {
                 "Work directory is $self->{base}\n");
 }
 
-sub package_index_for {
-    my ($self, $mirror) = @_;
-    return $self->source_for($mirror) . "/02packages.details.txt";
-}
-
 sub generate_mirror_index {
     my ($self, $mirror) = @_;
     my $file = $self->package_index_for($mirror);
@@ -454,34 +451,37 @@ sub generate_mirror_index {
     return 1;
 }
 
-sub search_mirror_index {
-    my ($self, $mirror, $module, $version) = @_;
-    $self->search_mirror_index_file($self->package_index_for($mirror), $module, $version);
+sub search_mirror_index_local {
+    my ($self, $local, $module, $version) = @_;
+    my $index = CPAN::Common::Index::LocalPackage->new({ source => $local });
+    $self->search_common($index, $module, $version);
 }
 
-sub search_mirror_index_file {
-    my($self, $file, $module, $version) = @_;
+sub search_mirror_index {
+    my ($self, $mirror, $module, $version) = @_;
+    my $index = CPAN::Common::Index::Mirror->new({ mirror => $mirror, cache => $self->source_for($mirror) });
+    $self->search_common($index, $module, $version);
+}
 
-    open my $fh, '<', $file or return;
-    my $found;
-    while (<$fh>) {
-        if (m!^\Q$module\E\s+([\w\.]+)\s+(\S*)!m) {
-            $found = $self->cpan_module($module, $2, $1);
-            last;
-        }
+sub search_common {
+    my($self, $index, $module, $version) = @_;
+
+    my $match;
+    if ($self->{cascade_search}) {
+        $match = $index->search_packages({
+            package => $module,
+            version => sub {
+                my($found) = @_;
+                my $bool = $self->satisfy_version($module, $found, $version)
+                    or $self->chat("Found $module $found wihch doesn't satisfy $version.\n");
+                $bool;
+            },
+        });
+    } else {
+        $match = $index->search_packages({ package => $module });
     }
 
-    return $found unless $self->{cascade_search};
-
-    if ($found) {
-        if ($self->satisfy_version($module, $found->{module_version}, $version)) {
-            return $found;
-        } else {
-            $self->chat("Found $module $found->{module_version} which doesn't satisfy $version.\n");
-        }
-    }
-
-    return;
+    return $match ? $self->cpan_module_common($match) : undef;
 }
 
 sub with_version_range {
@@ -763,7 +763,7 @@ sub search_module {
 
     if ($self->{mirror_index}) {
         $self->mask_output( chat => "Searching $module on mirror index $self->{mirror_index} ...\n" );
-        my $pkg = $self->search_mirror_index_file($self->{mirror_index}, $module, $version);
+        my $pkg = $self->search_mirror_index_local($self->{mirror_index}, $module, $version);
         return $pkg if $pkg;
 
         unless ($self->{cascade_search}) {
@@ -779,16 +779,6 @@ sub search_module {
 
     MIRROR: for my $mirror (@{ $self->{mirrors} }) {
         $self->mask_output( chat => "Searching $module on mirror $mirror ...\n" );
-        my $name = '02packages.details.txt.gz';
-        my $uri  = "$mirror/modules/$name";
-        my $gz_file = $self->package_index_for($mirror) . '.gz';
-
-        unless ($self->{pkgs}{$uri}) {
-            $self->mask_output( chat => "Downloading index file $uri ...\n" );
-            $self->mirror($uri, $gz_file);
-            $self->generate_mirror_index($mirror) or next MIRROR;
-            $self->{pkgs}{$uri} = "!!retrieved!!";
-        }
 
         my $pkg = $self->search_mirror_index($mirror, $module, $version);
         return $pkg if $pkg;
@@ -1844,6 +1834,13 @@ sub resolve_name {
 
     # Module name
     return $self->search_module($module, $version);
+}
+
+sub cpan_module_common {
+    my($self, $match) = @_;
+
+    (my $distfile = $match->{uri}) =~ s!^cpan:///distfile/!!;
+    return $self->cpan_module($match->{package}, $distfile, $match->{version});
 }
 
 sub cpan_module {
