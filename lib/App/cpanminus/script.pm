@@ -434,22 +434,21 @@ sub search_mirror_index {
 sub search_common {
     my($self, $index, $module, $version) = @_;
 
-    my $match;
-    if ($self->{cascade_search}) {
-        $match = $index->search_packages({
-            package => $module,
-            version => sub {
-                my($found) = @_;
-                my $bool = $self->satisfy_version($module, $found, $version)
-                    or $self->chat("Found $module $found which doesn't satisfy $version.\n");
-                $bool;
-            },
-        });
-    } else {
-        $match = $index->search_packages({ package => $module });
+    my $found = $index->search_packages({ package => $module });
+    $found = $self->cpan_module_common($found) if $found;
+
+    return $found unless $self->{cascade_search};
+
+    if ($found) {
+        if ($self->satisfy_version($module, $found->{module_version}, $version)) {
+            return $found;
+        } else {
+            $self->chat("Found $found->{module} $found->{module_version} which doesn't satisfy $version.\n");
+        }
     }
 
-    return $match ? $self->cpan_module_common($match) : undef;
+    
+    return;
 }
 
 sub with_version_range {
