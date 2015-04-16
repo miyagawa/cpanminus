@@ -61,12 +61,11 @@ C<~/perl5/perlbrew/bin/cpanm>.
 You can also copy the standalone executable to whatever location you'd like.
 
     cd ~/bin
-    curl -LO http://xrl.us/cpanm
+    curl -L https://cpanmin.us/ -o cpanm
     chmod +x cpanm
-    # edit shebang if you don't have /usr/bin/env
 
 This just works, but be sure to grab the new version manually when you
-upgrade because C<--self-upgrade> might not work for this.
+upgrade because C<--self-upgrade> might not work with this installation setup.
 
 =head1 DEPENDENCIES
 
