@@ -204,6 +204,7 @@ sub parse_options {
         },
         'skip-configure!' => \$self->{skip_configure},
         'dev!'       => \$self->{dev_release},
+        'metacpan!'  => \$self->{metacpan},
         'report-perl-version!' => \$self->{report_perl_version},
         'configure-timeout=i' => \$self->{configure_timeout},
         'build-timeout=i' => \$self->{build_timeout},
@@ -475,7 +476,7 @@ sub search_database {
     my $found;
     my $range = ($self->with_version_range($version) || $self->{dev_release});
 
-    if ($range) {
+    if ($range or $self->{metacpan}) {
         $found = $self->search_metacpan($module, $version)   and return $found;
         $found = $self->search_cpanmetadb($module, $version) and return $found;
     } else {

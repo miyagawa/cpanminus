@@ -14,7 +14,7 @@ like last_build_log, qr/0\.10 .* doesn't satisfy == 0.01/;
 run 'CPAN::Test::Dummy::MultiPkgVer@0.05';
 like last_build_log, qr/Finding CPAN::Test::Dummy::MultiPkgVer \(== 0\.05\) on metacpan failed/;
 
-run 'CPAN::Test::Dummy::MultiPkgVer::Inner~0.10';
+run '--metacpan', 'CPAN::Test::Dummy::MultiPkgVer::Inner~0.10';
 like last_build_log, qr/installed CPAN-Test-Dummy-MultiPkgVer-0\.01/;
 
 run 'CPAN::Test::Dummy::MultiPkgVer~==0.01';
