@@ -14,6 +14,7 @@ use Carp;
 use CPAN::Meta::Requirements;
 use HTTP::Tiny;
 use JSON::PP ();
+use Time::Local ();
 use version;
 
 =attr uri
@@ -49,8 +50,6 @@ sub search_packages {
         $range = "== $args->{version}";
     } elsif ( $args->{version_range} ) {
         $range = $args->{version_range};
-    } else {
-        $range = "0";
     }
 
     my @filter = $self->_maturity_filter($args->{package}, $range);
@@ -87,11 +86,11 @@ sub search_packages {
 
     my $module_meta = eval { JSON::PP::decode_json($res->{content}) };
 
-    my $match = $self->_find_best_match($module_meta);
-    if ($match) {
-        $release = $match->{release};
-        $author = $match->{author};
-        my $module_matched = (grep { $_->{name} eq $args->{package} } @{$match->{module}})[0];
+    my $file = $self->_find_best_match($module_meta);
+    if ($file) {
+        $release = $file->{release};
+        $author = $file->{author};
+        my $module_matched = (grep { $_->{name} eq $args->{package} } @{$file->{module}})[0];
         $module_version = $module_matched->{version};
     }
 
@@ -103,7 +102,7 @@ sub search_packages {
             { term => { 'release.name' => $release } },
             { term => { 'release.author' => $author } },
         ]},
-        fields => [ 'download_url', 'stat', 'status' ],
+        fields => [ 'download_url' ],
     });
 
     $res = HTTP::Tiny->new->get($dist_uri);
@@ -116,7 +115,7 @@ sub search_packages {
     }
 
     if ($dist_meta && $dist_meta->{download_url}) {
-        (my $distfile = $dist_meta->{download_url}) =~ s!.+/authors/id/!!;
+        (my $distfile = $dist_meta->{download_url}) =~ s!.+/authors/id/\w/\w\w/!!;
 
         my $res = {
             package => $args->{package},
@@ -124,16 +123,27 @@ sub search_packages {
             uri => "cpan:///distfile/$distfile",
         };
 
-        if ($dist_meta->{status} eq 'backpan') {
-            $res->{download_uri} = "http://backpan.perl.org/authors/id/$distfile";
-        } elsif ($dist_meta->{stat}{mtime} > time() - 24 * 60 * 60) {
-            $res->{download_uri} = "http://cpan.metacpan.org/authors/id/$distfile";
+        if ($file->{status} eq 'backpan') {
+            $res->{download_uri} = $self->_download_uri("http://backpan.perl.org", $distfile);
+        } elsif ($self->_parse_date($file->{date}) > time() - 24 * 60 * 60) {
+            $res->{download_uri} = $self->_download_uri("http://cpan.metacpan.org", $distfile);
         }
 
         return $res;
     }
 
     return;
+}
+
+sub _parse_date {
+    my($self, $date) = @_;
+    my @date = $date =~ /^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d)(?:\.\d+)?Z$/;
+    Time::Local::timegm($date[5], $date[4], $date[3], $date[2], $date[1] - 1, $date[0] - 1900);
+}
+
+sub _download_uri {
+    my($self, $base, $distfile) = @_;
+    join "/", $base, "authors/id", substr($distfile, 0, 1), substr($distfile, 0, 2), $distfile;
 }
 
 sub _encode_json {
@@ -145,6 +155,8 @@ sub _encode_json {
 
 sub _version_to_query {
     my($self, $module, $version) = @_;
+
+    return () unless $version;
 
     my $requirements = CPAN::Meta::Requirements->new;
     $requirements->add_string_requirement($module, $version || '0');
@@ -202,7 +214,9 @@ sub _maturity_filter {
         push @filters, { not => { term => { status => 'backpan' } } };
     }
 
-    unless ($self->include_dev or $version =~ /==/) {
+    my $explicit_version = $version && $version =~ /==/;
+
+    unless ($self->include_dev or $explicit_version) {
         push @filters, { term => { maturity => 'released' } };
     }
 
@@ -210,25 +224,25 @@ sub _maturity_filter {
 }
 
 sub by_version {
-    my %s = (latest => 3,  cpan => 2,  backpan => 1);
-    $b->{_score} <=> $a->{_score} ||                             # version: higher version that satisfies the query
-    $s{ $b->{fields}{status} } <=> $s{ $a->{fields}{status} };   # prefer non-BackPAN dist
+    # version: higher version that satisfies the query
+    $b->{fields}{module}[0]{"version_numified"} <=> $a->{fields}{module}[0]{"version_numified"};
 }
 
-sub by_first_come {
-    $a->{fields}{date} cmp $b->{fields}{date};                   # first one wins, if all are in BackPAN/CPAN
+sub by_status {
+    # prefer non-backpan dist
+    my %s = (latest => 3,  cpan => 2,  backpan => 1);
+    $s{ $b->{fields}{status} } <=> $s{ $a->{fields}{status} };
 }
 
 sub by_date {
-    $b->{fields}{date} cmp $a->{fields}{date};                   # prefer new uploads, when searching for dev
+    # prefer new uploads
+    $b->{fields}{date} cmp $a->{fields}{date};
 }
 
 sub _find_best_match {
     my($self, $match, $version) = @_;
     return unless $match && @{$match->{hits}{hits} || []};
-    my @hits = $self->include_dev
-        ? sort { by_version || by_date } @{$match->{hits}{hits}}
-        : sort { by_version || by_first_come } @{$match->{hits}{hits}};
+    my @hits = sort { by_version || by_status || by_date } @{$match->{hits}{hits}};
     $hits[0]->{fields};
 }
 
