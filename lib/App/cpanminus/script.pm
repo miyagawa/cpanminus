@@ -178,7 +178,7 @@ sub parse_options {
             $self->{mirror_only} = 1;
         },
         'cpanmetadb=s'    => \$self->{cpanmetadb},
-        'cascade-search!' => \$self->{cascade_search},
+        'cascade-search!' => \$self->{cascade_search}, # for backward compat
         'prompt!'   => \$self->{prompt},
         'installdeps' => \$self->{installdeps},
         'skip-installed!' => \$self->{skip_installed},
@@ -432,8 +432,6 @@ sub search_common {
     my $found = $index->search_packages($search_args);
     $found = $self->cpan_module_common($found) if $found;
 
-    return $found unless $self->{cascade_search};
-
     if ($found) {
         if ($self->satisfy_version($found->{module}, $found->{module_version}, $want_version)) {
             return $found;
@@ -505,11 +503,6 @@ sub search_module {
         $self->mask_output( chat => "Searching $module on mirror index $self->{mirror_index} ...\n" );
         my $pkg = $self->search_mirror_index_local($self->{mirror_index}, $module, $version);
         return $pkg if $pkg;
-
-        unless ($self->{cascade_search}) {
-           $self->mask_output( diag_fail => "Finding $module ($version) on mirror index $self->{mirror_index} failed." );
-           return;
-        }
     }
 
     unless ($self->{mirror_only}) {
