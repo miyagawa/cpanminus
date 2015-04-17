@@ -11,6 +11,7 @@ on test => sub {
 
 on develop => sub {
     requires 'App::FatPacker';
+    requires 'CPAN::Common::Index', 0.005;
     requires 'CPAN::DistnameInfo';
     requires 'CPAN::Meta', '2.132830';
     requires 'CPAN::Meta::Check';

@@ -17,8 +17,8 @@
 # __FATPACK__
 
 use strict;
-use FindBin qw($Bin);                        # For dev -- Auto-removed
-use lib "$Bin/../lib", "$Bin/../fatlib"; # For dev -- Auto-removed
+use FindBin qw($Bin);                                      # For dev -- Auto-removed
+use lib "$Bin/../lib", "$Bin/../fatlib", "$Bin/../vendor"; # For dev -- Auto-removed
 use App::cpanminus::script;
 
 
@@ -268,6 +268,10 @@ for module search index.
 
 B<EXPERIMENTAL>: Specifies an alternate URI for CPAN MetaDB index lookups.
 
+=item --metacpan
+
+Prefers MetaCPAN API over CPAN MetaDB.
+
 =item --cpanfile
 
 B<EXPERIMENTAL>: Specified an alternate path for cpanfile to search for,
@@ -472,12 +476,6 @@ module), an error will be thrown.
 A dialog will be prompted to confirm the files to be deleted. If you pass
 C<-f> option as well, the dialog will be skipped and uninstallation
 will be forced.
-
-=item --cascade-search
-
-B<EXPERIMENTAL>: Specifies whether to cascade search when you specify
-multiple mirrors and a mirror doesn't have a module or has a lower
-version of the module than requested. Defaults to false.
 
 =item --skip-installed
 
