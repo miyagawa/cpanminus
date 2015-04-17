@@ -4,7 +4,7 @@
       "- Tatsuhiko Miyagawa"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Dist::Zilla version 5.031, Dist::Milla version v1.0.14, CPAN::Meta::Converter version 2.143240",
+   "generated_by" : "Dist::Zilla version 5.035, Dist::Milla version v1.0.15, CPAN::Meta::Converter version 2.150001",
    "license" : [
       "perl_5"
    ],
@@ -50,7 +50,7 @@
             "CPAN::Meta::YAML" : "0",
             "Capture::Tiny" : "0",
             "Digest::SHA" : "0",
-            "Dist::Milla" : "v1.0.14",
+            "Dist::Milla" : "v1.0.15",
             "Exporter" : "5.63",
             "File::Temp" : "0",
             "File::pushd" : "0",
@@ -104,7 +104,7 @@
          "web" : "https://github.com/miyagawa/cpanminus"
       }
    },
-   "version" : "1.7027",
+   "version" : "1.7028",
    "x_contributors" : [
       "Alessandro Ghedini <al3xbio@gmail.com>",
       "Andrew Rodland <andrew@cleverdomain.org>",
@@ -162,6 +162,7 @@
       "Rob Hoelz <rob@hoelz.ro>",
       "Roman Jurkov <rjurkov@verio.net>",
       "Sebastian Riedel <sri@cpan.org>",
+      "Shoichi Kaji <skaji@cpan.org>",
       "Slaven Rezic <slaven@rezic.de>",
       "Smylers <Smylers@stripey.com>",
       "Stoned Elipot <stoned.elipot@gmail.com>",

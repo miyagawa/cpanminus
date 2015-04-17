@@ -2,6 +2,11 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7028  2015-04-17 19:22:59 CEST
+   [Improvements]
+      - Keep the mirror index file as absolute (skaji) #438
+      - Updated the documentation about HTTPS cert warnings #441
+
 1.7027  2015-02-14 12:14:13 PST
    [Improvements]
       - Use provides as provided in META.json and do not scan packages as PAUSE does. #435
