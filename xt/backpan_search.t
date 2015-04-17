@@ -13,10 +13,5 @@ use Test::More;
     unlike last_build_log, qr/backpan/;
 }
 
-{
-    my $out = run '--info', 'Moose::Util::TypeConstraints~<=2.0402';
-    like $out, qr/Moose-2.0402/;
-}
-
 done_testing;
 
