@@ -268,6 +268,10 @@ for module search index.
 
 B<EXPERIMENTAL>: Specifies an alternate URI for CPAN MetaDB index lookups.
 
+=item --metacpan
+
+Prefers MetaCPAN API over CPAN MetaDB.
+
 =item --cpanfile
 
 B<EXPERIMENTAL>: Specified an alternate path for cpanfile to search for,
