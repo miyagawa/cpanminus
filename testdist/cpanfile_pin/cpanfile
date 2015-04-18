@@ -1,0 +1,2 @@
+requires 'Module::Refresh', '== 0.17';
+requires 'Path::Class', '== 0.26';
