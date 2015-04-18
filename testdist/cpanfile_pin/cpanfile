@@ -1,2 +1,5 @@
 requires 'Module::Refresh', '== 0.17';
 requires 'Path::Class', '== 0.26';
+
+requires 'Data::Dumper', '== 2.139';
+requires 'Test::Differences', '== 0.61';
