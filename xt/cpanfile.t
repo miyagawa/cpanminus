@@ -19,7 +19,7 @@ use xt::Run;
 
 {
     run "--installdeps", "--notest", "--cpanfile", "cpanfile.foobar", "./testdist/cpanfile_app2";
-    like last_build_log, qr/installed Hash-MultiValue-0\.10/;
+    like last_build_log, qr/installed Hash-MultiValue-0\.12/;
 }
 
 done_testing;
