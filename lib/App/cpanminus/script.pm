@@ -2549,6 +2549,7 @@ sub extract_meta_prereqs {
     if ($dist->{cpanfile}) {
         my @features = $self->configure_features($dist, $dist->{cpanfile}->features);
         my $prereqs = $dist->{cpanfile}->prereqs_with(@features);
+        # TODO: creating requirements is useful even without cpanfile to detect conflicting prereqs
         $self->{cpanfile_requirements} = $prereqs->merged_requirements($dist->{want_phases}, ['requires']);
         return App::cpanminus::Dependency->from_prereqs($prereqs, $dist->{want_phases}, $self->{install_types});
     }
