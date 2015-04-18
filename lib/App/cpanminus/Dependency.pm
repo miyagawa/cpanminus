@@ -3,16 +3,14 @@ use strict;
 use CPAN::Meta::Requirements;
 
 sub from_prereqs {
-    my($class, $prereq, $phases, $types) = @_;
+    my($class, $prereqs, $phases, $types) = @_;
 
     my @deps;
-
     for my $type (@$types) {
-        my $req = CPAN::Meta::Requirements->new;
-        $req->add_requirements($prereq->requirements_for($_, $type))
-          for @$phases;
-
-        push @deps, $class->from_versions($req->as_string_hash, $type);
+        push @deps, $class->from_versions(
+            $prereqs->merged_requirements($phases, [$type])->as_string_hash,
+            $type,
+        );
     }
 
     return @deps;
