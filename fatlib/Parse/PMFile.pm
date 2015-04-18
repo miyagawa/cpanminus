@@ -10,7 +10,7 @@ use Dumpvalue;
 use version ();
 use File::Spec ();
 
-our $VERSION = '0.35';
+our $VERSION = '0.36';
 our $VERBOSE = 0;
 our $ALLOW_DEV_VERSION = 0;
 our $FORK = 0;
@@ -336,7 +336,6 @@ sub _packages_per_pmfile {
     my $filemtime = $self->{MTIME};
     my $version = $self->{VERSION};
 
-    $DB::single++;
     open my $fh, "<", "$pmfile" or return $ppp;
 
     local $/ = "\n";

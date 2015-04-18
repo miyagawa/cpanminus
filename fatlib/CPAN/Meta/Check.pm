@@ -1,5 +1,5 @@
 package CPAN::Meta::Check;
-$CPAN::Meta::Check::VERSION = '0.010';
+$CPAN::Meta::Check::VERSION = '0.011';
 use strict;
 use warnings;
 
@@ -8,6 +8,7 @@ our @EXPORT = qw//;
 our @EXPORT_OK = qw/check_requirements requirements_for verify_dependencies/;
 our %EXPORT_TAGS = (all => [ @EXPORT, @EXPORT_OK ] );
 
+use CPAN::Meta::Prereqs '2.132830';
 use CPAN::Meta::Requirements 2.121;
 use Module::Metadata 1.000023;
 
@@ -75,7 +76,7 @@ CPAN::Meta::Check - Verify requirements in a CPAN::Meta object
 
 =head1 VERSION
 
-version 0.010
+version 0.011
 
 =head1 SYNOPSIS
 
