@@ -2,6 +2,17 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7029  2015-04-19 00:15:32 CEST
+   [New Features]
+      - Consider root cpanfile's requirement when following dependencies with --installdeps (#363)
+      - Added back --metacpan option
+
+   [Improvements]
+      - Bump Module::Metadata to 1.000027
+      - Bump CPAN::Meta::Check to 0.011
+      - Bump CPAN::Meta::YAML to 0.014
+      - Bump Parse::PMFile to 0.36
+
 1.7028  2015-04-17 19:22:59 CEST
    [Improvements]
       - Keep the mirror index file as absolute (skaji) #438
