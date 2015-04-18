@@ -27,6 +27,14 @@ sub from_versions {
     @deps;
 }
 
+sub merge_with {
+    my($self, $requirements) = @_;
+
+    # should it clone? not cloning means we upgrade root $requirements on our way
+    $requirements->add_string_requirement($self->module, $self->version);
+    $self->{version} = $requirements->requirements_for_module($self->module);
+}
+
 sub new {
     my($class, $module, $version, $type) = @_;
 

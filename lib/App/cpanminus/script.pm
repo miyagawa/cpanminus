@@ -2534,6 +2534,12 @@ sub find_prereqs {
         push @deps, $self->bundle_deps($dist);
     }
 
+    if ($self->{cpanfile_requirements} && !$dist->{cpanfile}) {
+        for my $dep (@deps) {
+            $dep->merge_with($self->{cpanfile_requirements});
+        }
+    }
+
     return @deps;
 }
 
@@ -2543,6 +2549,7 @@ sub extract_meta_prereqs {
     if ($dist->{cpanfile}) {
         my @features = $self->configure_features($dist, $dist->{cpanfile}->features);
         my $prereqs = $dist->{cpanfile}->prereqs_with(@features);
+        $self->{cpanfile_requirements} = $prereqs->merged_requirements($dist->{want_phases}, ['requires']);
         return App::cpanminus::Dependency->from_prereqs($prereqs, $dist->{want_phases}, $self->{install_types});
     }
 
