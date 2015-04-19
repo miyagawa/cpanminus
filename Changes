@@ -2,6 +2,9 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7030  2015-04-19 14:15:34 CEST
+      - Same as 1.7029
+
 1.7029  2015-04-19 00:15:32 CEST
    [New Features]
       - Consider root cpanfile's requirement when following dependencies with --installdeps (#363)
