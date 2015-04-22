@@ -98,7 +98,7 @@ sub new {
         save_dists => undef,
         skip_configure => 0,
         verify => 0,
-        report_perl_version => 1,
+        report_perl_version => !$class->maybe_ci,
         build_args => {},
         features => {},
         pure_perl => 0,
@@ -110,6 +110,11 @@ sub new {
 sub env {
     my($self, $key) = @_;
     $ENV{"PERL_CPANM_" . $key};
+}
+
+sub maybe_ci {
+    my $class = shift;
+    grep $ENV{$_}, qw( TRAVIS CI AUTOMATED_TESTING AUTHOR_TESTING );
 }
 
 sub install_type_handlers {

@@ -516,9 +516,10 @@ CHECKSUMS and SIGNATURES (if found). Defaults to false.
 
 =item --report-perl-version
 
-Whether it report the locally installed perl version to the various
-web server as part of User-Agent. Defaults to true, and you can disable
-it by using C<--no-report-perl-version>.
+Whether it reports the locally installed perl version to the various
+web server as part of User-Agent. Defaults to true unless CI related
+environment variables such as C<TRAVIS>, C<CI> or C<AUTOMATED_TESTING>
+is enabled. You can disable it by using C<--no-report-perl-version>.
 
 =item --auto-cleanup
 
