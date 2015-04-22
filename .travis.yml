@@ -12,5 +12,5 @@ before_install:
 install:
   - cpanm -nq --installdeps --with-develop --with-recommends --with-suggests .
 script:
-  - prove -lr xt
+  - prove -lr xt -j9
 sudo: false
