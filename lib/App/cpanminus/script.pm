@@ -2066,7 +2066,7 @@ sub unsatisfied_deps {
 
     my $reqs = CPAN::Meta::Requirements->new;
     for my $dep (grep $_->is_requirement, @deps) {
-        $reqs->add_string_requirement($dep->module => $dep->version || '0');
+        $reqs->add_string_requirement($dep->module => $dep->requires_version || '0');
     }
 
     my $ret = CPAN::Meta::Check::check_requirements($reqs, 'requires', $self->{search_inc});
