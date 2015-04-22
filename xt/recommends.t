@@ -3,10 +3,11 @@ use xt::Run;
 use Test::More;
 
 run '-n', 'IPC::Cmd'; # occasional test failure on 5.8
+run_L '-n', 'Module::Build', 'Module::Build::Tiny'; # slow test
 
 run_L '--with-recommends', './testdist/TestDist-Recommend';
-like last_build_log, qr/Checking if you have HTTP::Server::Simple/;
-like last_build_log, qr/Checking if you have CPAN::Test::Dummy::Perl5::Build::Fails/;
+like last_build_log, qr/Checking if you have CPAN::Test::Dummy::Perl5::Build 0/;
+like last_build_log, qr/Checking if you have CPAN::Test::Dummy::Perl5::Build::Fails 0/;
 like last_build_log, qr/Checking if you have Test::Requires/;
 unlike last_build_log, qr/Checking if you have Hash::MultiValue/;
 like last_build_log, qr/::Build::Fails failed/;
