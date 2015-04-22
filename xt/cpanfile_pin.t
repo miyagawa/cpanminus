@@ -10,4 +10,9 @@ use xt::Run;
     like last_build_log, qr/installed Data-Dumper-2\.139/;
 }
 
+{
+    run_L "--installdeps", "--notest", "./testdist/cpanfile_pin_core";
+    unlike last_build_log, qr/Installing the dependencies failed/;
+}
+
 done_testing;
