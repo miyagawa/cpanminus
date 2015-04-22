@@ -2,8 +2,6 @@ use strict;
 use Test::More;
 use xt::Run;
 
-$ENV{NOTEST} = 1;
-
 run "ExtUtils::Install";
 like last_build_log, qr/Running Makefile\.PL/, "ExtUtils::Install is M::B dep, should use Makefile.PL";
 

@@ -42,10 +42,10 @@ if ($] >= 5.012) {
     unlike $mod->filename, qr/site_perl/;
 }
 
-run '-n', 'App::Ack';
+run 'App::Ack';
 run '-U', '-f', 'App::Ack';
 like last_build_log, qr!Unlink:.*bin/ack!, "Uninstall bin/ when it is not shared";
 
-run '-n', $_ for qw( Hash::MultiValue Module::CoreList App::Ack );
+run $_ for qw( Hash::MultiValue Module::CoreList App::Ack );
 
 done_testing;

@@ -9,7 +9,7 @@ my $local_lib = "$ENV{PERL_CPANM_HOME}/perl5";
 sub install_json {
     my($path, $dist) = @_;
 
-    run_L '--notest', $path;
+    run_L $path;
 
     my $file = "$local_lib/lib/perl5/$Config{archname}/.meta/$dist/install.json";
     open my $in, "<", $file or die $!;

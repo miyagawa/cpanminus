@@ -6,7 +6,7 @@ if ($] >= 5.014) {
     plan skip_all => "Skip with perl $]";
 }
 
-run_L "--skip-satisfied", "--notest", "CPAN::Meta";
+run_L "--skip-satisfied", "CPAN::Meta";
 
 like last_build_log, qr/installed CPAN-Meta/;
 

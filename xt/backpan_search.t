@@ -9,7 +9,7 @@ use Test::More;
 
 {
     # --dev shouldn't search for backpan
-    run '--test-only', '--notest', '--dev', 'Test::More';
+    run '--info', '--dev', 'Test::More';
     unlike last_build_log, qr/backpan/;
 }
 

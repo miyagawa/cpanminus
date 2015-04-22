@@ -5,8 +5,6 @@ use Config;
 use xt::Run;
 use version;
 
-$ENV{NOTEST} = 1;
-
 sub load_json {
     open my $in, "<", $_[0] or die "$_[0]: $!";
     JSON::decode_json(join "", <$in>);
@@ -57,7 +55,7 @@ my @modules = (
 while (@modules) {
     my($module, $version) = splice @modules, 0, 2;
     (my $dist = $module) =~ s/::/-/g;
-    run_L "-n", "$module\@$version";
+    run_L "$module\@$version";
     my $file = "$local_lib/lib/perl5/$Config{archname}/.meta/$dist-$version/install.json";
     my $data = load_json $file;
     ok exists $data->{provides}{$module};

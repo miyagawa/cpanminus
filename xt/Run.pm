@@ -17,7 +17,7 @@ sub run_L {
 
 sub run {
     my @args = @_;
-    my @notest = $ENV{NOTEST} ? ("--notest") : ();
+    my @notest = $ENV{TEST} ? ("--no-notest") : ("--notest");
     my($stdout, $stderr, $exit) = capture {
         system($^X, $executable, @notest, "--quiet", "--reinstall", @args);
     };

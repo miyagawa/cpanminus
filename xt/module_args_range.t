@@ -33,7 +33,7 @@ unlike last_build_log, qr/You have Try::Tiny/;
 
 run 'Try::Tiny'; # pull latest from CPAN
 
-run '--notest', 'Try::Tiny~<0.08,!=0.07';
+run 'Try::Tiny~<0.08,!=0.07';
 like last_build_log, qr/installed Try-Tiny-0.06/;
 
 run 'Try::Tiny~>0.06, <0.08,!=0.07';

@@ -5,7 +5,7 @@ use Test::More;
 # https://github.com/miyagawa/cpanminus/issues/229
 
 # install the higher version than on CPAN
-run_L '-n', './testdist/Hash-MultiValue-1.200';
+run_L './testdist/Hash-MultiValue-1.200';
 
 run_L '--skip-installed', 'Hash::MultiValue';
 like last_build_log, qr/is up to date\. \(1\.200\)/, "by default don't downgrade";

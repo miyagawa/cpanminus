@@ -5,7 +5,7 @@ use Config;
 use xt::Run;
 
 {
-    run_L "--installdeps", "--notest", "./testdist/cpanfile_app";
+    run_L "--installdeps", "./testdist/cpanfile_app";
 
     like last_build_log, qr/installed Hash-MultiValue-0\.10/;
     like last_build_log, qr/installed Try-Tiny-0\.11/;
@@ -18,7 +18,7 @@ use xt::Run;
 }
 
 {
-    run "--installdeps", "--notest", "--cpanfile", "cpanfile.foobar", "./testdist/cpanfile_app2";
+    run "--installdeps", "--cpanfile", "cpanfile.foobar", "./testdist/cpanfile_app2";
     like last_build_log, qr/installed Hash-MultiValue-0\.12/;
 }
 

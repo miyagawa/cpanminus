@@ -23,7 +23,7 @@ use xt::Run;
     like last_build_log, qr/Searching Try::Tiny \(== 0.11\) on metacpan/;
     unlike last_build_log, qr/Try::Tiny is up to date/;
 
-    run_L '-n', 'CPAN::Meta@2.150003';
+    run_L 'CPAN::Meta@2.150003';
     like last_build_log, qr/CPAN-Meta-2.150003-TRIAL/, 'should work with TRIAL release';
 }
 
