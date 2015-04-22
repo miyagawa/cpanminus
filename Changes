@@ -2,6 +2,14 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7031  2015-04-22 14:13:37 PDT
+   [Bug Fixes]
+      - Fixed a rare case where circular dependencies in cpanfile prevents satisfying modules from
+        being installed. (#452)
+
+   [Improvements]
+      - Stop reporting perl versions by default if running under certain CI related env vars.
+
 1.7030  2015-04-19 14:15:34 CEST
       - Same as 1.7029
 
