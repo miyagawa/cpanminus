@@ -44,10 +44,10 @@ This will install C<cpanm> to your bin directory like
 C</usr/local/bin> and you'll need the C<--sudo> option to write to
 the directory, unless you configured C<INSTALL_BASE> with L<local::lib>.
 
-=head2 Installing to local perl (perlbrew)
+=head2 Installing to local perl (perlbrew, plenv etc.)
 
 If you have perl in your home directory, which is the case if you use
-tools like L<perlbrew>, you don't need the C<--sudo> option, since
+tools like L<perlbrew> or plenv, you don't need the C<--sudo> option, since
 you're most likely to have a write permission to the perl's library
 path. You can just do:
 
@@ -74,8 +74,9 @@ errors or certification warnings. This is due to your HTTP client
 (curl) being old, or SSL certificates installed on your system needs
 to be updated.
 
-You might need to update the software or system if you can, or
-use the C<-k> option with curl.
+You're recommended to update the software or system if you can. If
+that is impossible or difficult, use the C<-k> option with curl or an
+alternative URL, C<https://git.io/cpanm>
 
 =head1 DEPENDENCIES
 
