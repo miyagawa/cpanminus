@@ -1,9 +1,9 @@
-package App::cpanminus::script;
+package Menlo::CLI;
 use strict;
 use Config;
 use Cwd ();
-use App::cpanminus;
-use App::cpanminus::Dependency;
+use Menlo;
+use Menlo::Dependency;
 use File::Basename ();
 use File::Find ();
 use File::Path ();
@@ -19,7 +19,7 @@ use constant WIN32 => $^O eq 'MSWin32';
 use constant BAD_TAR => ($^O eq 'solaris' || $^O eq 'hpux');
 use constant CAN_SYMLINK => eval { symlink("", ""); 1 };
 
-our $VERSION = $App::cpanminus::VERSION;
+our $VERSION = $Menlo::VERSION;
 
 if ($INC{"App/FatPacker/Trace.pm"}) {
     require version::vpp;
@@ -413,7 +413,7 @@ sub setup_home {
         }
     }
 
-    $self->chat("cpanm (App::cpanminus) $VERSION on perl $] built for $Config{archname}\n" .
+    $self->chat("cpanm (Menlo) $VERSION on perl $] built for $Config{archname}\n" .
                 "Work directory is $self->{base}\n");
 }
 
@@ -567,7 +567,7 @@ sub load_argv_from_fh {
 sub show_version {
     my $self = shift;
 
-    print "cpanm (App::cpanminus) version $VERSION ($0)\n";
+    print "cpanm (Menlo) version $VERSION ($0)\n";
     print "perl version $] ($^X)\n\n";
 
     print "  \%Config:\n";
@@ -785,8 +785,8 @@ sub setup_local_lib {
 sub bootstrap_local_lib_deps {
     my $self = shift;
     push @{$self->{bootstrap_deps}},
-        App::cpanminus::Dependency->new('ExtUtils::MakeMaker' => 6.58),
-        App::cpanminus::Dependency->new('ExtUtils::Install'   => 1.46);
+        Menlo::Dependency->new('ExtUtils::MakeMaker' => 6.58),
+        Menlo::Dependency->new('ExtUtils::Install'   => 1.46);
 }
 
 sub prompt_bool {
@@ -1124,7 +1124,7 @@ sub configure_mirrors {
 sub self_upgrade {
     my $self = shift;
     $self->check_upgrade;
-    $self->{argv} = [ 'App::cpanminus' ];
+    $self->{argv} = [ 'Menlo' ];
     return; # continue
 }
 
@@ -1910,7 +1910,7 @@ sub build_stuff {
 
     my @config_deps;
     if ($dist->{cpanmeta}) {
-        push @config_deps, App::cpanminus::Dependency->from_prereqs(
+        push @config_deps, Menlo::Dependency->from_prereqs(
             $dist->{cpanmeta}->effective_prereqs, ['configure'], $self->{install_types},
         );
     }
@@ -1918,7 +1918,7 @@ sub build_stuff {
     # workaround for bad M::B based dists with no configure_requires
     # https://github.com/miyagawa/cpanminus/issues/273
     if (-e 'Build.PL' && !$self->should_use_mm($dist->{dist}) && !@config_deps) {
-        push @config_deps, App::cpanminus::Dependency->from_versions(
+        push @config_deps, Menlo::Dependency->from_versions(
             { 'Module::Build' => '0.36' }, 'configure',
         );
     }
@@ -2050,7 +2050,7 @@ sub perl_requirements {
     my @perl;
     for my $requires (grep defined, @requires) {
         if (exists $requires->{perl}) {
-            push @perl, App::cpanminus::Dependency->new(perl => $requires->{perl});
+            push @perl, Menlo::Dependency->new(perl => $requires->{perl});
         }
     }
 
@@ -2352,7 +2352,7 @@ sub extract_meta_prereqs {
         my $prereqs = $dist->{cpanfile}->prereqs_with(@features);
         # TODO: creating requirements is useful even without cpanfile to detect conflicting prereqs
         $self->{cpanfile_requirements} = $prereqs->merged_requirements($dist->{want_phases}, ['requires']);
-        return App::cpanminus::Dependency->from_prereqs($prereqs, $dist->{want_phases}, $self->{install_types});
+        return Menlo::Dependency->from_prereqs($prereqs, $dist->{want_phases}, $self->{install_types});
     }
 
     require CPAN::Meta;
@@ -2390,7 +2390,7 @@ sub extract_meta_prereqs {
                 }
                 my $list = join ", ", map { "'$_->[0]' => $_->[1]" } @all;
                 my $prereq = $self->safe_eval("no strict; +{ $list }");
-                push @deps, App::cpanminus::Dependency->from_versions($prereq) if $prereq;
+                push @deps, Menlo::Dependency->from_versions($prereq) if $prereq;
                 last;
             }
         }
@@ -2420,7 +2420,7 @@ sub bundle_deps {
                 $in_contents = 0;
             } elsif ($in_contents) {
                 /^(\S+)\s*(\S+)?/
-                    and push @deps, App::cpanminus::Dependency->new($1, $self->maybe_version($2));
+                    and push @deps, Menlo::Dependency->new($1, $self->maybe_version($2));
             }
         }
     }
@@ -2437,7 +2437,7 @@ sub extract_prereqs {
     my($self, $meta, $dist) = @_;
 
     my @features = $self->configure_features($dist, $meta->features);
-    return App::cpanminus::Dependency->from_prereqs($meta->effective_prereqs(\@features), $dist->{want_phases}, $self->{install_types});
+    return Menlo::Dependency->from_prereqs($meta->effective_prereqs(\@features), $dist->{want_phases}, $self->{install_types});
 }
 
 sub cleanup_workdirs {

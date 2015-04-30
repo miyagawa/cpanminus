@@ -19,11 +19,11 @@
 use strict;
 use FindBin qw($Bin);                                      # For dev -- Auto-removed
 use lib "$Bin/../lib", "$Bin/../fatlib", "$Bin/../vendor"; # For dev -- Auto-removed
-use App::cpanminus::script;
+use Menlo::CLI;
 
 
 unless (caller) {
-    my $app = App::cpanminus::script->new;
+    my $app = Menlo::CLI->new;
     $app->parse_options(@ARGV);
     exit $app->doit;
 }

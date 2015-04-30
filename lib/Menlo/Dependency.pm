@@ -1,4 +1,4 @@
-package App::cpanminus::Dependency;
+package Menlo::Dependency;
 use strict;
 use CPAN::Meta::Requirements;
 
