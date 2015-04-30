@@ -486,7 +486,7 @@ sub search_mirror_index_file {
 
 sub with_version_range {
     my($self, $version) = @_;
-    defined($version) && $version =~ /[<>=]/;
+    defined($version) && $version =~ /(?:<|!=|==)/;
 }
 
 sub encode_json {
@@ -559,19 +559,18 @@ sub numify_ver {
 sub maturity_filter {
     my($self, $module, $version) = @_;
 
-    my @filters;
-
-    # TODO: dev release should be enabled per dist
-    if (!$self->with_version_range($version) or $self->{dev_release}) {
-        # backpan'ed dev release are considered "cancelled"
-        push @filters, { not => { term => { status => 'backpan' } } };
+    if ($version =~ /==/) {
+        # specific version: allow dev release
+        return;
+    } elsif ($self->{dev_release}) {
+        # backpan'ed dev releases are considered cacnelled
+        return +{ not => { term => { status => 'backpan' } } };
+    } else {
+        return (
+            { not => { term => { status => 'backpan' } } },
+            { term => { maturity => 'released' } },
+        );
     }
-
-    unless ($self->{dev_release} or $version =~ /==/) {
-        push @filters, { term => { maturity => 'released' } };
-    }
-
-    return @filters;
 }
 
 sub by_version {
