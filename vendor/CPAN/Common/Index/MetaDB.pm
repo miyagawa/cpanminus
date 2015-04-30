@@ -62,6 +62,9 @@ sub search_packages {
             }
         }
 
+        return unless @found;
+        $found[-1]->{latest} = 1;
+
         my $match;
         for my $try (sort { $b->{version_o} <=> $a->{version_o} } @found) {
             if ($reqs->accepts_module($mod => $try->{version_o})) {
@@ -76,6 +79,8 @@ sub search_packages {
                 package => $mod,
                 version => $match->{version},
                 uri     => "cpan:///distfile/$file",
+                ($match->{latest} ? () :
+                   (download_uri => "http://backpan.perl.org/authors/id/$match->{distfile}")),
             };
         }
     } else {
