@@ -493,7 +493,7 @@ sub search_cpanmetadb {
     my($self, $module, $version) = @_;
 
     require CPAN::Common::Index::MetaDB;
-    $self->chat("Searching $module on cpanmetadb ...\n");
+    $self->chat("Searching $module ($version) on cpanmetadb ...\n");
 
     my $args = { package => $module };
     if ($self->with_version_range($version)) {
