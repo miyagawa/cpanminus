@@ -2,6 +2,12 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7032  2015-04-29 18:51:36 PDT
+   [Improvements]
+      - Prefer to use cpanmetadb's package history API for pinning versions. Note that it only
+        works against versions since April 2012. You can set `--metacpan` to still prefer MetaCPAN
+        API search, and can use `--cascade-search` to fallback to MetaCPAN after CPAN MetaDB as well.
+
 1.7031  2015-04-22 14:13:37 PDT
    [Bug Fixes]
       - Fixed a rare case where circular dependencies in cpanfile prevents satisfying modules from

@@ -39,10 +39,10 @@ This will install `cpanm` to your bin directory like
 `/usr/local/bin` and you'll need the `--sudo` option to write to
 the directory, unless you configured `INSTALL_BASE` with [local::lib](https://metacpan.org/pod/local::lib).
 
-## Installing to local perl (perlbrew)
+## Installing to local perl (perlbrew, plenv etc.)
 
 If you have perl in your home directory, which is the case if you use
-tools like [perlbrew](https://metacpan.org/pod/perlbrew), you don't need the `--sudo` option, since
+tools like [perlbrew](https://metacpan.org/pod/perlbrew) or plenv, you don't need the `--sudo` option, since
 you're most likely to have a write permission to the perl's library
 path. You can just do:
 
@@ -69,8 +69,9 @@ errors or certification warnings. This is due to your HTTP client
 (curl) being old, or SSL certificates installed on your system needs
 to be updated.
 
-You might need to update the software or system if you can, or
-use the `-k` option with curl.
+You're recommended to update the software or system if you can. If
+that is impossible or difficult, use the `-k` option with curl or an
+alternative URL, `https://git.io/cpanm`
 
 # DEPENDENCIES
 
