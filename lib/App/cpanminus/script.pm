@@ -495,8 +495,13 @@ sub search_cpanmetadb {
     require CPAN::Common::Index::MetaDB;
     $self->chat("Searching $module on cpanmetadb ...\n");
 
+    my $args = { package => $module };
+    if ($self->with_version_range($version)) {
+        $args->{version_range} = $version;
+    }
+
     my $index = CPAN::Common::Index::MetaDB->new({ uri => $self->{cpanmetadb} });
-    my $pkg = $self->search_common($index, { package => $module }, $version);
+    my $pkg = $self->search_common($index, $args, $version);
     return $pkg if $pkg;
 
     $self->diag_fail("Finding $module on cpanmetadb failed.");
