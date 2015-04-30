@@ -563,7 +563,7 @@ sub maturity_filter {
         # specific version: allow dev release
         return;
     } elsif ($self->{dev_release}) {
-        # backpan'ed dev releases are considered cacnelled
+        # backpan'ed dev releases are considered cancelled
         return +{ not => { term => { status => 'backpan' } } };
     } else {
         return (
