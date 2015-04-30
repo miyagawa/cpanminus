@@ -1,1 +1,1 @@
-requires 'Hash::MultiValue', '== 0.12';
+requires 'Hash::MultiValue', '== 0.13';
