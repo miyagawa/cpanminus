@@ -12,15 +12,14 @@ use xt::Run;
 }
 
 {
-    # metacpan releases
-
+    # historical releases
     run_L '--mirror-only', 'Try::Tiny@0.10';
     like last_build_log, qr/Found Try::Tiny .* doesn't satisfy == 0.10/;
 
     run_L 'Try::Tiny'; # pull latest from CPAN
 
     run_L '--skip-installed', 'Try::Tiny@0.11';
-    like last_build_log, qr/Searching Try::Tiny \(== 0.11\) on metacpan/;
+    like last_build_log, qr/Searching Try::Tiny \(== 0.11\) on cpanmetadb/;
     unlike last_build_log, qr/Try::Tiny is up to date/;
 
     run_L 'CPAN::Meta@2.150003';

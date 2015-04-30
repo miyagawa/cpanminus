@@ -14,12 +14,6 @@ use Test::More;
 }
 
 {
-    my $out = run '--info', 'Moose::Util::TypeConstraints@2.0402';
-    like $out, qr/Moose-2.0402/;
-    unlike $out, qr/Crixa/;
-}
-
-{
     my $out = run '--info', 'Moose::Util::TypeConstraints~<=2.0402';
     like $out, qr/Moose-2.0402/;
 }

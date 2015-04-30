@@ -683,9 +683,8 @@ sub search_database {
     my($self, $module, $version) = @_;
 
     my $found;
-    my $range = ($self->with_version_range($version) || $self->{dev_release});
 
-    if ($range or $self->{metacpan}) {
+    if ($self->{dev_release} or $self->{metacpan}) {
         $found = $self->search_metacpan($module, $version)   and return $found;
         $found = $self->search_cpanmetadb($module, $version) and return $found;
     } else {
@@ -697,9 +696,20 @@ sub search_database {
 sub search_cpanmetadb {
     my($self, $module, $version) = @_;
 
-    require CPAN::Meta::YAML;
 
-    $self->chat("Searching $module on cpanmetadb ...\n");
+    $self->chat("Searching $module ($version) on cpanmetadb ...\n");
+
+    if ($self->with_version_range($version)) {
+        return $self->search_cpanmetadb_history($module, $version);
+    } else {
+        return $self->search_cpanmetadb_package($module, $version);
+    }
+}
+
+sub search_cpanmetadb_package {
+    my($self, $module, $version) = @_;
+
+    require CPAN::Meta::YAML;
 
     (my $uri = $self->{cpanmetadb}) =~ s{/?$}{/package/$module};
     my $yaml = $self->get($uri);
@@ -711,6 +721,42 @@ sub search_cpanmetadb {
     $self->diag_fail("Finding $module on cpanmetadb failed.");
     return;
 }
+
+sub search_cpanmetadb_history {
+    my($self, $module, $version) = @_;
+
+    (my $uri = $self->{cpanmetadb}) =~ s{/?$}{/history/$module};
+    my $content = $self->get($uri) or return;
+
+    my @found;
+    for my $line (split /\r?\n/, $content) {
+        if ($line =~ /^$module\s+(\S+)\s+(\S+)$/) {
+            push @found, {
+                version => $1,
+                version_obj => version::->parse($1),
+                distfile => $2,
+            };
+        }
+    }
+
+    return unless @found;
+
+    $found[-1]->{latest} = 1;
+
+    my $match;
+    for my $try (sort { $b->{version_obj} cmp $a->{version_obj} } @found) {
+        if ($self->satisfy_version($module, $try->{version_obj}, $version)) {
+            local $self->{mirrors} = $self->{mirrors};
+            unshift @{$self->{mirrors}}, 'http://backpan.perl.org'
+              unless $try->{latest};
+            return $self->cpan_module($module, $try->{distfile}, $try->{version});
+        }
+    }
+
+    $self->diag_fail("Finding $module ($version) on cpanmetadb failed.");
+    return;
+}
+
 
 sub search_module {
     my($self, $module, $version) = @_;
