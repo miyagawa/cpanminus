@@ -11,6 +11,7 @@ on test => sub {
 
 on develop => sub {
     requires 'App::FatPacker', 0.010003;
+    requires 'Class::Tiny', 1.001;
     requires 'CPAN::Common::Index', 0.005;
     requires 'CPAN::DistnameInfo';
     requires 'CPAN::Meta', '2.132830';

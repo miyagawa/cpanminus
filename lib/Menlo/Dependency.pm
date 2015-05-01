@@ -1,6 +1,16 @@
 package Menlo::Dependency;
 use strict;
 use CPAN::Meta::Requirements;
+use Class::Tiny qw( module version type original_version );
+
+sub BUILDARGS {
+    my($class, $module, $version, $type) = @_;
+    return {
+        module => $module,
+        version => $version,
+        type => $type || 'requires',
+    };
+}
 
 sub from_prereqs {
     my($class, $prereqs, $phases, $types) = @_;
@@ -31,40 +41,26 @@ sub merge_with {
     my($self, $requirements) = @_;
 
     # save the original requirement
-    $self->{original_version} = $self->version;
+    $self->original_version($self->version);
 
     # should it clone? not cloning means we upgrade root $requirements on our way
     $requirements->add_string_requirement($self->module, $self->version);
-    $self->{version} = $requirements->requirements_for_module($self->module);
+    $self->version( $requirements->requirements_for_module($self->module) );
 }
-
-sub new {
-    my($class, $module, $version, $type) = @_;
-
-    bless {
-        module => $module,
-        version => $version,
-        type => $type || 'requires',
-    }, $class;
-}
-
-sub module  { $_[0]->{module} }
-sub version { $_[0]->{version} }
-sub type    { $_[0]->{type} }
 
 sub requires_version {
     my $self = shift;
 
     # original_version may be 0
-    if (defined $self->{original_version}) {
-        return $self->{original_version};
+    if (defined $self->original_version) {
+        return $self->original_version;
     }
 
     $self->version;
 }
 
 sub is_requirement {
-    $_[0]->{type} eq 'requires';
+    $_[0]->type eq 'requires';
 }
 
 1;
