@@ -4,6 +4,7 @@ use Config;
 use Cwd ();
 use Menlo;
 use Menlo::Dependency;
+use Menlo::Util qw(WIN32);
 use File::Basename ();
 use File::Find ();
 use File::Path ();
@@ -13,10 +14,8 @@ use File::Temp ();
 use File::Which qw(which);
 use Getopt::Long ();
 use Symbol ();
-use String::ShellQuote ();
 use version ();
 
-use constant WIN32 => $^O eq 'MSWin32';
 use constant BAD_TAR => ($^O eq 'solaris' || $^O eq 'hpux');
 use constant CAN_SYMLINK => eval { symlink("", ""); 1 };
 
@@ -899,9 +898,9 @@ sub run_command {
     my($self, $cmd) = @_;
 
     if (WIN32) {
-        $cmd = $self->shell_quote(@$cmd) if ref $cmd eq 'ARRAY';
+        $cmd = Menlo::Util::shell_quote(@$cmd) if ref $cmd eq 'ARRAY';
         unless ($self->{verbose}) {
-            $cmd .= " >> " . $self->shell_quote($self->{log}) . " 2>&1";
+            $cmd .= " >> " . Menlo::Util::shell_quote($self->{log}) . " 2>&1";
         }
         !system $cmd;
     } else {
@@ -928,7 +927,7 @@ sub run_exec {
         exec @$cmd;
     } else {
         unless ($self->{verbose}) {
-            $cmd .= " >> " . $self->shell_quote($self->{log}) . " 2>&1";
+            $cmd .= " >> " . Menlo::Util::shell_quote($self->{log}) . " 2>&1";
         }
         exec $cmd;
     }
@@ -966,7 +965,7 @@ sub append_args {
     my($self, $cmd, $phase) = @_;
 
     if (my $args = $self->{build_args}{$phase}) {
-        $cmd = join ' ', $self->shell_quote(@$cmd), $args;
+        $cmd = join ' ', Menlo::Util::shell_quote(@$cmd), $args;
     }
 
     $cmd;
@@ -2536,15 +2535,6 @@ sub DESTROY {
 
 # Utils
 
-sub shell_quote {
-    my($self, @stuff) = @_;
-    if (WIN32) {
-        join ' ', map { /^".+"$/ ? $_ : qq("$_") } @stuff;
-    } else {
-        String::ShellQuote::shell_quote_best_effort(@stuff);
-    }
-}
-
 sub get {
     my($self, $uri) = @_;
     if ($uri =~ /^file:/) {
@@ -2829,6 +2819,7 @@ sub init_tools {
 sub safeexec {
     my($self, $fh, @cmd) = @_;
 
+    # requires Win32::ShellQuote on Win32
     require IPC::Run3;
     eval {
         IPC::Run3::run3(\@cmd, \my $in, $_[1], \my $err);
