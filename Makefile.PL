@@ -6,43 +6,53 @@ use 5.008000;
 
 use ExtUtils::MakeMaker;
 
-# perl Makefile.PL (from git repo) copies 'cpanm' -> 'bin/cpanm'
-
-if (-e 'cpanm') {
-    for my $file ("bin/cpanm") {
-        print STDERR "Generating $file from cpanm\n";
-        open my $in,  "<cpanm" or die $!;
-        open my $out, ">$file" or die $!;
-        while (<$in>) {
-            s|^#!/usr/bin/env perl|#!perl|; # so MakeMaker can fix it
-            print $out $_;
-        }
-    }
-}
-
-
 my %WriteMakefileArgs = (
-  "ABSTRACT" => "get, unpack, build and install modules from CPAN",
-  "AUTHOR" => "- Tatsuhiko Miyagawa",
+  "ABSTRACT" => "A CPAN client",
+  "AUTHOR" => "",
   "CONFIGURE_REQUIRES" => {
     "ExtUtils::MakeMaker" => 0
   },
-  "DISTNAME" => "App-cpanminus",
+  "DISTNAME" => "Menlo",
   "EXE_FILES" => [
-    "bin/cpanm"
+    "script/menlo-cpanm"
   ],
   "LICENSE" => "perl",
   "MIN_PERL_VERSION" => "5.008000",
-  "NAME" => "App::cpanminus",
+  "NAME" => "Menlo",
   "PREREQ_PM" => {
+    "CPAN::Common::Index" => "0.006",
+    "CPAN::DistnameInfo" => 0,
+    "CPAN::Meta" => "2.132830",
+    "CPAN::Meta::Check" => 0,
+    "CPAN::Meta::Requirements" => 0,
+    "CPAN::Meta::YAML" => 0,
+    "Class::Tiny" => "1.001",
+    "Digest::SHA" => 0,
+    "Exporter" => "5.63",
     "ExtUtils::Install" => "1.46",
     "ExtUtils::MakeMaker" => "6.58",
-    "Module::Build" => "0.38"
+    "File::Temp" => 0,
+    "File::Which" => 0,
+    "File::pushd" => 0,
+    "Getopt::Long" => 0,
+    "HTTP::Tiny" => 0,
+    "IPC::Run3" => 0,
+    "JSON::PP" => 0,
+    "Module::Build" => "0.38",
+    "Module::CPANfile" => 0,
+    "Module::CoreList" => 0,
+    "Module::Metadata" => 0,
+    "Parse::CPAN::Meta" => 0,
+    "Parse::PMFile" => "0.26",
+    "String::ShellQuote" => 0,
+    "Win32::ShellQuote" => 0,
+    "local::lib" => 0,
+    "version" => 0
   },
   "TEST_REQUIRES" => {
-    "Test::More" => 0
+    "Test::More" => "0.96"
   },
-  "VERSION" => "1.7032",
+  "VERSION" => "v1.0.0",
   "test" => {
     "TESTS" => "t/*.t"
   }
@@ -50,10 +60,35 @@ my %WriteMakefileArgs = (
 
 
 my %FallbackPrereqs = (
+  "CPAN::Common::Index" => "0.006",
+  "CPAN::DistnameInfo" => 0,
+  "CPAN::Meta" => "2.132830",
+  "CPAN::Meta::Check" => 0,
+  "CPAN::Meta::Requirements" => 0,
+  "CPAN::Meta::YAML" => 0,
+  "Class::Tiny" => "1.001",
+  "Digest::SHA" => 0,
+  "Exporter" => "5.63",
   "ExtUtils::Install" => "1.46",
   "ExtUtils::MakeMaker" => "6.58",
+  "File::Temp" => 0,
+  "File::Which" => 0,
+  "File::pushd" => 0,
+  "Getopt::Long" => 0,
+  "HTTP::Tiny" => 0,
+  "IPC::Run3" => 0,
+  "JSON::PP" => 0,
   "Module::Build" => "0.38",
-  "Test::More" => 0
+  "Module::CPANfile" => 0,
+  "Module::CoreList" => 0,
+  "Module::Metadata" => 0,
+  "Parse::CPAN::Meta" => 0,
+  "Parse::PMFile" => "0.26",
+  "String::ShellQuote" => 0,
+  "Test::More" => "0.96",
+  "Win32::ShellQuote" => 0,
+  "local::lib" => 0,
+  "version" => 0
 );
 
 

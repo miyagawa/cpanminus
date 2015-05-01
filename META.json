@@ -1,7 +1,7 @@
 {
-   "abstract" : "get, unpack, build and install modules from CPAN",
+   "abstract" : "A CPAN client",
    "author" : [
-      "- Tatsuhiko Miyagawa"
+      "unknown"
    ],
    "dynamic_config" : 0,
    "generated_by" : "Dist::Zilla version 5.035, Dist::Milla version v1.0.15, CPAN::Meta::Converter version 2.150001",
@@ -12,7 +12,7 @@
       "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
       "version" : 2
    },
-   "name" : "App-cpanminus",
+   "name" : "Menlo",
    "no_index" : {
       "directory" : [
          "t",
@@ -20,10 +20,8 @@
          "inc",
          "share",
          "eg",
-         "examples"
-      ],
-      "file" : [
-         "lib/App/cpanminus/fatscript.pm"
+         "examples",
+         "lib/CPAN/Common"
       ]
    },
    "prereqs" : {
@@ -33,62 +31,61 @@
          }
       },
       "develop" : {
-         "recommends" : {
-            "Archive::Tar" : "0",
-            "Archive::Zip" : "0",
-            "Compress::Zlib" : "0",
-            "File::HomeDir" : "0",
-            "Module::Signature" : "0"
-         },
          "requires" : {
-            "App::FatPacker" : "0",
-            "CPAN::DistnameInfo" : "0",
-            "CPAN::Meta" : "2.132830",
-            "CPAN::Meta::Check" : "0",
-            "CPAN::Meta::Prereqs" : "0",
-            "CPAN::Meta::Requirements" : "0",
-            "CPAN::Meta::YAML" : "0",
             "Capture::Tiny" : "0",
-            "Digest::SHA" : "0",
             "Dist::Milla" : "v1.0.15",
-            "Exporter" : "5.63",
-            "File::Temp" : "0",
-            "File::pushd" : "0",
-            "Getopt::Long" : "0",
-            "HTTP::Tiny" : "0",
             "JSON" : "0",
-            "JSON::PP" : "0",
-            "LWP::Simple" : "0",
-            "LWP::UserAgent" : "5.802",
-            "Module::CPANfile" : "0",
-            "Module::CoreList" : "0",
             "Module::Install" : "0",
-            "Module::Metadata" : "0",
-            "Parse::CPAN::Meta" : "0",
-            "Parse::PMFile" : "0.26",
-            "Perl::Strip" : "0",
-            "String::ShellQuote" : "0",
-            "Test::More" : "0.90",
             "Test::Pod" : "1.41",
             "Test::Requires" : "0",
-            "Tie::File" : "0",
-            "YAML" : "0",
-            "YAML::Tiny" : "0",
-            "local::lib" : "0",
-            "version" : "0"
+            "YAML" : "0"
          }
       },
       "runtime" : {
          "requires" : {
+            "CPAN::Common::Index" : "0.006",
+            "CPAN::DistnameInfo" : "0",
+            "CPAN::Meta" : "2.132830",
+            "CPAN::Meta::Check" : "0",
+            "CPAN::Meta::Requirements" : "0",
+            "CPAN::Meta::YAML" : "0",
+            "Class::Tiny" : "1.001",
+            "Digest::SHA" : "0",
+            "Exporter" : "5.63",
             "ExtUtils::Install" : "1.46",
             "ExtUtils::MakeMaker" : "6.58",
+            "File::Temp" : "0",
+            "File::Which" : "0",
+            "File::pushd" : "0",
+            "Getopt::Long" : "0",
+            "HTTP::Tiny" : "0",
+            "IPC::Run3" : "0",
+            "JSON::PP" : "0",
             "Module::Build" : "0.38",
-            "perl" : "5.008000"
+            "Module::CPANfile" : "0",
+            "Module::CoreList" : "0",
+            "Module::Metadata" : "0",
+            "Parse::CPAN::Meta" : "0",
+            "Parse::PMFile" : "0.26",
+            "String::ShellQuote" : "0",
+            "Win32::ShellQuote" : "0",
+            "local::lib" : "0",
+            "perl" : "5.008000",
+            "version" : "0"
+         },
+         "suggests" : {
+            "Archive::Tar" : "0",
+            "Archive::Zip" : "0",
+            "Compress::Zlib" : "0",
+            "File::HomeDir" : "0",
+            "LWP::Simple" : "0",
+            "LWP::UserAgent" : "5.802",
+            "Module::Signature" : "0"
          }
       },
       "test" : {
          "requires" : {
-            "Test::More" : "0"
+            "Test::More" : "0.96"
          }
       }
    },
@@ -104,7 +101,7 @@
          "web" : "https://github.com/miyagawa/cpanminus"
       }
    },
-   "version" : "1.7032",
+   "version" : "v1.0.0",
    "x_contributors" : [
       "Alessandro Ghedini <al3xbio@gmail.com>",
       "Andrew Rodland <andrew@cleverdomain.org>",

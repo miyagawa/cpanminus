@@ -10,4 +10,5 @@ blib
 bin/cpanm
 fatpacked/App/cpanminus/*.pm
 /App-cpanminus-*
+/Menlo-*
 /.build
