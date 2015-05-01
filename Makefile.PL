@@ -14,7 +14,7 @@ my %WriteMakefileArgs = (
   },
   "DISTNAME" => "Menlo",
   "EXE_FILES" => [
-    "script/menlo-cpanm"
+    "script/cpanm-menlo"
   ],
   "LICENSE" => "perl",
   "MIN_PERL_VERSION" => "5.008000",
