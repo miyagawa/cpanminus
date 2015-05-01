@@ -2831,7 +2831,7 @@ sub safeexec {
 
     require IPC::Run3;
     eval {
-        IPC::Run3::run3(\@cmd, \my $in, $fh, \my $err);
+        IPC::Run3::run3(\@cmd, \my $in, $_[1], \my $err);
     };
     die "Failed to execute command $cmd[0]: $@\n" if $? != 0;
 
