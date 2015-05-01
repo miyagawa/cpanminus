@@ -9,8 +9,7 @@ my @opt = ("--local-lib", $local_lib);
 run @opt, "Mac::Macbinary";
 like last_build_log, qr/installed/;
 
-$ENV{PERL5LIB} = "$local_lib/lib/perl5";
-
+$ENV{PERL5LIB} = "local/lib/perl5:$ENV{PERL5LIB}";
 run @opt, "M/MI/MIYAGAWA/Mac-Macbinary-0.05.tar.gz";
 
 run @opt, "Mac::Macbinary";
