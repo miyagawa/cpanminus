@@ -317,11 +317,11 @@ sub run {
         $code = 1;
     }
 
-    $self->{exit_code} = $code;
+    $self->{status} = $code;
 }
 
-sub exit_code {
-    $_[0]->{exit_code};
+sub status {
+    $_[0]->{status};
 }
 
 sub _doit {

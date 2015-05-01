@@ -24,7 +24,7 @@ use Menlo::CLI::Compat;
 my $cli = Menlo::CLI::Compat->new(@ARGV);
 $cli->run;
 
-exit $cli->exit_code;
+exit $cli->status;
 
 __END__
 
