@@ -6,7 +6,7 @@ our @EXPORT = qw(run run_L last_build_log);
 use Capture::Tiny qw(capture);
 use File::Temp qw(tempdir);
 
-my $executable = $ENV{FATPACKED_TEST} ? './cpanm' : './script/cpanm.PL';
+my $executable = "./script/menlo-cpanm";
 
 delete $ENV{PERL_CPANM_OPT};
 $ENV{PERL_CPANM_HOME} = tempdir(CLEANUP => 1);
