@@ -33,12 +33,10 @@ requires 'Win32::ShellQuote';
 requires 'local::lib';
 requires 'version';
 
-# soft dependencies fro file downloading and uncompression
-suggests 'LWP::Simple';
+# soft dependencies for optional features
 suggests 'LWP::UserAgent', '5.802';
 suggests 'Archive::Tar';
 suggests 'Archive::Zip';
-suggests 'Compress::Zlib';
 suggests 'File::HomeDir';
 suggests 'Module::Signature';
 
