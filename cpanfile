@@ -25,6 +25,7 @@ on develop => sub {
     requires 'File::Which';
     requires 'Getopt::Long';
     requires 'HTTP::Tiny';
+    requires 'IPC::Run3';
     requires 'JSON';
     requires 'JSON::PP';
     requires 'LWP::Simple';

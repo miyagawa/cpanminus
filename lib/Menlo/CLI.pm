@@ -2822,24 +2822,15 @@ sub init_tools {
 }
 
 sub safeexec {
-    my $self = shift;
-    my $rdr = $_[0] ||= Symbol::gensym();
+    my($self, $fh, @cmd) = @_;
 
-    if (WIN32) {
-        my $cmd = $self->shell_quote(@_[1..$#_]);
-        return open( $rdr, "$cmd |" );
-    }
+    require IPC::Run3;
+    eval {
+        IPC::Run3::run3(\@cmd, \my $in, $fh, \my $err);
+    };
+    die "Failed to execute command $cmd[0]: $@\n" if $? != 0;
 
-    if ( my $pid = open( $rdr, '-|' ) ) {
-        return $pid;
-    }
-    elsif ( defined $pid ) {
-        exec( @_[ 1 .. $#_ ] );
-        exit 1;
-    }
-    else {
-        return;
-    }
+    return 1;
 }
 
 sub mask_uri_passwords {
