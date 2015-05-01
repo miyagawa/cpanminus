@@ -19,14 +19,9 @@
 use strict;
 use FindBin qw($Bin);                                      # For dev -- Auto-removed
 use lib "$Bin/../lib", "$Bin/../fatlib", "$Bin/../vendor"; # For dev -- Auto-removed
-use Menlo::CLI;
+use Menlo::CLI::Compat;
 
-
-unless (caller) {
-    my $app = Menlo::CLI->new;
-    $app->parse_options(@ARGV);
-    exit $app->doit;
-}
+Menlo::CLI::Compat->new(@ARGV)->run;
 
 __END__
 

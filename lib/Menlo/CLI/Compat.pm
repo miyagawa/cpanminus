@@ -1,4 +1,4 @@
-package Menlo::CLI;
+package Menlo::CLI::Compat;
 use strict;
 use Config;
 use Cwd ();
@@ -53,7 +53,7 @@ sub determine_home {
 sub new {
     my $class = shift;
 
-    bless {
+    my $self = bless {
         home => $class->determine_home,
         cmd  => 'install',
         seen => {},
@@ -106,6 +106,9 @@ sub new {
         cpanfile_path => 'cpanfile',
         @_,
     }, $class;
+
+    $self->parse_options(@_);
+    $self;
 }
 
 sub env {
@@ -305,7 +308,7 @@ sub parse_module_args {
     }
 }
 
-sub doit {
+sub run {
     my $self = shift;
 
     my $code;
@@ -890,7 +893,7 @@ sub log {
     print $out @_;
 }
 
-sub run {
+sub run_command {
     my($self, $cmd) = @_;
 
     if (WIN32) {
@@ -931,7 +934,7 @@ sub run_exec {
 
 sub run_timeout {
     my($self, $cmd, $timeout) = @_;
-    return $self->run($cmd) if WIN32 || $self->{verbose} || !$timeout;
+    return $self->run_command($cmd) if WIN32 || $self->{verbose} || !$timeout;
 
     my $pid = fork;
     if ($pid) {
@@ -953,7 +956,7 @@ sub run_timeout {
         $self->run_exec($cmd);
     } else {
         $self->chat("! fork failed: falling back to system()\n");
-        $self->run($cmd);
+        $self->run_command($cmd);
     }
 }
 
@@ -1063,7 +1066,7 @@ sub install {
 
     $cmd = $self->append_args($cmd, 'install') if $depth == 0;
 
-    $self->run($cmd);
+    $self->run_command($cmd);
 }
 
 sub look {
@@ -1650,7 +1653,7 @@ sub git_uri {
     my $dir = File::Temp::tempdir(CLEANUP => 1);
 
     $self->mask_output( diag_progress => "Cloning $uri" );
-    $self->run([ 'git', 'clone', $uri, $dir ]);
+    $self->run_command([ 'git', 'clone', $uri, $dir ]);
 
     unless (-e "$dir/.git") {
         $self->diag_fail("Failed cloning git repository $uri", 1);
@@ -1661,7 +1664,7 @@ sub git_uri {
         require File::pushd;
         my $dir = File::pushd::pushd($dir);
 
-        unless ($self->run([ 'git', 'checkout', $commitish ])) {
+        unless ($self->run_command([ 'git', 'checkout', $commitish ])) {
             $self->diag_fail("Failed to checkout '$commitish' in git repository $uri\n");
             return;
         }
@@ -2257,7 +2260,7 @@ sub save_meta {
         '-e',
         qq[install({ 'blib/meta' => '$base/$Config{archname}/.meta/$dist->{distvname}' })],
     );
-    $self->run(\@cmd);
+    $self->run_command(\@cmd);
 }
 
 sub _merge_hashref {
