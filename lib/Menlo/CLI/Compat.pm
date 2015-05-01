@@ -26,8 +26,6 @@ if ($INC{"App/FatPacker/Trace.pm"}) {
     require version::vpp;
 }
 
-my $quote = WIN32 ? q/"/ : q/'/;
-
 sub agent {
     my $self = shift;
     my $agent = "cpanminus/$VERSION";
@@ -2537,7 +2535,7 @@ sub DESTROY {
 sub shell_quote {
     my($self, @stuff) = @_;
     if (WIN32) {
-        join ' ', map { /^${quote}.+${quote}$/ ? $_ : ($quote . $_ . $quote) } @stuff;
+        join ' ', map { /^".+"$/ ? $_ : qq("$_") } @stuff;
     } else {
         String::ShellQuote::shell_quote_best_effort(@stuff);
     }
