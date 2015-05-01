@@ -22,6 +22,7 @@ on develop => sub {
     requires 'Exporter', '5.63';
     requires 'File::Temp';
     requires 'File::pushd';
+    requires 'File::Which';
     requires 'Getopt::Long';
     requires 'HTTP::Tiny';
     requires 'JSON';

@@ -10,6 +10,7 @@ use File::Path ();
 use File::Spec ();
 use File::Copy ();
 use File::Temp ();
+use File::Which ();
 use Getopt::Long ();
 use Symbol ();
 use String::ShellQuote ();
@@ -281,7 +282,7 @@ sub setup_verify {
     my $self = shift;
 
     my $has_modules = eval { require Module::Signature; require Digest::SHA; 1 };
-    $self->{cpansign} = $self->which('cpansign');
+    $self->{cpansign} = File::Which::which('cpansign');
 
     unless ($has_modules && $self->{cpansign}) {
         warn "WARNING: Module::Signature and Digest::SHA is required for distribution verifications.\n";
@@ -1091,7 +1092,7 @@ sub show_build_log {
     while (@pagers) {
         $pager = shift @pagers;
         next unless $pager;
-        $pager = $self->which($pager);
+        $pager = File::Which::which($pager);
         next unless $pager;
         last;
     }
@@ -2539,26 +2540,6 @@ sub shell_quote {
     }
 }
 
-sub which {
-    my($self, $name) = @_;
-    if (File::Spec->file_name_is_absolute($name)) {
-        if (-x $name && !-d _) {
-            return $name;
-        }
-    }
-    my $exe_ext = $Config{_exe};
-    for my $dir (File::Spec->path) {
-        my $fullpath = File::Spec->catfile($dir, $name);
-        if ((-x $fullpath || -x ($fullpath .= $exe_ext)) && !-d _) {
-            if ($fullpath =~ /\s/) {
-                $fullpath = $self->shell_quote($fullpath);
-            }
-            return $fullpath;
-        }
-    }
-    return;
-}
-
 sub get {
     my($self, $uri) = @_;
     if ($uri =~ /^file:/) {
@@ -2621,7 +2602,7 @@ sub init_tools {
 
     return if $self->{initialized}++;
 
-    if ($self->{make} = $self->which($Config{make})) {
+    if ($self->{make} = File::Which::which($Config{make})) {
         $self->chat("You have make $self->{make}\n");
     }
 
@@ -2649,7 +2630,7 @@ sub init_tools {
             die $res->content if $res->code == 501;
             $res->code;
         };
-    } elsif ($self->{try_wget} and my $wget = $self->which('wget')) {
+    } elsif ($self->{try_wget} and my $wget = File::Which::which('wget')) {
         $self->chat("You have $wget\n");
         my @common = (
             '--user-agent', $self->agent,
@@ -2668,7 +2649,7 @@ sub init_tools {
             local $/;
             <$fh>;
         };
-    } elsif ($self->{try_curl} and my $curl = $self->which('curl')) {
+    } elsif ($self->{try_curl} and my $curl = File::Which::which('curl')) {
         $self->chat("You have $curl\n");
         my @common = (
             '--location',
@@ -2706,7 +2687,7 @@ sub init_tools {
         };
     }
 
-    my $tar = $self->which('tar');
+    my $tar = File::Which::which('tar');
     my $tar_ver;
     my $maybe_bad_tar = sub { WIN32 || BAD_TAR || (($tar_ver = `$tar --version 2>/dev/null`) =~ /GNU.*1\.13/i) };
 
@@ -2741,8 +2722,8 @@ sub init_tools {
             return undef;
         }
     } elsif (    $tar
-             and my $gzip = $self->which('gzip')
-             and my $bzip2 = $self->which('bzip2')) {
+             and my $gzip = File::Which::which('gzip')
+             and my $bzip2 = File::Which::which('bzip2')) {
         $self->chat("You have $tar, $gzip and $bzip2\n");
         $self->{_backends}{untar} = sub {
             my($self, $tarfile) = @_;
@@ -2796,7 +2777,7 @@ sub init_tools {
         };
     }
 
-    if (my $unzip = $self->which('unzip')) {
+    if (my $unzip = File::Which::which('unzip')) {
         $self->chat("You have $unzip\n");
         $self->{_backends}{unzip} = sub {
             my($self, $zipfile) = @_;
