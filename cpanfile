@@ -37,6 +37,7 @@ on develop => sub {
     requires 'Module::Metadata';
     requires 'Parse::CPAN::Meta';
     requires 'String::ShellQuote';
+    requires 'Win32::ShellQuote';
     requires 'YAML';
     requires 'YAML::Tiny';
     requires 'local::lib';
