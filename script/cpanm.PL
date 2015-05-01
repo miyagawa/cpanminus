@@ -21,7 +21,10 @@ use FindBin qw($Bin);                                      # For dev -- Auto-rem
 use lib "$Bin/../lib", "$Bin/../fatlib", "$Bin/../vendor"; # For dev -- Auto-removed
 use Menlo::CLI::Compat;
 
-Menlo::CLI::Compat->new(@ARGV)->run;
+my $cli = Menlo::CLI::Compat->new(@ARGV);
+$cli->run;
+
+exit $cli->exit_code;
 
 __END__
 

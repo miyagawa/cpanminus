@@ -317,7 +317,11 @@ sub run {
         $code = 1;
     }
 
-    return $code;
+    $self->{exit_code} = $code;
+}
+
+sub exit_code {
+    $_[0]->{exit_code};
 }
 
 sub _doit {
