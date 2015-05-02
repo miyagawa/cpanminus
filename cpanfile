@@ -1,10 +1,5 @@
 requires 'perl', '5.008000';
 
-# bootstrap toolchain
-requires 'Module::Build', 0.38;
-requires 'ExtUtils::MakeMaker', 6.58;
-requires 'ExtUtils::Install', 1.46;
-
 # runtime dependencies. Mostly core and fatpackable back to 5.8
 # https://github.com/miyagawa/cpanminus/issues/455
 requires 'CPAN::Common::Index', 0.006;
