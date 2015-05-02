@@ -34,15 +34,11 @@ my %WriteMakefileArgs = (
   "LICENSE" => "perl",
   "MIN_PERL_VERSION" => "5.008000",
   "NAME" => "App::cpanminus",
-  "PREREQ_PM" => {
-    "ExtUtils::Install" => "1.46",
-    "ExtUtils::MakeMaker" => "6.58",
-    "Module::Build" => "0.38"
-  },
+  "PREREQ_PM" => {},
   "TEST_REQUIRES" => {
     "Test::More" => 0
   },
-  "VERSION" => "1.7032",
+  "VERSION" => "1.7033",
   "test" => {
     "TESTS" => "t/*.t"
   }
@@ -50,9 +46,7 @@ my %WriteMakefileArgs = (
 
 
 my %FallbackPrereqs = (
-  "ExtUtils::Install" => "1.46",
-  "ExtUtils::MakeMaker" => "6.58",
-  "Module::Build" => "0.38",
+  "ExtUtils::MakeMaker" => 0,
   "Test::More" => 0
 );
 

@@ -80,9 +80,6 @@
       },
       "runtime" : {
          "requires" : {
-            "ExtUtils::Install" : "1.46",
-            "ExtUtils::MakeMaker" : "6.58",
-            "Module::Build" : "0.38",
             "perl" : "5.008000"
          }
       },
@@ -104,7 +101,7 @@
          "web" : "https://github.com/miyagawa/cpanminus"
       }
    },
-   "version" : "1.7032",
+   "version" : "1.7033",
    "x_contributors" : [
       "Alessandro Ghedini <al3xbio@gmail.com>",
       "Andrew Rodland <andrew@cleverdomain.org>",
