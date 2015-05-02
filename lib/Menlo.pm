@@ -1,5 +1,5 @@
 package Menlo;
-use version; our $VERSION = version->declare("v1.0.0");
+our $VERSION = "1.9000";
 
 1;
 
