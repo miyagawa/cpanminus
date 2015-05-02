@@ -979,6 +979,9 @@ sub upgrade_toolchain {
     my($self, $config_deps) = @_;
 
     my %deps = map { $_->module => $_ } @$config_deps;
+
+    # M::B 0.38 and EUMM 6.58 for MYMETA
+    # EU::Install 1.46 for local::lib
     my $reqs = CPAN::Meta::Requirements->from_string_hash({
         'Module::Build' => '0.38',
         'ExtUtils::MakeMaker' => '6.58',
