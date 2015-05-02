@@ -425,8 +425,12 @@ sub search_mirror_index_local {
 
 sub search_mirror_index {
     my ($self, $mirror, $module, $version) = @_;
-    require CPAN::Common::Index::Mirror;
-    my $index = CPAN::Common::Index::Mirror->new({ mirror => $mirror, cache => $self->source_for($mirror) });
+    require Menlo::Index::Mirror;
+    my $index = Menlo::Index::Mirror->new({
+        mirror => $mirror,
+        cache => $self->source_for($mirror),
+        fetcher => sub { $self->mirror(@_) },
+    });
     $self->search_common($index, { package => $module }, $version);
 }
 
