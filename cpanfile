@@ -10,7 +10,7 @@ requires 'CPAN::Meta::Requirements';
 requires 'CPAN::Meta::YAML';
 requires 'Class::Tiny', 1.001;
 requires 'Digest::SHA';
-requires 'Exporter', '5.63';
+requires 'Exporter';
 requires 'File::Temp';
 requires 'File::Which';
 requires 'File::pushd';
