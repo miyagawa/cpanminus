@@ -2512,8 +2512,8 @@ sub dump_scandeps {
         require JSON::PP;
         print JSON::PP::encode_json($self->{scandeps_tree});
     } elsif ($self->{format} eq 'yaml') {
-        require YAML; # no fatpack
-        print YAML::Dump($self->{scandeps_tree});
+        require CPAN::Meta::YAML;
+        print CPAN::Meta::YAML::Dump($self->{scandeps_tree});
     } else {
         $self->diag("Unknown format: $self->{format}\n");
     }

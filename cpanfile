@@ -43,7 +43,6 @@ on test => sub {
 on develop => sub {
     requires 'JSON';
     requires 'Module::Install';
-    requires 'YAML';
     requires 'Capture::Tiny';
     requires 'Test::Requires';
 };
