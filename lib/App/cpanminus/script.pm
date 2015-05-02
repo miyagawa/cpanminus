@@ -268,13 +268,7 @@ DIE
 sub check_libs {
     my $self = shift;
     return if $self->{_checked}++;
-
     $self->bootstrap_local_lib;
-    if (@{$self->{bootstrap_deps} || []}) {
-        local $self->{notest} = 1; # test failure in bootstrap should be tolerated
-        local $self->{scandeps} = 0;
-        $self->install_deps(Cwd::cwd, 0, @{$self->{bootstrap_deps}});
-    }
 }
 
 sub setup_verify {
@@ -962,7 +956,6 @@ sub bootstrap_local_lib {
 
     # local::lib is configured in the shell -- yay
     if ($ENV{PERL_MM_OPT} and ($ENV{MODULEBUILDRC} or $ENV{PERL_MB_OPT})) {
-        $self->bootstrap_local_lib_deps;
         return;
     }
 
@@ -980,6 +973,27 @@ sub bootstrap_local_lib {
 !
 DIAG
     sleep 2;
+}
+
+sub upgrade_toolchain {
+    my($self, $config_deps) = @_;
+
+    my %deps = map { $_->module => $_ } @$config_deps;
+    my $reqs = CPAN::Meta::Requirements->from_string_hash({
+        'Module::Build' => '0.38',
+        'ExtUtils::MakeMaker' => '6.58',
+        'ExtUtils::Install' => '1.46',
+    });
+
+    if ($deps{"ExtUtils::MakeMaker"}) {
+        $deps{"ExtUtils::MakeMaker"}->merge_with($reqs);
+    } elsif ($deps{"Module::Build"}) {
+        $deps{"Module::Build"}->merge_with($reqs);
+        $deps{"ExtUtils::Install"} ||= App::cpanminus::Dependency->new("ExtUtils::Install", 0, 'configure');
+        $deps{"ExtUtils::Install"}->merge_with($reqs);
+    }
+
+    @$config_deps = values %deps;
 }
 
 sub _core_only_inc {
@@ -1038,15 +1052,6 @@ sub setup_local_lib {
         $self->_setup_local_lib_env($base) unless $no_env;
         $self->{local_lib} = $base;
     }
-
-    $self->bootstrap_local_lib_deps;
-}
-
-sub bootstrap_local_lib_deps {
-    my $self = shift;
-    push @{$self->{bootstrap_deps}},
-        App::cpanminus::Dependency->new('ExtUtils::MakeMaker' => 6.58),
-        App::cpanminus::Dependency->new('ExtUtils::Install'   => 1.46);
 }
 
 sub prompt_bool {
@@ -2160,18 +2165,20 @@ sub build_stuff {
         );
     }
 
-    # workaround for bad M::B based dists with no configure_requires
-    # https://github.com/miyagawa/cpanminus/issues/273
     if (-e 'Build.PL' && !$self->should_use_mm($dist->{dist}) && !@config_deps) {
         push @config_deps, App::cpanminus::Dependency->from_versions(
-            { 'Module::Build' => '0.36' }, 'configure',
+            { 'Module::Build' => '0.38' }, 'configure',
         );
     }
 
-    my $target = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $dist->{dir};
+    $self->upgrade_toolchain(\@config_deps);
 
-    $self->install_deps_bailout($target, $dist->{dir}, $depth, @config_deps)
-        or return;
+    my $target = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $dist->{dir};
+    {
+        local $self->{notest} = 1;
+        $self->install_deps_bailout($target, $dist->{dir}, $depth, @config_deps)
+          or return;
+    }
 
     $self->diag_progress("Configuring $target");
 

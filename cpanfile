@@ -1,10 +1,5 @@
 requires 'perl', '5.008000';
 
-requires 'Module::Build', 0.38;
-requires 'ExtUtils::MakeMaker', 6.58;
-
-requires 'ExtUtils::Install', 1.46;
-
 on test => sub {
     requires 'Test::More';
 };
