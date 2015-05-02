@@ -734,7 +734,7 @@ sub upgrade_toolchain {
         $deps{"ExtUtils::MakeMaker"}->merge_with($reqs);
     } elsif ($deps{"Module::Build"}) {
         $deps{"Module::Build"}->merge_with($reqs);
-        $deps{"ExtUtils::Install"} ||= App::cpanminus::Dependency->new("ExtUtils::Install", 0, 'configure');
+        $deps{"ExtUtils::Install"} ||= Menlo::Dependency->new("ExtUtils::Install", 0, 'configure');
         $deps{"ExtUtils::Install"}->merge_with($reqs);
     }
 
