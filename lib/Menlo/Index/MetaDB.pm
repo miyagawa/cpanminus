@@ -2,7 +2,7 @@ use 5.008001;
 use strict;
 use warnings;
 
-package CPAN::Common::Index::MetaDB;
+package Menlo::Index::MetaDB;
 # ABSTRACT: Search index via CPAN MetaDB
 
 our $VERSION = '0.007';

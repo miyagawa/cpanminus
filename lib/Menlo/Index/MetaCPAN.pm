@@ -2,7 +2,7 @@ use 5.008001;
 use strict;
 use warnings;
 
-package CPAN::Common::Index::MetaCPAN;
+package Menlo::Index::MetaCPAN;
 # ABSTRACT: Search index via MetaCPAN
 # VERSION
 

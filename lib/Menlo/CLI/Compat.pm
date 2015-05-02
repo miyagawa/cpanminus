@@ -463,10 +463,10 @@ sub numify_ver {
 sub search_metacpan {
     my($self, $module, $version) = @_;
 
-    require CPAN::Common::Index::MetaCPAN;
+    require Menlo::Index::MetaCPAN;
     $self->chat("Searching $module ($version) on metacpan ...\n");
 
-    my $index = CPAN::Common::Index::MetaCPAN->new({ include_dev => $self->{dev_release} });
+    my $index = Menlo::Index::MetaCPAN->new({ include_dev => $self->{dev_release} });
     my $pkg = $self->search_common($index, { package => $module, version_range => $version }, $version);
     return $pkg if $pkg;
 
@@ -491,7 +491,7 @@ sub search_database {
 sub search_cpanmetadb {
     my($self, $module, $version) = @_;
 
-    require CPAN::Common::Index::MetaDB;
+    require Menlo::Index::MetaDB;
     $self->chat("Searching $module ($version) on cpanmetadb ...\n");
 
     my $args = { package => $module };
@@ -499,7 +499,7 @@ sub search_cpanmetadb {
         $args->{version_range} = $version;
     }
 
-    my $index = CPAN::Common::Index::MetaDB->new({ uri => $self->{cpanmetadb} });
+    my $index = Menlo::Index::MetaDB->new({ uri => $self->{cpanmetadb} });
     my $pkg = $self->search_common($index, $args, $version);
     return $pkg if $pkg;
 
