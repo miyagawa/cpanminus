@@ -1900,7 +1900,7 @@ sub build_stuff {
         );
     }
 
-    if (-e 'Build.PL' && !$self->should_use_mm($dist->{dist}) && !@config_deps) {
+    if (-e 'Build.PL' && !@config_deps) {
         push @config_deps, Menlo::Dependency->from_versions(
             { 'Module::Build' => '0.38' }, 'configure',
         );
@@ -2044,16 +2044,6 @@ sub perl_requirements {
     return @perl;
 }
 
-sub should_use_mm {
-    my($self, $dist) = @_;
-
-    # Module::Build deps should use MakeMaker because that causes circular deps and fail
-    # Otherwise we should prefer Build.PL
-    my %should_use_mm = map { $_ => 1 } qw( version ExtUtils-ParseXS ExtUtils-Install ExtUtils-Manifest );
-
-    $should_use_mm{$dist};
-}
-
 sub configure_this {
     my($self, $dist, $depth) = @_;
 
@@ -2106,14 +2096,7 @@ sub configure_this {
         }
     };
 
-    my @try;
-    if ($dist->{dist} && $self->should_use_mm($dist->{dist})) {
-        @try = ($try_eumm, $try_mb);
-    } else {
-        @try = ($try_mb, $try_eumm);
-    }
-
-    for my $try (@try) {
+    for my $try ($try_mb, $try_eumm) {
         $try->();
         last if $state->{configured_ok};
     }
