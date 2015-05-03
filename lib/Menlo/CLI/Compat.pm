@@ -1676,23 +1676,6 @@ sub git_uri {
     };
 }
 
-sub setup_module_build_patch {
-    my $self = shift;
-
-    open my $out, ">$self->{base}/ModuleBuildSkipMan.pm" or die $!;
-    print $out <<EOF;
-package ModuleBuildSkipMan;
-CHECK {
-  if (%Module::Build::) {
-    no warnings 'redefine';
-    *Module::Build::Base::ACTION_manpages = sub {};
-    *Module::Build::Base::ACTION_docs     = sub {};
-  }
-}
-1;
-EOF
-}
-
 sub core_version_for {
     my($self, $module) = @_;
 
