@@ -293,7 +293,7 @@ sub parse_module_args {
 
     # Plack~1.20, DBI~"> 1.0, <= 2.0"
     if ($module =~ /\~[v\d\._,\!<>= ]+$/) {
-        return split /\~/, $module, 2;
+        return split '~', $module, 2;
     } else {
         return $module, undef;
     }
