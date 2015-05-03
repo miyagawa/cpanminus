@@ -756,18 +756,6 @@ sub _core_only_inc {
     );
 }
 
-sub _diff {
-    my($self, $old, $new) = @_;
-
-    my @diff;
-    my %old = map { $_ => 1 } @$old;
-    for my $n (@$new) {
-        push @diff, $n unless exists $old{$n};
-    }
-
-    @diff;
-}
-
 sub _setup_local_lib_env {
     my($self, $base) = @_;
 
