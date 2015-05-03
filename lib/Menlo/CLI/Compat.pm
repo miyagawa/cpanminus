@@ -2155,13 +2155,13 @@ sub find_module_name {
 
     if ($state->{use_module_build} &&
         -e "_build/build_params") {
-        my $params = do { open my $in, "_build/build_params"; $self->safe_eval(join "", <$in>) };
+        my $params = do { open my $in, "_build/build_params"; eval(join "", <$in>) };
         return eval { $params->[2]{module_name} } || undef;
     } elsif (-e "Makefile") {
         open my $mf, "Makefile";
         while (<$mf>) {
             if (/^\#\s+NAME\s+=>\s+(.*)/) {
-                return $self->safe_eval($1);
+                return eval($1);
             }
         }
     }
@@ -2280,11 +2280,6 @@ sub install_base {
     die "Your PERL_MM_OPT doesn't contain INSTALL_BASE";
 }
 
-sub safe_eval {
-    my($self, $code) = @_;
-    eval $code;
-}
-
 sub configure_features {
     my($self, $dist, @features) = @_;
     map $_->identifier, grep { $self->effective_feature($dist, $_) } @features;
@@ -2375,7 +2370,7 @@ sub extract_meta_prereqs {
 
     if (-e '_build/prereqs') {
         $self->chat("Checking dependencies from _build/prereqs ...\n");
-        my $prereqs = do { open my $in, "_build/prereqs"; $self->safe_eval(join "", <$in>) };
+        my $prereqs = do { open my $in, "_build/prereqs"; eval(join "", <$in>) };
         my $meta = CPAN::Meta->new(
             { name => $dist->{meta}{name}, version => $dist->{meta}{version}, %$prereqs },
             { lazy_validation => 1 },
@@ -2393,7 +2388,7 @@ sub extract_meta_prereqs {
                     push @all, [ $pkg, $v ];
                 }
                 my $list = join ", ", map { "'$_->[0]' => $_->[1]" } @all;
-                my $prereq = $self->safe_eval("no strict; +{ $list }");
+                my $prereq = eval("no strict; +{ $list }");
                 push @deps, Menlo::Dependency->from_versions($prereq) if $prereq;
                 last;
             }
