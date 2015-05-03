@@ -1508,7 +1508,7 @@ sub verify_checksum {
     }
 
     if (my $sha = $chksum->{$file}{sha256}) {
-        my $hex = $self->sha1_for($file);
+        my $hex = $self->sha_for(256, $file);
         if ($hex eq $sha) {
             $self->chat("Checksum for $file: Verified!\n");
         } else {
@@ -1521,13 +1521,13 @@ sub verify_checksum {
     }
 }
 
-sub sha1_for {
-    my($self, $file) = @_;
+sub sha_for {
+    my($self, $alg, $file) = @_;
 
     require Digest::SHA; # no fatpack
 
     open my $fh, "<", $file or die "$file: $!";
-    my $dg = Digest::SHA->new(256);
+    my $dg = Digest::SHA->new($alg);
     my($data);
     while (read($fh, $data, 4096)) {
         $dg->add($data);
