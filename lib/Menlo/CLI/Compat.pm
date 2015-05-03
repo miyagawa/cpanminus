@@ -2263,17 +2263,6 @@ sub save_meta {
     $self->run_command(\@cmd);
 }
 
-sub _merge_hashref {
-    my($self, @hashrefs) = @_;
-
-    my %hash;
-    for my $h (@hashrefs) {
-        %hash = (%hash, %$h);
-    }
-
-    return \%hash;
-}
-
 sub install_base {
     my($self, $mm_opt) = @_;
     $mm_opt =~ /INSTALL_BASE=(\S+)/ and return $1;
