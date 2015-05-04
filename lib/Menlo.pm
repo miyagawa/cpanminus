@@ -76,6 +76,10 @@ new package name for cpanm 2's backend.
 
 =back
 
+=head1 AUTHOR
+
+Tatsuhiko Miyagawa E<lt>miyagawa@bulknews.netE<gt>
+
 =head1 COPYRIGHT
 
 2010- Tatsuhiko Miyagawa
