@@ -2489,7 +2489,7 @@ sub get {
     if ($uri =~ /^file:/) {
         $self->file_get($uri);
     } else {
-        $self->{_backends}{get}->(@_);
+        $self->{http}->get($uri)->{content};
     }
 }
 
@@ -2498,7 +2498,7 @@ sub mirror {
     if ($uri =~ /^file:/) {
         $self->file_mirror($uri, $local);
     } else {
-        $self->{_backends}{mirror}->(@_);
+        $self->{http}->mirror($uri, $local);
     }
 }
 
@@ -2530,15 +2530,32 @@ sub file_mirror {
     File::Copy::copy($file, $path);
 }
 
-sub has_working_lwp {
-    my($self, $mirrors) = @_;
-    my $https = grep /^https:/, @$mirrors;
-    eval {
-        require LWP::UserAgent; # no fatpack
-        LWP::UserAgent->VERSION(5.802);
-        require LWP::Protocol::https if $https; # no fatpack
-        1;
-    };
+sub configure_http_tinyish {
+    my $self = shift;
+
+    require Menlo::HTTP::Tinyish;
+
+    my @try = qw(HTTPTiny);
+    unshift @try, 'Wget' if $self->{try_wget};
+    unshift @try, 'Curl' if $self->{try_curl};
+    unshift @try, 'LWP'  if $self->{try_lwp};
+
+    my @protocol = ('http');
+    push @protocol, 'https'
+      if grep /^https:/, @{$self->{mirrors}};
+
+    my $backend;
+    for my $try (map "Menlo::HTTP::Tinyish::$_", @try) {
+        if (Menlo::HTTP::Tinyish->configure_backend($try)) {
+            if ((grep $try->supports($_), @protocol) == @protocol) {
+                $backend = $try;
+                $self->chat("Using HTTP backend $backend\n");
+                last;
+            }
+        }
+    }
+
+    $backend->new(agent => "Menlo/$Menlo::VERSION");
 }
 
 sub init_tools {
@@ -2550,86 +2567,7 @@ sub init_tools {
         $self->chat("You have make $self->{make}\n");
     }
 
-    # use --no-lwp if they have a broken LWP, to upgrade LWP
-    if ($self->{try_lwp} && $self->has_working_lwp($self->{mirrors})) {
-        $self->chat("You have LWP $LWP::VERSION\n");
-        my $ua = sub {
-            LWP::UserAgent->new(
-                parse_head => 0,
-                env_proxy => 1,
-                agent => $self->agent,
-                timeout => 30,
-                @_,
-            );
-        };
-        $self->{_backends}{get} = sub {
-            my $self = shift;
-            my $res = $ua->()->request(HTTP::Request->new(GET => $_[0]));
-            return unless $res->is_success;
-            return $res->decoded_content;
-        };
-        $self->{_backends}{mirror} = sub {
-            my $self = shift;
-            my $res = $ua->()->mirror(@_);
-            die $res->content if $res->code == 501;
-            $res->code;
-        };
-    } elsif ($self->{try_wget} and my $wget = which('wget')) {
-        $self->chat("You have $wget\n");
-        my @common = (
-            '--user-agent', $self->agent,
-            '--retry-connrefused',
-            ($self->{verbose} ? () : ('-q')),
-        );
-        $self->{_backends}{get} = sub {
-            my($self, $uri) = @_;
-            $self->safeexec( my $fh, $wget, $uri, @common, '-O', '-' ) or die "wget $uri: $!";
-            local $/;
-            <$fh>;
-        };
-        $self->{_backends}{mirror} = sub {
-            my($self, $uri, $path) = @_;
-            $self->safeexec( my $fh, $wget, $uri, @common, '-O', $path ) or die "wget $uri: $!";
-            local $/;
-            <$fh>;
-        };
-    } elsif ($self->{try_curl} and my $curl = which('curl')) {
-        $self->chat("You have $curl\n");
-        my @common = (
-            '--location',
-            '--user-agent', $self->agent,
-            ($self->{verbose} ? () : '-s'),
-        );
-        $self->{_backends}{get} = sub {
-            my($self, $uri) = @_;
-            $self->safeexec( my $fh, $curl, @common, $uri ) or die "curl $uri: $!";
-            local $/;
-            <$fh>;
-        };
-        $self->{_backends}{mirror} = sub {
-            my($self, $uri, $path) = @_;
-            $self->safeexec( my $fh, $curl, @common, $uri, '-#', '-o', $path ) or die "curl $uri: $!";
-            local $/;
-            <$fh>;
-        };
-    } else {
-        require HTTP::Tiny;
-        $self->chat("Falling back to HTTP::Tiny $HTTP::Tiny::VERSION\n");
-        my %common = (
-            agent => $self->agent,
-        );
-        $self->{_backends}{get} = sub {
-            my $self = shift;
-            my $res = HTTP::Tiny->new(%common)->get($_[0]);
-            return unless $res->{success};
-            return $res->{content};
-        };
-        $self->{_backends}{mirror} = sub {
-            my $self = shift;
-            my $res = HTTP::Tiny->new(%common)->mirror(@_);
-            return $res->{status};
-        };
-    }
+    $self->{http} = $self->configure_http_tinyish;
 
     my $tar = which('tar');
     my $tar_ver;
@@ -2763,19 +2701,6 @@ sub init_tools {
             return -d $root ? $root : undef;
         };
     }
-}
-
-sub safeexec {
-    my($self, $fh, @cmd) = @_;
-
-    # requires Win32::ShellQuote on Win32
-    require IPC::Run3;
-    eval {
-        IPC::Run3::run3(\@cmd, \my $in, $_[1], \my $err);
-    };
-    die "Failed to execute command $cmd[0]: $@\n" if $? != 0;
-
-    return 1;
 }
 
 sub mask_uri_passwords {
