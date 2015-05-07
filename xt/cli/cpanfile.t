@@ -25,7 +25,7 @@ use xt::Run;
 {
     my($out, $err) = run_L "--installdeps", "./testdist/cpanfile_non_resolvable";
     like $err, qr/Can't merge requirements for File::Spec/;
-    like last_build_log, qr/Installed version \(.*) of File::Spec is not in range '.*'/;
+    like last_build_log, qr/Installed version \(.*\) of File::Spec is not in range '.*'/;
 }
 
 done_testing;
