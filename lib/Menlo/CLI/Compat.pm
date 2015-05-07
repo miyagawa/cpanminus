@@ -2736,7 +2736,7 @@ sub init_tools {
             system "$unzip $opt $zipfile";
             return $root if -d $root;
 
-            $self->diag_fail("Bad archive: [$root] $zipfile");
+            $self->diag_fail("Bad archive: '$root' $zipfile");
             return undef;
         }
     } else {
@@ -2747,14 +2747,14 @@ sub init_tools {
             my $zip = Archive::Zip->new();
             my $status;
             $status = $zip->read($file);
-            $self->diag_fail("Read of file[$file] failed")
+            $self->diag_fail("Read of file '$file' failed")
                 if $status != Archive::Zip::AZ_OK();
             my @members = $zip->members();
             for my $member ( @members ) {
                 my $af = $member->fileName();
                 next if ($af =~ m!^(/|\.\./)!);
                 $status = $member->extractToFileNamed( $af );
-                $self->diag_fail("Extracting of file[$af] from zipfile[$file failed")
+                $self->diag_fail("Extracting of file 'af' from zipfile '$file' failed")
                     if $status != Archive::Zip::AZ_OK();
             }
 
