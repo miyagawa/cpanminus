@@ -9,7 +9,7 @@ use URI ();
 use IO::Uncompress::Gunzip ();
 
 my %INDICES = (
-    mailrc   => 'authors/01mailrc.txt.gz',
+#    mailrc   => 'authors/01mailrc.txt.gz',
     packages => 'modules/02packages.details.txt.gz',
 );
 

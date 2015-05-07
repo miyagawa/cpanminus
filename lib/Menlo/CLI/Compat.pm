@@ -437,6 +437,8 @@ sub search_mirror_index {
 sub search_common {
     my($self, $index, $search_args, $want_version) = @_;
 
+    $index->refresh_index;
+
     my $found = $index->search_packages($search_args);
     $found = $self->cpan_module_common($found) if $found;
 
