@@ -1,2 +1,3 @@
-requires 'Time::Local', '== 1.1901';
-requires 'Mojolicious', '6';
+requires 'File::Spec', '== 3.33';
+requires 'Path::Tiny', '0.068';
+
