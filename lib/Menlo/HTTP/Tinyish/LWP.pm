@@ -6,9 +6,16 @@ use LWP::UserAgent;
 my %supports = (http => 1);
 
 sub configure {
+    my %meta = (
+        LWP => $LWP::VERSION,
+    );
+
     if (eval { require LWP::Protocol::https; 1 }) {
         $supports{https} = 1;
+        $meta{"LWP::Protocol::https"} = $LWP::Protocol::https::VERSION;
     }
+
+    \%meta;
 }
 
 sub supports {

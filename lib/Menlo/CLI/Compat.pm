@@ -2532,7 +2532,7 @@ sub file_mirror {
     File::Copy::copy($file, $path);
 }
 
-sub configure_http_tinyish {
+sub configure_http {
     my $self = shift;
 
     require Menlo::HTTP::Tinyish;
@@ -2548,10 +2548,13 @@ sub configure_http_tinyish {
 
     my $backend;
     for my $try (map "Menlo::HTTP::Tinyish::$_", @try) {
-        if (Menlo::HTTP::Tinyish->configure_backend($try)) {
+        if (my $meta = Menlo::HTTP::Tinyish->configure_backend($try)) {
             if ((grep $try->supports($_), @protocol) == @protocol) {
+                for my $tool (sort keys %$meta){
+                    (my $desc = $meta->{$tool}) =~ s/^(.*?)\n.*/$1/s;
+                    $self->chat("You have $tool: $desc\n");
+                }
                 $backend = $try;
-                $self->chat("Using HTTP backend $backend\n");
                 last;
             }
         }
@@ -2569,7 +2572,7 @@ sub init_tools {
         $self->chat("You have make $self->{make}\n");
     }
 
-    $self->{http} = $self->configure_http_tinyish;
+    $self->{http} = $self->configure_http;
 
     my $tar = which('tar');
     my $tar_ver;

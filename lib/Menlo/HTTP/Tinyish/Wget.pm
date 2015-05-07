@@ -10,6 +10,7 @@ my $wget;
 
 sub configure {
     my $class = shift;
+    my %meta;
 
     $wget = which('wget');
 
@@ -26,7 +27,12 @@ sub configure {
         } elsif ($err && $err =~ /Invalid host/) {
             $supports{http} = $supports{https} = 1;
         }
+
+        run3([$wget, '--version'], \undef, \my $version, \undef);
+        $meta{$wget} = "$version";
     };
+
+    \%meta;
 }
 
 sub supports { $supports{$_[1]} }

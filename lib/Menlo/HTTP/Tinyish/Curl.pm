@@ -11,6 +11,7 @@ my $curl;
 sub configure {
     my $class = shift;
 
+    my %meta;
     $curl = which('curl');
 
     eval {
@@ -18,7 +19,12 @@ sub configure {
         for (@lines) {
             /^(HTTPS?)\s*$/ and $supports{lc $1} = 1;
         }
+
+        run3(['curl', '--version'], \undef, \my $version, \undef);
+        $meta{$curl} = $version;
     };
+
+    \%meta;
 }
 
 sub supports { $supports{$_[1]} }

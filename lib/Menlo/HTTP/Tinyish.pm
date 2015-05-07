@@ -46,7 +46,7 @@ sub configure_backend {
     my($self, $backend) = @_;
     unless (exists $configured{$backend}) {
         $configured{$backend} =
-          eval { require_module($backend); $backend->configure; 1 };
+          eval { require_module($backend); $backend->configure };
     }
     $configured{$backend};
 }
