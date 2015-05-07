@@ -2,6 +2,11 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7034  2015-05-07 14:20:57 PDT
+   [Improvements]
+      - Improved an error message when dependency requirement in cpanfile get conflict with prereqs
+        in sub dependencies.
+
 1.7033  2015-05-01 17:17:42 PDT
    [Improvements]
       - Remove MakeMaker and Module::Build from cpanm's runtime dependencies. Rather it will upgrade
