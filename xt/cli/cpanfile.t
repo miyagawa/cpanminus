@@ -22,5 +22,11 @@ use xt::Run;
     like last_build_log, qr/installed Hash-MultiValue-0\.13/;
 }
 
+{
+    my($out, $err) = run_L "--installdeps", "./testdist/cpanfile_non_resolvable";
+    like $err, qr/Can't merge requirements for Time::Local/;
+    like last_build_log, qr/Installed version \(1\.1901\) of Time::Local is not in range '1\.2'/;
+}
+
 done_testing;
 

@@ -1,0 +1,2 @@
+requires 'Time::Local', '== 1.1901';
+requires 'Mojolicious', '6';
