@@ -63,7 +63,11 @@ sub mirror {
 sub lwp_params {
     my($class, %attr) = @_;
 
-    my %p;
+    my %p = (
+        parse_head => 0,
+        env_proxy => 1,
+        timeout => 30,
+    );
     $p{agent} = delete $attr{agent};
     %p;
 }
