@@ -2560,7 +2560,7 @@ sub configure_http {
         }
     }
 
-    $backend->new(agent => "Menlo/$Menlo::VERSION");
+    $backend->new(agent => "Menlo/$Menlo::VERSION", verify_SSL => 1);
 }
 
 sub init_tools {
