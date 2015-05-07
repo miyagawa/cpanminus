@@ -34,7 +34,17 @@ sub merge_with {
     $self->{original_version} = $self->version;
 
     # should it clone? not cloning means we upgrade root $requirements on our way
-    $requirements->add_string_requirement($self->module, $self->version);
+    eval {
+        $requirements->add_string_requirement($self->module, $self->version);
+    };
+    if ($@ =~ /illegal requirements/) {
+        # Just give a warning then replace with the root requirements
+        # so that later CPAN::Meta::Check can give a valid error
+        warn sprintf("Can't merge requirements for %s: '%s' and '%s'",
+                    $self->module, $self->version,
+                    $requirements->requirements_for_module($self->module));
+    }
+
     $self->{version} = $requirements->requirements_for_module($self->module);
 }
 
