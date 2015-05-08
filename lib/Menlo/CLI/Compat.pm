@@ -2535,7 +2535,7 @@ sub file_mirror {
 sub configure_http {
     my $self = shift;
 
-    require Menlo::HTTP::Tinyish;
+    require HTTP::Tinyish;
 
     my @try = qw(HTTPTiny);
     unshift @try, 'Wget' if $self->{try_wget};
@@ -2547,8 +2547,8 @@ sub configure_http {
       if grep /^https:/, @{$self->{mirrors}};
 
     my $backend;
-    for my $try (map "Menlo::HTTP::Tinyish::$_", @try) {
-        if (my $meta = Menlo::HTTP::Tinyish->configure_backend($try)) {
+    for my $try (map "HTTP::Tinyish::$_", @try) {
+        if (my $meta = HTTP::Tinyish->configure_backend($try)) {
             if ((grep $try->supports($_), @protocol) == @protocol) {
                 for my $tool (sort keys %$meta){
                     (my $desc = $meta->{$tool}) =~ s/^(.*?)\n.*/$1/s;
