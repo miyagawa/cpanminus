@@ -1,10 +1,10 @@
 {
    "abstract" : "A CPAN client",
    "author" : [
-      "unknown"
+      "Tatsuhiko Miyagawa <miyagawa@bulknews.net>"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Dist::Zilla version 5.035, Dist::Milla version v1.0.15, CPAN::Meta::Converter version 2.150001",
+   "generated_by" : "Dist::Zilla version 5.036, Dist::Milla version v1.0.15, CPAN::Meta::Converter version 2.150001",
    "license" : [
       "perl_5"
    ],
@@ -20,8 +20,7 @@
          "inc",
          "share",
          "eg",
-         "examples",
-         "lib/CPAN/Common"
+         "examples"
       ]
    },
    "prereqs" : {
@@ -37,8 +36,7 @@
             "JSON" : "0",
             "Module::Install" : "0",
             "Test::Pod" : "1.41",
-            "Test::Requires" : "0",
-            "YAML" : "0"
+            "Test::Requires" : "0"
          }
       },
       "runtime" : {
@@ -51,17 +49,15 @@
             "CPAN::Meta::YAML" : "0",
             "Class::Tiny" : "1.001",
             "Digest::SHA" : "0",
-            "Exporter" : "5.63",
-            "ExtUtils::Install" : "1.46",
-            "ExtUtils::MakeMaker" : "6.58",
+            "Exporter" : "0",
             "File::Temp" : "0",
             "File::Which" : "0",
             "File::pushd" : "0",
             "Getopt::Long" : "0",
-            "HTTP::Tiny" : "0",
+            "HTTP::Tiny" : "0.054",
+            "HTTP::Tinyish" : "0.04",
             "IPC::Run3" : "0",
             "JSON::PP" : "0",
-            "Module::Build" : "0.38",
             "Module::CPANfile" : "0",
             "Module::CoreList" : "0",
             "Module::Metadata" : "0",
@@ -76,9 +72,7 @@
          "suggests" : {
             "Archive::Tar" : "0",
             "Archive::Zip" : "0",
-            "Compress::Zlib" : "0",
             "File::HomeDir" : "0",
-            "LWP::Simple" : "0",
             "LWP::UserAgent" : "5.802",
             "Module::Signature" : "0"
          }
@@ -101,7 +95,7 @@
          "web" : "https://github.com/miyagawa/cpanminus"
       }
    },
-   "version" : "v1.0.0",
+   "version" : "1.9000",
    "x_contributors" : [
       "Alessandro Ghedini <al3xbio@gmail.com>",
       "Andrew Rodland <andrew@cleverdomain.org>",
@@ -164,7 +158,6 @@
       "Smylers <Smylers@stripey.com>",
       "Stoned Elipot <stoned.elipot@gmail.com>",
       "Syohei YOSHIDA <syohex@gmail.com>",
-      "Tatsuhiko Miyagawa <miyagawa@bulknews.net>",
       "Tatsuhiko Miyagawa <miyagawa@gmail.com>",
       "Thomas Sibley <tom@zulutango.org>",
       "Tokuhiro Matsuno <tokuhirom@gmail.com>",
