@@ -2486,15 +2486,6 @@ sub DESTROY {
 
 # Utils
 
-sub get {
-    my($self, $uri) = @_;
-    if ($uri =~ /^file:/) {
-        $self->file_get($uri);
-    } else {
-        $self->{http}->get($uri)->{content};
-    }
-}
-
 sub mirror {
     my($self, $uri, $local) = @_;
     if ($uri =~ /^file:/) {
