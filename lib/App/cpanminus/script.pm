@@ -947,9 +947,9 @@ sub bootstrap_local_lib {
     }
 
     # PERL_LOCAL_LIB_ROOT is defined. Run as local::lib mode without overwriting ENV
-    if ($ENV{PERL_LOCAL_LIB_ROOT} && $ENV{PERL_MM_OPT}) {
-        return $self->setup_local_lib($self->local_lib_target($ENV{PERL_LOCAL_LIB_ROOT}), 1);
-    }
+#    if ($ENV{PERL_LOCAL_LIB_ROOT} && $ENV{PERL_MM_OPT}) {
+#        return $self->setup_local_lib($self->local_lib_target($ENV{PERL_LOCAL_LIB_ROOT}), 1);
+#    }
 
     # root, locally-installed perl or --sudo: don't care about install_base
     return if $self->{sudo} or (_writable($Config{installsitelib}) and _writable($Config{installsitebin}));
