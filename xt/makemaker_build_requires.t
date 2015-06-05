@@ -9,7 +9,7 @@ run_L 'ExtUtils::MakeMaker@7.05_19';
 run_L 'ADAMK/Class-Inspector-1.27.tar.gz';
 
 unlike last_build_log, qr/Installed version \(7\.05_19\) of ExtUtils::MakeMaker is not in range '7\.0519'/;
+like last_build_log, qr/Successfully installed Class-Inspector-1\.27/;
 
 done_testing;
-
 
