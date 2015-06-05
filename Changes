@@ -2,6 +2,11 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7035  2015-06-05 10:51:17 PDT
+   [Improvements]
+      - Add a workaround for distributions with an old (buggy) Module::Install, now that the problems
+        occur more frequently with 5.22.0 shipping with a dev version of ExtUtils::MakeMaker #463
+
 1.7034  2015-05-07 14:20:57 PDT
    [Improvements]
       - Improved an error message when dependency requirement in cpanfile get conflict with prereqs
