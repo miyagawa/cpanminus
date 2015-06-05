@@ -2692,7 +2692,26 @@ sub extract_prereqs {
     my($self, $meta, $dist) = @_;
 
     my @features = $self->configure_features($dist, $meta->features);
-    return App::cpanminus::Dependency->from_prereqs($meta->effective_prereqs(\@features), $dist->{want_phases}, $self->{install_types});
+    my $prereqs  = $self->soften_makemaker_prereqs($meta->effective_prereqs(\@features)->clone);
+
+    return App::cpanminus::Dependency->from_prereqs($prereqs, $dist->{want_phases}, $self->{install_types});
+}
+
+# Workaround for Module::Install 1.04 creating a bogus (higher) MakeMaker requirement that it needs in build_requires
+# Assuming MakeMaker requirement is already satisfied in configure_requires, there's no need to have higher version of
+# MakeMaker in build/test anyway. https://github.com/miyagawa/cpanminus/issues/463
+sub soften_makemaker_prereqs {
+    my($self, $prereqs) = @_;
+
+    for my $phase (qw( build test )) {
+        my $reqs = $prereqs->requirements_for($phase, 'requires');
+        if ($reqs->requirements_for_module('ExtUtils::MakeMaker')) {
+            $reqs->clear_requirement('ExtUtils::MakeMaker');
+            $reqs->add_minimum('ExtUtils::MakeMaker' => 0);
+        }
+    }
+
+    $prereqs;
 }
 
 sub cleanup_workdirs {
