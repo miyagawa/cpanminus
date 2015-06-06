@@ -2,6 +2,11 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7036  2015-06-05 22:07:50 PDT
+   [Improvements]
+      - Also soften MakeMaker depenency in runtime prereq, which is just a weird bug in an old
+        Module::Install pre 1.0
+
 1.7035  2015-06-05 10:51:17 PDT
    [Improvements]
       - Add a workaround for distributions with an old (buggy) Module::Install, now that the problems
