@@ -3045,23 +3045,26 @@ sub init_tools {
             $self->diag_fail("Bad archive: $tarfile");
             return undef;
         }
-    } elsif (eval { require Archive::Tar }) { # uses too much memory!
+    } elsif (eval { require Archive::Tar; 1 }) {
         $self->chat("Falling back to Archive::Tar $Archive::Tar::VERSION\n");
         $self->{_backends}{untar} = sub {
-            my $self = shift;
-            my $t = Archive::Tar->new($_[0]);
-            my($root, @others) = $t->list_files;
-            FILE: {
-                $root =~ s!^\./!!;
-                $root =~ s{^(.+?)/.*$}{$1};
+            my($self, $file) = @_;
 
-                if (!length($root)) {
-                    # archive had ./ as the first entry, so try again
-                    $root = shift(@others);
-                    redo FILE if $root;
+            my $root;
+            my $iter = Archive::Tar->iter($file, 1);
+            while (my $f = $iter->()) {
+                my $path = $f->full_path;
+                $path =~ s!^\./!!;
+                $path =~ s!^(.+?)/.*$!$1!;
+
+                if (length($path)) {
+                    $root = $path;
+                    last;
                 }
             }
-            $t->extract;
+
+            Archive::Tar->extract_archive($file, 1);
+
             return -d $root ? $root : undef;
         };
     } else {
@@ -3090,7 +3093,7 @@ sub init_tools {
         }
     } else {
         $self->{_backends}{unzip} = sub {
-            eval { require Archive::Zip }
+            eval { require Archive::Zip; 1 }
                 or  die "Failed to extract $_[1] - You need to have unzip or Archive::Zip installed.\n";
             my($self, $file) = @_;
             my $zip = Archive::Zip->new();
