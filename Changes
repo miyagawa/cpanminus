@@ -2,6 +2,13 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7037  2015-06-18 14:37:32 PDT
+   [Improvements]
+      - Bump CPAN-Meta-Check to 0.012 #465
+      - Bump HTTP-Tiny to 0.056
+      - Bump CPAN-Meta to 2.150005
+      - Bump CPAN-Meta-YAML to 0.016
+
 1.7036  2015-06-05 22:07:50 PDT
    [Improvements]
       - Also soften MakeMaker depenency in runtime prereq, which is just a weird bug in an old
