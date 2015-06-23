@@ -75,7 +75,7 @@ alternative URL, `https://git.io/cpanm`
 
 # DEPENDENCIES
 
-perl 5.8 or later.
+perl 5.8.1 or later.
 
 - 'tar' executable (bsdtar or GNU tar version 1.22 are recommended) or Archive::Tar to unpack files.
 - C compiler, if you want to build XS modules.

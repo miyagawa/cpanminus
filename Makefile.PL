@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 
-use 5.008000;
+use 5.008001;
 
 use ExtUtils::MakeMaker;
 
@@ -32,7 +32,7 @@ my %WriteMakefileArgs = (
     "bin/cpanm"
   ],
   "LICENSE" => "perl",
-  "MIN_PERL_VERSION" => "5.008000",
+  "MIN_PERL_VERSION" => "5.008001",
   "NAME" => "App::cpanminus",
   "PREREQ_PM" => {},
   "TEST_REQUIRES" => {
