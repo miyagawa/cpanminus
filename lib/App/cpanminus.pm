@@ -80,7 +80,7 @@ alternative URL, C<https://git.io/cpanm>
 
 =head1 DEPENDENCIES
 
-perl 5.8 or later.
+perl 5.8.1 or later.
 
 =over 4
 
