@@ -2,6 +2,10 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7038  2015-06-22 18:04:44 PDT
+   [Releng]
+      - bump minimum perl requirement to 5.8.1 in META files
+
 1.7037  2015-06-18 14:37:32 PDT
    [Improvements]
       - Bump CPAN-Meta-Check to 0.012 #465
