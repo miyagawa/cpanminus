@@ -2325,6 +2325,7 @@ sub should_use_mm {
 sub configure_this {
     my($self, $dist, $depth) = @_;
 
+    # Short-circuit `cpanm --installdeps .` because it doesn't need to build the current dir
     if (-e $self->{cpanfile_path} && $self->{installdeps} && $depth == 0) {
         require Module::CPANfile;
         $dist->{cpanfile} = eval { Module::CPANfile->load($self->{cpanfile_path}) };
