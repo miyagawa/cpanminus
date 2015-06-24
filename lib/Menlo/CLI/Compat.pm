@@ -899,6 +899,19 @@ sub log {
 sub run_command {
     my($self, $cmd) = @_;
 
+    # TODO move to a more appropriate runner method
+    if (ref $cmd eq 'CODE') {
+        if ($self->{verbose}) {
+            return $cmd->();
+        } else {
+            require Capture::Tiny;
+            open my $logfh, ">>", $self->{log};
+            my $ret;
+            Capture::Tiny::capture(sub { $ret = $cmd->() }, stdout => $logfh, stderr => $logfh);
+            return $ret;
+        }
+    }
+
     if (WIN32) {
         $cmd = Menlo::Util::shell_quote(@$cmd) if ref $cmd eq 'ARRAY';
         unless ($self->{verbose}) {
@@ -937,7 +950,8 @@ sub run_exec {
 
 sub run_timeout {
     my($self, $cmd, $timeout) = @_;
-    return $self->run_command($cmd) if WIN32 || $self->{verbose} || !$timeout;
+
+    return $self->run_command($cmd) if ref($cmd) eq 'CODE' || WIN32 || $self->{verbose} || !$timeout;
 
     my $pid = fork;
     if ($pid) {
@@ -966,6 +980,8 @@ sub run_timeout {
 sub append_args {
     my($self, $cmd, $phase) = @_;
 
+    return $cmd if ref $cmd ne 'ARRAY';
+    
     if (my $args = $self->{build_args}{$phase}) {
         $cmd = join ' ', Menlo::Util::shell_quote(@$cmd), $args;
     }
@@ -1984,7 +2000,13 @@ DIAG
     }
 
     my $installed;
-    if ($configure_state->{use_module_build} && -e 'Build' && -f _) {
+    if ($configure_state->{static_install}) {
+        $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . $distname);
+        $self->build(sub { $configure_state->{static_install}->build }, $distname, $depth) &&
+        $self->test(sub { $configure_state->{static_install}->build("test") }, $distname, $depth) &&
+        $self->install(sub { $configure_state->{static_install}->build("install") }, [], $depth) &&
+        $installed++;
+    } elsif ($configure_state->{use_module_build} && -e 'Build' && -f _) {
         $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . $distname);
         $self->build([ $self->{perl}, "./Build" ], $distname, $depth) &&
         $self->test([ $self->{perl}, "./Build", "test" ], $distname, $depth) &&
@@ -2076,6 +2098,16 @@ sub configure_this {
 
     my $state = {};
 
+    my $try_static = sub {
+        if ($dist->{meta}{x_static_install}) {
+            $self->chat("Distribution opts in x_static_install: $dist->{meta}{x_static_install}\n");
+            $self->static_install_configure($state, $dist, $depth);
+        } elsif ($self->uses_module_build_tiny($dist)) {
+            $self->chat("Distribution uses Module::Build::Tiny intact.\n");
+            $self->static_install_configure($state, $dist, $depth);
+        }
+    };
+
     my $try_eumm = sub {
         if (-e 'Makefile.PL') {
             $self->chat("Running Makefile.PL\n");
@@ -2102,7 +2134,7 @@ sub configure_this {
         }
     };
 
-    for my $try ($try_mb, $try_eumm) {
+    for my $try ($try_static, $try_mb, $try_eumm) {
         $try->();
         last if $state->{configured_ok};
     }
@@ -2118,6 +2150,43 @@ sub configure_this {
     }
 
     return $state;
+}
+
+sub static_install_configure {
+    my($self, $state, $dist, $depth) = @_;
+
+    my $args = $depth == 0 ? $self->{build_args}{configure} : [];
+
+    require Menlo::Builder::Static;
+    my $builder = Menlo::Builder::Static->new;
+    $self->configure(sub { $builder->configure($args || []) }, $depth);
+
+    $state->{configured_ok} = 1;
+    $state->{static_install} = $builder;
+    $state->{configured}++;
+}
+
+# Just an experiment to test with existing MBTiny dists without re-uploads
+# TODO: remove this entirely
+sub uses_module_build_tiny {
+    my($self, $dist) = @_;
+
+    return unless $ENV{PERL_CPANM_MBTINY_STATIC};
+
+    if (-e 'Build.PL') {
+        my @content = do { open my $fh, '<', 'Build.PL'; <$fh> };
+
+        # double check if Build.PL
+        my @custom = grep {
+            chomp;
+            !m{^(?: \#.* | # comment
+                    \s*  | # empty
+                   use\s(?:strict|warnings|5\.\d+|Module::Build::Tiny(?:\s[\d\.]*)?);\s* |
+                   Build_PL\(\); )$ }x;
+        } @content;
+
+        return @custom == 0;
+    }
 }
 
 sub find_module_name {

@@ -8,6 +8,7 @@ requires 'CPAN::Meta', '2.132830';
 requires 'CPAN::Meta::Check';
 requires 'CPAN::Meta::Requirements';
 requires 'CPAN::Meta::YAML';
+requires 'Capture::Tiny';
 requires 'Class::Tiny', 1.001;
 requires 'Digest::SHA';
 requires 'Exporter';
@@ -19,6 +20,7 @@ requires 'HTTP::Tiny', '0.054';
 requires 'HTTP::Tinyish', '0.04';
 requires 'IPC::Run3';
 requires 'JSON::PP';
+requires 'Module::Build::Tiny';
 requires 'Module::CPANfile';
 requires 'Module::CoreList';
 requires 'Module::Metadata';
@@ -44,6 +46,5 @@ on test => sub {
 on develop => sub {
     requires 'JSON';
     requires 'Module::Install';
-    requires 'Capture::Tiny';
     requires 'Test::Requires';
 };
