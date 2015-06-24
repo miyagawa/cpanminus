@@ -2176,7 +2176,7 @@ sub uses_module_build_tiny {
     if (-e 'Build.PL') {
         my @content = do { open my $fh, '<', 'Build.PL'; <$fh> };
 
-        # double check if Build.PL
+        # double check if Build.PL has no customization code other than MBT boilerplate
         my @custom = grep {
             chomp;
             !m{^(?: \#.* | # comment
