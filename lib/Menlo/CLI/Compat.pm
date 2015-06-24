@@ -1930,7 +1930,8 @@ sub build_stuff {
     $self->upgrade_toolchain(\@config_deps);
 
     my $target = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $dist->{dir};
-    {
+
+    unless ($dist->{meta}{x_static_install}) {
         local $self->{notest} = 1;
         $self->install_deps_bailout($target, $dist->{dir}, $depth, @config_deps)
           or return;
@@ -1946,6 +1947,7 @@ sub build_stuff {
     }
 
     # install direct 'test' dependencies for --installdeps, even with --notest
+    # TODO: remove build dependencies for static install
     my $root_target = (($self->{installdeps} or $self->{showdeps}) and $depth == 0);
     $dist->{want_phases} = $self->{notest} && !$root_target
                          ? [qw( build runtime )] : [qw( build test runtime )];
