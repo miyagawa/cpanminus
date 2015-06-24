@@ -1075,6 +1075,10 @@ sub install {
         return 1;
     }
 
+    # short circuit
+    # TODO: support sudo/uninstall shadows for static install
+    return $self->run_command($cmd) if ref $cmd eq 'CODE';
+
     if ($self->{sudo}) {
         unshift @$cmd, "sudo";
     }
