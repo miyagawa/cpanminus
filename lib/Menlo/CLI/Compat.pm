@@ -1935,7 +1935,7 @@ sub build_stuff {
 
     my $target = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $dist->{dir};
 
-    unless ($dist->{meta}{x_static_install}) {
+    unless ($self->skip_configure($dist, $depth)) {
         local $self->{notest} = 1;
         $self->install_deps_bailout($target, $dist->{dir}, $depth, @config_deps)
           or return;
@@ -1952,8 +1952,8 @@ sub build_stuff {
 
     # install direct 'test' dependencies for --installdeps, even with --notest
     # TODO: remove build dependencies for static install
-    my $root_target = (($self->{installdeps} or $self->{showdeps}) and $depth == 0);
-    $dist->{want_phases} = $self->{notest} && !$root_target
+    my $deps_only = $self->deps_only($depth);
+    $dist->{want_phases} = $self->{notest} && !$self->deps_only($depth)
                          ? [qw( build runtime )] : [qw( build test runtime )];
 
     push @{$dist->{want_phases}}, 'develop' if $self->{with_develop} && $depth == 0;
@@ -2064,6 +2064,28 @@ DIAG
     }
 }
 
+sub skip_configure {
+    my($self, $dist, $depth) = @_;
+
+    return 1 if $self->{skip_configure};
+    return 1 if $dist->{meta}{x_static_install};
+    return 1 if $self->no_dynamic_config($dist->{meta}) && $self->deps_only($depth);
+
+    return;
+}
+
+sub no_dynamic_config {
+    my($self, $meta) = @_;
+    exists $meta->{dynamic_config} && $meta->{dynamic_config} == 0;
+}
+
+sub deps_only {
+    my($self, $depth) = @_;
+    ($self->{installdeps} && $depth == 0)
+      or $self->{showdeps}
+      or $self->{scandeps};
+}
+
 sub perl_requirements {
     my($self, @requires) = @_;
 
@@ -2080,8 +2102,8 @@ sub perl_requirements {
 sub configure_this {
     my($self, $dist, $depth) = @_;
 
-    # Short-circuit `cpanm --installdeps .` because it doesn't need to build the current dir
-    if (-e $self->{cpanfile_path} && $self->{installdeps} && $depth == 0) {
+    my $deps_only = $self->deps_only($depth);
+    if (-e $self->{cpanfile_path} && $deps_only) {
         require Module::CPANfile;
         $dist->{cpanfile} = eval { Module::CPANfile->load($self->{cpanfile_path}) };
         $self->diag_fail($@, 1) if $@;
@@ -2099,6 +2121,14 @@ sub configure_this {
             configured => 1,
             configured_ok => $eumm || $mb,
             use_module_build => $mb,
+        };
+    }
+
+    if ($deps_only && $self->no_dynamic_config($dist->{meta})) {
+        return {
+            configured => 1,
+            configured_ok => exists $dist->{meta}{prereqs},
+            use_module_build => 0,
         };
     }
 
@@ -2392,8 +2422,13 @@ sub extract_meta_prereqs {
 
     require CPAN::Meta;
 
+    my @meta = qw(MYMETA.json MYMETA.yml);
+    if ($self->no_dynamic_config($dist->{meta})) {
+        push @meta, qw(META.json META.yml);
+    }
+
     my @deps;
-    my($meta_file) = grep -f, qw(MYMETA.json MYMETA.yml);
+    my($meta_file) = grep -f, @meta;
     if ($meta_file) {
         $self->chat("Checking dependencies from $meta_file ...\n");
         my $mymeta = eval { CPAN::Meta->load_file($meta_file, { lazy_validation => 1 }) };
