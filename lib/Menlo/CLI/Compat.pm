@@ -2081,9 +2081,26 @@ sub no_dynamic_config {
 
 sub no_dynamic_config_1_x {
     my($self, $meta) = @_;
+
     # dynamic_config=0 in META 1.x spec meant x_static_install=1
-    return exists $meta->{'meta-spec'}{version} && $meta->{'meta-spec'}{version} < 2
-      && $self->no_dynamic_config($meta)
+    return $self->has_1_x_meta_yml && $self->no_dynamic_config($meta);
+}
+
+sub has_1_x_meta_yml {
+    my $self = shift;
+
+    # CPAN::Meta->load_file up-converts the struct to 2.0 for you, so there's
+    # no way to know what the original version was.
+    return unless !-e 'META.json' && -e 'META.yml';
+
+    my $data = {};
+    eval {
+        $data = Parse::CPAN::Meta->load_file('META.yml');
+    };
+
+    $data->{'meta-spec'} &&
+      exists $data->{'meta-spec'}{version} &&
+      $data->{'meta-spec'}{version} < 2;
 }
 
 sub deps_only {
