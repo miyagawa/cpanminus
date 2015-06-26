@@ -2138,9 +2138,6 @@ sub configure_this {
         if ($dist->{meta}{x_static_install}) {
             $self->chat("Distribution opts in x_static_install: $dist->{meta}{x_static_install}\n");
             $self->static_install_configure($state, $dist, $depth);
-        } elsif ($self->uses_module_build_tiny($dist)) {
-            $self->chat("Distribution uses Module::Build::Tiny intact.\n");
-            $self->static_install_configure($state, $dist, $depth);
         }
     };
 
@@ -2200,29 +2197,6 @@ sub static_install_configure {
     $state->{configured_ok} = 1;
     $state->{static_install} = $builder;
     $state->{configured}++;
-}
-
-# Just an experiment to test with existing MBTiny dists without re-uploads
-# TODO: remove this entirely
-sub uses_module_build_tiny {
-    my($self, $dist) = @_;
-
-    return unless $ENV{PERL_CPANM_MBTINY_STATIC};
-
-    if (-e 'Build.PL') {
-        my @content = do { open my $fh, '<', 'Build.PL'; <$fh> };
-
-        # double check if Build.PL has no customization code other than MBT boilerplate
-        my @custom = grep {
-            chomp;
-            !m{^(?: \#.* | # comment
-                    \s*  | # empty
-                   use\s(?:strict|warnings|5\.\d+|Module::Build::Tiny(?:\s[\d\.]*)?);\s* |
-                   Build_PL\(\); )$ }x;
-        } @content;
-
-        return @custom == 0;
-    }
 }
 
 sub find_module_name {
