@@ -2079,6 +2079,12 @@ sub no_dynamic_config {
     exists $meta->{dynamic_config} && $meta->{dynamic_config} == 0;
 }
 
+sub no_dynamic_config_1_x {
+    my($self, $meta) = @_;
+    # dynamic_config=0 in META 1.x spec meant x_static_install=1
+    return $meta->{version} && $meta->{version} < 2 && $self->no_dynamic_config($meta)
+}
+
 sub deps_only {
     my($self, $depth) = @_;
     ($self->{installdeps} && $depth == 0)
@@ -2137,6 +2143,9 @@ sub configure_this {
     my $try_static = sub {
         if ($dist->{meta}{x_static_install}) {
             $self->chat("Distribution opts in x_static_install: $dist->{meta}{x_static_install}\n");
+            $self->static_install_configure($state, $dist, $depth);
+        } elsif ($self->no_dynamic_config_1_x($dist->{meta})) {
+            $self->chat("Distribution has dynamic_config = 0 with META 1.x\n");
             $self->static_install_configure($state, $dist, $depth);
         }
     };
