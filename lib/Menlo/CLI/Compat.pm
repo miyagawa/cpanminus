@@ -2082,7 +2082,8 @@ sub no_dynamic_config {
 sub no_dynamic_config_1_x {
     my($self, $meta) = @_;
     # dynamic_config=0 in META 1.x spec meant x_static_install=1
-    return $meta->{version} && $meta->{version} < 2 && $self->no_dynamic_config($meta)
+    return exists $meta->{'meta-spec'}{version} && $meta->{'meta-spec'}{version} < 2
+      && $self->no_dynamic_config($meta)
 }
 
 sub deps_only {
