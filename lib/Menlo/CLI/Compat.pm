@@ -2079,30 +2079,6 @@ sub no_dynamic_config {
     exists $meta->{dynamic_config} && $meta->{dynamic_config} == 0;
 }
 
-sub no_dynamic_config_1_x {
-    my($self, $meta) = @_;
-
-    # dynamic_config=0 in META 1.x spec meant x_static_install=1
-    return $self->has_1_x_meta_yml && $self->no_dynamic_config($meta);
-}
-
-sub has_1_x_meta_yml {
-    my $self = shift;
-
-    # CPAN::Meta->load_file up-converts the struct to 2.0 for you, so there's
-    # no way to know what the original version was.
-    return unless !-e 'META.json' && -e 'META.yml';
-
-    my $data = {};
-    eval {
-        $data = Parse::CPAN::Meta->load_file('META.yml');
-    };
-
-    $data->{'meta-spec'} &&
-      exists $data->{'meta-spec'}{version} &&
-      $data->{'meta-spec'}{version} < 2;
-}
-
 sub deps_only {
     my($self, $depth) = @_;
     ($self->{installdeps} && $depth == 0)
@@ -2161,9 +2137,6 @@ sub configure_this {
     my $try_static = sub {
         if ($dist->{meta}{x_static_install}) {
             $self->chat("Distribution opts in x_static_install: $dist->{meta}{x_static_install}\n");
-            $self->static_install_configure($state, $dist, $depth);
-        } elsif ($self->no_dynamic_config_1_x($dist->{meta})) {
-            $self->chat("Distribution has dynamic_config = 0 with META 1.x\n");
             $self->static_install_configure($state, $dist, $depth);
         }
     };
