@@ -1809,6 +1809,11 @@ sub verify_signature {
 sub resolve_name {
     my($self, $module, $version) = @_;
 
+    # Git
+    if ($module =~ /(?:^git:|\.git(?:@.+)?$)/) {
+        return $self->git_uri($module);
+    }
+
     # URL
     if ($module =~ /^(ftp|https?|file):/) {
         if ($module =~ m!authors/id/(.*)!) {
@@ -1832,11 +1837,6 @@ sub resolve_name {
             source => 'local',
             uris => [ "file://" . Cwd::abs_path($module) ],
         };
-    }
-
-    # Git
-    if ($module =~ /(?:^git:|\.git(?:@.+)?$)/) {
-        return $self->git_uri($module);
     }
 
     # cpan URI
