@@ -2704,7 +2704,9 @@ sub extract_prereqs {
 sub soften_makemaker_prereqs {
     my($self, $prereqs) = @_;
 
-    for my $phase (qw( build test )) {
+    return $prereqs unless -e "inc/Module/Install.pm";
+
+    for my $phase (qw( build test runtime )) {
         my $reqs = $prereqs->requirements_for($phase, 'requires');
         if ($reqs->requirements_for_module('ExtUtils::MakeMaker')) {
             $reqs->clear_requirement('ExtUtils::MakeMaker');
