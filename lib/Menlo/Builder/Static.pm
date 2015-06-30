@@ -37,33 +37,6 @@ sub manify {
 	return;
 }
 
-sub process_xs {
-	my ($source, $options) = @_;
-
-	die "Can't build xs files under --pureperl-only\n" if $options->{'pureperl-only'};
-	my (undef, @parts) = splitdir(dirname($source));
-	push @parts, my $file_base = basename($source, '.xs');
-	my $archdir = catdir(qw/blib arch auto/, @parts);
-	my $tempdir = 'temp';
-
-	my $c_file = catfile($tempdir, "$file_base.c");
-	require ExtUtils::ParseXS;
-	mkpath($tempdir, $options->{verbose}, oct '755');
-	ExtUtils::ParseXS::process_file(filename => $source, prototypes => 0, output => $c_file);
-
-	my $version = $options->{meta}->version;
-	require ExtUtils::CBuilder;
-	my $builder = ExtUtils::CBuilder->new(config => $options->{config}->values_set);
-	my $ob_file = $builder->compile(source => $c_file, defines => { VERSION => qq/"$version"/, XS_VERSION => qq/"$version"/ }, include_dirs => [ curdir, dirname($source) ]);
-
-	require DynaLoader;
-	my $mod2fname = defined &DynaLoader::mod2fname ? \&DynaLoader::mod2fname : sub { return $_[0][-1] };
-
-	mkpath($archdir, $options->{verbose}, oct '755') unless -d $archdir;
-	my $lib_file = catfile($archdir, $mod2fname->(\@parts) . '.' . $options->{config}->get('dlext'));
-	return $builder->link(objects => $ob_file, lib_file => $lib_file, module_name => join '::', @parts);
-}
-
 sub find {
 	my ($pattern, $dir) = @_;
 	my @ret;
@@ -80,7 +53,6 @@ my %actions = (
 		pm_to_blib({ %modules, %scripts, %shared }, catdir(qw/blib lib auto/));
 		make_executable($_) for values %scripts;
 		mkpath(catdir(qw/blib arch/), $opt{verbose});
-		#process_xs($_, \%opt) for find(qr/.xs$/, 'lib');
 
 		if ($opt{install_paths}->install_destination('bindoc') && $opt{install_paths}->is_default_installable('bindoc')) {
 			manify($_, catfile('blib', 'bindoc', man1_pagename($_)), $opt{config}->get('man1ext'), \%opt) for keys %scripts;
