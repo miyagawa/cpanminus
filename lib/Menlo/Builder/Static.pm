@@ -72,7 +72,7 @@ my %actions = (
 			lib => [ map { rel2abs(catdir(qw/blib/, $_)) } qw/arch lib/ ],
 		);
 		my $tester = TAP::Harness::Env->create(\%test_args);
-		$tester->runtests(sort +find(qr/\.t$/, 't'))->has_errors and exit 1;
+		$tester->runtests(sort +find(qr/\.t$/, 't'))->has_errors and return;
 	},
 	install => sub {
 		my %opt = @_;
