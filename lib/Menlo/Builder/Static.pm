@@ -60,6 +60,7 @@ my %actions = (
 		if ($opt{install_paths}->install_destination('libdoc') && $opt{install_paths}->is_default_installable('libdoc')) {
 			manify($_, catfile('blib', 'libdoc', man3_pagename($_)), $opt{config}->get('man3ext'), \%opt) for keys %modules;
 		}
+                1;
 	},
 	test => sub {
 		my %opt = @_;
@@ -73,11 +74,13 @@ my %actions = (
 		);
 		my $tester = TAP::Harness::Env->create(\%test_args);
 		$tester->runtests(sort +find(qr/\.t$/, 't'))->has_errors and return;
+                1;
 	},
 	install => sub {
 		my %opt = @_;
 		die "Must run `./Build build` first\n" if not -d 'blib';
 		install($opt{install_paths}->install_map, @opt{qw/verbose dry_run uninst/});
+                1;
 	},
 	clean => sub {
 		my %opt = @_;
@@ -98,7 +101,6 @@ sub build {
 	$_ = detildefy($_) for grep { defined } @opt{qw/install_base destdir prefix/}, values %{ $opt{install_path} };
 	@opt{ 'config', 'meta' } = (ExtUtils::Config->new($opt{config}), get_meta());
 	$actions{$action}->(%opt, install_paths => ExtUtils::InstallPaths->new(%opt, dist_name => $opt{meta}->name));
-        1;
 }
 
 sub configure {
