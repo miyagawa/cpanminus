@@ -730,6 +730,9 @@ sub upgrade_toolchain {
     my($self, $config_deps) = @_;
 
     my %deps = map { $_->module => $_ } @$config_deps;
+
+    # M::B 0.38 and EUMM 6.58 for MYMETA
+    # EU::Install 1.46 for local::lib
     my $reqs = CPAN::Meta::Requirements->from_string_hash({
         'Module::Build' => '0.38',
         'ExtUtils::MakeMaker' => '6.58',
@@ -1545,6 +1548,11 @@ sub verify_signature {
 sub resolve_name {
     my($self, $module, $version) = @_;
 
+    # Git
+    if ($module =~ /(?:^git:|\.git(?:@.+)?$)/) {
+        return $self->git_uri($module);
+    }
+
     # URL
     if ($module =~ /^(ftp|https?|file):/) {
         if ($module =~ m!authors/id/(.*)!) {
@@ -1568,11 +1576,6 @@ sub resolve_name {
             source => 'local',
             uris => [ "file://" . Cwd::abs_path($module) ],
         };
-    }
-
-    # Git
-    if ($module =~ /(?:^git:|\.git(?:@.+)?$)/) {
-        return $self->git_uri($module);
     }
 
     # cpan URI
@@ -2049,6 +2052,7 @@ sub perl_requirements {
 sub configure_this {
     my($self, $dist, $depth) = @_;
 
+    # Short-circuit `cpanm --installdeps .` because it doesn't need to build the current dir
     if (-e $self->{cpanfile_path} && $self->{installdeps} && $depth == 0) {
         require Module::CPANfile;
         $dist->{cpanfile} = eval { Module::CPANfile->load($self->{cpanfile_path}) };
@@ -2393,7 +2397,28 @@ sub extract_prereqs {
     my($self, $meta, $dist) = @_;
 
     my @features = $self->configure_features($dist, $meta->features);
-    return Menlo::Dependency->from_prereqs($meta->effective_prereqs(\@features), $dist->{want_phases}, $self->{install_types});
+    my $prereqs  = $self->soften_makemaker_prereqs($meta->effective_prereqs(\@features)->clone);
+
+    return Menlo::Dependency->from_prereqs($prereqs, $dist->{want_phases}, $self->{install_types});
+}
+
+# Workaround for Module::Install 1.04 creating a bogus (higher) MakeMaker requirement that it needs in build_requires
+# Assuming MakeMaker requirement is already satisfied in configure_requires, there's no need to have higher version of
+# MakeMaker in build/test anyway. https://github.com/miyagawa/cpanminus/issues/463
+sub soften_makemaker_prereqs {
+    my($self, $prereqs) = @_;
+
+    return $prereqs unless -e "inc/Module/Install.pm";
+
+    for my $phase (qw( build test runtime )) {
+        my $reqs = $prereqs->requirements_for($phase, 'requires');
+        if ($reqs->requirements_for_module('ExtUtils::MakeMaker')) {
+            $reqs->clear_requirement('ExtUtils::MakeMaker');
+            $reqs->add_minimum('ExtUtils::MakeMaker' => 0);
+        }
+    }
+
+    $prereqs;
 }
 
 sub cleanup_workdirs {

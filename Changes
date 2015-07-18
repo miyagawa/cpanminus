@@ -2,6 +2,37 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7039  2015-06-28 18:05:10 PDT
+   [Improvements]
+      - Only enable softening of MakeMaker dependency when Module::Install is present (reported by haarg)
+      - Support .git URL with http protocol (shoichikaji) #468
+
+1.7038  2015-06-22 18:04:44 PDT
+   [Releng]
+      - bump minimum perl requirement to 5.8.1 in META files
+
+1.7037  2015-06-18 14:37:32 PDT
+   [Improvements]
+      - Bump CPAN-Meta-Check to 0.012 #465
+      - Bump HTTP-Tiny to 0.056
+      - Bump CPAN-Meta to 2.150005
+      - Bump CPAN-Meta-YAML to 0.016
+
+1.7036  2015-06-05 22:07:50 PDT
+   [Improvements]
+      - Also soften MakeMaker depenency in runtime prereq, which is just a weird bug in an old
+        Module::Install pre 1.0
+
+1.7035  2015-06-05 10:51:17 PDT
+   [Improvements]
+      - Add a workaround for distributions with an old (buggy) Module::Install, now that the problems
+        occur more frequently with 5.22.0 shipping with a dev version of ExtUtils::MakeMaker #463
+
+1.7034  2015-05-07 14:20:57 PDT
+   [Improvements]
+      - Improved an error message when dependency requirement in cpanfile get conflict with prereqs
+        in sub dependencies.
+
 1.7033  2015-05-01 17:17:42 PDT
    [Improvements]
       - Remove MakeMaker and Module::Build from cpanm's runtime dependencies. Rather it will upgrade

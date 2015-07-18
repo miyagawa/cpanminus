@@ -1,4 +1,4 @@
-requires 'perl', '5.008000';
+requires 'perl', '5.008001';
 
 # runtime dependencies. Mostly core and fatpackable back to 5.8
 # https://github.com/miyagawa/cpanminus/issues/455
