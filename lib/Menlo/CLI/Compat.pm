@@ -899,6 +899,19 @@ sub log {
 sub run_command {
     my($self, $cmd) = @_;
 
+    # TODO move to a more appropriate runner method
+    if (ref $cmd eq 'CODE') {
+        if ($self->{verbose}) {
+            return $cmd->();
+        } else {
+            require Capture::Tiny;
+            open my $logfh, ">>", $self->{log};
+            my $ret;
+            Capture::Tiny::capture(sub { $ret = $cmd->() }, stdout => $logfh, stderr => $logfh);
+            return $ret;
+        }
+    }
+
     if (WIN32) {
         $cmd = Menlo::Util::shell_quote(@$cmd) if ref $cmd eq 'ARRAY';
         unless ($self->{verbose}) {
@@ -937,7 +950,8 @@ sub run_exec {
 
 sub run_timeout {
     my($self, $cmd, $timeout) = @_;
-    return $self->run_command($cmd) if WIN32 || $self->{verbose} || !$timeout;
+
+    return $self->run_command($cmd) if ref($cmd) eq 'CODE' || WIN32 || $self->{verbose} || !$timeout;
 
     my $pid = fork;
     if ($pid) {
@@ -966,6 +980,8 @@ sub run_timeout {
 sub append_args {
     my($self, $cmd, $phase) = @_;
 
+    return $cmd if ref $cmd ne 'ARRAY';
+    
     if (my $args = $self->{build_args}{$phase}) {
         $cmd = join ' ', Menlo::Util::shell_quote(@$cmd), $args;
     }
@@ -1058,6 +1074,8 @@ sub install {
     if ($depth == 0 && $self->{test_only}) {
         return 1;
     }
+
+    return $self->run_command($cmd) if ref $cmd eq 'CODE';
 
     if ($self->{sudo}) {
         unshift @$cmd, "sudo";
@@ -1914,7 +1932,8 @@ sub build_stuff {
     $self->upgrade_toolchain(\@config_deps);
 
     my $target = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $dist->{dir};
-    {
+
+    unless ($self->skip_configure($dist, $depth)) {
         local $self->{notest} = 1;
         $self->install_deps_bailout($target, $dist->{dir}, $depth, @config_deps)
           or return;
@@ -1930,8 +1949,9 @@ sub build_stuff {
     }
 
     # install direct 'test' dependencies for --installdeps, even with --notest
-    my $root_target = (($self->{installdeps} or $self->{showdeps}) and $depth == 0);
-    $dist->{want_phases} = $self->{notest} && !$root_target
+    # TODO: remove build dependencies for static install
+    my $deps_only = $self->deps_only($depth);
+    $dist->{want_phases} = $self->{notest} && !$self->deps_only($depth)
                          ? [qw( build runtime )] : [qw( build test runtime )];
 
     push @{$dist->{want_phases}}, 'develop' if $self->{with_develop} && $depth == 0;
@@ -1984,7 +2004,13 @@ DIAG
     }
 
     my $installed;
-    if ($configure_state->{use_module_build} && -e 'Build' && -f _) {
+    if ($configure_state->{static_install}) {
+        $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . $distname);
+        $self->build(sub { $configure_state->{static_install}->build }, $distname, $depth) &&
+        $self->test(sub { $configure_state->{static_install}->build("test") }, $distname, $depth) &&
+        $self->install(sub { $configure_state->{static_install}->build("install") }, [], $depth) &&
+        $installed++;
+    } elsif ($configure_state->{use_module_build} && -e 'Build' && -f _) {
         $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . $distname);
         $self->build([ $self->{perl}, "./Build" ], $distname, $depth) &&
         $self->test([ $self->{perl}, "./Build", "test" ], $distname, $depth) &&
@@ -2036,6 +2062,39 @@ DIAG
     }
 }
 
+sub opts_in_static_install {
+    my($self, $meta) = @_;
+
+    # --sudo requires running a separate shell to prevent persistent configuration
+    # uninstall-shadows (default on < 5.12) is not supported in BuildPL spec, yet.
+
+    return $meta->{x_static_install} &&
+           !($self->{sudo} or $self->{uninstall_shadows});
+}
+
+
+sub skip_configure {
+    my($self, $dist, $depth) = @_;
+
+    return 1 if $self->{skip_configure};
+    return 1 if $self->opts_in_static_install($dist->{meta});
+    return 1 if $self->no_dynamic_config($dist->{meta}) && $self->deps_only($depth);
+
+    return;
+}
+
+sub no_dynamic_config {
+    my($self, $meta) = @_;
+    exists $meta->{dynamic_config} && $meta->{dynamic_config} == 0;
+}
+
+sub deps_only {
+    my($self, $depth) = @_;
+    ($self->{installdeps} && $depth == 0)
+      or $self->{showdeps}
+      or $self->{scandeps};
+}
+
 sub perl_requirements {
     my($self, @requires) = @_;
 
@@ -2052,8 +2111,8 @@ sub perl_requirements {
 sub configure_this {
     my($self, $dist, $depth) = @_;
 
-    # Short-circuit `cpanm --installdeps .` because it doesn't need to build the current dir
-    if (-e $self->{cpanfile_path} && $self->{installdeps} && $depth == 0) {
+    my $deps_only = $self->deps_only($depth);
+    if (-e $self->{cpanfile_path} && $deps_only) {
         require Module::CPANfile;
         $dist->{cpanfile} = eval { Module::CPANfile->load($self->{cpanfile_path}) };
         $self->diag_fail($@, 1) if $@;
@@ -2074,7 +2133,22 @@ sub configure_this {
         };
     }
 
+    if ($deps_only && $self->no_dynamic_config($dist->{meta})) {
+        return {
+            configured => 1,
+            configured_ok => exists $dist->{meta}{prereqs},
+            use_module_build => 0,
+        };
+    }
+
     my $state = {};
+
+    my $try_static = sub {
+        if ($self->opts_in_static_install($dist->{meta})) {
+            $self->chat("Distribution opts in x_static_install: $dist->{meta}{x_static_install}\n");
+            $self->static_install_configure($state, $dist, $depth);
+        }
+    };
 
     my $try_eumm = sub {
         if (-e 'Makefile.PL') {
@@ -2102,7 +2176,7 @@ sub configure_this {
         }
     };
 
-    for my $try ($try_mb, $try_eumm) {
+    for my $try ($try_static, $try_mb, $try_eumm) {
         $try->();
         last if $state->{configured_ok};
     }
@@ -2118,6 +2192,20 @@ sub configure_this {
     }
 
     return $state;
+}
+
+sub static_install_configure {
+    my($self, $state, $dist, $depth) = @_;
+
+    my $args = $depth == 0 ? $self->{build_args}{configure} : [];
+
+    require Menlo::Builder::Static;
+    my $builder = Menlo::Builder::Static->new;
+    $self->configure(sub { $builder->configure($args || []) }, $depth);
+
+    $state->{configured_ok} = 1;
+    $state->{static_install} = $builder;
+    $state->{configured}++;
 }
 
 sub find_module_name {
@@ -2317,8 +2405,13 @@ sub extract_meta_prereqs {
 
     require CPAN::Meta;
 
+    my @meta = qw(MYMETA.json MYMETA.yml);
+    if ($self->no_dynamic_config($dist->{meta})) {
+        push @meta, qw(META.json META.yml);
+    }
+
     my @deps;
-    my($meta_file) = grep -f, qw(MYMETA.json MYMETA.yml);
+    my($meta_file) = grep -f, @meta;
     if ($meta_file) {
         $self->chat("Checking dependencies from $meta_file ...\n");
         my $mymeta = eval { CPAN::Meta->load_file($meta_file, { lazy_validation => 1 }) };
