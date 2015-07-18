@@ -1075,8 +1075,6 @@ sub install {
         return 1;
     }
 
-    # short circuit
-    # TODO: support sudo/uninstall shadows for static install
     return $self->run_command($cmd) if ref $cmd eq 'CODE';
 
     if ($self->{sudo}) {
@@ -2064,11 +2062,22 @@ DIAG
     }
 }
 
+sub opts_in_static_install {
+    my($self, $meta) = @_;
+
+    # --sudo requires running a separate shell to prevent persistent configuration
+    # uninstall-shadows (default on < 5.12) is not supported in BuildPL spec, yet.
+
+    return $meta->{x_static_install} &&
+           !($self->{sudo} or $self->{uninstall_shadows});
+}
+
+
 sub skip_configure {
     my($self, $dist, $depth) = @_;
 
     return 1 if $self->{skip_configure};
-    return 1 if $dist->{meta}{x_static_install};
+    return 1 if $self->opts_in_static_install($dist->{meta});
     return 1 if $self->no_dynamic_config($dist->{meta}) && $self->deps_only($depth);
 
     return;
@@ -2135,7 +2144,7 @@ sub configure_this {
     my $state = {};
 
     my $try_static = sub {
-        if ($dist->{meta}{x_static_install}) {
+        if ($self->opts_in_static_install($dist->{meta})) {
             $self->chat("Distribution opts in x_static_install: $dist->{meta}{x_static_install}\n");
             $self->static_install_configure($state, $dist, $depth);
         }
