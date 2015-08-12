@@ -264,7 +264,7 @@ Arnfjord Bjarmason, Eric Wilhelm, Florian Ragwitz and xaicron.
 
 =item L<http://github.com/miyagawa/cpanminus> - source code repository, issue tracker
 
-=item L<irc://irc.perl.org/#toolchain> - discussions about Perl toolchain. I'm there.
+=item L<irc://irc.perl.org/#cpanm> - discussions about cpanm and its related tools
 
 =back
 
