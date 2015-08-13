@@ -2308,10 +2308,7 @@ sub save_meta {
     open my $fh, ">", "blib/meta/install.json" or die $!;
     print $fh JSON::PP::encode_json($local);
 
-    # Existence of MYMETA.* Depends on EUMM/M::B versions and CPAN::Meta
-    if (-e "MYMETA.json") {
-        File::Copy::copy("MYMETA.json", "blib/meta/MYMETA.json");
-    }
+    File::Copy::copy("MYMETA.json", "blib/meta/MYMETA.json");
 
     my @cmd = (
         ($self->{sudo} ? 'sudo' : ()),
@@ -2422,34 +2419,8 @@ sub extract_meta_prereqs {
         }
     }
 
-    if (-e '_build/prereqs') {
-        $self->chat("Checking dependencies from _build/prereqs ...\n");
-        my $prereqs = do { open my $in, "_build/prereqs"; eval(join "", <$in>) };
-        my $meta = CPAN::Meta->new(
-            { name => $dist->{meta}{name}, version => $dist->{meta}{version}, %$prereqs },
-            { lazy_validation => 1 },
-        );
-        @deps = $self->extract_prereqs($meta, $dist);
-    } elsif (-e 'Makefile') {
-        $self->chat("Finding PREREQ from Makefile ...\n");
-        open my $mf, "Makefile";
-        while (<$mf>) {
-            if (/^\#\s+PREREQ_PM => \{\s*(.*?)\s*\}/) {
-                my @all;
-                my @pairs = split ', ', $1;
-                for (@pairs) {
-                    my ($pkg, $v) = split '=>', $_;
-                    push @all, [ $pkg, $v ];
-                }
-                my $list = join ", ", map { "'$_->[0]' => $_->[1]" } @all;
-                my $prereq = eval("no strict; +{ $list }");
-                push @deps, Menlo::Dependency->from_versions($prereq) if $prereq;
-                last;
-            }
-        }
-    }
-
-    return @deps;
+    $self->diag_fail("No MYMETA file is found after configure. Your toolchain is too old?");
+    return;
 }
 
 sub bundle_deps {
