@@ -4,7 +4,7 @@
       "Tatsuhiko Miyagawa <miyagawa@bulknews.net>"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Dist::Zilla version 5.037, Dist::Milla version v1.0.15, CPAN::Meta::Converter version 2.150005",
+   "generated_by" : "Dist::Zilla version 5.039, Dist::Milla version v1.0.15, CPAN::Meta::Converter version 2.150005",
    "license" : [
       "perl_5"
    ],
@@ -31,7 +31,6 @@
       },
       "develop" : {
          "requires" : {
-            "Capture::Tiny" : "0",
             "Dist::Milla" : "v1.0.15",
             "JSON" : "0",
             "Module::Install" : "0",
@@ -47,6 +46,7 @@
             "CPAN::Meta::Check" : "0",
             "CPAN::Meta::Requirements" : "0",
             "CPAN::Meta::YAML" : "0",
+            "Capture::Tiny" : "0",
             "Class::Tiny" : "1.001",
             "Digest::SHA" : "0",
             "Exporter" : "0",
@@ -58,6 +58,7 @@
             "HTTP::Tinyish" : "0.04",
             "IPC::Run3" : "0",
             "JSON::PP" : "0",
+            "Module::Build::Tiny" : "0",
             "Module::CPANfile" : "0",
             "Module::CoreList" : "0",
             "Module::Metadata" : "0",
@@ -83,7 +84,7 @@
          }
       }
    },
-   "release_status" : "stable",
+   "release_status" : "testing",
    "resources" : {
       "bugtracker" : {
          "web" : "https://github.com/miyagawa/cpanminus/issues"
