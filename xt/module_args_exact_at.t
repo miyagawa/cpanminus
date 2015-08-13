@@ -22,8 +22,8 @@ use xt::Run;
     like last_build_log, qr/Searching Try::Tiny \(== 0.11\) on cpanmetadb/;
     unlike last_build_log, qr/Try::Tiny is up to date/;
 
-    run_L 'CPAN::Meta@2.150003';
-    like last_build_log, qr/CPAN-Meta-2.150003-TRIAL/, 'should work with TRIAL release';
+    run_L 'Carmel@v0.1.22';
+    like last_build_log, qr/Carmel-v0.1.22-TRIAL/, 'should work with TRIAL release';
 }
 
 done_testing;
