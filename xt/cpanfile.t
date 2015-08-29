@@ -3,6 +3,23 @@ use Test::More;
 use JSON;
 use Config;
 use xt::Run;
+use File::Temp;
+use File::Copy::Recursive qw(dircopy);
+
+{
+    my $dir = File::Temp::tempdir;
+
+    dircopy("testdist/local-mirror","$dir/local-mirror");
+
+    open my $cpanfile, ">", "$dir/cpanfile";
+    print $cpanfile <<EOF;
+mirror 'file:/$dir/local-mirror';
+requires 'Hash::MultiValue';
+EOF
+
+    run_L "--mirror-only", "--installdeps", $dir;
+    like last_build_log, qr/Fetching file\:\/$dir\/local-mirror/;
+}
 
 {
     run_L "--installdeps", "./testdist/cpanfile_app";
