@@ -67,6 +67,7 @@ sub new {
         interactive => undef,
         log => undef,
         mirrors => [],
+        mirrors_default => [ 'http://www.cpan.org' ],
         mirror_only => undef,
         mirror_index => undef,
         cpanmetadb => "http://cpanmetadb.plackperl.org/v1.0/",
@@ -1879,6 +1880,9 @@ sub cpan_dist {
         my $fn = substr($id, 0, 1) . "/" . substr($id, 0, 2) . "/" . $id . "/" . $d->filename;
 
         my @mirrors = @{$self->{mirrors}};
+        unless (@mirrors) {
+            @mirrors = @{$self->{mirrors_default}};
+        }
         my @urls    = map "$_/authors/id/$fn", @mirrors;
 
         $url = \@urls,
@@ -2199,7 +2203,7 @@ sub build_stuff {
 
     push @{$dist->{want_phases}}, 'develop' if $self->{with_develop} && $depth == 0;
 
-    my @deps = $self->find_prereqs($dist);
+    my @deps = $self->find_prereqs($dist, $depth);
     my $module_name = $self->find_module_name($configure_state) || $dist->{meta}{name};
     $module_name =~ s/-/::/g;
 
@@ -2330,6 +2334,10 @@ sub configure_this {
         require Module::CPANfile;
         $dist->{cpanfile} = eval { Module::CPANfile->load($self->{cpanfile_path}) };
         $self->diag_fail($@, 1) if $@;
+        if ($dist->{cpanfile} && $dist->{cpanfile}->mirrors) {
+            unshift(@{$self->{mirrors}}, @{$dist->{cpanfile}->mirrors});
+        }
+
         return {
             configured       => 1,
             configured_ok    => !!$dist->{cpanfile},
@@ -2583,7 +2591,7 @@ sub effective_feature {
 }
 
 sub find_prereqs {
-    my($self, $dist) = @_;
+    my($self, $dist, $depth) = @_;
 
     my @deps = $self->extract_meta_prereqs($dist);
 
@@ -2591,7 +2599,7 @@ sub find_prereqs {
         push @deps, $self->bundle_deps($dist);
     }
 
-    if ($self->{cpanfile_requirements} && !$dist->{cpanfile}) {
+    if ($self->{cpanfile_requirements} && $depth) {
         for my $dep (@deps) {
             $dep->merge_with($self->{cpanfile_requirements});
         }
@@ -2884,6 +2892,10 @@ sub file_mirror {
 
 sub has_working_lwp {
     my($self, $mirrors) = @_;
+
+    unless (@{$mirrors}) {
+        $mirrors = $self->{mirrors_default};
+    }
     my $https = grep /^https:/, @$mirrors;
     eval {
         require LWP::UserAgent; # no fatpack

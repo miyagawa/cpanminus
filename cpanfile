@@ -14,12 +14,14 @@ on develop => sub {
     requires 'CPAN::Meta::YAML';
     requires 'Digest::SHA';
     requires 'Exporter', '5.63';
+    requires 'File::Copy::Recursive';
     requires 'File::Temp';
     requires 'File::pushd';
     requires 'Getopt::Long';
     requires 'HTTP::Tiny';
     requires 'JSON';
     requires 'JSON::PP';
+    requires 'LWP::Protocol::https';
     requires 'LWP::Simple';
     requires 'LWP::UserAgent', '5.802';
     requires 'Module::Install';
