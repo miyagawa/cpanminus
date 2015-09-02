@@ -2,6 +2,15 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.9001  2015-09-02 08:07:28 CEST
+   [Release Engineering]
+      - Make this a non-dev release so it can be installed with the standard install tools
+      - Note that Menlo::CLI::Compat API is considered UNSTABLE
+
+   [Incompatible Changes]
+      - Require MYMETA generation in configure tools
+
+
 1.9000  2015-08-13 13:47:13 PDT
       - This is the first developer release for Menlo (cpanm 2.0)
 
