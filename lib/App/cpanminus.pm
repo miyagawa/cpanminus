@@ -109,7 +109,7 @@ Module::Build (core in 5.10)
 It queries the CPAN Meta DB site at L<http://cpanmetadb.plackperl.org/>.
 The site is updated at least every hour to reflect the latest changes
 from fast syncing mirrors. The script then also falls back to query the
-module at L<http://metacpan.org/> using its seach API.
+module at L<http://metacpan.org/> using its search API.
 
 Upon calling these API hosts, cpanm (1.6004 or later) will send the
 local perl versions to the server in User-Agent string by default. You
