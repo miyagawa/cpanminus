@@ -561,6 +561,23 @@ Normally with C<--lwp>, C<--wget> and C<--curl> options set to true
 
 =back
 
+=head1 ENVIRONMENT VARIABLES
+
+=over 4
+
+=item PERL_CPANM_HOME
+
+The directory cpanm should use to store downloads and build and test
+modules. Defaults to the C<.cpanm> directory in your user's home
+directory.
+
+=item PERL_CPANM_OPT
+
+If set, adds a set of default options to every cpanm command. These
+options come first, and so are overridden by command-line options.
+
+=back
+
 =head1 SEE ALSO
 
 L<App::cpanminus>
