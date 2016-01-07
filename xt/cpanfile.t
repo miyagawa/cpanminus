@@ -26,8 +26,19 @@ EOF
 
     like last_build_log, qr/installed Hash-MultiValue-0\.10/;
     like last_build_log, qr/installed Try-Tiny-0\.11/;
-    like last_build_log, qr/installed Test-Warn/, '--notest means skip tests on *deps*, not necessarily root'
+    like last_build_log, qr/installed Test-Warn/, '--notest means skip tests on *deps*, not necessarily root';
+    unlike last_build_log, qr/installed Module-Build-Tiny/;
 }
+
+{
+    run_L "--installdeps", "--with-configure", "./testdist/cpanfile_app";
+
+    like last_build_log, qr/installed Hash-MultiValue-0\.10/;
+    like last_build_log, qr/installed Try-Tiny-0\.11/;
+    like last_build_log, qr/installed Test-Warn/, '--notest means skip tests on *deps*, not necessarily root';
+    like last_build_log, qr/installed Module-Build-Tiny/;
+}
+
 
 {
     run "--installdeps", "./testdist/cpanfile_bad_app";

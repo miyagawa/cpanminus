@@ -341,6 +341,11 @@ Defaults to false for both.
 B<EXPERIMENTAL>: Installs develop phase dependencies in META files or
 C<cpanfile> when used with C<--installdeps>. Defaults to false.
 
+=item --with-configure
+
+B<EXPERIMENTAL>: Installs configure phase dependencies in META files or
+C<cpanfile> when used with C<--installdeps>. Defaults to false.
+
 =item --with-feature, --without-feature, --with-all-features
 
 B<EXPERIMENTAL>: Specifies the feature to enable, if a module supports
