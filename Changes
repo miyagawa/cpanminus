@@ -2,6 +2,11 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7040  2016-01-07 11:28:07 PST
+   [Improvements]
+      - Removed a workaround to skip tests for config dependencies such as Module::Build #462
+      - Various doc improvements
+
 1.7039  2015-06-28 18:05:10 PDT
    [Improvements]
       - Only enable softening of MakeMaker dependency when Module::Install is present (reported by haarg)
