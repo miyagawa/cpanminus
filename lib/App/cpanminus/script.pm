@@ -2178,7 +2178,6 @@ sub build_stuff {
 
     my $target = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $dist->{dir};
     {
-        local $self->{notest} = 1;
         $self->install_deps_bailout($target, $dist->{dir}, $depth, @config_deps)
           or return;
     }
