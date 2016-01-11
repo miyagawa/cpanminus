@@ -2168,7 +2168,7 @@ sub build_stuff {
 
     my $target = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $dist->{dir};
 
-    if ( !defined $self->{with_configure} or $depth > 0 ) {
+    unless ( $depth == 0 and defined $self->{with_configure} and !$self->{with_configure} ) {
         if ($dist->{cpanmeta}) {
             push @config_deps, App::cpanminus::Dependency->from_prereqs(
                 $dist->{cpanmeta}->effective_prereqs, ['configure'], $self->{install_types},
