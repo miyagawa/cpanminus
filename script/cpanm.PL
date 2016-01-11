@@ -346,6 +346,10 @@ C<cpanfile> when used with C<--installdeps>. Defaults to false.
 B<EXPERIMENTAL>: Installs configure phase dependencies in META files or
 C<cpanfile> when used with C<--installdeps>. Defaults to false.
 
+Default behaviour is with configure dependencies for dependencies from
+MYMETA.yaml/META.yaml and without configure dependencies for dependencies
+from cpanfile.
+
 =item --with-feature, --without-feature, --with-all-features
 
 B<EXPERIMENTAL>: Specifies the feature to enable, if a module supports
