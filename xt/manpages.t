@@ -16,8 +16,6 @@ run("-L", $local_lib, "--man-pages", "Sub::Uplevel");
 
 ok glob("$local_lib/man/man3/Hash::MultiValue.*");
 ok glob("$local_lib/man/man3/Sub::Uplevel.*");
-#ok -e "$local_lib/man/man3/Hash::MultiValue.3";
-#ok -e "$local_lib/man/man3/Sub::Uplevel.3";
 
 done_testing;
 
