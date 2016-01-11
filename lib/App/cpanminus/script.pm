@@ -969,7 +969,7 @@ sub bootstrap_local_lib {
 ! Can't write to $Config{installsitelib} and $Config{installsitebin}: Installing modules to $ENV{HOME}/perl5
 ! To turn off this warning, you have to do one of the following:
 !   - run me as a root or with --sudo option (to install to $Config{installsitelib} and $Config{installsitebin})
-!   - Configure local::lib your existing local::lib in this shell to set PERL_MM_OPT etc.
+!   - Configure local::lib in your existing shell to set PERL_MM_OPT etc.
 !   - Install local::lib by running the following commands
 !
 !         cpanm --local-lib=~/perl5 local::lib && eval \$(perl -I ~/perl5/lib/perl5/ -Mlocal::lib)
@@ -2184,11 +2184,9 @@ sub build_stuff {
         $self->upgrade_toolchain(\@config_deps);
 
         {
-            local $self->{notest} = 1;
             $self->install_deps_bailout($target, $dist->{dir}, $depth, @config_deps)
               or return;
         }
-
     }
 
     $self->diag_progress("Configuring $target");

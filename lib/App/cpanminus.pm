@@ -1,5 +1,5 @@
 package App::cpanminus;
-our $VERSION = "1.7039";
+our $VERSION = "1.7040";
 
 =encoding utf8
 
@@ -109,7 +109,7 @@ Module::Build (core in 5.10)
 It queries the CPAN Meta DB site at L<http://cpanmetadb.plackperl.org/>.
 The site is updated at least every hour to reflect the latest changes
 from fast syncing mirrors. The script then also falls back to query the
-module at L<http://metacpan.org/> using its seach API.
+module at L<http://metacpan.org/> using its search API.
 
 Upon calling these API hosts, cpanm (1.6004 or later) will send the
 local perl versions to the server in User-Agent string by default. You
@@ -264,7 +264,7 @@ Arnfjord Bjarmason, Eric Wilhelm, Florian Ragwitz and xaicron.
 
 =item L<http://github.com/miyagawa/cpanminus> - source code repository, issue tracker
 
-=item L<irc://irc.perl.org/#toolchain> - discussions about Perl toolchain. I'm there.
+=item L<irc://irc.perl.org/#cpanm> - discussions about cpanm and its related tools
 
 =back
 

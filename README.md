@@ -89,7 +89,7 @@ perl 5.8.1 or later.
 It queries the CPAN Meta DB site at [http://cpanmetadb.plackperl.org/](http://cpanmetadb.plackperl.org/).
 The site is updated at least every hour to reflect the latest changes
 from fast syncing mirrors. The script then also falls back to query the
-module at [http://metacpan.org/](http://metacpan.org/) using its seach API.
+module at [http://metacpan.org/](http://metacpan.org/) using its search API.
 
 Upon calling these API hosts, cpanm (1.6004 or later) will send the
 local perl versions to the server in User-Agent string by default. You
@@ -199,7 +199,7 @@ Arnfjord Bjarmason, Eric Wilhelm, Florian Ragwitz and xaicron.
 # COMMUNITY
 
 - [http://github.com/miyagawa/cpanminus](http://github.com/miyagawa/cpanminus) - source code repository, issue tracker
-- [irc://irc.perl.org/#toolchain](irc://irc.perl.org/#toolchain) - discussions about Perl toolchain. I'm there.
+- [irc://irc.perl.org/#cpanm](irc://irc.perl.org/#cpanm) - discussions about cpanm and its related tools
 
 # NO WARRANTY
 
