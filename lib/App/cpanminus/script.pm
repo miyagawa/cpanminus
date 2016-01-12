@@ -91,6 +91,7 @@ sub new {
         installed_dists => 0,
         install_types => ['requires'],
         with_develop => 0,
+        with_configure => 0,
         showdeps => 0,
         scandeps => 0,
         scandeps_tree => [],
@@ -216,6 +217,8 @@ sub parse_options {
         'test-timeout=i' => \$self->{test_timeout},
         'with-develop' => \$self->{with_develop},
         'without-develop' => sub { $self->{with_develop} = 0 },
+        'with-configure' => \$self->{with_configure},
+        'without-configure' => sub { $self->{with_configure} = 0 },
         'with-feature=s' => sub { $self->{features}{$_[1]} = 1 },
         'without-feature=s' => sub { $self->{features}{$_[1]} = 0 },
         'with-all-features' => sub { $self->{features}{__all} = 1 },
@@ -2162,6 +2165,7 @@ sub build_stuff {
     $dist->{meta} = $dist->{cpanmeta} ? $dist->{cpanmeta}->as_struct : {};
 
     my @config_deps;
+
     if ($dist->{cpanmeta}) {
         push @config_deps, App::cpanminus::Dependency->from_prereqs(
             $dist->{cpanmeta}->effective_prereqs, ['configure'], $self->{install_types},
@@ -2197,6 +2201,7 @@ sub build_stuff {
                          ? [qw( build runtime )] : [qw( build test runtime )];
 
     push @{$dist->{want_phases}}, 'develop' if $self->{with_develop} && $depth == 0;
+    push @{$dist->{want_phases}}, 'configure' if $self->{with_configure} && $depth == 0;
 
     my @deps = $self->find_prereqs($dist);
     my $module_name = $self->find_module_name($configure_state) || $dist->{meta}{name};
