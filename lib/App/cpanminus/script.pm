@@ -2166,8 +2166,6 @@ sub build_stuff {
 
     my @config_deps;
 
-    my $target = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $dist->{dir};
-
     if ($dist->{cpanmeta}) {
         push @config_deps, App::cpanminus::Dependency->from_prereqs(
             $dist->{cpanmeta}->effective_prereqs, ['configure'], $self->{install_types},
@@ -2175,13 +2173,14 @@ sub build_stuff {
     }
 
     if (-e 'Build.PL' && !$self->should_use_mm($dist->{dist}) && !@config_deps) {
-    push @config_deps, App::cpanminus::Dependency->from_versions(
-        { 'Module::Build' => '0.38' }, 'configure',
-    );
+        push @config_deps, App::cpanminus::Dependency->from_versions(
+            { 'Module::Build' => '0.38' }, 'configure',
+        );
     }
 
     $self->upgrade_toolchain(\@config_deps);
 
+    my $target = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $dist->{dir};
     {
         $self->install_deps_bailout($target, $dist->{dir}, $depth, @config_deps)
           or return;
