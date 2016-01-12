@@ -91,7 +91,7 @@ sub new {
         installed_dists => 0,
         install_types => ['requires'],
         with_develop => 0,
-        with_configure => undef,
+        with_configure => 0,
         showdeps => 0,
         scandeps => 0,
         scandeps_tree => [],
@@ -2168,25 +2168,23 @@ sub build_stuff {
 
     my $target = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $dist->{dir};
 
-    unless ( $depth == 0 and defined $self->{with_configure} and !$self->{with_configure} ) {
-        if ($dist->{cpanmeta}) {
-            push @config_deps, App::cpanminus::Dependency->from_prereqs(
-                $dist->{cpanmeta}->effective_prereqs, ['configure'], $self->{install_types},
-            );
-        }
+    if ($dist->{cpanmeta}) {
+        push @config_deps, App::cpanminus::Dependency->from_prereqs(
+            $dist->{cpanmeta}->effective_prereqs, ['configure'], $self->{install_types},
+        );
+    }
 
-        if (-e 'Build.PL' && !$self->should_use_mm($dist->{dist}) && !@config_deps) {
-            push @config_deps, App::cpanminus::Dependency->from_versions(
-                { 'Module::Build' => '0.38' }, 'configure',
-            );
-        }
+    if (-e 'Build.PL' && !$self->should_use_mm($dist->{dist}) && !@config_deps) {
+    push @config_deps, App::cpanminus::Dependency->from_versions(
+        { 'Module::Build' => '0.38' }, 'configure',
+    );
+    }
 
-        $self->upgrade_toolchain(\@config_deps);
+    $self->upgrade_toolchain(\@config_deps);
 
-        {
-            $self->install_deps_bailout($target, $dist->{dir}, $depth, @config_deps)
-              or return;
-        }
+    {
+        $self->install_deps_bailout($target, $dist->{dir}, $depth, @config_deps)
+          or return;
     }
 
     $self->diag_progress("Configuring $target");

@@ -31,10 +31,4 @@ like last_build_log, qr/Checking if you have Test::Pod/;
 run_L '--with-develop', '--without-develop', './testdist/TestDist-Recommend';
 unlike last_build_log, qr/Checking if you have Hash::MultiValue/;
 
-run_L '--with-configure', './testdist/TestDist-Recommend';
-like last_build_log, qr/Checking if you have Module::Build::Tiny/;
-
-run_L '--with-configure', '--without-configure', './testdist/TestDist-Recommend';
-unlike last_build_log, qr/Checking if you have Module::Build::Tiny/;
-
 done_testing;
