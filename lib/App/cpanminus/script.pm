@@ -104,6 +104,7 @@ sub new {
         features => {},
         pure_perl => 0,
         cpanfile_path => 'cpanfile',
+        clone_path => undef,
         @_,
     }, $class;
 }
@@ -224,6 +225,9 @@ sub parse_options {
         'with-all-features' => sub { $self->{features}{__all} = 1 },
         'pp|pureperl!' => \$self->{pure_perl},
         "cpanfile=s" => \$self->{cpanfile_path},
+        'clone-path=s' => sub {
+          $self->{clone_path} = File::Spec->rel2abs( $_[ 1 ] );
+        },
         $self->install_type_handlers,
         $self->build_args_handlers,
     );
@@ -880,6 +884,7 @@ Options:
   -L,--local-lib-contained  Specify the install base to install all non-core modules
   --self-contained          Install all non-core modules, even if they're already installed.
   --auto-cleanup            Number of days that cpanm's work directories expire in. Defaults to 7
+  --clone-path              Path to clone or pull git repositories
 
 Commands:
   --self-upgrade            upgrades itself
@@ -1904,8 +1909,29 @@ sub git_uri {
 
     my $dir = File::Temp::tempdir(CLEANUP => 1);
 
-    $self->mask_output( diag_progress => "Cloning $uri" );
-    $self->run([ 'git', 'clone', $uri, $dir ]);
+    my $git_pull_success = 0;
+
+    if ( $self->{clone_path} ) {
+      my ($repo_name) = File::Basename::basename($uri);
+      $repo_name =~ s/\.git$//;
+
+      $dir = File::Spec->catdir( $self->{clone_path}, $repo_name );
+
+      if ( -e $dir && -d $dir && -e File::Spec->catdir( $dir, '.git' ) ) {
+        require File::pushd;
+        my $dir = File::pushd::pushd($dir);
+
+        $self->mask_output( diag_progress => "Pulling $dir" );
+        $self->run( [ 'git', 'pull' ] );
+        $self->mask_output( diag_progress => "Pulled" );
+        $git_pull_success = 1;
+      }
+    }
+
+    unless ($git_pull_success) {
+      $self->mask_output( diag_progress => "Cloning $uri" );
+      $self->run( [ 'git', 'clone', $uri, $dir ] );
+    }
 
     unless (-e "$dir/.git") {
         $self->diag_fail("Failed cloning git repository $uri", 1);
