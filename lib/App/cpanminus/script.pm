@@ -104,6 +104,7 @@ sub new {
         features => {},
         pure_perl => 0,
         cpanfile_path => 'cpanfile',
+        install_local_deps => undef,
         @_,
     }, $class;
 }
@@ -224,6 +225,7 @@ sub parse_options {
         'with-all-features' => sub { $self->{features}{__all} = 1 },
         'pp|pureperl!' => \$self->{pure_perl},
         "cpanfile=s" => \$self->{cpanfile_path},
+        'install-local-deps' => \$self->{install_local_deps},
         $self->install_type_handlers,
         $self->build_args_handlers,
     );
@@ -880,6 +882,7 @@ Options:
   -L,--local-lib-contained  Specify the install base to install all non-core modules
   --self-contained          Install all non-core modules, even if they're already installed.
   --auto-cleanup            Number of days that cpanm's work directories expire in. Defaults to 7
+  --install-local-deps      Install dependencies from local cpanfiles
 
 Commands:
   --self-upgrade            upgrades itself
@@ -1813,7 +1816,7 @@ sub resolve_name {
     my($self, $module, $version) = @_;
 
     # Git
-    if ($module =~ /(?:^git:|\.git(?:@.+)?$)/) {
+    if ( $self->_is_git($module) ) {
         return $self->git_uri($module);
     }
 
@@ -2096,8 +2099,15 @@ sub install_deps {
         $self->diag("==> Found dependencies: " . join(", ",  map $_->module, @install) . "\n");
     }
 
+    my @not_ok;
+
     for my $dep (@install) {
-        $self->install_module($dep->module, $depth + 1, $dep->version);
+      my $ok
+          = $self->install_module( $dep->module, $depth + 1, $dep->version );
+
+      if ( !$ok && $self->_is_git( $dep->module ) ) {
+        push @not_ok, "Module " . $dep->module . " is not installed";
+      }
     }
 
     $self->chdir($self->{base});
@@ -2106,7 +2116,8 @@ sub install_deps {
     if ($self->{scandeps}) {
         return 1; # Don't check if dependencies are installed, since with --scandeps they aren't
     }
-    my @not_ok = $self->unsatisfied_deps(@deps);
+
+    push @not_ok, $self->unsatisfied_deps(@deps);
     if (@not_ok) {
         return 0, \@not_ok;
     } else {
@@ -2122,6 +2133,7 @@ sub unsatisfied_deps {
 
     my $reqs = CPAN::Meta::Requirements->new;
     for my $dep (grep $_->is_requirement, @deps) {
+        next if $self->_is_git( $dep->module );
         $reqs->add_string_requirement($dep->module => $dep->requires_version || '0');
     }
 
@@ -2618,6 +2630,25 @@ sub extract_meta_prereqs {
     require CPAN::Meta;
 
     my @deps;
+
+    if ( -e $self->{cpanfile_path}
+      && $self->{install_local_deps}
+      && $dist->{source} eq 'local' )
+    {
+      require Module::CPANfile;
+      my $cpanfile
+          = eval { Module::CPANfile->load( $self->{cpanfile_path} ) };
+      $self->diag_fail( $@, 1 ) if $@;
+
+      if ($cpanfile) {
+        my @features
+            = $self->configure_features( $dist, $cpanfile->features );
+        my $prereqs = $cpanfile->prereqs_with(@features);
+        return App::cpanminus::Dependency->from_prereqs( $prereqs,
+          $dist->{want_phases}, $self->{install_types} );
+      }
+    }
+
     my($meta_file) = grep -f, qw(MYMETA.json MYMETA.yml);
     if ($meta_file) {
         $self->chat("Checking dependencies from $meta_file ...\n");
@@ -3146,6 +3177,12 @@ sub mask_uri_passwords {
     my($self, @strings) = @_;
     s{ (https?://) ([^:/]+) : [^@/]+ @ }{$1$2:********@}gx for @strings;
     return @strings;
+}
+
+sub _is_git {
+  my ( $self, $module ) = @_;
+  return 1 if index( $module, 'ssh://' ) == 0;
+  return $module =~ /(?:^git:|\.git(?:@.+)?$)/;
 }
 
 1;
