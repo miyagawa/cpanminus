@@ -380,7 +380,16 @@ sub setup_home {
     { open my $out, ">$self->{log}" or die "$self->{log}: $!" }
 
     $self->chat("cpanm (App::cpanminus) $VERSION on perl $] built for $Config{archname}\n" .
-                "Work directory is $self->{base}\n");
+                "Work directory is $self->{base}\n" .
+                "Running with: " . join(' ',
+                    grep { exists $self->{$_} && $self->{$_} }
+                    qw(force notest test_only sudo verbose quiet self_contained
+                       exclude_vendor prompt dev reinstall pure_perl
+                       with_develop skip_installed skip_satisfied verify
+                       interactive installdeps
+                    )
+                ) . "\n"
+    );
 }
 
 sub fetch_meta_sco {
