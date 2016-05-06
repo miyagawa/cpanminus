@@ -1,3 +1,2 @@
 requires 'File::Spec', '== 3.33';
-requires 'Path::Tiny', '0.068';
-
+requires 'Path::Tiny', '== 0.068';
