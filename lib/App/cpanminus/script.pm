@@ -2883,7 +2883,15 @@ sub file_get {
 sub file_mirror {
     my($self, $uri, $path) = @_;
     my $file = $self->uri_to_file($uri);
+
+    my $source_mtime = (stat $file)[9];
+
+    # Don't mirror a file that's already there (like the index)
+    return if -e $path && (stat $path)[9] >= $source_mtime;
+
     File::Copy::copy($file, $path);
+
+    utime $source_mtime, $source_mtime, $path;
 }
 
 sub has_working_lwp {
