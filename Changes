@@ -2,6 +2,12 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7041  2016-05-08 11:28:31 PDT
+   [Improvements]
+      - Add environment variables to man pages (Doug Bell) #481
+      - Support --with-configure and --without-condfigure (zebardy) #482
+      - Make file mirror faster (Matthew Horsfall) #499
+
 1.7040  2016-01-07 11:28:07 PST
    [Improvements]
       - Removed a workaround to skip tests for config dependencies such as Module::Build #462

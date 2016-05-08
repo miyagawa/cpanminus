@@ -4,7 +4,7 @@
       "- Tatsuhiko Miyagawa"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Dist::Zilla version 5.039, Dist::Milla version v1.0.15, CPAN::Meta::Converter version 2.150001",
+   "generated_by" : "Dist::Zilla version 5.047, Dist::Milla version v1.0.15, CPAN::Meta::Converter version 2.150005",
    "license" : [
       "perl_5"
    ],
@@ -15,12 +15,12 @@
    "name" : "App-cpanminus",
    "no_index" : {
       "directory" : [
-         "t",
-         "xt",
+         "eg",
+         "examples",
          "inc",
          "share",
-         "eg",
-         "examples"
+         "t",
+         "xt"
       ],
       "file" : [
          "lib/App/cpanminus/fatscript.pm"
@@ -101,8 +101,9 @@
          "web" : "https://github.com/miyagawa/cpanminus"
       }
    },
-   "version" : "1.7040",
+   "version" : "1.7041",
    "x_contributors" : [
+      "Aaron Moses <mosesa02@localhost.localdomain>",
       "Alessandro Ghedini <al3xbio@gmail.com>",
       "Andrew Rodland <andrew@cleverdomain.org>",
       "Andy Jones <andy@broadbean.com>",
@@ -120,6 +121,7 @@
       "Dave Rolsky <autarch@urth.org>",
       "David Golden <dagolden@cpan.org>",
       "David Steinbrunner <dsteinbrunner@pobox.com>",
+      "Doug Bell <madcityzen@gmail.com>",
       "fREW Schmidt <frioux@gmail.com>",
       "Fuji, Goro <g.psy.va@gmail.com>",
       "Gareth Kirwan <gbjk@thermeon.com>",
@@ -142,6 +144,7 @@
       "lestrrat <lestrrat+github@gmail.com>",
       "Masahiro Nagano <kazeburo@gmail.com>",
       "Masayoshi Sekimura <sekimura@gmail.com>",
+      "Matthew Horsfall <wolfsage@gmail.com>",
       "Matt S Trout <>",
       "Matt S Trout <mst@shadowcat.co.uk>",
       "Michael G. Schwern <schwern@pobox.com>",
@@ -173,7 +176,8 @@
       "Vyacheslav Matyukhin <mmcleric@yandex-team.ru>",
       "xaicron <xaicron@gmail.com>",
       "Yann Kerherve <yann@cyberion.net>",
-      "yappo <yappo@shibuya.pl>"
+      "yappo <yappo@shibuya.pl>",
+      "zebardy <zebardy@gmail.com>"
    ]
 }
 
