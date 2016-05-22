@@ -2178,6 +2178,8 @@ sub build_stuff {
         );
     }
 
+    $self->merge_with_cpanfile($dist, \@config_deps);
+
     $self->upgrade_toolchain(\@config_deps);
 
     my $target = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $dist->{dir};
@@ -2595,13 +2597,19 @@ sub find_prereqs {
         push @deps, $self->bundle_deps($dist);
     }
 
+    $self->merge_with_cpanfile($dist, \@deps);
+
+    return @deps;
+}
+
+sub merge_with_cpanfile {
+    my($self, $dist, $deps) = @_;
+
     if ($self->{cpanfile_requirements} && !$dist->{cpanfile}) {
-        for my $dep (@deps) {
+        for my $dep (@$deps) {
             $dep->merge_with($self->{cpanfile_requirements});
         }
     }
-
-    return @deps;
 }
 
 sub extract_meta_prereqs {
