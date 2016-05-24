@@ -2895,7 +2895,7 @@ sub file_mirror {
     my $source_mtime = (stat $file)[9];
 
     # Don't mirror a file that's already there (like the index)
-    return if -e $path && (stat $path)[9] >= $source_mtime;
+    return 1 if -e $path && (stat $path)[9] >= $source_mtime;
 
     File::Copy::copy($file, $path);
 
