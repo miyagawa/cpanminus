@@ -16,7 +16,7 @@ use xt::Run;
 {
     run_L "--installdeps", "--with-configure", "./testdist/cpanfile_app";
 
-    like last_build_log, qr/Checking if you have Hash::MultiValue .* Yes \(0\.10\)/;
+    like last_build_log, qr/Checking if you have Hash::MultiValue .* Yes \(0\.12\)/;
     like last_build_log, qr/Checking if you have Try::Tiny .* Yes \(0\.11\)/;
     like last_build_log, qr/Checking if you have Test::Warn/, '--notest means skip tests on *deps*, not necessarily root';
     like last_build_log, qr/installed Module-Build-Tiny/;
