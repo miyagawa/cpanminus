@@ -2,6 +2,10 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.9003  2016-05-24 10:30:41 PDT
+   [Bug Fix]
+      - Return true when file mirror skips copying files
+
 1.9002  2016-05-24 01:44:47 PDT
    [Releng]
       - Merge with cpanminus 1.7042
