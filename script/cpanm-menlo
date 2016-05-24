@@ -337,6 +337,11 @@ Defaults to false for both.
 B<EXPERIMENTAL>: Installs develop phase dependencies in META files or
 C<cpanfile> when used with C<--installdeps>. Defaults to false.
 
+=item --with-configure
+
+B<EXPERIMENTAL>: Installs configure phase dependencies in C<cpanfile>
+when used with C<--installdeps>. Defaults to false.
+
 =item --with-feature, --without-feature, --with-all-features
 
 B<EXPERIMENTAL>: Specifies the feature to enable, if a module supports
@@ -554,6 +559,23 @@ you can say C<--no-curl> to disable using cURL.
 Normally with C<--lwp>, C<--wget> and C<--curl> options set to true
 (which is the default) cpanm tries L<LWP>, Wget, cURL and L<HTTP::Tiny>
 (in that order) and uses the first one available.
+
+=back
+
+=head1 ENVIRONMENT VARIABLES
+
+=over 4
+
+=item PERL_CPANM_HOME
+
+The directory cpanm should use to store downloads and build and test
+modules. Defaults to the C<.cpanm> directory in your user's home
+directory.
+
+=item PERL_CPANM_OPT
+
+If set, adds a set of default options to every cpanm command. These
+options come first, and so are overridden by command-line options.
 
 =back
 

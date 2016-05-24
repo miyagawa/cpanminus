@@ -89,6 +89,7 @@ sub new {
         installed_dists => 0,
         install_types => ['requires'],
         with_develop => 0,
+        with_configure => 0,
         showdeps => 0,
         scandeps => 0,
         scandeps_tree => [],
@@ -217,6 +218,8 @@ sub parse_options {
         'test-timeout=i' => \$self->{test_timeout},
         'with-develop' => \$self->{with_develop},
         'without-develop' => sub { $self->{with_develop} = 0 },
+        'with-configure' => \$self->{with_configure},
+        'without-configure' => sub { $self->{with_configure} = 0 },
         'with-feature=s' => sub { $self->{features}{$_[1]} = 1 },
         'without-feature=s' => sub { $self->{features}{$_[1]} = 0 },
         'with-all-features' => sub { $self->{features}{__all} = 1 },
@@ -717,7 +720,7 @@ sub bootstrap_local_lib {
 ! Can't write to $Config{installsitelib} and $Config{installsitebin}: Installing modules to $ENV{HOME}/perl5
 ! To turn off this warning, you have to do one of the following:
 !   - run me as a root or with --sudo option (to install to $Config{installsitelib} and $Config{installsitebin})
-!   - Configure local::lib your existing local::lib in this shell to set PERL_MM_OPT etc.
+!   - Configure local::lib in your existing shell to set PERL_MM_OPT etc.
 !   - Install local::lib by running the following commands
 !
 !         cpanm --local-lib=~/perl5 local::lib && eval \$(perl -I ~/perl5/lib/perl5/ -Mlocal::lib)
@@ -1917,6 +1920,7 @@ sub build_stuff {
     $dist->{meta} = $dist->{cpanmeta} ? $dist->{cpanmeta}->as_struct : {};
 
     my @config_deps;
+
     if ($dist->{cpanmeta}) {
         push @config_deps, Menlo::Dependency->from_prereqs(
             $dist->{cpanmeta}->effective_prereqs, ['configure'], $self->{install_types},
@@ -1929,12 +1933,13 @@ sub build_stuff {
         );
     }
 
+    $self->merge_with_cpanfile($dist, \@config_deps);
+
     $self->upgrade_toolchain(\@config_deps);
 
     my $target = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $dist->{dir};
 
     unless ($self->skip_configure($dist, $depth)) {
-        local $self->{notest} = 1;
         $self->install_deps_bailout($target, $dist->{dir}, $depth, @config_deps)
           or return;
     }
@@ -1955,6 +1960,7 @@ sub build_stuff {
                          ? [qw( build runtime )] : [qw( build test runtime )];
 
     push @{$dist->{want_phases}}, 'develop' if $self->{with_develop} && $depth == 0;
+    push @{$dist->{want_phases}}, 'configure' if $self->{with_configure} && $depth == 0;
 
     my @deps = $self->find_prereqs($dist);
     my $module_name = $self->find_module_name($configure_state) || $dist->{meta}{name};
@@ -2380,13 +2386,19 @@ sub find_prereqs {
         push @deps, $self->bundle_deps($dist);
     }
 
+    $self->merge_with_cpanfile($dist, \@deps);
+
+    return @deps;
+}
+
+sub merge_with_cpanfile {
+    my($self, $dist, $deps) = @_;
+
     if ($self->{cpanfile_requirements} && !$dist->{cpanfile}) {
-        for my $dep (@deps) {
+        for my $dep (@$deps) {
             $dep->merge_with($self->{cpanfile_requirements});
         }
     }
-
-    return @deps;
 }
 
 sub extract_meta_prereqs {
@@ -2609,7 +2621,15 @@ sub file_get {
 sub file_mirror {
     my($self, $uri, $path) = @_;
     my $file = $self->uri_to_file($uri);
+
+    my $source_mtime = (stat $file)[9];
+
+    # Don't mirror a file that's already there (like the index)
+    return if -e $path && (stat $path)[9] >= $source_mtime;
+
     File::Copy::copy($file, $path);
+
+    utime $source_mtime, $source_mtime, $path;
 }
 
 sub configure_http {
