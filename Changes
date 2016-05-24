@@ -2,6 +2,10 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7042  2016-05-24 00:48:13 PDT
+   [Improvements]
+      - Merge configure dependencies with cpanfile requirements too
+
 1.7041  2016-05-08 11:28:31 PDT
    [Improvements]
       - Add environment variables to man pages (Doug Bell) #481
