@@ -2,6 +2,10 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.9002  2016-05-24 01:44:47 PDT
+   [Releng]
+      - Merge with cpanminus 1.7042
+
 1.9001  2015-09-02 08:07:28 CEST
    [Release Engineering]
       - Make this a non-dev release so it can be installed with the standard install tools
@@ -13,6 +17,21 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 1.9000  2015-08-13 13:47:13 PDT
       - This is the first developer release for Menlo (cpanm 2.0)
+
+1.7042  2016-05-24 00:48:13 PDT
+   [Improvements]
+         - Merge configure dependencies with cpanfile requirements too
+
+1.7041  2016-05-08 11:28:31 PDT
+   [Improvements]
+         - Add environment variables to man pages (Doug Bell) #481
+         - Support --with-configure and --without-condfigure (zebardy) #482
+         - Make file mirror faster (Matthew Horsfall) #499
+
+1.7040  2016-01-07 11:28:07 PST
+   [Improvements]
+         - Removed a workaround to skip tests for config dependencies such as Module::Build #462
+         - Various doc improvements
 
 1.7039  2015-06-28 18:05:10 PDT
    [Improvements]

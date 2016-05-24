@@ -65,7 +65,7 @@ interfaces, or writing plugins to hook into its behaviors.
 
 # AUTHOR
 
-Tatsuhiko Miyagawa &lt;miyagawa@bulknews.net>
+Tatsuhiko Miyagawa <miyagawa@bulknews.net>
 
 # COPYRIGHT
 

@@ -4,7 +4,7 @@
       "Tatsuhiko Miyagawa <miyagawa@bulknews.net>"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Dist::Zilla version 5.039, Dist::Milla version v1.0.15, CPAN::Meta::Converter version 2.150005",
+   "generated_by" : "Dist::Zilla version 6.005, Dist::Milla version v1.0.16, CPAN::Meta::Converter version 2.150005",
    "license" : [
       "perl_5"
    ],
@@ -15,12 +15,12 @@
    "name" : "Menlo",
    "no_index" : {
       "directory" : [
-         "t",
-         "xt",
+         "eg",
+         "examples",
          "inc",
          "share",
-         "eg",
-         "examples"
+         "t",
+         "xt"
       ]
    },
    "prereqs" : {
@@ -31,7 +31,7 @@
       },
       "develop" : {
          "requires" : {
-            "Dist::Milla" : "v1.0.15",
+            "Dist::Milla" : "v1.0.16",
             "JSON" : "0",
             "Module::Install" : "0",
             "Test::Pod" : "1.41",
@@ -96,8 +96,9 @@
          "web" : "https://github.com/miyagawa/cpanminus"
       }
    },
-   "version" : "1.9001",
+   "version" : "1.9002",
    "x_contributors" : [
+      "Aaron Moses <mosesa02@localhost.localdomain>",
       "Alessandro Ghedini <al3xbio@gmail.com>",
       "Andrew Rodland <andrew@cleverdomain.org>",
       "Andy Jones <andy@broadbean.com>",
@@ -115,6 +116,7 @@
       "Dave Rolsky <autarch@urth.org>",
       "David Golden <dagolden@cpan.org>",
       "David Steinbrunner <dsteinbrunner@pobox.com>",
+      "Doug Bell <madcityzen@gmail.com>",
       "fREW Schmidt <frioux@gmail.com>",
       "Fuji, Goro <g.psy.va@gmail.com>",
       "Gareth Kirwan <gbjk@thermeon.com>",
@@ -137,6 +139,7 @@
       "lestrrat <lestrrat+github@gmail.com>",
       "Masahiro Nagano <kazeburo@gmail.com>",
       "Masayoshi Sekimura <sekimura@gmail.com>",
+      "Matthew Horsfall <wolfsage@gmail.com>",
       "Matt S Trout <>",
       "Matt S Trout <mst@shadowcat.co.uk>",
       "Michael G. Schwern <schwern@pobox.com>",
@@ -167,7 +170,8 @@
       "Vyacheslav Matyukhin <mmcleric@yandex-team.ru>",
       "xaicron <xaicron@gmail.com>",
       "Yann Kerherve <yann@cyberion.net>",
-      "yappo <yappo@shibuya.pl>"
+      "yappo <yappo@shibuya.pl>",
+      "zebardy <zebardy@gmail.com>"
    ]
 }
 
