@@ -2670,9 +2670,21 @@ sub extract_meta_prereqs {
 sub bundle_deps {
     my($self, $dist) = @_;
 
+    my $match;
+    if ($dist->{module}) {
+        $match = sub {
+            my $meta = Module::Metadata->new_from_file($_[0]);
+            $meta && ($meta->name eq $dist->{module});
+        };
+    } else {
+        $match = sub { 1 };
+    }
+
     my @files;
     File::Find::find({
-        wanted => sub { push @files, File::Spec->rel2abs($_) if /\.pm/i },
+        wanted => sub {
+            push @files, File::Spec->rel2abs($_) if /\.pm$/i && $match->($_);
+        },
         no_chdir => 1,
     }, '.');
 
