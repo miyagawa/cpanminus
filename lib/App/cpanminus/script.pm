@@ -3027,7 +3027,11 @@ sub init_tools {
 
             my $xf = ($self->{verbose} ? 'v' : '')."xf";
             my $ar = $tarfile =~ /bz2$/ ? 'j' : 'z';
-            my $nowarn = $tar_ver =~ /\bGNU\b/ ? '--warning=no-unknown-keyword' : ''; # BSD tar does not support --warning=xxx
+            # Suppress warnings about unknown archive infos on GNU tar >= 1.23
+            my $nowarn = (
+                ($tar_ver =~ /\bGNU\D+(\d+\.\d+)/) and
+                (version->declare($1) >= version->declare('1.23'))
+            ) ? '--warning=no-unknown-keyword' : '';
 
             my($root, @others) = `$tar $nowarn -${ar}tf $tarfile`
                 or return undef;
