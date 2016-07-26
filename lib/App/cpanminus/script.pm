@@ -3018,6 +3018,7 @@ sub init_tools {
     my $tar = $self->which('tar');
     my $tar_ver;
     my $maybe_bad_tar = sub { WIN32 || BAD_TAR || (($tar_ver = `$tar --version 2>/dev/null`) =~ /GNU.*1\.13/i) };
+    my $gnu_tar = sub { ($tar_ver = `$tar --version 2>/dev/null`) =~ /\bGNU\b/i };
 
     if ($tar && !$maybe_bad_tar->()) {
         chomp $tar_ver;
@@ -3027,8 +3028,9 @@ sub init_tools {
 
             my $xf = ($self->{verbose} ? 'v' : '')."xf";
             my $ar = $tarfile =~ /bz2$/ ? 'j' : 'z';
+            my $nowarn = $gnu_tar->() ? '--warning=no-unknown-keyword' : ''; # BSD tar does not support --warning=xxx
 
-            my($root, @others) = `$tar ${ar}tf $tarfile`
+            my($root, @others) = `$tar $nowarn -${ar}tf $tarfile`
                 or return undef;
 
             FILE: {
@@ -3043,7 +3045,7 @@ sub init_tools {
                 }
             }
 
-            system "$tar $ar$xf $tarfile";
+            system "$tar $nowarn -$ar$xf $tarfile";
             return $root if -d $root;
 
             $self->diag_fail("Bad archive: $tarfile");
