@@ -2461,7 +2461,7 @@ sub extract_packages {
 
     require Parse::PMFile;
 
-    my @files = grep { /\.pm(?:\.PL)?$/ && $try->($_) } $self->list_files;
+    my @files = grep { /(?:(\.pm(?:\.PL)?)|(_pm\.PL))$/ && $try->($_) } $self->list_files;
 
     my $provides = { };
 
