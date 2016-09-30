@@ -2,8 +2,8 @@ use strict;
 use Test::More;
 use xt::Run;
 
-run "HTTP::Tiny", "HTTP::Tiny::Handle";
-like last_build_log, qr/Already tried HTTP-Tiny/;
+run "Email::Find", "Email::Find::addrspec";
+like last_build_log, qr/Already tried Email-Find/;
 
 done_testing;
 

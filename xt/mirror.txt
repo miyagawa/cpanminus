@@ -1,0 +1,12 @@
+File:         02packages.details.txt
+URL:          http://www.perl.com/CPAN/modules/02packages.details.txt
+Description:  Package names found in directory $CPAN/authors/id/
+Columns:      package name, version, path
+Intended-For: Automated fetch routines, namespace documentation.
+Written-By:   PAUSE version 1.14
+Line-Count:   1
+Last-Updated: Sun, 09 Oct 2011 17:27:24 GMT
+
+Hash::MultiValue                   0.02  M/MI/MIYAGAWA/Hash-MultiValue-0.02.tar.gz
+URI::Escape                        3.31  G/GA/GAAS/URI-1.60.tar.gz
+TimeDate                           undef G/GB/GBARR/TimeDate-1.20.tar.gz

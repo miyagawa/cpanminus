@@ -1,11 +1,14 @@
 META.yml
 MYMETA.*
 Makefile
-inc/
 pm_to_blib
 blib
 *~
-.*
 !.gitignore
-!.shipit
+!.gitkeep
+!/inc/
 bin/cpanm
+fatpacked/App/cpanminus/*.pm
+/App-cpanminus-*
+/Menlo-*
+/.build

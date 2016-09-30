@@ -1,0 +1,10 @@
+\.git-placeholder
+dist\.ini
+lib/App/cpanminus/(?!fatscript)
+^fatlib/
+^plugins/
+^script/
+^maint/
+^xt/
+^testdist/
+^cpanm$

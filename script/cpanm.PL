@@ -1,26 +1,31 @@
 #!/usr/bin/env perl
 #
-# You want to install cpanminus? Run the following command and it will
-# install itself for you. You might want to run it as a root with sudo
-# if you want to install to places like /usr/local/bin.
+# This is a pre-compiled source code for the cpanm (cpanminus) program.
+# For more details about how to install cpanm, go to the following URL:
 #
-#   % curl -L http://cpanmin.us | perl - --self-upgrade
+#   https://github.com/miyagawa/cpanminus
+#
+# Quickstart: Run the following command and it will install itself for
+# you. You might want to run it as a root with sudo if you want to install
+# to places like /usr/local/bin.
+#
+#   % curl -L https://cpanmin.us | perl - App::cpanminus
 #
 # If you don't have curl but wget, replace `curl -L` with `wget -O -`.
-#
-# For more details about this program, visit http://search.cpan.org/dist/App-cpanminus
-#
-# DEVELOPERS: Read script/build.PL in the repo how to update this
+
+# DEVELOPERS: Read maint/build.pl in the repo how to update this
 # __FATPACK__
+
 use strict;
-use FindBin qw($Bin);                    # For dev -- Auto-removed
+use FindBin qw($Bin);                        # For dev -- Auto-removed
 use lib "$Bin/../lib", "$Bin/../fatlib"; # For dev -- Auto-removed
 use App::cpanminus::script;
+
 
 unless (caller) {
     my $app = App::cpanminus::script->new;
     $app->parse_options(@ARGV);
-    $app->doit or exit(1);
+    exit $app->doit;
 }
 
 __END__
@@ -31,20 +36,53 @@ cpanm - get, unpack build and install modules from CPAN
 
 =head1 SYNOPSIS
 
-  cpanm Test::More                                          # install Test::More
-  cpanm MIYAGAWA/Plack-0.99_05.tar.gz                       # full distribution path
-  cpanm http://example.org/LDS/CGI.pm-3.20.tar.gz           # install from URL
-  cpanm ~/dists/MyCompany-Enterprise-1.00.tar.gz            # install from a local file
-  cpanm --interactive Task::Kensho                          # Configure interactively
-  cpanm .                                                   # install from local directory
-  cpanm --installdeps .                                     # install all the deps for the current directory
-  cpanm -L extlib Plack                                     # install Plack and all non-core deps into extlib
-  cpanm --mirror http://cpan.cpantesters.org/ DBI           # use the fast-syncing mirror
-  cpanm --scandeps Moose                                    # See what modules will be installed for Moose
+  cpanm Test::More                                 # install Test::More
+  cpanm MIYAGAWA/Plack-0.99_05.tar.gz              # full distribution path
+  cpanm http://example.org/LDS/CGI.pm-3.20.tar.gz  # install from URL
+  cpanm ~/dists/MyCompany-Enterprise-1.00.tar.gz   # install from a local file
+  cpanm --interactive Task::Kensho                 # Configure interactively
+  cpanm .                                          # install from local directory
+  cpanm --installdeps .                            # install all the deps for the current directory
+  cpanm -L extlib Plack                            # install Plack and all non-core deps into extlib
+  cpanm --mirror http://cpan.cpantesters.org/ DBI  # use the fast-syncing mirror
+  cpanm --from https://cpan.metacpan.org/ Plack    # use only the HTTPS mirror
 
 =head1 COMMANDS
 
 =over 4
+
+=item (arguments)
+
+Command line arguments can be either a module name, distribution file,
+local file path, HTTP URL or git repository URL. Following commands
+will all work as you expect.
+
+    cpanm Plack
+    cpanm Plack/Request.pm
+    cpanm MIYAGAWA/Plack-1.0000.tar.gz
+    cpanm /path/to/Plack-1.0000.tar.gz
+    cpanm http://cpan.metacpan.org/authors/id/M/MI/MIYAGAWA/Plack-0.9990.tar.gz
+    cpanm git://github.com/plack/Plack.git
+
+Additionally, you can use the notation using C<~> and C<@> to specify
+version for a given module. C<~> specifies the version requirement in
+the L<CPAN::Meta::Spec> format, while C<@> pins the exact version, and
+is a shortcut for C<~"== VERSION">.
+
+    cpanm Plack~1.0000                 # 1.0000 or later
+    cpanm Plack~">= 1.0000, < 2.0000"  # latest of 1.xxxx
+    cpanm Plack@0.9990                 # specific version. same as Plack~"== 0.9990"
+
+The version query including specific version or range will be sent to
+L<MetaCPAN> to search for previous releases. The query will search for
+BackPAN archives by default, unless you specify C<--dev> option, in
+which case, archived versions will be filtered out.
+
+For a git repository, you can specify a branch, tag, or commit SHA to
+build. The default is C<master>
+
+    cpanm git://github.com/plack/Plack.git@1.0000        # tag
+    cpanm git://github.com/plack/Plack.git@devel         # branch
 
 =item -i, --install
 
@@ -105,6 +143,16 @@ architecture you've already tested to make sure it builds fine.
 Defaults to false, and you can say C<--no-notest> to override when it
 is set in the default options in C<PERL_CPANM_OPT>.
 
+=item --test-only
+
+Run the tests only, and do not install the specified module or
+distributions. Handy if you want to verify the new (or even old)
+releases pass its unit tests without installing the module.
+
+Note that if you specify this option with a module or distribution
+that has dependencies, these dependencies will be installed if you
+don't currently have them.
+
 =item -S, --sudo
 
 Switch to the root user with C<sudo> when installing modules. Use this
@@ -120,8 +168,8 @@ configuration. (See --interactive)
 
 =item -q, --quiet
 
-Makes the output even more quiet than the default. It doesn't print
-anything to the STDERR.
+Makes the output even more quiet than the default. It only shows the
+successful/failed dependencies to the output.
 
 =item -l, --local-lib
 
@@ -132,10 +180,9 @@ as well.
 
 =item -L, --local-lib-contained
 
-Same with C<--local-lib> but when examining the dependencies, it
-assumes no non-core modules are installed on the system. It's handy if
-you want to bundle application dependencies in one directory so you
-can distribute to other machines.
+Same with C<--local-lib> but with L<--self-contained> set.  All
+non-core dependencies will be installed even if they're already
+installed.
 
 For instance,
 
@@ -146,28 +193,89 @@ directory C<extlib>, which can be loaded from your application with:
 
   use local::lib '/path/to/extlib';
 
+Note that this option does B<NOT> reliably work with perl installations
+supplied by operating system vendors that strips standard modules from perl,
+such as RHEL, Fedora and CentOS, B<UNLESS> you also install packages supplying
+all the modules that have been stripped.  For these systems you will probably
+want to install the C<perl-core> meta-package which does just that.
+
+=item --self-contained
+
+When examining the dependencies, assume no non-core modules are
+installed on the system. Handy if you want to bundle application
+dependencies in one directory so you can distribute to other machines.
+
+=item --exclude-vendor
+
+Don't include modules installed under the 'vendor' paths when searching for
+core modules when the C<--self-contained> flag is in effect.  This restores
+the behaviour from before version 1.7023
+
 =item --mirror
 
 Specifies the base URL for the CPAN mirror to use, such as
 C<http://cpan.cpantesters.org/> (you can omit the trailing slash). You
 can specify multiple mirror URLs by repeating the command line option.
 
-Defaults to C<http://search.cpan.org/CPAN> which is a geo location
-aware redirector.
+You can use a local directory that has a CPAN mirror structure
+(created by tools such as L<OrePAN> or L<Pinto>) by using a special
+URL scheme C<file://>. If the given URL begins with `/` (without any
+scheme), it is considered as a file scheme as well.
+
+  cpanm --mirror file:///path/to/mirror
+  cpanm --mirror ~/minicpan      # Because shell expands ~ to /home/user
+
+Defaults to C<http://www.cpan.org/>.
 
 =item --mirror-only
 
 Download the mirror's 02packages.details.txt.gz index file instead of
-querying the CPAN Meta DB.
+querying the CPAN Meta DB. This will also effectively opt out sending
+your local perl versions to backend database servers such as CPAN Meta
+DB and MetaCPAN.
 
 Select this option if you are using a local mirror of CPAN, such as
 minicpan when you're offline, or your own CPAN index (a.k.a darkpan).
 
-B<Tip:> It might be useful if you name these mirror options with your
-shell aliases, like:
+=item --from, -M
 
-  alias minicpanm='cpanm --mirror ~/minicpan --mirror-only'
-  alias darkpan='cpanm --mirror http://mycompany.example.com/DPAN --mirror-only'
+  cpanm -M https://cpan.metacpan.org/
+  cpanm --from https://cpan.metacpan.org/
+
+Use the given mirror URL and its index as the I<only> source to search
+and download modules from.
+
+It works similar to C<--mirror> and C<--mirror-only> combined, with a
+small difference: unlike C<--mirror> which I<appends> the URL to the
+list of mirrors, C<--from> (or C<-M> for short) uses the specified URL
+as its I<only> source to download index and modules from. This makes
+the option always override the default mirror, which might have been
+set via global options such as the one set by C<PERL_CPANM_OPT>
+environment variable.
+
+B<Tip:> It might be useful if you name these options with your shell
+aliases, like:
+
+  alias minicpanm='cpanm --from ~/minicpan'
+  alias darkpan='cpanm --from http://mycompany.example.com/DPAN'
+
+=item --mirror-index
+
+B<EXPERIMENTAL>: Specifies the file path to C<02packages.details.txt>
+for module search index.
+
+=item --cpanmetadb
+
+B<EXPERIMENTAL>: Specifies an alternate URI for CPAN MetaDB index lookups.
+
+=item --metacpan
+
+Prefers MetaCPAN API over CPAN MetaDB.
+
+=item --cpanfile
+
+B<EXPERIMENTAL>: Specified an alternate path for cpanfile to search for,
+when C<--installdeps> command is in use. Defaults to C<cpanfile>.
 
 =item --prompt
 
@@ -177,6 +285,10 @@ one of the dependency failed if you want to proceed the installation.
 
 Defaults to false, and you can say C<--no-prompt> to override if it's
 set in the default options in C<PERL_CPANM_OPT>.
+
+=item --dev
+
+B<EXPERIMENTAL>: search for a newer developer release as well. Defaults to false.
 
 =item --reinstall
 
@@ -201,10 +313,72 @@ requires custom configuration or Task:: distributions.
 Defaults to false, and you can say C<--no-interactive> to override
 when it's set in the default options in C<PERL_CPANM_OPT>.
 
+=item --pp, --pureperl
+
+Prefer Pure perl build of modules by setting C<PUREPERL_ONLY=1> for
+MakeMaker and C<--pureperl-only> for Build.PL based
+distributions. Note that not all of the CPAN modules support this
+convention yet.
+
+=item --with-recommends, --with-suggests
+
+B<EXPERIMENTAL>: Installs dependencies declared as C<recommends> and
+C<suggests> respectively, per META spec. When these dependencies fail
+to install, cpanm continues the installation, since they're just
+recommendation/suggestion.
+
+Enabling this could potentially make a circular dependency for a few
+modules on CPAN, when C<recommends> adds a module that C<recommends>
+back the module in return.
+
+There's also C<--without-recommend> and C<--without-suggests> to
+override the default decision made earlier in C<PERL_CPANM_OPT>.
+
+Defaults to false for both.
+
+=item --with-develop
+
+B<EXPERIMENTAL>: Installs develop phase dependencies in META files or
+C<cpanfile> when used with C<--installdeps>. Defaults to false.
+
+=item --with-configure
+
+B<EXPERIMENTAL>: Installs configure phase dependencies in C<cpanfile>
+when used with C<--installdeps>. Defaults to false.
+
+=item --with-feature, --without-feature, --with-all-features
+
+B<EXPERIMENTAL>: Specifies the feature to enable, if a module supports
+optional features per META spec 2.0.
+
+    cpanm --with-feature=opt_csv Spreadsheet::Read
+
+the features can also be interactively chosen when C<--interactive>
+option is enabled.
+
+C<--with-all-features> enables all the optional features, and
+C<--without-feature> can select a feature to disable.
+
+=item --configure-timeout, --build-timeout, --test-timeout
+
+Specify the timeout length (in seconds) to wait for the configure,
+build and test process. Current default values are: 60 for configure,
+3600 for build and 1800 for test.
+
+=item --configure-args, --build-args, --test-args, --install-args
+
+B<EXPERIMENTAL>: Pass arguments for configure/build/test/install
+commands respectively, for a given module to install.
+
+    cpanm DBD::mysql --configure-args="--cflags=... --libs=..."
+
+The argument is only enabled for the module passed as a command line
+argument, not dependencies.
+
 =item --scandeps
 
-Scans the depencencies of given modules and output the tree in a text
-format. (See C<--format> below for more options)
+B<DEPRECATED>: Scans the depencencies of given modules and output the
+tree in a text format. (See C<--format> below for more options)
 
 Because this command doesn't actually install any distributions, it
 will be useful that by typing:
@@ -220,8 +394,9 @@ combine it with C<-L> option.
 
 =item --format
 
-Determines what format to display the scanned dependency
-tree. Available options are C<tree>, C<json>, C<yaml> and C<dists>.
+B<DEPRECATED>: Determines what format to display the scanned
+dependency tree. Available options are C<tree>, C<json>, C<yaml> and
+C<dists>.
 
 =over 8
 
@@ -265,6 +440,10 @@ Specifies the optional directory path to copy downloaded tarballs in
 the CPAN mirror compatible directory structure
 i.e. I<authors/id/A/AU/AUTHORS/Foo-Bar-version.tar.gz>
 
+If the distro tarball did not come from CPAN, for example from a local
+file or from GitHub, then it will be saved under
+I<vendor/Foo-Bar-version.tar.gz>.
+
 =item --uninst-shadows
 
 Uninstalls the shadow files of the distribution that you're
@@ -287,9 +466,69 @@ I<before> the perl core library path, and uninstalling shadows is not
 necessary anymore and does more harm by deleting files from the core
 library path.
 
+=item --uninstall, -U
+
+Uninstalls a module from the library path. It finds a packlist for
+given modules, and removes all the files included in the same
+distribution.
+
+If you enable local::lib, it only removes files from the local::lib
+directory.
+
+If you try to uninstall a module in C<perl> directory (i.e. core
+module), an error will be thrown.
+
+A dialog will be prompted to confirm the files to be deleted. If you pass
+C<-f> option as well, the dialog will be skipped and uninstallation
+will be forced.
+
+=item --cascade-search
+
+B<EXPERIMENTAL>: Specifies whether to cascade search when you specify
+multiple mirrors and a mirror doesn't have a module or has a lower
+version of the module than requested. Defaults to false.
+
+=item --skip-installed
+
+Specifies whether a module given in the command line is skipped if its latest
+version is already installed. Defaults to true.
+
+B<NOTE>: The C<PERL5LIB> environment variable have to be correctly set
+for this to work with modules installed using L<local::lib>, unless
+you always use the C<-l> option.
+
+=item --skip-satisfied
+
+B<EXPERIMENTAL>: Specifies whether a module (and version) given in the
+command line is skipped if it's already installed.
+
+If you run:
+
+  cpanm --skip-satisfied CGI DBI~1.2
+
+cpanm won't install them if you already have CGI (for whatever
+versions) or have DBI with version higher than 1.2. It is similar to
+C<--skip-installed> but while C<--skip-installed> checks if the
+I<latest> version of CPAN is installed, C<--skip-satisfied> checks if
+a requested version (or not, which means any version) is installed.
+
+Defaults to false.
+
+=item --verify
+
+Verify the integrity of distribution files retrieved from PAUSE using
+CHECKSUMS and SIGNATURES (if found). Defaults to false.
+
+=item --report-perl-version
+
+Whether it reports the locally installed perl version to the various
+web server as part of User-Agent. Defaults to true unless CI related
+environment variables such as C<TRAVIS>, C<CI> or C<AUTOMATED_TESTING>
+is enabled. You can disable it by using C<--no-report-perl-version>.
+
 =item --auto-cleanup
 
-Specifies the number of days in whcih cpanm's work directories
+Specifies the number of days in which cpanm's work directories
 expire. Defaults to 7, which means old work directories will be
 cleaned up in one week.
 
@@ -300,9 +539,9 @@ directories.
 
 Generates man pages for executables (man1) and libraries (man3).
 
-Defaults to false (no man pages generated) if
-C<-L|--local-lib-contained> option is supplied. Otherwise, defaults to
-true, and you can disable it with C<--no-man-pages>.
+Defaults to true (man pages generated) unless C<-L|--local-lib-contained>
+option is supplied in which case it's set to false. You can disable
+it with C<--no-man-pages>.
 
 =item --lwp
 
@@ -327,13 +566,30 @@ Normally with C<--lwp>, C<--wget> and C<--curl> options set to true
 
 =back
 
+=head1 ENVIRONMENT VARIABLES
+
+=over 4
+
+=item PERL_CPANM_HOME
+
+The directory cpanm should use to store downloads and build and test
+modules. Defaults to the C<.cpanm> directory in your user's home
+directory.
+
+=item PERL_CPANM_OPT
+
+If set, adds a set of default options to every cpanm command. These
+options come first, and so are overridden by command-line options.
+
+=back
+
 =head1 SEE ALSO
 
 L<App::cpanminus>
 
 =head1 COPYRIGHT
 
-Copyright 2010 Tatsuhiko Miyagawa.
+Copyright 2010- Tatsuhiko Miyagawa.
 
 =head1 AUTHOR
 

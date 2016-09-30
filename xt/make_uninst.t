@@ -15,8 +15,9 @@ is $ver, 0.02;
 
 chdir "testdist/HelloWorld-0.01"; system "make distclean";
 chdir "../../testdist/HelloWorld-0.02"; system "make distclean";
+chdir "../..";
 
-system "pm-uninstall", "-f", "HelloWorld";
+run "-Uf", "HelloWorld";
 
 done_testing;
 

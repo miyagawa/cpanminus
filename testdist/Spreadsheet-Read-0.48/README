@@ -1,0 +1,67 @@
+=head1 NAME
+
+Spreadsheet::Read - Meta-Wrapper for reading spreadsheet data
+
+=head1 SYNOPSIS
+
+  use Spreadsheet::Read;
+  my $ref = ReadData ("file.xls");
+
+=head1 DESCRIPTION
+
+Spreadsheet::Read offers a uniformed wrapper to Spreadsheet::ParseExcel
+and Spreadheet::ReadSXC to give the end-user a single point of view to
+various types of spreadsheets and deal with these in a transparent way.
+
+For more thorough documentation please refer to the perl documentation
+in the module in pod format, or
+
+  $ man Spreadsheet::Read
+
+after installation.
+
+=head1 INSTALLATION
+
+  $ perl Makefile.PL
+  $ make
+  $ make test
+  $ make install
+
+If the C<make test> warns you in the xls tests, read the message and
+apply the generated patch. Spreadsheet::ParseExcel has a small bug in
+the parsing of the default format regarding UTF-8.
+
+This module requires perl-5.6.x or newer.
+
+Recent changes can be (re)viewed in the public GIT repository at
+http://repo.or.cz/w/Spreadsheet-Read.git
+
+Feel free to clone your own copy:
+
+ $ git clone http://repo.or.cz/r/Spreadsheet-Read.git Spreadsheet-Read
+
+or get it as a tgz:
+
+ $ wget --output-document=Spreadsheet-Read-git.tgz \
+	   'http://repo.or.cz/w/Spreadsheet-Read.git?a=snapshot;sf=tgz'
+
+=head1 TODO
+
+  * Make tests for examples/xlscat
+  * Support Parsers native module options
+  * Check if Tk is installed before asking if ss2tk is wanted
+  * Test diagnostics output
+  * Make clip skip empty sheets
+
+=head1 AUTHOR
+
+H.Merijn Brand, <h.m.brand@xs4all.nl>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2005-2013 H.Merijn Brand
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
+
+=cut

@@ -1,13 +1,12 @@
 use xt::Run;
 use Test::More;
 
-run("./testdist/DepWithoutVersion");
+run_L "Module::CPANfile";
+run_L "./testdist/DepWithoutVersion";
 like last_build_log, qr/\(undef\)/;
 
-system "pm-uninstall", "-fn", "DepWithoutVersion";
+chdir "./testdist/DepWithoutVersion";
+system 'make realclean';
 
 done_testing;
-
-
-
 
