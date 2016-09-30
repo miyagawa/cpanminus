@@ -792,8 +792,13 @@ sub search_module {
             $self->{pkgs}{$uri} = "!!retrieved!!";
         }
 
-        my $pkg = $self->search_mirror_index($mirror, $module, $version);
-        return $pkg if $pkg;
+        {
+            # only use URI from the found mirror
+            local $self->{mirrors} = [$mirror];
+
+            my $pkg = $self->search_mirror_index($mirror, $module, $version);
+            return $pkg if $pkg;
+        }
 
         $self->mask_output( diag_fail => "Finding $module ($version) on mirror $mirror failed." );
     }
