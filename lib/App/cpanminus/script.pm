@@ -1264,6 +1264,9 @@ sub configure {
         $ENV{PERL_MB_OPT} .= " --pureperl-only";
     }
 
+    local $ENV{PERL_USE_UNSAFE_INC} = 1
+        unless exists $ENV{PERL_USE_UNSAFE_INC};
+
     $cmd = $self->append_args($cmd, 'configure') if $depth == 0;
 
     local $self->{verbose} = $self->{verbose} || $self->{interactive};
@@ -1274,6 +1277,9 @@ sub build {
     my($self, $cmd, $distname, $depth) = @_;
 
     local $ENV{PERL_MM_USE_DEFAULT} = !$self->{interactive};
+
+    local $ENV{PERL_USE_UNSAFE_INC} = 1
+        unless exists $ENV{PERL_USE_UNSAFE_INC};
 
     $cmd = $self->append_args($cmd, 'build') if $depth == 0;
 
@@ -1299,6 +1305,9 @@ sub test {
 
     $cmd = $self->append_args($cmd, 'test') if $depth == 0;
 
+    local $ENV{PERL_USE_UNSAFE_INC} = 1
+        unless exists $ENV{PERL_USE_UNSAFE_INC};
+
     return 1 if $self->run_timeout($cmd, $self->{test_timeout});
     if ($self->{force}) {
         $self->diag_fail("Testing $distname failed but installing it anyway.");
@@ -1322,6 +1331,9 @@ sub install {
     if ($depth == 0 && $self->{test_only}) {
         return 1;
     }
+
+    local $ENV{PERL_USE_UNSAFE_INC} = 1
+        unless exists $ENV{PERL_USE_UNSAFE_INC};
 
     if ($self->{sudo}) {
         unshift @$cmd, "sudo";
