@@ -86,6 +86,7 @@ sub new {
         uninstall_shadows => ($] < 5.012),
         skip_installed => 1,
         skip_satisfied => 0,
+        skip_report    => 0,
         auto_cleanup => 7, # days
         pod2man => 1,
         installed_dists => 0,
@@ -189,6 +190,7 @@ sub parse_options {
         'installdeps' => \$self->{installdeps},
         'skip-installed!' => \$self->{skip_installed},
         'skip-satisfied!' => \$self->{skip_satisfied},
+        'skip-report!'    => \$self->{skip_report},
         'reinstall'    => sub { $self->{skip_installed} = 0 },
         'interactive!' => \$self->{interactive},
         'i|install'    => sub { $self->{cmd} = 'install' },
@@ -411,7 +413,16 @@ sub setup_home {
     }
 
     $self->chat("cpanm (App::cpanminus) $VERSION on perl $] built for $Config{archname}\n" .
-                "Work directory is $self->{base}\n");
+                "Work directory is $self->{base}\n" .
+                "Running with: " . join(' ',
+                    grep { exists $self->{$_} && $self->{$_} }
+                    qw(force notest test_only sudo verbose quiet self_contained
+                       exclude_vendor prompt dev reinstall pure_perl
+                       with_develop skip_installed skip_satisfied verify
+                       interactive installdeps
+                    )
+                ) . "\n"
+    );
 }
 
 sub package_index_for {
@@ -1299,7 +1310,20 @@ sub test {
 
     $cmd = $self->append_args($cmd, 'test') if $depth == 0;
 
-    return 1 if $self->run_timeout($cmd, $self->{test_timeout});
+    my $r = $self->run_timeout($cmd, $self->{test_timeout});
+
+    if (     !$self->{skip_report}
+             and !$self->{verbose} # verbose logging is not supported yet on cpanm
+             and eval 'use App::cpanminus::reporter 0.10; 1'
+    ) {
+      # we don't want cpanm to die if reporting fails
+      eval {
+        my $reporter = App::cpanminus::reporter->new( cpanm => $self, only => $distname );
+        $reporter->run();
+      };
+    }
+    return 1 if $r;
+
     if ($self->{force}) {
         $self->diag_fail("Testing $distname failed but installing it anyway.");
         return 1;

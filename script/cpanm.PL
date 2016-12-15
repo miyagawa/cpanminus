@@ -153,6 +153,12 @@ Note that if you specify this option with a module or distribution
 that has dependencies, these dependencies will be installed if you
 don't currently have them.
 
+=item --skip-report
+
+If L<App::cpanminus::reporter> is found in the system, cpanm will
+automatically send test reports to CPAN Testers unless you set this
+option.
+
 =item -S, --sudo
 
 Switch to the root user with C<sudo> when installing modules. Use this
