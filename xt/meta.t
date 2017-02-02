@@ -25,7 +25,7 @@ my $local_lib = "$ENV{PERL_CPANM_HOME}/perl5";
 }
 
 {
-    run_L "http://backpan.perl.org/authors/id/M/ML/MLEHMANN/common-sense-3.73.tar.gz";
+    run_L "http://backpan.cpantesters.org/authors/id/M/ML/MLEHMANN/common-sense-3.73.tar.gz";
     my $file = "$local_lib/lib/perl5/$Config{archname}/.meta/common-sense-3.73/install.json";
 
     my $data = load_json $file;
