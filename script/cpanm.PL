@@ -42,7 +42,7 @@ cpanm - get, unpack build and install modules from CPAN
   cpanm ~/dists/MyCompany-Enterprise-1.00.tar.gz   # install from a local file
   cpanm --interactive Task::Kensho                 # Configure interactively
   cpanm .                                          # install from local directory
-  cpanm --installdeps .                            # install all the deps for the current directory
+  cpanm --installdeps .                            # install 'test' deps for the current directory
   cpanm -L extlib Plack                            # install Plack and all non-core deps into extlib
   cpanm --mirror http://cpan.cpantesters.org/ DBI  # use the fast-syncing mirror
   cpanm --from https://cpan.metacpan.org/ Plack    # use only the HTTPS mirror
@@ -107,6 +107,12 @@ itself. Handy if you want to try the application from a version
 controlled repository such as git.
 
   cpanm --installdeps .
+
+This only installs the dependencies of the phases build, test, and runtime; as
+it is assumed there is no configure step necessary if the distribution uses a
+cpanfile. This behavior can be changed with the options C<--notest>,
+C<--with-develop>, and C<--with-configure>; to exclude test phase, or include
+develop, or configure phase deps.
 
 =item --look
 

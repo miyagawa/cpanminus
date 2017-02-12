@@ -869,7 +869,7 @@ Options:
   -n,--notest               Do not run unit tests
   --test-only               Run tests only, do not install
   -S,--sudo                 sudo to run install commands
-  --installdeps             Only install dependencies
+  --installdeps             Only install 'test' dependencies
   --showdeps                Only display direct dependencies
   --reinstall               Reinstall the distribution even if you already have the latest version installed
   --mirror                  Specify the base URL for the mirror (e.g. http://cpan.cpantesters.org/)
@@ -896,7 +896,7 @@ Examples:
   cpanm ~/dists/MyCompany-Enterprise-1.00.tar.gz            # install from a local file
   cpanm --interactive Task::Kensho                          # Configure interactively
   cpanm .                                                   # install from local directory
-  cpanm --installdeps .                                     # install all the deps for the current directory
+  cpanm --installdeps .                                     # install 'test' deps for the current directory
   cpanm -L extlib Plack                                     # install Plack and all non-core deps into extlib
   cpanm --mirror http://cpan.cpantesters.org/ DBI           # use the fast-syncing mirror
   cpanm -M https://cpan.metacpan.org App::perlbrew          # use only this secure mirror and its index
