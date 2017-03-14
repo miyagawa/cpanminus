@@ -14,6 +14,7 @@ use File::Temp ();
 use File::Which qw(which);
 use Getopt::Long ();
 use Symbol ();
+use Sort::Versions qw(versioncmp);
 use version ();
 
 use constant BAD_TAR => ($^O eq 'solaris' || $^O eq 'hpux');
@@ -439,21 +440,44 @@ sub search_mirror_index {
 
 sub search_common {
     my($self, $index, $search_args, $want_version) = @_;
-
+    use Data::Dumper;
+    
     $index->refresh_index;
+    my @found = $index->search_packages( $search_args );
 
-    my $found = $index->search_packages($search_args);
-    $found = $self->cpan_module_common($found) if $found;
+    # sort found modules by version.
+    my @sorted_found = sort { versioncmp($b->{module_version}, $a->{module_version}) } @found;
 
-    return $found unless $self->{cascade_search};
-
-    if ($found) {
-        if ($self->satisfy_version($found->{module}, $found->{module_version}, $want_version)) {
-            return $found;
-        } else {
-            $self->chat("Found $found->{module} $found->{module_version} which doesn't satisfy $want_version.\n");
+    return $self->cpan_module_common($sorted_found[0]) unless $self->{cascade_search};
+    
+    FOUND_MODULES:
+    for my $module ( @sorted_found ) {
+        $module = $self->cpan_module_common($module);
+        
+        if ( $self->satisfy_version( $module->{module}, $module->{module_version}, $want_version ) ) {
+            return $module;
+        }
+        else {
+            $self->chat("Found $module->{module} $module->{module_version} which doesn't satisfy $want_version.\n");
         }
     }
+    
+    # my $found = $index->search_packages($search_args);
+    # warn "OMGOMGOGMGOM";
+    # use Data::Dumper; warn Dumper( $found );
+    # $found = $self->cpan_module_common($found) if $found;
+    
+    
+    # return $found unless $self->{cascade_search};
+    # warn "been here";
+    
+    # if ($found) {
+    #     if ($self->satisfy_version($found->{module}, $found->{module_version}, $want_version)) {
+    #         return $found;
+    #     } else {
+    #         $self->chat("Found $found->{module} $found->{module_version} which doesn't satisfy $want_version.\n");
+    #     }
+    # }
     
     return;
 }
