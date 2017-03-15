@@ -440,15 +440,13 @@ sub search_mirror_index {
 
 sub search_common {
     my($self, $index, $search_args, $want_version) = @_;
-    use Data::Dumper;
-    
     $index->refresh_index;
     my @found = $index->search_packages( $search_args );
 
-    # sort found modules by version.
-    my @sorted_found = sort { versioncmp($b->{module_version}, $a->{module_version}) } @found;
+    return undef unless @found;
 
-    return $self->cpan_module_common($sorted_found[0]) unless $self->{cascade_search};
+    # sort found modules by version.
+    my @sorted_found = sort { versioncmp($b->{version}, $a->{version}) } @found;
     
     FOUND_MODULES:
     for my $module ( @sorted_found ) {
@@ -461,25 +459,11 @@ sub search_common {
             $self->chat("Found $module->{module} $module->{module_version} which doesn't satisfy $want_version.\n");
         }
     }
-    
-    # my $found = $index->search_packages($search_args);
-    # warn "OMGOMGOGMGOM";
-    # use Data::Dumper; warn Dumper( $found );
-    # $found = $self->cpan_module_common($found) if $found;
-    
-    
-    # return $found unless $self->{cascade_search};
-    # warn "been here";
-    
-    # if ($found) {
-    #     if ($self->satisfy_version($found->{module}, $found->{module_version}, $want_version)) {
-    #         return $found;
-    #     } else {
-    #         $self->chat("Found $found->{module} $found->{module_version} which doesn't satisfy $want_version.\n");
-    #     }
-    # }
-    
-    return;
+
+    # if no cascade search is enabled return first module that satisfies query
+    return $self->cpan_module_common($sorted_found[0]) unless $self->{cascade_search};
+
+    return undef;
 }
 
 sub with_version_range {
