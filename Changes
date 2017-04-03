@@ -2,6 +2,10 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.9004  2017-04-02 20:57:03 PDT
+   [Improvements]
+      - Set PERL_USE_UNSAFE_INC for 5.26+ (haarg)
+
 1.9003  2016-05-24 10:30:41 PDT
    [Bug Fix]
       - Return true when file mirror skips copying files
