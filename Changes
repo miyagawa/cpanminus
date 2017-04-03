@@ -2,6 +2,11 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7043  2017-04-02 20:56:06 PDT
+   [Improvements]
+      - Set PERL_USE_UNSAFE_INC for 5.26+ (haarg) #521
+      - Strictly match module NAME in Bundle
+
 1.7042  2016-05-24 00:48:13 PDT
    [Improvements]
       - Merge configure dependencies with cpanfile requirements too
