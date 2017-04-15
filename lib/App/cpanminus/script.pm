@@ -104,6 +104,7 @@ sub new {
         features => {},
         pure_perl => 0,
         cpanfile_path => 'cpanfile',
+        clone_path => undef,
         @_,
     }, $class;
 }
@@ -224,6 +225,9 @@ sub parse_options {
         'with-all-features' => sub { $self->{features}{__all} = 1 },
         'pp|pureperl!' => \$self->{pure_perl},
         "cpanfile=s" => \$self->{cpanfile_path},
+        'clone-path=s' => sub {
+          $self->{clone_path} = File::Spec->rel2abs( $_[ 1 ] );
+        },
         $self->install_type_handlers,
         $self->build_args_handlers,
     );
@@ -1916,8 +1920,27 @@ sub git_uri {
 
     my $dir = File::Temp::tempdir(CLEANUP => 1);
 
-    $self->mask_output( diag_progress => "Cloning $uri" );
-    $self->run([ 'git', 'clone', $uri, $dir ]);
+    my $git_pull_success = 0;
+
+    if ( $self->{clone_path} ) {
+      my ( $repo_name ) = $uri =~ m/([^\/]+)\.git/;
+      $dir = "$self->{clone_path}/$repo_name";
+
+      if ( -e $dir && -d $dir && -e "$dir/.git" ) {
+        require File::pushd;
+        my $dir = File::pushd::pushd( $dir );
+
+        $self->mask_output( diag_progress => "Pulling $dir" );
+        $self->run( [ 'git', 'pull' ] );
+        $self->mask_output( diag_progress => "Pulled" );
+        $git_pull_success = 1;
+      }
+    }
+
+    unless ( $git_pull_success ) {
+      $self->mask_output( diag_progress => "Cloning $uri" );
+      $self->run([ 'git', 'clone', $uri, $dir ]);
+    }
 
     unless (-e "$dir/.git") {
         $self->diag_fail("Failed cloning git repository $uri", 1);
