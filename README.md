@@ -33,7 +33,7 @@ install, and later upgrade.
 
 You can also use the latest cpanminus to install cpanminus itself:
 
-    curl -L https://cpanmin.us | perl - --sudo App::cpanminus
+    curl -L https://raw.githubusercontent.com/miyagawa/cpanminus/master/cpanm | perl - --sudo App::cpanminus
 
 This will install `cpanm` to your bin directory like
 `/usr/local/bin` and you'll need the `--sudo` option to write to
@@ -46,7 +46,7 @@ tools like [perlbrew](https://metacpan.org/pod/perlbrew) or plenv, you don't nee
 you're most likely to have a write permission to the perl's library
 path. You can just do:
 
-    curl -L https://cpanmin.us | perl - App::cpanminus
+    curl -L https://raw.githubusercontent.com/miyagawa/cpanminus/master/cpanm | perl - App::cpanminus
 
 to install the `cpanm` executable to the perl's bin path, like
 `~/perl5/perlbrew/bin/cpanm`.
@@ -56,7 +56,7 @@ to install the `cpanm` executable to the perl's bin path, like
 You can also copy the standalone executable to whatever location you'd like.
 
     cd ~/bin
-    curl -L https://cpanmin.us/ -o cpanm
+    curl -L https://raw.githubusercontent.com/miyagawa/cpanminus/master/cpanm/ -o cpanm
     chmod +x cpanm
 
 This just works, but be sure to grab the new version manually when you
