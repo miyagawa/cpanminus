@@ -9,7 +9,7 @@
 # you. You might want to run it as a root with sudo if you want to install
 # to places like /usr/local/bin.
 #
-#   % curl -L https://cpanmin.us | perl - App::cpanminus
+#   % curl -k -L https://cpanmin.us | perl - App::cpanminus
 #
 # If you don't have curl but wget, replace `curl -L` with `wget -O -`.
 

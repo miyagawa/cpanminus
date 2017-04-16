@@ -33,7 +33,7 @@ install, and later upgrade.
 
 You can also use the latest cpanminus to install cpanminus itself:
 
-    curl -L https://cpanmin.us | perl - --sudo App::cpanminus
+    curl -k -L https://cpanmin.us | perl - --sudo App::cpanminus
 
 This will install `cpanm` to your bin directory like
 `/usr/local/bin` and you'll need the `--sudo` option to write to
