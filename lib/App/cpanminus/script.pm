@@ -665,7 +665,7 @@ sub search_metacpan {
         (my $distfile = $dist_meta->{download_url}) =~ s!.+/authors/id/!!;
         local $self->{mirrors} = $self->{mirrors};
         if ($dist_meta->{status} eq 'backpan') {
-            $self->{mirrors} = [ 'http://backpan.perl.org' ];
+            $self->{mirrors} = [ 'http://backpan.cpantesters.org' ];
         } elsif ($dist_meta->{stat}{mtime} > time()-24*60*60) {
             $self->{mirrors} = [ 'http://cpan.metacpan.org' ];
         }
@@ -744,7 +744,7 @@ sub search_cpanmetadb_history {
     for my $try (sort { $b->{version_obj} cmp $a->{version_obj} } @found) {
         if ($self->satisfy_version($module, $try->{version_obj}, $version)) {
             local $self->{mirrors} = $self->{mirrors};
-            unshift @{$self->{mirrors}}, 'http://backpan.perl.org'
+            unshift @{$self->{mirrors}}, 'http://backpan.cpantesters.org'
               unless $try->{latest};
             return $self->cpan_module($module, $try->{distfile}, $try->{version});
         }

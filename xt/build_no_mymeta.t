@@ -4,7 +4,7 @@ use Test::More;
 
 plan skip_all => "only on 5.10.1" if $] != 5.010001;
 
-run 'http://backpan.perl.org/authors/id/D/DA/DAGOLDEN/Module-Build-0.340201.tar.gz';
+run 'http://backpan.cpantesters.org/authors/id/D/DA/DAGOLDEN/Module-Build-0.340201.tar.gz';
 like last_build_log, qr/installed Module-Build/;
 
 my ($stdout, $stderr, $exit) = run 'Hook::LexWrap@0.24';
