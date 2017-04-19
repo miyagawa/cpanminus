@@ -29,5 +29,13 @@ my $local_lib = "$ENV{PERL_CPANM_HOME}/perl5";
     };
 }
 
+{
+    run_L "SAPER/XSLoader-0.22.tar.gz";
+    my $file = "$local_lib/lib/perl5/$Config{archname}/.meta/XSLoader-0.22/install.json";
+
+    my $data = load_json $file;
+    ok exists $data->{provides}{XSLoader};
+}
+
 done_testing;
 
