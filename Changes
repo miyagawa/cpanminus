@@ -2,6 +2,13 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.9005  2017-05-12 14:18:49 JST
+   [Improvements]
+      - Migrate to MetaCPAN V1 API #520 (skaji)
+
+   [Releng]
+      - Merge with cpanminus 1.7043
+
 1.9004  2017-04-02 20:57:03 PDT
    [Improvements]
       - Set PERL_USE_UNSAFE_INC for 5.26+ (haarg)

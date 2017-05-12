@@ -96,7 +96,7 @@
          "web" : "https://github.com/miyagawa/cpanminus"
       }
    },
-   "version" : "1.9004",
+   "version" : "1.9005",
    "x_contributors" : [
       "Aaron Moses <mosesa02@localhost.localdomain>",
       "Alessandro Ghedini <al3xbio@gmail.com>",
@@ -173,6 +173,6 @@
       "yappo <yappo@shibuya.pl>",
       "zebardy <zebardy@gmail.com>"
    ],
-   "x_serialization_backend" : "Cpanel::JSON::XS version 3.0231"
+   "x_serialization_backend" : "Cpanel::JSON::XS version 3.0233"
 }
 
