@@ -1027,6 +1027,9 @@ sub configure {
         $ENV{PERL_MB_OPT} .= " --pureperl-only";
     }
 
+    local $ENV{PERL_USE_UNSAFE_INC} = 1
+        unless exists $ENV{PERL_USE_UNSAFE_INC};
+
     $cmd = $self->append_args($cmd, 'configure') if $depth == 0;
 
     local $self->{verbose} = $self->{verbose} || $self->{interactive};
@@ -1037,6 +1040,9 @@ sub build {
     my($self, $cmd, $distname, $depth) = @_;
 
     local $ENV{PERL_MM_USE_DEFAULT} = !$self->{interactive};
+
+    local $ENV{PERL_USE_UNSAFE_INC} = 1
+        unless exists $ENV{PERL_USE_UNSAFE_INC};
 
     $cmd = $self->append_args($cmd, 'build') if $depth == 0;
 
@@ -1059,6 +1065,9 @@ sub test {
 
     # https://github.com/Perl-Toolchain-Gang/toolchain-site/blob/master/lancaster-consensus.md
     local $ENV{NONINTERACTIVE_TESTING} = !$self->{interactive};
+
+    local $ENV{PERL_USE_UNSAFE_INC} = 1
+        unless exists $ENV{PERL_USE_UNSAFE_INC};
 
     $cmd = $self->append_args($cmd, 'test') if $depth == 0;
 
@@ -1087,6 +1096,9 @@ sub install {
     }
 
     return $self->run_command($cmd) if ref $cmd eq 'CODE';
+
+    local $ENV{PERL_USE_UNSAFE_INC} = 1
+        unless exists $ENV{PERL_USE_UNSAFE_INC};
 
     if ($self->{sudo}) {
         unshift @$cmd, "sudo";
@@ -2446,9 +2458,21 @@ sub extract_meta_prereqs {
 sub bundle_deps {
     my($self, $dist) = @_;
 
+    my $match;
+    if ($dist->{module}) {
+        $match = sub {
+            my $meta = Module::Metadata->new_from_file($_[0]);
+            $meta && ($meta->name eq $dist->{module});
+        };
+    } else {
+        $match = sub { 1 };
+    }
+
     my @files;
     File::Find::find({
-        wanted => sub { push @files, File::Spec->rel2abs($_) if /\.pm/i },
+        wanted => sub {
+            push @files, File::Spec->rel2abs($_) if /\.pm$/i && $match->($_);
+        },
         no_chdir => 1,
     }, '.');
 

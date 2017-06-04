@@ -2,6 +2,17 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.9005  2017-05-12 14:18:49 JST
+   [Improvements]
+      - Migrate to MetaCPAN V1 API #520 (skaji)
+
+   [Releng]
+      - Merge with cpanminus 1.7043
+
+1.9004  2017-04-02 20:57:03 PDT
+   [Improvements]
+      - Set PERL_USE_UNSAFE_INC for 5.26+ (haarg)
+
 1.9003  2016-05-24 10:30:41 PDT
    [Bug Fix]
       - Return true when file mirror skips copying files
@@ -21,6 +32,11 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 1.9000  2015-08-13 13:47:13 PDT
       - This is the first developer release for Menlo (cpanm 2.0)
+
+1.7043  2017-04-02 20:56:06 PDT
+   [Improvements]
+      - Set PERL_USE_UNSAFE_INC for 5.26+ (haarg) #521
+      - Strictly match module NAME in Bundle
 
 1.7042  2016-05-24 00:48:13 PDT
    [Improvements]
