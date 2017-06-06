@@ -440,18 +440,18 @@ sub search_mirror_index {
 sub search_common {
     my($self, $index, $search_args, $want_version) = @_;
     $index->refresh_index;
-    my @found = $index->search_packages( $search_args );
+    my @found = $index->search_packages($search_args);
 
     return undef unless @found;
 
     # sort found modules by version.
-    my @sorted_found = sort { version->parse( $b->{version} ) <=> version->parse( $a->{version} ) } @found;
+    my @sorted_found = sort { version->parse($b->{version}) <=> version->parse($a->{version}) } @found;
     
     FOUND_MODULES:
-    for my $module ( @sorted_found ) {
+    for my $module (@sorted_found) {
         $module = $self->cpan_module_common($module);
         
-        if ( $self->satisfy_version( $module->{module}, $module->{module_version}, $want_version ) ) {
+        if ($self->satisfy_version($module->{module}, $module->{module_version}, $want_version)) {
             return $module;
         }
         else {
