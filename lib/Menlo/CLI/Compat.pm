@@ -14,7 +14,6 @@ use File::Temp ();
 use File::Which qw(which);
 use Getopt::Long ();
 use Symbol ();
-use Sort::Versions qw(versioncmp);
 use version ();
 
 use constant BAD_TAR => ($^O eq 'solaris' || $^O eq 'hpux');
@@ -446,7 +445,7 @@ sub search_common {
     return undef unless @found;
 
     # sort found modules by version.
-    my @sorted_found = sort { versioncmp($b->{version}, $a->{version}) } @found;
+    my @sorted_found = sort { version->parse( $b->{version} ) <=> version->parse( $a->{version} ) } @found;
     
     FOUND_MODULES:
     for my $module ( @sorted_found ) {
