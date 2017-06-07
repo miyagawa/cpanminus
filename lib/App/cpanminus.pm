@@ -229,7 +229,16 @@ The standalone executable contains the following modules embedded.
 
 =item L<CPAN::Meta::YAML> Copyright 2010 Adam Kennedy
 
+=item L<CPAN::Meta::Check> Copyright (c) 2012 by Leon Timmermans
+
 =item L<File::pushd> Copyright 2012 David Golden
+
+=item L<parent> Copyright (c) 2007-10 Max Maischein
+
+=item L<Parse::PMFile> Copyright 1995 - 2013 by Andreas Koenig, Copyright 2013 by Kenichi Ishigaki
+
+=item L<String::ShellQuote> by Roderick Schertler
+
 
 =back
 
