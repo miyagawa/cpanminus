@@ -1917,7 +1917,7 @@ sub git_uri {
     my $dir = File::Temp::tempdir(CLEANUP => 1);
 
     $self->mask_output( diag_progress => "Cloning $uri" );
-    $self->run([ 'git', 'clone', $uri, $dir ]);
+    $self->run([ 'git', 'clone','--recurse-submodules', $uri, $dir ]);
 
     unless (-e "$dir/.git") {
         $self->diag_fail("Failed cloning git repository $uri", 1);
@@ -1932,6 +1932,13 @@ sub git_uri {
             $self->diag_fail("Failed to checkout '$commitish' in git repository $uri\n");
             return;
         }
+        if (-e "$dir/.gitmodules") {
+            unless ($self->run([ 'git', 'submodule','update'])) {
+                $self->diag_fail("Failed to checkout the submoudules in git repository $uri\n");
+                return;
+            }
+       }
+
     }
 
     $self->diag_ok;
