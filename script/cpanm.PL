@@ -346,6 +346,16 @@ C<cpanfile> when used with C<--installdeps>. Defaults to false.
 B<EXPERIMENTAL>: Installs configure phase dependencies in C<cpanfile>
 when used with C<--installdeps>. Defaults to false.
 
+=item --with-build
+
+B<EXPERIMENTAL>: Installs build phase dependencies in C<cpanfile>
+when used with C<--installdeps>. Defaults to false.
+
+=item --with-test
+
+B<EXPERIMENTAL>: Installs test phase dependencies in C<cpanfile>
+when used with C<--installdeps>. Defaults to false.
+
 =item --with-feature, --without-feature, --with-all-features
 
 B<EXPERIMENTAL>: Specifies the feature to enable, if a module supports

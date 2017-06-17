@@ -90,6 +90,8 @@ sub new {
         pod2man => 1,
         installed_dists => 0,
         install_types => ['requires'],
+        with_build => 0,
+        with_test => 0,
         with_develop => 0,
         with_configure => 0,
         showdeps => 0,
@@ -215,10 +217,14 @@ sub parse_options {
         'configure-timeout=i' => \$self->{configure_timeout},
         'build-timeout=i' => \$self->{build_timeout},
         'test-timeout=i' => \$self->{test_timeout},
+        'with-build' => \$self->{with_build},
+        'without-build' => sub { $self->{with_build} = 0 },
         'with-develop' => \$self->{with_develop},
         'without-develop' => sub { $self->{with_develop} = 0 },
         'with-configure' => \$self->{with_configure},
         'without-configure' => sub { $self->{with_configure} = 0 },
+        'with-test' => \$self->{with_test},
+        'without-test' => sub { $self->{with_test} = 0 },
         'with-feature=s' => sub { $self->{features}{$_[1]} = 1 },
         'without-feature=s' => sub { $self->{features}{$_[1]} = 0 },
         'with-all-features' => sub { $self->{features}{__all} = 1 },
@@ -2214,6 +2220,8 @@ sub build_stuff {
     $dist->{want_phases} = $self->{notest} && !$root_target
                          ? [qw( build runtime )] : [qw( build test runtime )];
 
+    push @{$dist->{want_phases}}, 'build' if $self->{with_build} && $depth == 0;
+    push @{$dist->{want_phases}}, 'test' if $self->{with_test} && $depth == 0;
     push @{$dist->{want_phases}}, 'develop' if $self->{with_develop} && $depth == 0;
     push @{$dist->{want_phases}}, 'configure' if $self->{with_configure} && $depth == 0;
 

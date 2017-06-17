@@ -11,7 +11,7 @@ perl:
 before_install:
   - perlbrew install-cpanm -f
 install:
-  - cpanm -nq --installdeps --with-develop --with-recommends --with-suggests .
+  - cpanm -nq --installdeps --with-develop --with-test --with-recommends --with-suggests .
 script:
   - prove -lr xt -j9
 sudo: false
