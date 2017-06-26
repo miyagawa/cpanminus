@@ -153,6 +153,8 @@ sub parse_options {
     push @ARGV, grep length, split /\s+/, $self->env('OPT');
     push @ARGV, @_;
 
+    my $skip_stdin;
+
     Getopt::Long::Configure("bundling");
     Getopt::Long::GetOptions(
         'f|force'   => sub { $self->{skip_installed} = 0; $self->{force} = 1 },
@@ -162,8 +164,8 @@ sub parse_options {
         'v|verbose' => \$self->{verbose},
         'verify!'   => \$self->{verify},
         'q|quiet!'  => \$self->{quiet},
-        'h|help'    => sub { $self->{action} = 'show_help' },
-        'V|version' => sub { $self->{action} = 'show_version' },
+        'h|help'    => sub { $skip_stdin = 1; $self->{action} = 'show_help' },
+        'V|version' => sub { $skip_stdin = 1; $self->{action} = 'show_version' },
         'perl=s'    => sub {
             $self->diag("--perl is deprecated since it's known to be fragile in figuring out dependencies. Run `$_[1] -S cpanm` instead.\n", 1);
             $self->{perl} = $_[1];
@@ -195,7 +197,7 @@ sub parse_options {
         'info'         => sub { $self->{cmd} = 'info' },
         'look'         => sub { $self->{cmd} = 'look'; $self->{skip_installed} = 0 },
         'U|uninstall'  => sub { $self->{cmd} = 'uninstall' },
-        'self-upgrade' => sub { $self->{action} = 'self_upgrade' },
+        'self-upgrade' => sub { $skip_stdin = 1; $self->{action} = 'self_upgrade' },
         'uninst-shadows!'  => \$self->{uninstall_shadows},
         'lwp!'    => \$self->{try_lwp},
         'wget!'   => \$self->{try_wget},
@@ -228,9 +230,9 @@ sub parse_options {
         $self->build_args_handlers,
     );
 
-    if (!@ARGV && $0 ne '-' && !-t STDIN){ # e.g. # cpanm < author/requires.cpanm
+    if (!$skip_stdin && !@ARGV && $0 ne '-' && !-t STDIN){ # e.g. # cpanm < author/requires.cpanm
         push @ARGV, $self->load_argv_from_fh(\*STDIN);
-        $self->{load_from_stdin} = 1;
+        $self->{loaded_from_stdin} = 1;
     }
 
     $self->{argv} = \@ARGV;
@@ -327,7 +329,7 @@ sub _doit {
     }
 
     return $self->show_help(1)
-        unless @{$self->{argv}} or $self->{load_from_stdin};
+        unless @{$self->{argv}} or $self->{loaded_from_stdin};
 
     $self->configure_mirrors;
 
