@@ -1,6 +1,7 @@
 package Menlo::Util;
 use strict;
 
+use File::Which ();
 use Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT_OK = qw(WIN32);
@@ -13,6 +14,13 @@ if (WIN32) {
 } else {
     require String::ShellQuote;
     *shell_quote = \&String::ShellQuote::shell_quote_best_effort;
+}
+
+sub which {
+    my $name = shift;
+    my $path = File::Which::which($name);
+    return unless $path;
+    $path =~ /\s/ ? shell_quote($path) : $path;
 }
 
 1;
