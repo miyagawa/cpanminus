@@ -1113,7 +1113,7 @@ sub look {
     if ($shell) {
         my $cwd = Cwd::cwd;
         $self->diag("Entering $cwd with $shell\n");
-        safe_system([$shell]);
+        system $shell;
     } else {
         $self->diag_fail("You don't seem to have a SHELL :/");
     }
