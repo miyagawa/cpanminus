@@ -2739,7 +2739,7 @@ sub init_tools {
         $self->{_backends}{untar} = sub {
             my($self, $tarfile) = @_;
 
-            my $x  = "x" . ($self->{verbose} ? 'v' : '') . "f -";
+            my $x  = "x" . ($self->{verbose} ? 'v' : '') . "f";
             my $ar = $tarfile =~ /bz2$/ ? $bzip2 : $gzip;
 
             my($root, @others) = safe_capture([$ar, "-dc", $tarfile], "|", [$tar, "tf", "-"])
@@ -2757,7 +2757,7 @@ sub init_tools {
                 }
             }
 
-            safe_system([$ar, "-dc", $tarfile], "|", [$tar, $x]);
+            safe_system([$ar, "-dc", $tarfile], "|", [$tar, $x, "-"]);
             return $root if -d $root;
 
             $self->diag_fail("Bad archive: $tarfile");
