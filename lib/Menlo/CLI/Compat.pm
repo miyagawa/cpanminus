@@ -942,7 +942,7 @@ sub run_exec {
             open STDOUT, '>&', $logfh;
             close $logfh;
         }
-        exec @$cmd;
+        exec { $cmd->[0] } @$cmd;
     } else {
         unless ($self->{verbose}) {
             $cmd .= " " . safe_string(">>", [$self->{log}], "2>&1");
