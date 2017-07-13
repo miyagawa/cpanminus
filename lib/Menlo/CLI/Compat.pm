@@ -4,7 +4,7 @@ use Config;
 use Cwd ();
 use Menlo;
 use Menlo::Dependency;
-use Menlo::Util qw(WIN32);
+use Menlo::Util qw(WIN32 safe_string safe_system safe_capture);
 use File::Basename ();
 use File::Find ();
 use File::Path ();
@@ -916,9 +916,9 @@ sub run_command {
     }
 
     if (WIN32) {
-        $cmd = Menlo::Util::shell_quote(@$cmd) if ref $cmd eq 'ARRAY';
+        $cmd = safe_string($cmd) if ref $cmd eq 'ARRAY';
         unless ($self->{verbose}) {
-            $cmd .= " >> " . Menlo::Util::shell_quote($self->{log}) . " 2>&1";
+            $cmd .= " " . safe_string(">>", [$self->{log}], "2>&1");
         }
         !system $cmd;
     } else {
@@ -945,7 +945,7 @@ sub run_exec {
         exec @$cmd;
     } else {
         unless ($self->{verbose}) {
-            $cmd .= " >> " . Menlo::Util::shell_quote($self->{log}) . " 2>&1";
+            $cmd .= " " . safe_string(">>", [$self->{log}], "2>&1");
         }
         exec $cmd;
     }
@@ -986,7 +986,7 @@ sub append_args {
     return $cmd if ref $cmd ne 'ARRAY';
     
     if (my $args = $self->{build_args}{$phase}) {
-        $cmd = join ' ', Menlo::Util::shell_quote(@$cmd), $args;
+        $cmd = join ' ', safe_string($cmd), $args;
     }
 
     $cmd;
@@ -1113,7 +1113,7 @@ sub look {
     if ($shell) {
         my $cwd = Cwd::cwd;
         $self->diag("Entering $cwd with $shell\n");
-        system $shell;
+        safe_system([$shell]);
     } else {
         $self->diag_fail("You don't seem to have a SHELL :/");
     }
@@ -1138,7 +1138,7 @@ sub show_build_log {
 
     if ($pager) {
         # win32 'more' doesn't allow "more build.log", the < is required
-        system("$pager < $self->{log}");
+        safe_system([$pager], "<", [$self->{log}]);
     }
     else {
         $self->diag_fail("You don't seem to have a PAGER :/");
@@ -1566,7 +1566,7 @@ sub verify_signature {
     my($self, $dist) = @_;
 
     $self->diag_progress("Verifying the SIGNATURE file");
-    my $out = `$self->{cpansign} -v --skip 2>&1`;
+    my $out = safe_capture([$self->{cpansign}, "-v", "--skip"], "2>&1");
     $self->log($out);
 
     if ($out =~ /Signature verified OK/) {
@@ -2700,7 +2700,7 @@ sub init_tools {
 
     my $tar = which('tar');
     my $tar_ver;
-    my $maybe_bad_tar = sub { WIN32 || BAD_TAR || (($tar_ver = `$tar --version 2>/dev/null`) =~ /GNU.*1\.13/i) };
+    my $maybe_bad_tar = sub { WIN32 || BAD_TAR || (($tar_ver = safe_capture([$tar, "--version"], "2>/dev/null")) =~ /GNU.*1\.13/i) };
 
     if ($tar && !$maybe_bad_tar->()) {
         chomp $tar_ver;
@@ -2711,7 +2711,7 @@ sub init_tools {
             my $xf = ($self->{verbose} ? 'v' : '')."xf";
             my $ar = $tarfile =~ /bz2$/ ? 'j' : 'z';
 
-            my($root, @others) = `$tar ${ar}tf $tarfile`
+            my($root, @others) = safe_capture([$tar, "${ar}tf", $tarfile])
                 or return undef;
 
             FILE: {
@@ -2726,7 +2726,7 @@ sub init_tools {
                 }
             }
 
-            system "$tar $ar$xf $tarfile";
+            safe_system([$tar, "$ar$xf", $tarfile]);
             return $root if -d $root;
 
             $self->diag_fail("Bad archive: $tarfile");
@@ -2742,7 +2742,7 @@ sub init_tools {
             my $x  = "x" . ($self->{verbose} ? 'v' : '') . "f -";
             my $ar = $tarfile =~ /bz2$/ ? $bzip2 : $gzip;
 
-            my($root, @others) = `$ar -dc $tarfile | $tar tf -`
+            my($root, @others) = safe_capture([$ar, "-dc", $tarfile], "|", [$tar, "tf", "-"])
                 or return undef;
 
             FILE: {
@@ -2757,7 +2757,7 @@ sub init_tools {
                 }
             }
 
-            system "$ar -dc $tarfile | $tar $x";
+            safe_system([$ar, "-dc", $tarfile], "|", [$tar, $x]);
             return $root if -d $root;
 
             $self->diag_fail("Bad archive: $tarfile");
@@ -2794,13 +2794,13 @@ sub init_tools {
             my($self, $zipfile) = @_;
 
             my $opt = $self->{verbose} ? '' : '-q';
-            my(undef, $root, @others) = `$unzip -t $zipfile`
+            my(undef, $root, @others) = safe_capture([$unzip, "-t", $zipfile])
                 or return undef;
 
             chomp $root;
             $root =~ s{^\s+testing:\s+([^/]+)/.*?\s+OK$}{$1};
 
-            system "$unzip $opt $zipfile";
+            safe_system([$unzip, $opt, $zipfile]);
             return $root if -d $root;
 
             $self->diag_fail("Bad archive: '$root' $zipfile");
