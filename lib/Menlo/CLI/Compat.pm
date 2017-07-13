@@ -2793,14 +2793,14 @@ sub init_tools {
         $self->{_backends}{unzip} = sub {
             my($self, $zipfile) = @_;
 
-            my $opt = $self->{verbose} ? '' : '-q';
+            my @opt = $self->{verbose} ? () : ('-q');
             my(undef, $root, @others) = safe_capture([$unzip, "-t", $zipfile])
                 or return undef;
 
             chomp $root;
             $root =~ s{^\s+testing:\s+([^/]+)/.*?\s+OK$}{$1};
 
-            safe_system([$unzip, $opt, $zipfile]);
+            safe_system([$unzip, @opt, $zipfile]);
             return $root if -d $root;
 
             $self->diag_fail("Bad archive: '$root' $zipfile");
