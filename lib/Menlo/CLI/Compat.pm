@@ -11,6 +11,7 @@ use File::Path ();
 use File::Spec ();
 use File::Copy ();
 use File::Temp ();
+use File::Which qw(which);
 use Getopt::Long ();
 use Symbol ();
 use version ();
@@ -278,7 +279,7 @@ sub setup_verify {
     my $self = shift;
 
     my $has_modules = eval { require Module::Signature; require Digest::SHA; 1 };
-    $self->{cpansign} = Menlo::Util::which('cpansign', 1);
+    $self->{cpansign} = which('cpansign');
 
     unless ($has_modules && $self->{cpansign}) {
         warn "WARNING: Module::Signature and Digest::SHA is required for distribution verifications.\n";
@@ -1130,7 +1131,7 @@ sub show_build_log {
     while (@pagers) {
         $pager = shift @pagers;
         next unless $pager;
-        $pager = Menlo::Util::which($pager, 1);
+        $pager = which($pager);
         next unless $pager;
         last;
     }
@@ -2691,13 +2692,13 @@ sub init_tools {
 
     return if $self->{initialized}++;
 
-    if ($self->{make} = Menlo::Util::which($Config{make})) {
+    if ($self->{make} = which($Config{make})) {
         $self->chat("You have make $self->{make}\n");
     }
 
     $self->{http} = $self->configure_http;
 
-    my $tar = Menlo::Util::which('tar', 1);
+    my $tar = which('tar');
     my $tar_ver;
     my $maybe_bad_tar = sub { WIN32 || BAD_TAR || (($tar_ver = `$tar --version 2>/dev/null`) =~ /GNU.*1\.13/i) };
 
@@ -2732,8 +2733,8 @@ sub init_tools {
             return undef;
         }
     } elsif (    $tar
-             and my $gzip = Menlo::Util::which('gzip', 1)
-             and my $bzip2 = Menlo::Util::which('bzip2', 1)) {
+             and my $gzip = which('gzip')
+             and my $bzip2 = which('bzip2')) {
         $self->chat("You have $tar, $gzip and $bzip2\n");
         $self->{_backends}{untar} = sub {
             my($self, $tarfile) = @_;
@@ -2787,7 +2788,7 @@ sub init_tools {
         };
     }
 
-    if (my $unzip = Menlo::Util::which('unzip', 1)) {
+    if (my $unzip = which('unzip')) {
         $self->chat("You have $unzip\n");
         $self->{_backends}{unzip} = sub {
             my($self, $zipfile) = @_;
