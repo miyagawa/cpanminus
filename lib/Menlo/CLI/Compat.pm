@@ -918,7 +918,7 @@ sub run_command {
     if (WIN32) {
         $cmd = safe_string($cmd) if ref $cmd eq 'ARRAY';
         unless ($self->{verbose}) {
-            $cmd .= " " . safe_string(">>", [$self->{log}], "2>&1");
+            $cmd .= " >> " . Menlo::Util::shell_quote($self->{log}) . " 2>&1";
         }
         !system $cmd;
     } else {
@@ -945,7 +945,7 @@ sub run_exec {
         exec { $cmd->[0] } @$cmd;
     } else {
         unless ($self->{verbose}) {
-            $cmd .= " " . safe_string(">>", [$self->{log}], "2>&1");
+            $cmd .= " >> " . Menlo::Util::shell_quote($self->{log}) . " 2>&1";
         }
         exec $cmd;
     }
