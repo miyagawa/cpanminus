@@ -77,6 +77,7 @@ sub new {
         exclude_vendor => undef,
         prompt_timeout => 0,
         prompt => undef,
+        quit => undef,
         configure_timeout => 60,
         build_timeout => 3600,
         test_timeout => 1800,
@@ -186,6 +187,7 @@ sub parse_options {
         'cpanmetadb=s'    => \$self->{cpanmetadb},
         'cascade-search!' => \$self->{cascade_search},
         'prompt!'   => \$self->{prompt},
+        'quit!'   => \$self->{quit},
         'installdeps' => \$self->{installdeps},
         'skip-installed!' => \$self->{skip_installed},
         'skip-satisfied!' => \$self->{skip_satisfied},
@@ -876,6 +878,7 @@ Options:
   --mirror-only             Use the mirror's index file instead of the CPAN Meta DB
   -M,--from                 Use only this mirror base URL and its index file
   --prompt                  Prompt when configure/build/test fails
+  --quit                    Quit the process as soon a confire/build/test fails
   -l,--local-lib            Specify the install base to install modules
   -L,--local-lib-contained  Specify the install base to install all non-core modules
   --self-contained          Install all non-core modules, even if they're already installed.
@@ -1073,6 +1076,11 @@ sub prompt {
     my $isa_tty = -t STDIN && (-t STDOUT || !(-f STDOUT || -c STDOUT)) ;
     my $dispdef = defined $def ? "[$def] " : " ";
     $def = defined $def ? $def : "";
+
+    if ($self->{quit}) {
+        $self->show_build_log;
+        die "Quitting cpanm";
+    }
 
     if (!$self->{prompt} || (!$isa_tty && eof STDIN)) {
         return $def;
