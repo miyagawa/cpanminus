@@ -1816,7 +1816,7 @@ sub verify_signature {
         $self->diag_ok("Verified OK");
         return 1;
     } else {
-        $self->diag_fail("SIGNATURE verificaion for $dist->{filename} failed\n");
+        $self->diag_fail("SIGNATURE verification for $dist->{filename} failed\n");
         return;
     }
 }
