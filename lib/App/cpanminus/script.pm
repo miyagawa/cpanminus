@@ -1839,11 +1839,22 @@ sub resolve_name {
     }
 
     # Directory
-    if ($module =~ m!^[\./]! && -d $module) {
+    if ($module =~ m!^[\./]!) {
+      # Follow symlink
+      my $real = $module;
+      if (-l $module) {
+        $real = readlink($module);
+        if (!File::Spec->file_name_is_absolute($real)) {
+          my $dir = File::Basename::dirname(Cwd::abs_path($module));
+          $real = File::Spec->catfile($dir, $real);
+        }
+      }
+      if (-d $real) {
         return {
             source => 'local',
-            dir => Cwd::abs_path($module),
+            dir => Cwd::abs_path($real),
         };
+      }
     }
 
     # File
