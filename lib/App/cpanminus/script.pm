@@ -14,7 +14,7 @@ use Getopt::Long ();
 use Symbol ();
 use String::ShellQuote ();
 use version ();
-use Time::Local;
+use Time::Local ();
 
 use constant WIN32 => $^O eq 'MSWin32';
 use constant BAD_TAR => ($^O eq 'solaris' || $^O eq 'hpux');
@@ -610,29 +610,6 @@ sub search_metacpan {
 
     $self->chat("Searching $module ($version) on metacpan ...\n");
 
-    # my $query = {
-    #     query => {
-    #         filtered => {
-    #             (@filter ? (filter => { and => \@filter }) : ()),
-    #             query => { nested => {
-    #                 # score_mode => 'max',
-    #                 path => 'module',
-    #                 query => {
-    #                     query => {
-    #                         filter => { and => [
-    #                             { term => { 'module.authorized' => JSON::PP::true() } },
-    #                             { term => { 'module.indexed' => JSON::PP::true() } },
-    #                             { term => { 'module.name' => $module } },
-    #                             $self->version_to_query($module, $version),
-    #                         ] }
-    #                     },
-    #                 },
-    #             } },
-    #         }
-    #     },
-    #     fields => [ 'date', 'release', 'author', 'module', 'status' ],
-    # };
-
     my $query = {
         query => {
             bool => {
@@ -726,7 +703,7 @@ sub dtm_to_epoch{
 
     my ($hour, $min, $sec) = split(/:/, $time);
 
-    timegm($sec, $min, $hour, $mday, $mon, $year)
+    Time::Local::timegm($sec, $min, $hour, $mday, $mon, $year)
 }
 
 sub search_database {
@@ -1927,9 +1904,9 @@ sub resolve_name {
 }
 
 sub cpan_module {
-    my($self, $module, $dist_file, $version) = @_;
+    my($self, $module, $dist, $version) = @_;
 
-    my $dist = $self->cpan_dist($dist_file);
+    my $dist = $self->cpan_dist($dist);
     $dist->{module} = $module;
     $dist->{module_version} = $version if $version && $version ne 'undef';
 
