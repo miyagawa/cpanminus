@@ -1464,7 +1464,6 @@ sub install_module {
     }
 
     my $dist = $self->resolve_name($module, $version);
-    push(@$dependencies, $dist);
 
     unless ($dist) {
         my $what = $module . ($version ? " ($version)" : "");
@@ -2253,10 +2252,6 @@ sub build_stuff {
     push @{$dist->{want_phases}}, 'configure' if $self->{with_configure} && $depth == 0;
 
     my @deps = $self->find_prereqs($dist);
-    $dependencies = [];
-    for my $dep (@config_deps, @deps){
-        push(@$dependencies, {version => $dep->{version}, module => $dep->{module}, dependencies => []});
-    }
 
     my $module_name = $self->find_module_name($configure_state) || $dist->{meta}{name};
     $module_name =~ s/-/::/g;
