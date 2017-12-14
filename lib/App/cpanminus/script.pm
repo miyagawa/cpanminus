@@ -2217,7 +2217,16 @@ sub build_stuff {
     push @{$dist->{want_phases}}, 'develop' if $self->{with_develop} && $depth == 0;
     push @{$dist->{want_phases}}, 'configure' if $self->{with_configure} && $depth == 0;
 
-    my @deps = $self->find_prereqs($dist);
+    my @all_deps = $self->find_prereqs($dist);
+    my @deps = grep { $_->{module} ne $dist->{module} } @all_deps;
+
+    if ( @deps != @all_deps ) {
+        $self->chat(<<DIAG, 1);
+! $dist->{module} specifies itself as a dependency.
+! Omitting it from the list of dependencies.
+DIAG
+    }
+
     my $module_name = $self->find_module_name($configure_state) || $dist->{meta}{name};
     $module_name =~ s/-/::/g;
 
