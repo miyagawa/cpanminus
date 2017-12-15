@@ -1903,9 +1903,9 @@ sub resolve_name {
 }
 
 sub cpan_module {
-    my($self, $module, $dist, $version) = @_;
+    my($self, $module, $dist_file, $version) = @_;
 
-    my $dist = $self->cpan_dist($dist);
+    my $dist = $self->cpan_dist($dist_file);
     $dist->{module} = $module;
     $dist->{module_version} = $version if $version && $version ne 'undef';
 
