@@ -3034,7 +3034,7 @@ sub init_tools {
         };
         $self->{_backends}{post} = sub{
             my ($self, $uri, $body) = @_;
-            $self->safeexec( my $fh, $wget, $uri, @common, "post-data='$body'", '-O', '-' ) or die "wget $uri: $!";
+            $self->safeexec( my $fh, $wget, $uri, @common, "--post-data", "$body", '-O', '-' ) or die "wget $uri: $!";
             local $/;
             <$fh>;
         };
@@ -3059,7 +3059,7 @@ sub init_tools {
         };
         $self->{_backends}{post} = sub {
             my($self, $uri, $body) = @_;
-            $self->safeexec( my $fh, $curl, @common, "-d='$body'",  $uri ) or die "curl $uri: $!";
+            $self->safeexec( my $fh, $curl, @common, "-d", "$body",  $uri ) or die "curl $uri: $!";
             local $/;
             <$fh>;
         };
