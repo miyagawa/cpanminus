@@ -955,7 +955,7 @@ sub bootstrap_local_lib {
     }
 
     # root, locally-installed perl or --sudo: don't care about install_base
-    return if $self->{sudo} or (_writable($Config{installsitelib}) and _writable($Config{installsitebin}));
+    return if $self->{sudo} or $self->{cmd} eq 'info' or (_writable($Config{installsitelib}) and _writable($Config{installsitebin}));
 
     # local::lib is configured in the shell -- yay
     if ($ENV{PERL_MM_OPT} and ($ENV{MODULEBUILDRC} or $ENV{PERL_MB_OPT})) {
