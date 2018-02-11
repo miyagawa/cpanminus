@@ -3125,9 +3125,13 @@ sub init_tools {
             my $opt = $self->{verbose} ? '' : '-q';
             my(undef, $root, @others) = `$unzip -t $zipfile`
                 or return undef;
-
-            chomp $root;
-            $root =~ s{^\s+testing:\s+([^/]+)/.*?\s+OK$}{$1};
+            FILE: {
+                chomp $root;
+                if ($root !~ s{^\s+testing:\s+([^/]+)/.*?\s+OK$}{$1}) {
+                    $root = shift(@others);
+                    redo FILE if $root;
+                }
+            }
 
             system "$unzip $opt $zipfile";
             return $root if -d $root;

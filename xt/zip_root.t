@@ -8,4 +8,7 @@ unlike last_build_log, qr/Bad archive/;
 run 'CPAN::Test::Dummy::Perl5::Make::Zip';
 like last_build_log, qr/installed/;
 
+run 'JJONES/Finance-OFX-Parse-Simple-0.07.zip';
+like last_build_log, qr/installed/;
+
 done_testing;
