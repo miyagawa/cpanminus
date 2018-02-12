@@ -14,6 +14,7 @@ use Getopt::Long ();
 use Symbol ();
 use String::ShellQuote ();
 use version ();
+use Time::Local ();
 
 use constant WIN32 => $^O eq 'MSWin32';
 use constant BAD_TAR => ($^O eq 'solaris' || $^O eq 'hpux');
@@ -67,6 +68,7 @@ sub new {
         interactive => undef,
         log => undef,
         mirrors => [],
+        metacpan_mirrors => ['http://fastapi.metacpan.org/v1'],
         mirror_only => undef,
         mirror_index => undef,
         cpanmetadb => "http://cpanmetadb.plackperl.org/v1.0/",
@@ -155,75 +157,76 @@ sub parse_options {
 
     Getopt::Long::Configure("bundling");
     Getopt::Long::GetOptions(
-        'f|force'   => sub { $self->{skip_installed} = 0; $self->{force} = 1 },
-        'n|notest!' => \$self->{notest},
-        'test-only' => sub { $self->{notest} = 0; $self->{skip_installed} = 0; $self->{test_only} = 1 },
-        'S|sudo!'   => \$self->{sudo},
-        'v|verbose' => \$self->{verbose},
-        'verify!'   => \$self->{verify},
-        'q|quiet!'  => \$self->{quiet},
-        'h|help'    => sub { $self->{action} = 'show_help' },
-        'V|version' => sub { $self->{action} = 'show_version' },
-        'perl=s'    => sub {
+        'f|force'                 => sub { $self->{skip_installed} = 0; $self->{force} = 1 },
+        'n|notest!'               => \$self->{notest},
+        'test-only'               => sub { $self->{notest} = 0; $self->{skip_installed} = 0; $self->{test_only} = 1 },
+        'S|sudo!'                 => \$self->{sudo},
+        'v|verbose'               => \$self->{verbose},
+        'verify!'                 => \$self->{verify},
+        'q|quiet!'                => \$self->{quiet},
+        'h|help'                  => sub { $self->{action} = 'show_help' },
+        'V|version'               => sub { $self->{action} = 'show_version' },
+        'perl=s'                  => sub {
             $self->diag("--perl is deprecated since it's known to be fragile in figuring out dependencies. Run `$_[1] -S cpanm` instead.\n", 1);
             $self->{perl} = $_[1];
         },
-        'l|local-lib=s' => sub { $self->{local_lib} = $self->maybe_abs($_[1]) },
+        'l|local-lib=s'           => sub { $self->{local_lib} = $self->maybe_abs($_[1]) },
         'L|local-lib-contained=s' => sub {
             $self->{local_lib} = $self->maybe_abs($_[1]);
             $self->{self_contained} = 1;
             $self->{pod2man} = undef;
         },
-        'self-contained!' => \$self->{self_contained},
-        'exclude-vendor!' => \$self->{exclude_vendor},
-        'mirror=s@' => $self->{mirrors},
-        'mirror-only!' => \$self->{mirror_only},
-        'mirror-index=s' => sub { $self->{mirror_index} = $self->maybe_abs($_[1]) },
-        'M|from=s' => sub {
+        'self-contained!'         => \$self->{self_contained},
+        'exclude-vendor!'         => \$self->{exclude_vendor},
+        'mirror=s@'               => $self->{mirrors},
+        'mirror-only!'            => \$self->{mirror_only},
+        'mirror-index=s'          => sub { $self->{mirror_index} = $self->maybe_abs($_[1]) },
+        'M|from=s'                => sub {
             $self->{mirrors}     = [$_[1]];
             $self->{mirror_only} = 1;
         },
-        'cpanmetadb=s'    => \$self->{cpanmetadb},
-        'cascade-search!' => \$self->{cascade_search},
-        'prompt!'   => \$self->{prompt},
-        'installdeps' => \$self->{installdeps},
-        'skip-installed!' => \$self->{skip_installed},
-        'skip-satisfied!' => \$self->{skip_satisfied},
-        'reinstall'    => sub { $self->{skip_installed} = 0 },
-        'interactive!' => \$self->{interactive},
-        'i|install'    => sub { $self->{cmd} = 'install' },
-        'info'         => sub { $self->{cmd} = 'info' },
-        'look'         => sub { $self->{cmd} = 'look'; $self->{skip_installed} = 0 },
-        'U|uninstall'  => sub { $self->{cmd} = 'uninstall' },
-        'self-upgrade' => sub { $self->{action} = 'self_upgrade' },
-        'uninst-shadows!'  => \$self->{uninstall_shadows},
-        'lwp!'    => \$self->{try_lwp},
-        'wget!'   => \$self->{try_wget},
-        'curl!'   => \$self->{try_curl},
-        'auto-cleanup=s' => \$self->{auto_cleanup},
-        'man-pages!' => \$self->{pod2man},
-        'scandeps'   => \$self->{scandeps},
-        'showdeps'   => sub { $self->{showdeps} = 1; $self->{skip_installed} = 0 },
-        'format=s'   => \$self->{format},
-        'save-dists=s' => sub {
+        'cpanmetadb=s'            => \$self->{cpanmetadb},
+        'cascade-search!'         => \$self->{cascade_search},
+        'prompt!'                 => \$self->{prompt},
+        'installdeps'             => \$self->{installdeps},
+        'skip-installed!'         => \$self->{skip_installed},
+        'skip-satisfied!'         => \$self->{skip_satisfied},
+        'reinstall'               => sub { $self->{skip_installed} = 0 },
+        'interactive!'            => \$self->{interactive},
+        'i|install'               => sub { $self->{cmd} = 'install' },
+        'info'                    => sub { $self->{cmd} = 'info' },
+        'look'                    => sub { $self->{cmd} = 'look'; $self->{skip_installed} = 0 },
+        'U|uninstall'             => sub { $self->{cmd} = 'uninstall' },
+        'self-upgrade'            => sub { $self->{action} = 'self_upgrade' },
+        'uninst-shadows!'         => \$self->{uninstall_shadows},
+        'lwp!'                    => \$self->{try_lwp},
+        'wget!'                   => \$self->{try_wget},
+        'curl!'                   => \$self->{try_curl},
+        'auto-cleanup=s'          => \$self->{auto_cleanup},
+        'man-pages!'              => \$self->{pod2man},
+        'scandeps'                => \$self->{scandeps},
+        'showdeps'                => sub { $self->{showdeps} = 1; $self->{skip_installed} = 0 },
+        'format=s'                => \$self->{format},
+        'save-dists=s'            => sub {
             $self->{save_dists} = $self->maybe_abs($_[1]);
         },
-        'skip-configure!' => \$self->{skip_configure},
-        'dev!'       => \$self->{dev_release},
-        'metacpan!'  => \$self->{metacpan},
-        'report-perl-version!' => \$self->{report_perl_version},
-        'configure-timeout=i' => \$self->{configure_timeout},
-        'build-timeout=i' => \$self->{build_timeout},
-        'test-timeout=i' => \$self->{test_timeout},
-        'with-develop' => \$self->{with_develop},
-        'without-develop' => sub { $self->{with_develop} = 0 },
-        'with-configure' => \$self->{with_configure},
-        'without-configure' => sub { $self->{with_configure} = 0 },
-        'with-feature=s' => sub { $self->{features}{$_[1]} = 1 },
-        'without-feature=s' => sub { $self->{features}{$_[1]} = 0 },
-        'with-all-features' => sub { $self->{features}{__all} = 1 },
-        'pp|pureperl!' => \$self->{pure_perl},
-        "cpanfile=s" => \$self->{cpanfile_path},
+        'skip-configure!'         => \$self->{skip_configure},
+        'dev!'                    => \$self->{dev_release},
+        'metacpan!'               => \$self->{metacpan},
+        'metacpan-mirrors=s@'     => $self->{metacpan_mirrors},
+        'report-perl-version!'    => \$self->{report_perl_version},
+        'configure-timeout=i'     => \$self->{configure_timeout},
+        'build-timeout=i'         => \$self->{build_timeout},
+        'test-timeout=i'          => \$self->{test_timeout},
+        'with-develop'            => \$self->{with_develop},
+        'without-develop'         => sub { $self->{with_develop} = 0 },
+        'with-configure'          => \$self->{with_configure},
+        'without-configure'       => sub { $self->{with_configure} = 0 },
+        'with-feature=s'          => sub { $self->{features}{$_[1]} = 1 },
+        'without-feature=s'       => sub { $self->{features}{$_[1]} = 0 },
+        'with-all-features'       => sub { $self->{features}{__all} = 1 },
+        'pp|pureperl!'            => \$self->{pure_perl},
+        "cpanfile=s"              => \$self->{cpanfile_path},
         $self->install_type_handlers,
         $self->build_args_handlers,
     );
@@ -335,6 +338,7 @@ sub _doit {
 
     my @fail;
     for my $module (@{$self->{argv}}) {
+
         if ($module =~ s/\.pm$//i) {
             my ($volume, $dirs, $file) = File::Spec->splitpath($module);
             $module = join '::', grep { $_ } File::Spec->splitdir($dirs), $file;
@@ -342,6 +346,7 @@ sub _doit {
         ($module, my $version) = $self->parse_module_args($module);
 
         $self->chdir($cwd);
+
         if ($self->{cmd} eq 'uninstall') {
             $self->uninstall_module($module)
               or push @fail, $module;
@@ -508,7 +513,7 @@ sub version_to_query {
 
     if ($req =~ s/^==\s*//) {
         return {
-            term => { 'module.version' => $req },
+            term => { 'module.version_numified' => $self->numify_ver_metacpan($req)},
         };
     } elsif ($req !~ /\s/) {
         return {
@@ -561,11 +566,11 @@ sub maturity_filter {
         return;
     } elsif ($self->{dev_release}) {
         # backpan'ed dev releases are considered cancelled
-        return +{ not => { term => { status => 'backpan' } } };
+        return +{ must_not => { match => { status => 'backpan' } }};
     } else {
         return (
-            { not => { term => { status => 'backpan' } } },
-            { term => { maturity => 'released' } },
+            { must_not => {match => { status => 'backpan' } }} ,
+            { must     => {match => { maturity => 'released' } }},
         );
     }
 }
@@ -573,71 +578,81 @@ sub maturity_filter {
 sub by_version {
     my %s = qw( latest 3  cpan 2  backpan 1 );
     $b->{_score} <=> $a->{_score} ||                             # version: higher version that satisfies the query
-    $s{ $b->{fields}{status} } <=> $s{ $a->{fields}{status} };   # prefer non-BackPAN dist
+    $s{ $b->{_source}{status} } <=> $s{ $a->{_source}{status} };   # prefer non-BackPAN dist
 }
 
 sub by_first_come {
-    $a->{fields}{date} cmp $b->{fields}{date};                   # first one wins, if all are in BackPAN/CPAN
+    $a->{_source}{date} cmp $b->{_source}{date};                   # first one wins, if all are in BackPAN/CPAN
 }
 
 sub by_date {
-    $b->{fields}{date} cmp $a->{fields}{date};                   # prefer new uploads, when searching for dev
+    $b->{_source}{date} cmp $a->{_source}{date};                   # prefer new uploads, when searching for dev
 }
 
 sub find_best_match {
-    my($self, $match, $version) = @_;
+    my($self, $match, $module) = @_;
     return unless $match && @{$match->{hits}{hits} || []};
+    for my $hit (@{$match->{hits}{hits}}){
+        $hit->{_score} = [grep($_->{name} eq $module, @{$hit->{_source}{module}})]->[0]->{version_numified};
+    }
+
     my @hits = $self->{dev_release}
         ? sort { by_version || by_date } @{$match->{hits}{hits}}
         : sort { by_version || by_first_come } @{$match->{hits}{hits}};
-    $hits[0]->{fields};
+
+    $hits[0];
 }
 
 sub search_metacpan {
-    my($self, $module, $version) = @_;
+    my($self, $module, $version, $metacpan_uri) = @_;
 
     require JSON::PP;
 
     $self->chat("Searching $module ($version) on metacpan ...\n");
 
-    my $metacpan_uri = 'http://api.metacpan.org/v0';
+    my $query = {
+        query => {
+            bool => {
+                must => [
+                    {
+                        query =>{
+                            bool =>{
+                                should => [($self->maturity_filter($module, $version))]
+                            }
+                        }
+                    },
+                    {
+                        nested => {
+                            path  => "module",
+                            query => {
+                                bool => {
+                                    must => [
+                                        { match => { "module.authorized" => JSON::PP::true()}},
+                                        { match => { "module.indexed" => JSON::PP::true()}},
+                                        { match => { "module.name" => $module } },
+                                        $self->version_to_query($module, $version),
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        # sort=> { "date" => { order => "desc" }}
+    };
 
-    my @filter = $self->maturity_filter($module, $version);
-
-    my $query = { filtered => {
-        (@filter ? (filter => { and => \@filter }) : ()),
-        query => { nested => {
-            score_mode => 'max',
-            path => 'module',
-            query => { custom_score => {
-                metacpan_script => "score_version_numified",
-                query => { constant_score => {
-                    filter => { and => [
-                        { term => { 'module.authorized' => JSON::PP::true() } },
-                        { term => { 'module.indexed' => JSON::PP::true() } },
-                        { term => { 'module.name' => $module } },
-                        $self->version_to_query($module, $version),
-                    ] }
-                } },
-            } },
-        } },
-    } };
-
-    my $module_uri = "$metacpan_uri/file/_search?source=";
-    $module_uri .= $self->encode_json({
-        query => $query,
-        fields => [ 'date', 'release', 'author', 'module', 'status' ],
-    });
+    my $module_uri = "$metacpan_uri/file/_search";
+    my $body       = JSON::PP::encode_json($query);
 
     my($release, $author, $module_version);
-
-    my $module_json = $self->get($module_uri);
+    my $module_json = $self->post($module_uri, $body);
     my $module_meta = eval { JSON::PP::decode_json($module_json) };
-    my $match = $self->find_best_match($module_meta);
+    my $match = $self->find_best_match($module_meta, $module);
     if ($match) {
-        $release = $match->{release};
-        $author = $match->{author};
-        my $module_matched = (grep { $_->{name} eq $module } @{$match->{module}})[0];
+        $release = $match->{_source}{release};
+        $author = $match->{_source}{author};
+        my $module_matched = (grep { $_->{name} eq $module } @{$match->{source}{module}})[0];
         $module_version = $module_matched->{version};
     }
 
@@ -646,27 +661,29 @@ sub search_metacpan {
         return;
     }
 
-    my $dist_uri = "$metacpan_uri/release/_search?source=";
-    $dist_uri .= $self->encode_json({
+    my $dist_uri = "$metacpan_uri/release/_search";
+    my $dist_body = JSON::PP::encode_json({
         filter => { and => [
-            { term => { 'release.name' => $release } },
-            { term => { 'release.author' => $author } },
+            { term => { 'name'   => $release } },
+            { term => { 'author' => $author } },
         ]},
-        fields => [ 'download_url', 'stat', 'status' ],
+        fields => [ 'download_url', 'status', 'date' ],
     });
 
-    my $dist_json = $self->get($dist_uri);
+    my $dist_json = $self->post($dist_uri, $dist_body);
+
     my $dist_meta = eval { JSON::PP::decode_json($dist_json) };
 
     if ($dist_meta) {
         $dist_meta = $dist_meta->{hits}{hits}[0]{fields};
     }
+
     if ($dist_meta && $dist_meta->{download_url}) {
-        (my $distfile = $dist_meta->{download_url}) =~ s!.+/authors/id/!!;
+        (my $distfile = $dist_meta->{download_url}[0]) =~ s!.+/authors/id/!!;
         local $self->{mirrors} = $self->{mirrors};
-        if ($dist_meta->{status} eq 'backpan') {
+        if ($dist_meta->{status}[0] eq 'backpan') {
             $self->{mirrors} = [ 'http://backpan.perl.org' ];
-        } elsif ($dist_meta->{stat}{mtime} > time()-24*60*60) {
+        } elsif (dtm_to_epoch($dist_meta->{date}[0]) > time()-24*60*60) {
             $self->{mirrors} = [ 'http://cpan.metacpan.org' ];
         }
         return $self->cpan_module($module, $distfile, $module_version);
@@ -676,18 +693,36 @@ sub search_metacpan {
     return;
 }
 
+sub dtm_to_epoch{
+    my($dtm) = @_;
+
+    my ($date, $time) = split(/T/, $dtm);
+    my ($year, $mon, $mday) = split(/-/, $date);
+    $year -= 1900;
+    $mon -= 1;
+
+    my ($hour, $min, $sec) = split(/:/, $time);
+
+    Time::Local::timegm($sec, $min, $hour, $mday, $mon, $year)
+}
+
 sub search_database {
     my($self, $module, $version) = @_;
 
     my $found;
 
     if ($self->{dev_release} or $self->{metacpan}) {
-        $found = $self->search_metacpan($module, $version)   and return $found;
+        for my $uri (reverse @{$self->{metacpan_mirrors}}){
+            $found = $self->search_metacpan($module, $version, $uri) and return $found;
+        }
         $found = $self->search_cpanmetadb($module, $version) and return $found;
     } else {
         $found = $self->search_cpanmetadb($module, $version) and return $found;
-        $found = $self->search_metacpan($module, $version)   and return $found;
+        for my $uri (reverse @{$self->{metacpan_mirrors}}){
+            $found = $self->search_metacpan($module, $version, $uri) and return $found;
+        }
     }
+
 }
 
 sub search_cpanmetadb {
@@ -1282,7 +1317,6 @@ sub build {
         unless exists $ENV{PERL_USE_UNSAFE_INC};
 
     $cmd = $self->append_args($cmd, 'build') if $depth == 0;
-
     return 1 if $self->run_timeout($cmd, $self->{build_timeout});
     while (1) {
         my $ans = lc $self->prompt("Building $distname failed.\nYou can s)kip, r)etry, e)xamine build log, or l)ook ?", "s");
@@ -1344,7 +1378,6 @@ sub install {
     }
 
     $cmd = $self->append_args($cmd, 'install') if $depth == 0;
-
     $self->run($cmd);
 }
 
@@ -1431,12 +1464,12 @@ sub install_module {
     }
 
     my $dist = $self->resolve_name($module, $version);
+
     unless ($dist) {
         my $what = $module . ($version ? " ($version)" : "");
         $self->diag_fail("Couldn't find module or a distribution $what", 1);
         return;
     }
-
     if ($dist->{distvname} && $self->{seen}{$dist->{distvname}}++) {
         $self->chat("Already tried $dist->{distvname}. Skipping.\n");
         return 1;
@@ -2190,6 +2223,7 @@ sub build_stuff {
         );
     }
 
+
     $self->merge_with_cpanfile($dist, \@config_deps);
 
     $self->upgrade_toolchain(\@config_deps);
@@ -2218,6 +2252,7 @@ sub build_stuff {
     push @{$dist->{want_phases}}, 'configure' if $self->{with_configure} && $depth == 0;
 
     my @deps = $self->find_prereqs($dist);
+
     my $module_name = $self->find_module_name($configure_state) || $dist->{meta}{name};
     $module_name =~ s/-/::/g;
 
@@ -2315,6 +2350,7 @@ DIAG
         $self->diag_fail("$what $stuff failed. See $self->{log} for details. Retry with --force to force install it.", 1);
         return;
     }
+
 }
 
 sub perl_requirements {
@@ -2881,6 +2917,11 @@ sub get {
     }
 }
 
+sub post {
+    my ($self, $uri, $body) = @_;
+    $self->{_backends}{post}->(@_);
+}
+
 sub mirror {
     my($self, $uri, $local) = @_;
     if ($uri =~ /^file:/) {
@@ -2964,6 +3005,14 @@ sub init_tools {
             return unless $res->is_success;
             return $res->decoded_content;
         };
+
+        $self->{_backends}{post} = sub{
+            my ($self, $url, $body) = @_;
+            my $res = $ua->()->post($url, Content => $body);
+            return unless $res->is_success;
+            return $res->decoded_content;
+        };
+
         $self->{_backends}{mirror} = sub {
             my $self = shift;
             my $res = $ua->()->mirror(@_);
@@ -2983,6 +3032,12 @@ sub init_tools {
             local $/;
             <$fh>;
         };
+        $self->{_backends}{post} = sub{
+            my ($self, $uri, $body) = @_;
+            $self->safeexec( my $fh, $wget, $uri, @common, "--post-data", "$body", '-O', '-' ) or die "wget $uri: $!";
+            local $/;
+            <$fh>;
+        };
         $self->{_backends}{mirror} = sub {
             my($self, $uri, $path) = @_;
             $self->safeexec( my $fh, $wget, $uri, @common, '-O', $path ) or die "wget $uri: $!";
@@ -2999,6 +3054,12 @@ sub init_tools {
         $self->{_backends}{get} = sub {
             my($self, $uri) = @_;
             $self->safeexec( my $fh, $curl, @common, $uri ) or die "curl $uri: $!";
+            local $/;
+            <$fh>;
+        };
+        $self->{_backends}{post} = sub {
+            my($self, $uri, $body) = @_;
+            $self->safeexec( my $fh, $curl, @common, "-d", "$body",  $uri ) or die "curl $uri: $!";
             local $/;
             <$fh>;
         };
