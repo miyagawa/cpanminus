@@ -21,7 +21,7 @@ while(<$fh>) { push @lines, $_; }
 
 like $lines[0], qr/Failed\sto\srun/, 'failed to run message';
 like $lines[1], qr/FAIL\sFailed\sto\srun/, 'failed to run message';
-like $lines[2], qr/^sh:\snot\-a\-command/, 'failed through shell';
+like $lines[2], qr/^sh:.*not\-a\-command/, 'failed through shell';
 like $lines[3], qr/^hello\sworld/, 'success';
 like $lines[4], qr/^hello\sworld/, 'success';
 
