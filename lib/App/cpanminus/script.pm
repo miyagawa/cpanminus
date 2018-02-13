@@ -1065,7 +1065,10 @@ sub run_exec {
             open STDOUT, '>&', $logfh;
             close $logfh;
         }
-        exec @$cmd;
+        exec { @$cmd[0] } @$cmd or sub {
+            $self->diag_fail("Failed to run '@$cmd' $!");
+            exit(1);
+        }->();
     } else {
         unless ($self->{verbose}) {
             $cmd .= " >> " . $self->shell_quote($self->{log}) . " 2>&1";
