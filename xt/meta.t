@@ -13,7 +13,8 @@ sub load_json {
 my $local_lib = "$ENV{PERL_CPANM_HOME}/perl5";
 
 {
-    run_L "MIYAGAWA/Hash-MultiValue-0.10.tar.gz";
+    # http://www.cpan.org/ no longer has 0.10, switch up to 0.15
+    run_L "MIYAGAWA/Hash-MultiValue-0.15.tar.gz";
 
     my $dist = (last_build_log =~ /Configuring (Hash-\S+)/)[0];
 
@@ -21,7 +22,7 @@ my $local_lib = "$ENV{PERL_CPANM_HOME}/perl5";
 
     my $data = load_json $file;
     is $data->{name}, "Hash::MultiValue";
-    is_deeply $data->{provides}{"Hash::MultiValue"}, { file => "lib/Hash/MultiValue.pm", version => "0.10" };
+    is_deeply $data->{provides}{"Hash::MultiValue"}, { file => "lib/Hash/MultiValue.pm", version => "0.15" };
 }
 
 {
@@ -64,4 +65,3 @@ while (@modules) {
 }
 
 done_testing;
-
