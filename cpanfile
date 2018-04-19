@@ -18,7 +18,6 @@ requires 'Getopt::Long';
 requires 'HTTP::Tiny', '0.054';
 requires 'HTTP::Tinyish', '0.04';
 requires 'JSON::PP';
-requires 'Module::Build::Tiny';
 requires 'Module::CPANfile';
 requires 'Module::CoreList';
 requires 'Module::Metadata';
@@ -44,6 +43,7 @@ on test => sub {
 # build and xt/ test tools
 on develop => sub {
     requires 'JSON';
+    requires 'Module::Build::Tiny';
     requires 'Module::Install';
     requires 'Test::Requires';
 };
