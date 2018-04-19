@@ -105,7 +105,6 @@ sub new {
         @_,
     }, $class;
 
-    $self->parse_options(@_);
     $self;
 }
 
@@ -304,6 +303,8 @@ sub parse_module_args {
 
 sub run {
     my $self = shift;
+
+    $self->parse_options(@_);
 
     my $code;
     eval {
