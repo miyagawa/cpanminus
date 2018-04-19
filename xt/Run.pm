@@ -17,9 +17,16 @@ sub run_L {
 
 sub run {
     my @args = @_;
+
+    # use metacpan's mirror in the tests
+    my @mirrors;
+    unless (grep /--mirror/, @args) {
+        @mirrors = ('--mirror', 'http://cpan.metacpan.org/');
+    }
+
     my @notest = $ENV{TEST} ? ("--no-notest") : ("--notest");
     my($stdout, $stderr, $exit) = capture {
-        system($^X, $executable, @notest, "--quiet", "--reinstall", @args);
+        system($^X, $executable, @notest, "--quiet", "--reinstall", @mirrors, @args);
     };
     ::diag($stderr) if $stderr and !$ENV{NODIAG};  # Some tests actually want stderr
     return wantarray ? ($stdout, $stderr, $exit) : $stdout;
