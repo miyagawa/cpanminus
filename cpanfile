@@ -10,7 +10,6 @@ requires 'CPAN::Meta::Requirements';
 requires 'CPAN::Meta::YAML';
 requires 'Capture::Tiny';
 requires 'Class::Tiny', 1.001;
-requires 'Digest::SHA';
 requires 'Exporter';
 requires 'File::Temp';
 requires 'File::Which';
@@ -37,6 +36,7 @@ suggests 'Archive::Tar';
 suggests 'Archive::Zip';
 suggests 'File::HomeDir';
 suggests 'Module::Signature';
+suggests 'Digest::SHA';
 
 on test => sub {
     requires 'Test::More', '0.96';
