@@ -3,12 +3,13 @@ use Test::More;
 use xt::Run;
 
 {
-    # mirror.txt
-    run_L '--mirror-index', 'xt/mirror.txt', 'Hash::MultiValue@0.01';
-    like last_build_log, qr/Found Hash::MultiValue 0.02 which doesn't satisfy == 0.01/;
+    # mirror.txt - has $new, but not $old
+    my ($old, $new) = qw{0.12 0.13};
+    run_L '--mirror-index', 'xt/mirror.txt', 'Hash::MultiValue@'.$old;
+    like last_build_log, qr/Found Hash::MultiValue \Q$new\E which doesn't satisfy == \Q$old\E/;
 
-    run_L '--mirror-index', 'xt/mirror.txt', 'Hash::MultiValue@0.02';
-    like last_build_log, qr/installed Hash-MultiValue-0.02/;
+    run_L '--mirror-index', 'xt/mirror.txt', 'Hash::MultiValue@'.$new;
+    like last_build_log, qr/installed Hash-MultiValue-\Q$new\E/;
 }
 
 {
