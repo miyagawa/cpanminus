@@ -5,7 +5,7 @@ use warnings;
 package CPAN::Common::Index::Mirror;
 # ABSTRACT: Search index via CPAN mirror flatfiles
 
-our $VERSION = '0.007';
+our $VERSION = '0.010';
 
 use parent 'CPAN::Common::Index';
 
@@ -16,10 +16,11 @@ use CPAN::DistnameInfo;
 use File::Basename ();
 use File::Fetch;
 use File::Temp 0.19; # newdir
-use IO::Uncompress::Gunzip ();
 use Search::Dict 1.07;
 use Tie::Handle::SkipHeader;
 use URI;
+
+our $HAS_IO_UNCOMPRESS_GUNZIP = eval { require IO::Uncompress::Gunzip };
 
 #pod =attr mirror
 #pod
@@ -114,12 +115,17 @@ sub refresh_index {
     my ($self) = @_;
     for my $file ( values %INDICES ) {
         my $remote = URI->new_abs( $file, $self->mirror );
+        $remote =~ s/\.gz$//
+          unless $HAS_IO_UNCOMPRESS_GUNZIP;
         my $ff = File::Fetch->new( uri => $remote );
         my $where = $ff->fetch( to => $self->cache )
           or Carp::croak( $ff->error );
-        ( my $uncompressed = $where ) =~ s/\.gz$//;
-        IO::Uncompress::Gunzip::gunzip( $where, $uncompressed )
-          or Carp::croak "gunzip failed: $IO::Uncompress::Gunzip::GunzipError\n";
+        if ($HAS_IO_UNCOMPRESS_GUNZIP) {
+            ( my $uncompressed = $where ) =~ s/\.gz$//;
+            no warnings 'once';
+            IO::Uncompress::Gunzip::gunzip( $where, $uncompressed )
+              or Carp::croak "gunzip failed: $IO::Uncompress::Gunzip::GunzipError\n";
+        }
     }
     return 1;
 }
@@ -277,7 +283,7 @@ CPAN::Common::Index::Mirror - Search index via CPAN mirror flatfiles
 
 =head1 VERSION
 
-version 0.007
+version 0.010
 
 =head1 SYNOPSIS
 

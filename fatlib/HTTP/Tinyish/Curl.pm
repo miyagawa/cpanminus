@@ -76,7 +76,7 @@ sub mirror {
 
     my(undef, $temp) = File::Temp::tempfile(UNLINK => 1);
 
-    my $output;
+    my($output, $error);
     eval {
         run3 [
             $curl,
@@ -86,11 +86,11 @@ sub mirror {
             '--dump-header', $temp,
             '--remote-time',
             $url,
-        ], \undef, \$output, \undef;
+        ], \undef, \$output, \$error;
     };
 
-    if ($@) {
-        return $self->internal_error($url, $@);
+    if ($@ or $?) {
+        return $self->internal_error($url, $@ || $error);
     }
 
     my $res = { url => $url, content => $output };

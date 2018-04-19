@@ -5,7 +5,7 @@ use warnings;
 package CPAN::Common::Index::MetaDB;
 # ABSTRACT: Search index via CPAN MetaDB
 
-our $VERSION = '0.007';
+our $VERSION = '0.010';
 
 use parent 'CPAN::Common::Index';
 
@@ -83,7 +83,7 @@ CPAN::Common::Index::MetaDB - Search index via CPAN MetaDB
 
 =head1 VERSION
 
-version 0.007
+version 0.010
 
 =head1 SYNOPSIS
 

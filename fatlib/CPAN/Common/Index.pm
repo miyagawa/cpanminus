@@ -5,7 +5,7 @@ use warnings;
 package CPAN::Common::Index;
 # ABSTRACT: Common library for searching CPAN modules, authors and distributions
 
-our $VERSION = '0.007';
+our $VERSION = '0.010';
 
 use Carp ();
 
@@ -152,7 +152,7 @@ CPAN::Common::Index - Common library for searching CPAN modules, authors and dis
 
 =head1 VERSION
 
-version 0.007
+version 0.010
 
 =head1 SYNOPSIS
 

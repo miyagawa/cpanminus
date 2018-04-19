@@ -61,6 +61,10 @@ sub request {
 
     my $res = $self->{ua}->request($req);
 
+    if ($self->is_internal_response($res)) {
+        return $self->internal_error($url, $res->content);
+    }
+
     return {
         url      => $url,
         content  => $res->decoded_content(charset => 'none'),
@@ -77,6 +81,10 @@ sub mirror {
 
     # TODO support optional headers
     my $res = $self->{ua}->mirror($url, $file);
+
+    if ($self->is_internal_response($res)) {
+        return $self->internal_error($url, $res->content);
+    }
 
     return {
         url      => $url,
@@ -110,6 +118,13 @@ sub translate_lwp {
     }
 
     $agent;
+}
+
+sub is_internal_response {
+    my($self, $res) = @_;
+
+    $res->code == 500 &&
+      ( $res->header('Client-Warning') || '' ) eq 'Internal response';
 }
 
 1;

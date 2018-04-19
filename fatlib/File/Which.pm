@@ -6,7 +6,7 @@ use Exporter   ();
 use File::Spec ();
 
 # ABSTRACT: Perl implementation of the which utility as an API
-our $VERSION = '1.21'; # VERSION
+our $VERSION = '1.22'; # VERSION
 
 
 our @ISA       = 'Exporter';
@@ -16,7 +16,7 @@ our @EXPORT_OK = 'where';
 use constant IS_VMS => ($^O eq 'VMS');
 use constant IS_MAC => ($^O eq 'MacOS');
 use constant IS_DOS => ($^O eq 'MSWin32' or $^O eq 'dos' or $^O eq 'os2');
-use constant IS_CYG => ($^O eq 'cygwin');
+use constant IS_CYG => ($^O eq 'cygwin' || $^O eq 'msys');
 
 # For Win32 systems, stores the extensions used for
 # executable files
@@ -146,7 +146,7 @@ File::Which - Perl implementation of the which utility as an API
 
 =head1 VERSION
 
-version 1.21
+version 1.22
 
 =head1 SYNOPSIS
 
