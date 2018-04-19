@@ -1,73 +1,9 @@
 #!/usr/bin/env perl
 use strict;
-use App::FatPacker ();
 use File::Path;
 use File::Find;
-use Module::CoreList;
-use Cwd;
-use CPAN::Meta;
+use File::pushd;
 use Tie::File;
-
-# IO::Socket::IP requires newer Socket, which is C-based
-$ENV{PERL_HTTP_TINY_IPV4_ONLY} = 1;
-
-my %no_fatpack = map { $_ => 1 } qw( Module::CoreList );
-
-sub find_requires {
-    my $file = shift;
-
-    my $meta = CPAN::Meta->load_file($file);
-    my $res = $meta->effective_prereqs->requirements_for('runtime', 'requires');
-
-    return grep !$no_fatpack{$_}, $res->required_modules;
-}
-
-sub mod_to_pm {
-    local $_ = shift;
-    s!::!/!g;
-    "$_.pm";
-}
-
-sub pm_to_mod {
-    local $_ = shift;
-    s!/!::!g;
-    s/\.pm$//;
-    $_;
-}
-
-sub in_lib {
-    my $file = shift;
-    -e "lib/$file";
-}
-
-sub is_core {
-    my $module = shift;
-    exists $Module::CoreList::version{5.008001}{$module};
-}
-
-sub exclude_modules {
-    my($modules, $except) = @_;
-    my %exclude = map { $_ => 1 } @$except;
-    [ grep !$exclude{$_}, @$modules ];
-}
-
-sub pack_modules {
-    my($path, $modules, $no_trace) = @_;
-
-    $modules = exclude_modules($modules, $no_trace);
-
-    my $packer = App::FatPacker->new;
-    my @requires = grep !is_core(pm_to_mod($_)), grep /\.pm$/, split /\n/,
-      $packer->trace(use => $modules, args => ['-e', 1]);
-    push @requires, map mod_to_pm($_), @$no_trace;
-
-    my @packlists = $packer->packlists_containing(\@requires);
-    for my $packlist (@packlists) {
-        print "Packing $packlist\n";
-    }
-    
-    $packer->packlists_to_tree($path, \@packlists);
-}
 
 sub rewrite_version_pm {
     my $file = shift;
@@ -84,18 +20,33 @@ sub rewrite_version_pm {
 }
 
 sub run {
-    my($upgrade) = @_;
+    my($fresh) = @_;
 
-    my @modules = grep !in_lib(mod_to_pm($_)),
-      find_requires('../Menlo/META.json'), 'Menlo';
+    my $dir = ".fatpack-build";
+    mkpath $dir;
 
-    if ($upgrade) {
-        system 'cpanm', @modules;
+    {
+        my $push = pushd $dir;
+
+        open my $fh, ">cpanfile";
+        print $fh <<EOF;
+requires "Menlo";
+EOF
+        close $fh;
+
+        $ENV{PLENV_VERSION} = "5.12.5";
+
+        if ($fresh) {
+            system "plenv", "exec", "carmel", "update";
+        }
+
+        system "plenv", "exec", "carmel", "install";
+        system "plenv", "exec", "carmel", "rollout";
     }
 
-    pack_modules(cwd . "/fatlib", \@modules, [ 'local::lib', 'Exporter' ]);
+    rmtree "fatlib";
+    system "rsync", "-auv", "--chmod=u+w", "$dir/local/lib/perl5/", "fatlib/";
 
-    # move version.pm to from arch
     use Config;
     mkpath "fatlib/version";
 
