@@ -17,7 +17,6 @@ requires 'File::pushd';
 requires 'Getopt::Long';
 requires 'HTTP::Tiny', '0.054';
 requires 'HTTP::Tinyish', '0.04';
-requires 'IPC::Run3';
 requires 'JSON::PP';
 requires 'Module::Build::Tiny';
 requires 'Module::CPANfile';
