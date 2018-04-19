@@ -63,19 +63,12 @@ sub search_packages {
     if ($dist_meta && $dist_meta->{download_url}) {
         (my $distfile = $dist_meta->{download_url}) =~ s!.+/authors/id/\w/\w\w/!!;
 
-        my $res = {
+        return {
             package => $args->{package},
             version => $dist_meta->{version},
             uri => "cpan:///distfile/$distfile",
+            download_uri => $self->_download_uri("http://cpan.metacpan.org", $distfile),
         };
-
-        if ($dist_meta->{status} eq 'backpan') {
-            $res->{download_uri} = $self->_download_uri("http://backpan.perl.org", $distfile);
-        } elsif ($self->_parse_date($dist_meta->{date}) > time() - 24 * 60 * 60) {
-            $res->{download_uri} = $self->_download_uri("http://cpan.metacpan.org", $distfile);
-        }
-
-        return $res;
     }
 
     return;
