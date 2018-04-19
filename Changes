@@ -2,6 +2,11 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.9006  2018-04-19 16:22:18 CEST
+   [Improvements]
+      - Use cpan.metacpan.org for all MetaCPAN-resolved tarballs
+      - Sync with cpanminus 1.7044
+
 1.9005  2017-05-12 14:18:49 JST
    [Improvements]
       - Migrate to MetaCPAN V1 API #520 (skaji)

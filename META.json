@@ -87,16 +87,16 @@
    "release_status" : "stable",
    "resources" : {
       "bugtracker" : {
-         "web" : "https://github.com/miyagawa/cpanminus/issues"
+         "web" : "https://github.com/miyagawa/Menlo/issues"
       },
-      "homepage" : "https://github.com/miyagawa/cpanminus",
+      "homepage" : "https://github.com/miyagawa/Menlo",
       "repository" : {
          "type" : "git",
-         "url" : "https://github.com/miyagawa/cpanminus.git",
-         "web" : "https://github.com/miyagawa/cpanminus"
+         "url" : "https://github.com/miyagawa/Menlo.git",
+         "web" : "https://github.com/miyagawa/Menlo"
       }
    },
-   "version" : "1.9005",
+   "version" : "1.9006",
    "x_contributors" : [
       "Aaron Moses <mosesa02@localhost.localdomain>",
       "Alessandro Ghedini <al3xbio@gmail.com>",
@@ -117,6 +117,7 @@
       "David Golden <dagolden@cpan.org>",
       "David Steinbrunner <dsteinbrunner@pobox.com>",
       "Doug Bell <madcityzen@gmail.com>",
+      "Eli Flanagan <eflanagan@innovu.com>",
       "fREW Schmidt <frioux@gmail.com>",
       "Fuji, Goro <g.psy.va@gmail.com>",
       "Gareth Kirwan <gbjk@thermeon.com>",
@@ -145,6 +146,7 @@
       "Michael G. Schwern <schwern@pobox.com>",
       "motemen <motemen@gmail.com>",
       "moznion <moznion@gmail.com>",
+      "Nicolas R <atoomic@cpan.org>",
       "Norman Nunley <nnunley@gmail.com>",
       "Olaf Alders <olaf@wundersolutions.com>",
       "Olivier Mengue <dolmen@cpan.org>",

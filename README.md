@@ -10,10 +10,11 @@ easier to use APIs.
 
 # COMPATIBILITY
 
-Menlo keeps the developer test suite from cpanminus intact, which
-means all of the features implemented as of cpanm 1.7032 will be
-possibly supposed to work in Menlo with `cpanm-menlo` command line
-tool and its backend, Menlo::CLI::Compat.
+Menlo is developed within [cpanm](https://metacpan.org/pod/cpanm) git repository at the `menlo`
+branch. It keeps the developer test suite intact, which means all of
+the features implemented as of cpanm 1.7032 are supposed to work in
+Menlo with `cpanm-menlo` command line tool and its backend,
+Menlo::CLI::Compat.
 
 Menlo::CLI::Compat started off as a copy of App::cpanminus::script,
 but will go under a big refactoring to extract all the bits out of
