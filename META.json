@@ -33,6 +33,7 @@
          "requires" : {
             "Dist::Milla" : "v1.0.18",
             "JSON" : "0",
+            "Module::Build::Tiny" : "0",
             "Module::Install" : "0",
             "Test::Pod" : "1.41",
             "Test::Requires" : "0"
@@ -48,7 +49,6 @@
             "CPAN::Meta::YAML" : "0",
             "Capture::Tiny" : "0",
             "Class::Tiny" : "1.001",
-            "Digest::SHA" : "0",
             "Exporter" : "0",
             "File::Temp" : "0",
             "File::Which" : "0",
@@ -56,9 +56,7 @@
             "Getopt::Long" : "0",
             "HTTP::Tiny" : "0.054",
             "HTTP::Tinyish" : "0.04",
-            "IPC::Run3" : "0",
             "JSON::PP" : "0",
-            "Module::Build::Tiny" : "0",
             "Module::CPANfile" : "0",
             "Module::CoreList" : "0",
             "Module::Metadata" : "0",
@@ -73,6 +71,7 @@
          "suggests" : {
             "Archive::Tar" : "0",
             "Archive::Zip" : "0",
+            "Digest::SHA" : "0",
             "File::HomeDir" : "0",
             "LWP::UserAgent" : "5.802",
             "Module::Signature" : "0"
@@ -96,7 +95,7 @@
          "web" : "https://github.com/miyagawa/Menlo"
       }
    },
-   "version" : "1.9006",
+   "version" : "1.9007",
    "x_contributors" : [
       "Aaron Moses <mosesa02@localhost.localdomain>",
       "Alessandro Ghedini <al3xbio@gmail.com>",

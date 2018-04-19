@@ -1,5 +1,5 @@
 package Menlo;
-our $VERSION = "1.9006";
+our $VERSION = "1.9007";
 
 1;
 
