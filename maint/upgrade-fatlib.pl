@@ -1,9 +1,19 @@
 #!/usr/bin/env perl
 use strict;
+use Capture::Tiny qw(capture_stdout);
+use Config;
+use Cwd;
+use CPAN::Meta;
 use File::Path;
 use File::Find;
 use File::pushd;
+use Carton::Snapshot;
 use Tie::File;
+
+sub run_command {
+    local $ENV{PLENV_VERSION} = "5.8.9";
+    system "plenv", "exec", @_;
+}
 
 sub rewrite_version_pm {
     my $file = shift;
@@ -19,38 +29,98 @@ sub rewrite_version_pm {
     }
 }
 
+sub build_snapshot {
+    my $dir = shift;
+
+    {
+        my $pushd = pushd $dir;
+
+        open my $fh, ">cpanfile";
+        print $fh "requires 'Menlo', '$Menlo::VERSION';\n";
+        close $fh;
+    
+        run_command "carton", "install";
+    }
+
+    my $snapshot = Carton::Snapshot->new(path => "$dir/cpanfile.snapshot");
+    $snapshot->load;
+
+    return $snapshot;
+}
+
+sub required_modules {
+    my($snapshot, $dir) = @_;
+    
+    my $requires = CPAN::Meta::Requirements->new;
+    $requires->add_minimum(Menlo => $Menlo::VERSION);
+
+    my $finder;
+    $finder = sub {
+        my $module = shift;
+
+        my $dist = $snapshot->find($module);
+        if ($dist) {
+            my $name = $dist->name;
+            my $path = "$dir/local/lib/perl5/$Config{archname}/.meta/$name/MYMETA.json";
+            my $meta = CPAN::Meta->load_file($path);
+
+            my $reqs = $meta->effective_prereqs->requirements_for('runtime' => 'requires');
+            for my $module ( $reqs->required_modules ) {
+                next if $module eq 'perl';
+
+                my $core = $Module::CoreList::version{"5.008009"}{$module};
+                unless ($core && $reqs->accepts_module($module, $core)) {
+                    $requires->add_string_requirement( $module => $reqs->requirements_for_module($module) );
+                    $finder->($module);
+                }
+            }
+        }
+    };
+
+    $finder->("Menlo");
+    $requires->clear_requirement($_) for qw( Module::CoreList );
+
+    return map { s!::!/!g; "$_.pm" } $requires->required_modules;
+}
+
+sub pack_modules {
+    my($dir, @modules) = @_;
+
+    my $stdout = capture_stdout {
+        local $ENV{PERL5LIB} = cwd . "/$dir/local/lib/perl5";
+        run_command "fatpack", "packlists-for", @modules;
+    };
+
+    my @packlists = split /\n/, $stdout;
+    for my $packlist (@packlists) {
+        warn "Packing $packlist\n";
+    }
+
+    run_command "fatpack", "tree", @packlists;
+}
+
 sub run {
     my($fresh) = @_;
 
     my $dir = ".fatpack-build";
-    mkpath $dir;
-
-    {
-        my $push = pushd $dir;
-
-        open my $fh, ">cpanfile";
-        print $fh <<EOF;
-requires "Menlo";
-EOF
-        close $fh;
-
-        $ENV{PLENV_VERSION} = "5.12.5";
-
-        if ($fresh) {
-            system "plenv", "exec", "carmel", "update";
-        }
-
-        system "plenv", "exec", "carmel", "install";
-        system "plenv", "exec", "carmel", "rollout";
+    mkdir $dir, 0777;
+    
+    if ($fresh) {
+        rmtree $dir;
+        mkpath $dir;
     }
 
-    rmtree "fatlib";
-    system "rsync", "-auv", "--chmod=u+w", "$dir/local/lib/perl5/", "fatlib/";
+    my $snapshot = build_snapshot($dir);
+    my @modules  = required_modules($snapshot, $dir);
 
-    use Config;
+    pack_modules($dir, @modules);
+
     mkpath "fatlib/version";
 
-    for my $file ("fatlib/$Config{archname}/version.pm", glob("fatlib/$Config{archname}/version/*.pm")) {
+    for my $file (
+        glob("fatlib/$Config{archname}/version.pm*"),
+        glob("fatlib/$Config{archname}/version/*.pm"),
+    ) {
         next if $file =~ /\bvxs\.pm$/;
         (my $target = $file) =~ s!^fatlib/$Config{archname}/!fatlib/!;
         rename $file => $target or die "$file => $target: $!";
