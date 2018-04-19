@@ -1,28 +1,25 @@
-#!/usr/bin/env PLENV_VERSION=5.8.9 perl
+#!/usr/bin/env perl
 use strict;
 use App::FatPacker ();
 use File::Path;
 use File::Find;
 use Module::CoreList;
 use Cwd;
+use CPAN::Meta;
 use Tie::File;
-
-$] == 5.008009 or die "Run this script as ./upgrade-fatlib.pl, rather than 'perl upgrade-fatlib.pl'\n";
 
 # IO::Socket::IP requires newer Socket, which is C-based
 $ENV{PERL_HTTP_TINY_IPV4_ONLY} = 1;
 
+my %no_fatpack = map { $_ => 1 } qw( Module::CoreList );
+
 sub find_requires {
     my $file = shift;
 
-    my %requires;
-    open my $in, "<", $file or die $!;
-    while (<$in>) {
-        /^\s*(?:use|require) (\S+)[^;]*;\s*$/
-          and $requires{$1} = 1;
-    }
+    my $meta = CPAN::Meta->load_file($file);
+    my $res = $meta->effective_prereqs->requirements_for('runtime', 'requires');
 
-    keys %requires;
+    return grep !$no_fatpack{$_}, $res->required_modules;
 }
 
 sub mod_to_pm {
@@ -68,11 +65,15 @@ sub pack_modules {
     for my $packlist (@packlists) {
         print "Packing $packlist\n";
     }
+    
     $packer->packlists_to_tree($path, \@packlists);
 }
 
 sub rewrite_version_pm {
     my $file = shift;
+
+    die "$file: $!" unless -e $file;
+    
     tie my @file, 'Tie::File', $file or die $!;
     for (0..$#file) {
         if ($file[$_] =~ /^\s*eval "use version::vxs.*/) {
@@ -85,16 +86,27 @@ sub rewrite_version_pm {
 sub run {
     my($upgrade) = @_;
 
-    my @modules = grep !in_lib(mod_to_pm($_)), find_requires('lib/App/cpanminus/script.pm');
+    my @modules = grep !in_lib(mod_to_pm($_)),
+      find_requires('../Menlo/META.json'), 'Menlo';
 
     if ($upgrade) {
         system 'cpanm', @modules;
     }
 
     pack_modules(cwd . "/fatlib", \@modules, [ 'local::lib', 'Exporter' ]);
+
+    # move version.pm to from arch
+    use Config;
+    mkpath "fatlib/version";
+
+    for my $file ("fatlib/$Config{archname}/version.pm", glob("fatlib/$Config{archname}/version/*.pm")) {
+        next if $file =~ /\bvxs\.pm$/;
+        (my $target = $file) =~ s!^fatlib/$Config{archname}/!fatlib/!;
+        rename $file => $target or die "$file => $target: $!";
+    }
+
     rewrite_version_pm("fatlib/version.pm");
 
-    use Config;
     rmtree("fatlib/$Config{archname}");
     rmtree("fatlib/POD2");
 
