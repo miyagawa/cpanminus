@@ -169,7 +169,11 @@ The standalone executable contains the following modules embedded.
 - [JSON::PP](https://metacpan.org/pod/JSON::PP) Copyright 2007-2011 by Makamaka Hannyaharamitu
 - [CPAN::Meta](https://metacpan.org/pod/CPAN::Meta), [CPAN::Meta::Requirements](https://metacpan.org/pod/CPAN::Meta::Requirements) Copyright (c) 2010 by David Golden and Ricardo Signes
 - [CPAN::Meta::YAML](https://metacpan.org/pod/CPAN::Meta::YAML) Copyright 2010 Adam Kennedy
+- [CPAN::Meta::Check](https://metacpan.org/pod/CPAN::Meta::Check) Copyright (c) 2012 by Leon Timmermans
 - [File::pushd](https://metacpan.org/pod/File::pushd) Copyright 2012 David Golden
+- [parent](https://metacpan.org/pod/parent) Copyright (c) 2007-10 Max Maischein
+- [Parse::PMFile](https://metacpan.org/pod/Parse::PMFile) Copyright 1995 - 2013 by Andreas Koenig, Copyright 2013 by Kenichi Ishigaki
+- [String::ShellQuote](https://metacpan.org/pod/String::ShellQuote) by Roderick Schertler
 
 # LICENSE
 

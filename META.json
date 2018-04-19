@@ -4,7 +4,7 @@
       "- Tatsuhiko Miyagawa"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Dist::Milla version v1.0.17, Dist::Zilla version 6.009, CPAN::Meta::Converter version 2.150010",
+   "generated_by" : "Dist::Milla version v1.0.18, Dist::Zilla version 6.009, CPAN::Meta::Converter version 2.150010",
    "license" : [
       "perl_5"
    ],
@@ -50,7 +50,7 @@
             "CPAN::Meta::YAML" : "0",
             "Capture::Tiny" : "0",
             "Digest::SHA" : "0",
-            "Dist::Milla" : "v1.0.17",
+            "Dist::Milla" : "v1.0.18",
             "Exporter" : "5.63",
             "File::Temp" : "0",
             "File::pushd" : "0",
@@ -101,7 +101,7 @@
          "web" : "https://github.com/miyagawa/cpanminus"
       }
    },
-   "version" : "1.7043",
+   "version" : "1.7044",
    "x_contributors" : [
       "Aaron Moses <mosesa02@localhost.localdomain>",
       "Alessandro Ghedini <al3xbio@gmail.com>",
@@ -122,6 +122,7 @@
       "David Golden <dagolden@cpan.org>",
       "David Steinbrunner <dsteinbrunner@pobox.com>",
       "Doug Bell <madcityzen@gmail.com>",
+      "Eli Flanagan <eflanagan@innovu.com>",
       "fREW Schmidt <frioux@gmail.com>",
       "Fuji, Goro <g.psy.va@gmail.com>",
       "Gareth Kirwan <gbjk@thermeon.com>",
@@ -150,6 +151,7 @@
       "Michael G. Schwern <schwern@pobox.com>",
       "motemen <motemen@gmail.com>",
       "moznion <moznion@gmail.com>",
+      "Nicolas R <atoomic@cpan.org>",
       "Norman Nunley <nnunley@gmail.com>",
       "Olaf Alders <olaf@wundersolutions.com>",
       "Olivier Mengue <dolmen@cpan.org>",
@@ -179,6 +181,6 @@
       "yappo <yappo@shibuya.pl>",
       "zebardy <zebardy@gmail.com>"
    ],
-   "x_serialization_backend" : "Cpanel::JSON::XS version 3.0231"
+   "x_serialization_backend" : "Cpanel::JSON::XS version 3.0233"
 }
 

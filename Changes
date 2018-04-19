@@ -2,6 +2,11 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7044  2018-04-19 13:54:29 CEST
+   [Improvements]
+      - Support zip files with comments (skaji) #560
+      - Use metacpan download_url API (haarg) #522
+
 1.7043  2017-04-02 20:56:06 PDT
    [Improvements]
       - Set PERL_USE_UNSAFE_INC for 5.26+ (haarg) #521
