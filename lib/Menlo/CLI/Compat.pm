@@ -470,7 +470,7 @@ sub numify_ver {
 }
 
 sub search_metacpan {
-    my($self, $module, $version) = @_;
+    my($self, $module, $version, $dev_release) = @_;
 
     require Menlo::Index::MetaCPAN;
     $self->chat("Searching $module ($version) on metacpan ...\n");
@@ -489,8 +489,8 @@ sub search_database {
     my $found;
 
     if ($self->{dev_release} or $self->{metacpan}) {
-        $found = $self->search_metacpan($module, $version)   and return $found;
-        $found = $self->search_cpanmetadb($module, $version) and return $found;
+        $found = $self->search_metacpan($module, $version, $self->{dev_release})   and return $found;
+        $found = $self->search_cpanmetadb($module, $version, $self->{dev_release}) and return $found;
     } else {
         $found = $self->search_cpanmetadb($module, $version) and return $found;
         $found = $self->search_metacpan($module, $version)   and return $found;
@@ -498,7 +498,7 @@ sub search_database {
 }
 
 sub search_cpanmetadb {
-    my($self, $module, $version) = @_;
+    my($self, $module, $version, $dev_release) = @_;
 
     require Menlo::Index::MetaDB;
     $self->chat("Searching $module ($version) on cpanmetadb ...\n");
@@ -1573,7 +1573,7 @@ sub verify_signature {
         $self->diag_ok("Verified OK");
         return 1;
     } else {
-        $self->diag_fail("SIGNATURE verificaion for $dist->{filename} failed\n");
+        $self->diag_fail("SIGNATURE verification for $dist->{filename} failed\n");
         return;
     }
 }
@@ -1642,9 +1642,9 @@ sub cpan_module_common {
 }
 
 sub cpan_module {
-    my($self, $module, $dist, $version) = @_;
+    my($self, $module, $dist_file, $version) = @_;
 
-    my $dist = $self->cpan_dist($dist);
+    my $dist = $self->cpan_dist($dist_file);
     $dist->{module} = $module;
     $dist->{module_version} = $version if $version && $version ne 'undef';
 
@@ -2796,9 +2796,13 @@ sub init_tools {
             my $opt = $self->{verbose} ? '' : '-q';
             my(undef, $root, @others) = `$unzip -t $zipfile`
                 or return undef;
-
-            chomp $root;
-            $root =~ s{^\s+testing:\s+([^/]+)/.*?\s+OK$}{$1};
+            FILE: {
+                chomp $root;
+                if ($root !~ s{^\s+testing:\s+([^/]+)/.*?\s+OK$}{$1}) {
+                    $root = shift(@others);
+                    redo FILE if $root;
+                }
+            }
 
             system "$unzip $opt $zipfile";
             return $root if -d $root;
