@@ -20,7 +20,7 @@ sub run {
 
     # use metacpan's mirror in the tests
     my @mirrors;
-    unless (grep $_ eq '--mirror', @args) {
+    unless (grep /--mirror($|=)/, @args) {
         @mirrors = ('--mirror', 'http://cpan.metacpan.org/');
     }
 
