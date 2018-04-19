@@ -22,8 +22,8 @@ use lib "$Bin/../lib", "$Bin/../fatlib"; # For dev -- Auto-removed
 use Menlo::CLI::Compat;
 
 unless (caller) {
-    my $app = Menlo::CLI::Compat->new;
-    $app->run(@ARGV);
+    my $app = Menlo::CLI::Compat->new(@ARGV);
+    $app->run;
     exit $app->status;
 }
 
