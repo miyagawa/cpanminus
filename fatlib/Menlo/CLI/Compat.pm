@@ -1,31 +1,29 @@
-package App::cpanminus::script;
+package Menlo::CLI::Compat;
 use strict;
 use Config;
 use Cwd ();
-use App::cpanminus;
-use App::cpanminus::Dependency;
+use Menlo;
+use Menlo::Dependency;
+use Menlo::Util qw(WIN32);
 use File::Basename ();
 use File::Find ();
 use File::Path ();
 use File::Spec ();
 use File::Copy ();
 use File::Temp ();
+use File::Which qw(which);
 use Getopt::Long ();
 use Symbol ();
-use String::ShellQuote ();
 use version ();
 
-use constant WIN32 => $^O eq 'MSWin32';
 use constant BAD_TAR => ($^O eq 'solaris' || $^O eq 'hpux');
 use constant CAN_SYMLINK => eval { symlink("", ""); 1 };
 
-our $VERSION = $App::cpanminus::VERSION;
+our $VERSION = $Menlo::VERSION;
 
 if ($INC{"App/FatPacker/Trace.pm"}) {
     require version::vpp;
 }
-
-my $quote = WIN32 ? q/"/ : q/'/;
 
 sub agent {
     my $self = shift;
@@ -52,7 +50,7 @@ sub determine_home {
 sub new {
     my $class = shift;
 
-    bless {
+    my $self = bless {
         home => $class->determine_home,
         cmd  => 'install',
         seen => {},
@@ -106,6 +104,8 @@ sub new {
         cpanfile_path => 'cpanfile',
         @_,
     }, $class;
+
+    $self;
 }
 
 sub env {
@@ -278,7 +278,7 @@ sub setup_verify {
     my $self = shift;
 
     my $has_modules = eval { require Module::Signature; require Digest::SHA; 1 };
-    $self->{cpansign} = $self->which('cpansign');
+    $self->{cpansign} = which('cpansign');
 
     unless ($has_modules && $self->{cpansign}) {
         warn "WARNING: Module::Signature and Digest::SHA is required for distribution verifications.\n";
@@ -295,14 +295,16 @@ sub parse_module_args {
 
     # Plack~1.20, DBI~"> 1.0, <= 2.0"
     if ($module =~ /\~[v\d\._,\!<>= ]+$/) {
-        return split /\~/, $module, 2;
+        return split '~', $module, 2;
     } else {
         return $module, undef;
     }
 }
 
-sub doit {
+sub run {
     my $self = shift;
+
+    $self->parse_options(@_);
 
     my $code;
     eval {
@@ -312,7 +314,11 @@ sub doit {
         $code = 1;
     }
 
-    return $code;
+    $self->{status} = $code;
+}
+
+sub status {
+    $_[0]->{status};
 }
 
 sub _doit {
@@ -410,111 +416,52 @@ sub setup_home {
         }
     }
 
-    $self->chat("cpanm (App::cpanminus) $VERSION on perl $] built for $Config{archname}\n" .
+    $self->chat("cpanm (Menlo) $VERSION on perl $] built for $Config{archname}\n" .
                 "Work directory is $self->{base}\n");
 }
 
-sub package_index_for {
-    my ($self, $mirror) = @_;
-    return $self->source_for($mirror) . "/02packages.details.txt";
-}
-
-sub generate_mirror_index {
-    my ($self, $mirror) = @_;
-    my $file = $self->package_index_for($mirror);
-    my $gz_file = $file . '.gz';
-    my $index_mtime = (stat $gz_file)[9];
-
-    unless (-e $file && (stat $file)[9] >= $index_mtime) {
-        $self->chat("Uncompressing index file...\n");
-        if (eval {require Compress::Zlib}) {
-            my $gz = Compress::Zlib::gzopen($gz_file, "rb")
-                or do { $self->diag_fail("$Compress::Zlib::gzerrno opening compressed index"); return};
-            open my $fh, '>', $file
-                or do { $self->diag_fail("$! opening uncompressed index for write"); return };
-            my $buffer;
-            while (my $status = $gz->gzread($buffer)) {
-                if ($status < 0) {
-                    $self->diag_fail($gz->gzerror . " reading compressed index");
-                    return;
-                }
-                print $fh $buffer;
-            }
-        } else {
-            if (system("gunzip -c $gz_file > $file")) {
-                $self->diag_fail("Cannot uncompress -- please install gunzip or Compress::Zlib");
-                return;
-            }
-        }
-        utime $index_mtime, $index_mtime, $file;
-    }
-    return 1;
+sub search_mirror_index_local {
+    my ($self, $local, $module, $version) = @_;
+    require CPAN::Common::Index::LocalPackage;
+    my $index = CPAN::Common::Index::LocalPackage->new({ source => $local });
+    $self->search_common($index, { package => $module }, $version);
 }
 
 sub search_mirror_index {
     my ($self, $mirror, $module, $version) = @_;
-    $self->search_mirror_index_file($self->package_index_for($mirror), $module, $version);
+    require Menlo::Index::Mirror;
+    my $index = Menlo::Index::Mirror->new({
+        mirror => $mirror,
+        cache => $self->source_for($mirror),
+        fetcher => sub { $self->mirror(@_) },
+    });
+    $self->search_common($index, { package => $module }, $version);
 }
 
-sub search_mirror_index_file {
-    my($self, $file, $module, $version) = @_;
+sub search_common {
+    my($self, $index, $search_args, $want_version) = @_;
 
-    open my $fh, '<', $file or return;
-    my $found;
-    while (<$fh>) {
-        if (m!^\Q$module\E\s+([\w\.]+)\s+(\S*)!m) {
-            $found = $self->cpan_module($module, $2, $1);
-            last;
-        }
-    }
+    $index->refresh_index;
+
+    my $found = $index->search_packages($search_args);
+    $found = $self->cpan_module_common($found) if $found;
 
     return $found unless $self->{cascade_search};
 
     if ($found) {
-        if ($self->satisfy_version($module, $found->{module_version}, $version)) {
+        if ($self->satisfy_version($found->{module}, $found->{module_version}, $want_version)) {
             return $found;
         } else {
-            $self->chat("Found $module $found->{module_version} which doesn't satisfy $version.\n");
+            $self->chat("Found $found->{module} $found->{module_version} which doesn't satisfy $want_version.\n");
         }
     }
-
+    
     return;
 }
 
 sub with_version_range {
     my($self, $version) = @_;
     defined($version) && $version =~ /(?:<|!=|==)/;
-}
-
-sub encode_json {
-    my($self, $data) = @_;
-    require JSON::PP;
-
-    my $json = JSON::PP::encode_json($data);
-    $self->uri_escape($json);
-}
-
-sub decode_json {
-    my($self, $json) = @_;
-    require JSON::PP;
-
-    JSON::PP::decode_json($json);
-}
-
-sub uri_escape {
-    my($self, $fragment) = @_;
-    $fragment =~ s/([^A-Za-z0-9\-\._~])/uc sprintf("%%%02X", ord($1))/eg;
-    $fragment;
-}
-
-sub uri_params {
-    my($self, @params) = @_;
-    my @param_strings;
-    while (my $key = shift @params) {
-        my $value = shift @params;
-        push @param_strings, join '=', map $self->uri_escape($_), $key, $value;
-    }
-    return join '&', @param_strings;
 }
 
 # version->new("1.00_00")->numify => "1.00_00" :/
@@ -526,28 +473,14 @@ sub numify_ver {
 sub search_metacpan {
     my($self, $module, $version, $dev_release) = @_;
 
-    my $metacpan_uri = 'http://fastapi.metacpan.org/v1/download_url/';
+    require Menlo::Index::MetaCPAN;
+    $self->chat("Searching $module ($version) on metacpan ...\n");
 
-    my $url = $metacpan_uri . $module;
+    my $index = Menlo::Index::MetaCPAN->new({ include_dev => $self->{dev_release} });
+    my $pkg = $self->search_common($index, { package => $module, version_range => $version }, $version);
+    return $pkg if $pkg;
 
-    my $query = $self->uri_params(
-        ($version ? (version => $version) : ()),
-        ($dev_release ? (dev => 1) : ()),
-    );
-    $url .= '?' . $query
-        if length $query;
-
-    my $dist_json = $self->get($url);
-    my $dist_meta = eval { $self->decode_json($dist_json) };
-
-    if ($dist_meta && $dist_meta->{download_url}) {
-        (my $distfile = $dist_meta->{download_url}) =~ s!.+/authors/id/!!;
-        local $self->{mirrors} = $self->{mirrors};
-        $self->{mirrors} = [ 'http://cpan.metacpan.org' ];
-        return $self->cpan_module($module, $distfile, $dist_meta->{version});
-    }
-
-    $self->chat("! Could not find a release matching $module".($version?" ($version)":'')." on MetaCPAN.\n");
+    $self->diag_fail("Finding $module ($version) on metacpan failed.");
     return;
 }
 
@@ -568,74 +501,28 @@ sub search_database {
 sub search_cpanmetadb {
     my($self, $module, $version, $dev_release) = @_;
 
-
+    require Menlo::Index::MetaDB;
     $self->chat("Searching $module ($version) on cpanmetadb ...\n");
 
+    my $args = { package => $module };
     if ($self->with_version_range($version)) {
-        return $self->search_cpanmetadb_history($module, $version, $dev_release);
-    } else {
-        return $self->search_cpanmetadb_package($module, $version, $dev_release);
+        $args->{version_range} = $version;
     }
-}
 
-sub search_cpanmetadb_package {
-    my($self, $module, $version, $dev_release) = @_;
-
-    require CPAN::Meta::YAML;
-
-    (my $uri = $self->{cpanmetadb}) =~ s{/?$}{/package/$module};
-    my $yaml = $self->get($uri);
-    my $meta = eval { CPAN::Meta::YAML::Load($yaml) };
-    if ($meta && $meta->{distfile}) {
-        return $self->cpan_module($module, $meta->{distfile}, $meta->{version});
-    }
+    my $index = Menlo::Index::MetaDB->new({ uri => $self->{cpanmetadb} });
+    my $pkg = $self->search_common($index, $args, $version);
+    return $pkg if $pkg;
 
     $self->diag_fail("Finding $module on cpanmetadb failed.");
     return;
 }
-
-sub search_cpanmetadb_history {
-    my($self, $module, $version) = @_;
-
-    (my $uri = $self->{cpanmetadb}) =~ s{/?$}{/history/$module};
-    my $content = $self->get($uri) or return;
-
-    my @found;
-    for my $line (split /\r?\n/, $content) {
-        if ($line =~ /^$module\s+(\S+)\s+(\S+)$/) {
-            push @found, {
-                version => $1,
-                version_obj => version::->parse($1),
-                distfile => $2,
-            };
-        }
-    }
-
-    return unless @found;
-
-    $found[-1]->{latest} = 1;
-
-    my $match;
-    for my $try (sort { $b->{version_obj} cmp $a->{version_obj} } @found) {
-        if ($self->satisfy_version($module, $try->{version_obj}, $version)) {
-            local $self->{mirrors} = $self->{mirrors};
-            unshift @{$self->{mirrors}}, 'http://backpan.perl.org'
-              unless $try->{latest};
-            return $self->cpan_module($module, $try->{distfile}, $try->{version});
-        }
-    }
-
-    $self->diag_fail("Finding $module ($version) on cpanmetadb failed.");
-    return;
-}
-
 
 sub search_module {
     my($self, $module, $version) = @_;
 
     if ($self->{mirror_index}) {
         $self->mask_output( chat => "Searching $module on mirror index $self->{mirror_index} ...\n" );
-        my $pkg = $self->search_mirror_index_file($self->{mirror_index}, $module, $version);
+        my $pkg = $self->search_mirror_index_local($self->{mirror_index}, $module, $version);
         return $pkg if $pkg;
 
         unless ($self->{cascade_search}) {
@@ -651,16 +538,6 @@ sub search_module {
 
     MIRROR: for my $mirror (@{ $self->{mirrors} }) {
         $self->mask_output( chat => "Searching $module on mirror $mirror ...\n" );
-        my $name = '02packages.details.txt.gz';
-        my $uri  = "$mirror/modules/$name";
-        my $gz_file = $self->package_index_for($mirror) . '.gz';
-
-        unless ($self->{pkgs}{$uri}) {
-            $self->mask_output( chat => "Downloading index file $uri ...\n" );
-            $self->mirror($uri, $gz_file);
-            $self->generate_mirror_index($mirror) or next MIRROR;
-            $self->{pkgs}{$uri} = "!!retrieved!!";
-        }
 
         my $pkg = $self->search_mirror_index($mirror, $module, $version);
         return $pkg if $pkg;
@@ -699,7 +576,7 @@ sub load_argv_from_fh {
 sub show_version {
     my $self = shift;
 
-    print "cpanm (App::cpanminus) version $VERSION ($0)\n";
+    print "cpanm (Menlo) version $VERSION ($0)\n";
     print "perl version $] ($^X)\n\n";
 
     print "  \%Config:\n";
@@ -870,7 +747,7 @@ sub upgrade_toolchain {
         $deps{"ExtUtils::MakeMaker"}->merge_with($reqs);
     } elsif ($deps{"Module::Build"}) {
         $deps{"Module::Build"}->merge_with($reqs);
-        $deps{"ExtUtils::Install"} ||= App::cpanminus::Dependency->new("ExtUtils::Install", 0, 'configure');
+        $deps{"ExtUtils::Install"} ||= Menlo::Dependency->new("ExtUtils::Install", 0, 'configure');
         $deps{"ExtUtils::Install"}->merge_with($reqs);
     }
 
@@ -886,18 +763,6 @@ sub _core_only_inc {
         (!$self->{exclude_vendor} ? grep {$_} @Config{qw(vendorarch vendorlibexp)} : ()),
         @Config{qw(archlibexp privlibexp)},
     );
-}
-
-sub _diff {
-    my($self, $old, $new) = @_;
-
-    my @diff;
-    my %old = map { $_ => 1 } @$old;
-    for my $n (@$new) {
-        push @diff, $n unless exists $old{$n};
-    }
-
-    @diff;
 }
 
 sub _setup_local_lib_env {
@@ -1035,13 +900,26 @@ sub log {
     print $out @_;
 }
 
-sub run {
+sub run_command {
     my($self, $cmd) = @_;
 
+    # TODO move to a more appropriate runner method
+    if (ref $cmd eq 'CODE') {
+        if ($self->{verbose}) {
+            return $cmd->();
+        } else {
+            require Capture::Tiny;
+            open my $logfh, ">>", $self->{log};
+            my $ret;
+            Capture::Tiny::capture(sub { $ret = $cmd->() }, stdout => $logfh, stderr => $logfh);
+            return $ret;
+        }
+    }
+
     if (WIN32) {
-        $cmd = $self->shell_quote(@$cmd) if ref $cmd eq 'ARRAY';
+        $cmd = Menlo::Util::shell_quote(@$cmd) if ref $cmd eq 'ARRAY';
         unless ($self->{verbose}) {
-            $cmd .= " >> " . $self->shell_quote($self->{log}) . " 2>&1";
+            $cmd .= " >> " . Menlo::Util::shell_quote($self->{log}) . " 2>&1";
         }
         !system $cmd;
     } else {
@@ -1068,7 +946,7 @@ sub run_exec {
         exec @$cmd;
     } else {
         unless ($self->{verbose}) {
-            $cmd .= " >> " . $self->shell_quote($self->{log}) . " 2>&1";
+            $cmd .= " >> " . Menlo::Util::shell_quote($self->{log}) . " 2>&1";
         }
         exec $cmd;
     }
@@ -1076,7 +954,8 @@ sub run_exec {
 
 sub run_timeout {
     my($self, $cmd, $timeout) = @_;
-    return $self->run($cmd) if WIN32 || $self->{verbose} || !$timeout;
+
+    return $self->run_command($cmd) if ref($cmd) eq 'CODE' || WIN32 || $self->{verbose} || !$timeout;
 
     my $pid = fork;
     if ($pid) {
@@ -1098,15 +977,17 @@ sub run_timeout {
         $self->run_exec($cmd);
     } else {
         $self->chat("! fork failed: falling back to system()\n");
-        $self->run($cmd);
+        $self->run_command($cmd);
     }
 }
 
 sub append_args {
     my($self, $cmd, $phase) = @_;
 
+    return $cmd if ref $cmd ne 'ARRAY';
+    
     if (my $args = $self->{build_args}{$phase}) {
-        $cmd = join ' ', $self->shell_quote(@$cmd), $args;
+        $cmd = join ' ', Menlo::Util::shell_quote(@$cmd), $args;
     }
 
     $cmd;
@@ -1178,10 +1059,10 @@ sub test {
     # https://github.com/Perl-Toolchain-Gang/toolchain-site/blob/master/lancaster-consensus.md
     local $ENV{NONINTERACTIVE_TESTING} = !$self->{interactive};
 
-    $cmd = $self->append_args($cmd, 'test') if $depth == 0;
-
     local $ENV{PERL_USE_UNSAFE_INC} = 1
         unless exists $ENV{PERL_USE_UNSAFE_INC};
+
+    $cmd = $self->append_args($cmd, 'test') if $depth == 0;
 
     return 1 if $self->run_timeout($cmd, $self->{test_timeout});
     if ($self->{force}) {
@@ -1207,6 +1088,8 @@ sub install {
         return 1;
     }
 
+    return $self->run_command($cmd) if ref $cmd eq 'CODE';
+
     local $ENV{PERL_USE_UNSAFE_INC} = 1
         unless exists $ENV{PERL_USE_UNSAFE_INC};
 
@@ -1220,7 +1103,7 @@ sub install {
 
     $cmd = $self->append_args($cmd, 'install') if $depth == 0;
 
-    $self->run($cmd);
+    $self->run_command($cmd);
 }
 
 sub look {
@@ -1249,7 +1132,7 @@ sub show_build_log {
     while (@pagers) {
         $pager = shift @pagers;
         next unless $pager;
-        $pager = $self->which($pager);
+        $pager = which($pager);
         next unless $pager;
         last;
     }
@@ -1282,7 +1165,7 @@ sub configure_mirrors {
 sub self_upgrade {
     my $self = shift;
     $self->check_upgrade;
-    $self->{argv} = [ 'App::cpanminus' ];
+    $self->{argv} = [ 'Menlo' ];
     return; # continue
 }
 
@@ -1652,7 +1535,7 @@ sub verify_checksum {
     }
 
     if (my $sha = $chksum->{$file}{sha256}) {
-        my $hex = $self->sha1_for($file);
+        my $hex = $self->sha_for(256, $file);
         if ($hex eq $sha) {
             $self->chat("Checksum for $file: Verified!\n");
         } else {
@@ -1665,13 +1548,13 @@ sub verify_checksum {
     }
 }
 
-sub sha1_for {
-    my($self, $file) = @_;
+sub sha_for {
+    my($self, $alg, $file) = @_;
 
     require Digest::SHA; # no fatpack
 
     open my $fh, "<", $file or die "$file: $!";
-    my $dg = Digest::SHA->new(256);
+    my $dg = Digest::SHA->new($alg);
     my($data);
     while (read($fh, $data, 4096)) {
         $dg->add($data);
@@ -1744,6 +1627,21 @@ sub resolve_name {
     return $self->search_module($module, $version);
 }
 
+sub cpan_module_common {
+    my($self, $match) = @_;
+
+    (my $distfile = $match->{uri}) =~ s!^cpan:///distfile/!!;
+
+    my $mirrors = $self->{mirrors};
+    if ($match->{download_uri}) {
+        (my $mirror = $match->{download_uri}) =~ s!/authors/id/.*$!!;
+        $mirrors = [$mirror];
+    }
+
+    local $self->{mirrors} = $mirrors;
+    return $self->cpan_module($match->{package}, $distfile, $match->{version});
+}
+
 sub cpan_module {
     my($self, $module, $dist_file, $version) = @_;
 
@@ -1792,7 +1690,7 @@ sub git_uri {
     my $dir = File::Temp::tempdir(CLEANUP => 1);
 
     $self->mask_output( diag_progress => "Cloning $uri" );
-    $self->run([ 'git', 'clone', $uri, $dir ]);
+    $self->run_command([ 'git', 'clone', $uri, $dir ]);
 
     unless (-e "$dir/.git") {
         $self->diag_fail("Failed cloning git repository $uri", 1);
@@ -1803,7 +1701,7 @@ sub git_uri {
         require File::pushd;
         my $dir = File::pushd::pushd($dir);
 
-        unless ($self->run([ 'git', 'checkout', $commitish ])) {
+        unless ($self->run_command([ 'git', 'checkout', $commitish ])) {
             $self->diag_fail("Failed to checkout '$commitish' in git repository $uri\n");
             return;
         }
@@ -1815,23 +1713,6 @@ sub git_uri {
         source => 'local',
         dir    => $dir,
     };
-}
-
-sub setup_module_build_patch {
-    my $self = shift;
-
-    open my $out, ">$self->{base}/ModuleBuildSkipMan.pm" or die $!;
-    print $out <<EOF;
-package ModuleBuildSkipMan;
-CHECK {
-  if (%Module::Build::) {
-    no warnings 'redefine';
-    *Module::Build::Base::ACTION_manpages = sub {};
-    *Module::Build::Base::ACTION_docs     = sub {};
-  }
-}
-1;
-EOF
 }
 
 sub core_version_for {
@@ -2054,13 +1935,13 @@ sub build_stuff {
     my @config_deps;
 
     if ($dist->{cpanmeta}) {
-        push @config_deps, App::cpanminus::Dependency->from_prereqs(
+        push @config_deps, Menlo::Dependency->from_prereqs(
             $dist->{cpanmeta}->effective_prereqs, ['configure'], $self->{install_types},
         );
     }
 
-    if (-e 'Build.PL' && !$self->should_use_mm($dist->{dist}) && !@config_deps) {
-        push @config_deps, App::cpanminus::Dependency->from_versions(
+    if (-e 'Build.PL' && !@config_deps) {
+        push @config_deps, Menlo::Dependency->from_versions(
             { 'Module::Build' => '0.38' }, 'configure',
         );
     }
@@ -2070,7 +1951,8 @@ sub build_stuff {
     $self->upgrade_toolchain(\@config_deps);
 
     my $target = $dist->{meta}{name} ? "$dist->{meta}{name}-$dist->{meta}{version}" : $dist->{dir};
-    {
+
+    unless ($self->skip_configure($dist, $depth)) {
         $self->install_deps_bailout($target, $dist->{dir}, $depth, @config_deps)
           or return;
     }
@@ -2085,8 +1967,9 @@ sub build_stuff {
     }
 
     # install direct 'test' dependencies for --installdeps, even with --notest
-    my $root_target = (($self->{installdeps} or $self->{showdeps}) and $depth == 0);
-    $dist->{want_phases} = $self->{notest} && !$root_target
+    # TODO: remove build dependencies for static install
+    my $deps_only = $self->deps_only($depth);
+    $dist->{want_phases} = $self->{notest} && !$self->deps_only($depth)
                          ? [qw( build runtime )] : [qw( build test runtime )];
 
     push @{$dist->{want_phases}}, 'develop' if $self->{with_develop} && $depth == 0;
@@ -2140,7 +2023,13 @@ DIAG
     }
 
     my $installed;
-    if ($configure_state->{use_module_build} && -e 'Build' && -f _) {
+    if ($configure_state->{static_install}) {
+        $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . $distname);
+        $self->build(sub { $configure_state->{static_install}->build }, $distname, $depth) &&
+        $self->test(sub { $configure_state->{static_install}->build("test") }, $distname, $depth) &&
+        $self->install(sub { $configure_state->{static_install}->build("install") }, [], $depth) &&
+        $installed++;
+    } elsif ($configure_state->{use_module_build} && -e 'Build' && -f _) {
         $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . $distname);
         $self->build([ $self->{perl}, "./Build" ], $distname, $depth) &&
         $self->test([ $self->{perl}, "./Build", "test" ], $distname, $depth) &&
@@ -2192,34 +2081,57 @@ DIAG
     }
 }
 
+sub opts_in_static_install {
+    my($self, $meta) = @_;
+
+    # --sudo requires running a separate shell to prevent persistent configuration
+    # uninstall-shadows (default on < 5.12) is not supported in BuildPL spec, yet.
+
+    return $meta->{x_static_install} &&
+           !($self->{sudo} or $self->{uninstall_shadows});
+}
+
+
+sub skip_configure {
+    my($self, $dist, $depth) = @_;
+
+    return 1 if $self->{skip_configure};
+    return 1 if $self->opts_in_static_install($dist->{meta});
+    return 1 if $self->no_dynamic_config($dist->{meta}) && $self->deps_only($depth);
+
+    return;
+}
+
+sub no_dynamic_config {
+    my($self, $meta) = @_;
+    exists $meta->{dynamic_config} && $meta->{dynamic_config} == 0;
+}
+
+sub deps_only {
+    my($self, $depth) = @_;
+    ($self->{installdeps} && $depth == 0)
+      or $self->{showdeps}
+      or $self->{scandeps};
+}
+
 sub perl_requirements {
     my($self, @requires) = @_;
 
     my @perl;
     for my $requires (grep defined, @requires) {
         if (exists $requires->{perl}) {
-            push @perl, App::cpanminus::Dependency->new(perl => $requires->{perl});
+            push @perl, Menlo::Dependency->new(perl => $requires->{perl});
         }
     }
 
     return @perl;
 }
 
-sub should_use_mm {
-    my($self, $dist) = @_;
-
-    # Module::Build deps should use MakeMaker because that causes circular deps and fail
-    # Otherwise we should prefer Build.PL
-    my %should_use_mm = map { $_ => 1 } qw( version ExtUtils-ParseXS ExtUtils-Install ExtUtils-Manifest );
-
-    $should_use_mm{$dist};
-}
-
 sub configure_this {
     my($self, $dist, $depth) = @_;
 
-    # Short-circuit `cpanm --installdeps .` because it doesn't need to build the current dir
-    if (-e $self->{cpanfile_path} && $self->{installdeps} && $depth == 0) {
+    my $deps_only = $self->deps_only($depth);
+    if (-e $self->{cpanfile_path} && $deps_only) {
         require Module::CPANfile;
         $dist->{cpanfile} = eval { Module::CPANfile->load($self->{cpanfile_path}) };
         $self->diag_fail($@, 1) if $@;
@@ -2240,7 +2152,22 @@ sub configure_this {
         };
     }
 
+    if ($deps_only && $self->no_dynamic_config($dist->{meta})) {
+        return {
+            configured => 1,
+            configured_ok => exists $dist->{meta}{prereqs},
+            use_module_build => 0,
+        };
+    }
+
     my $state = {};
+
+    my $try_static = sub {
+        if ($self->opts_in_static_install($dist->{meta})) {
+            $self->chat("Distribution opts in x_static_install: $dist->{meta}{x_static_install}\n");
+            $self->static_install_configure($state, $dist, $depth);
+        }
+    };
 
     my $try_eumm = sub {
         if (-e 'Makefile.PL') {
@@ -2268,14 +2195,7 @@ sub configure_this {
         }
     };
 
-    my @try;
-    if ($dist->{dist} && $self->should_use_mm($dist->{dist})) {
-        @try = ($try_eumm, $try_mb);
-    } else {
-        @try = ($try_mb, $try_eumm);
-    }
-
-    for my $try (@try) {
+    for my $try ($try_static, $try_mb, $try_eumm) {
         $try->();
         last if $state->{configured_ok};
     }
@@ -2293,6 +2213,20 @@ sub configure_this {
     return $state;
 }
 
+sub static_install_configure {
+    my($self, $state, $dist, $depth) = @_;
+
+    my $args = $depth == 0 ? $self->{build_args}{configure} : [];
+
+    require Menlo::Builder::Static;
+    my $builder = Menlo::Builder::Static->new;
+    $self->configure(sub { $builder->configure($args || []) }, $depth);
+
+    $state->{configured_ok} = 1;
+    $state->{static_install} = $builder;
+    $state->{configured}++;
+}
+
 sub find_module_name {
     my($self, $state) = @_;
 
@@ -2300,13 +2234,13 @@ sub find_module_name {
 
     if ($state->{use_module_build} &&
         -e "_build/build_params") {
-        my $params = do { open my $in, "_build/build_params"; $self->safe_eval(join "", <$in>) };
+        my $params = do { open my $in, "_build/build_params"; eval(join "", <$in>) };
         return eval { $params->[2]{module_name} } || undef;
     } elsif (-e "Makefile") {
         open my $mf, "Makefile";
         while (<$mf>) {
             if (/^\#\s+NAME\s+=>\s+(.*)/) {
-                return $self->safe_eval($1);
+                return eval($1);
             }
         }
     }
@@ -2393,10 +2327,7 @@ sub save_meta {
     open my $fh, ">", "blib/meta/install.json" or die $!;
     print $fh JSON::PP::encode_json($local);
 
-    # Existence of MYMETA.* Depends on EUMM/M::B versions and CPAN::Meta
-    if (-e "MYMETA.json") {
-        File::Copy::copy("MYMETA.json", "blib/meta/MYMETA.json");
-    }
+    File::Copy::copy("MYMETA.json", "blib/meta/MYMETA.json");
 
     my @cmd = (
         ($self->{sudo} ? 'sudo' : ()),
@@ -2405,29 +2336,13 @@ sub save_meta {
         '-e',
         qq[install({ 'blib/meta' => '$base/$Config{archname}/.meta/$dist->{distvname}' })],
     );
-    $self->run(\@cmd);
-}
-
-sub _merge_hashref {
-    my($self, @hashrefs) = @_;
-
-    my %hash;
-    for my $h (@hashrefs) {
-        %hash = (%hash, %$h);
-    }
-
-    return \%hash;
+    $self->run_command(\@cmd);
 }
 
 sub install_base {
     my($self, $mm_opt) = @_;
     $mm_opt =~ /INSTALL_BASE=(\S+)/ and return $1;
     die "Your PERL_MM_OPT doesn't contain INSTALL_BASE";
-}
-
-sub safe_eval {
-    my($self, $code) = @_;
-    eval $code;
 }
 
 sub configure_features {
@@ -2507,13 +2422,18 @@ sub extract_meta_prereqs {
         my $prereqs = $dist->{cpanfile}->prereqs_with(@features);
         # TODO: creating requirements is useful even without cpanfile to detect conflicting prereqs
         $self->{cpanfile_requirements} = $prereqs->merged_requirements($dist->{want_phases}, ['requires']);
-        return App::cpanminus::Dependency->from_prereqs($prereqs, $dist->{want_phases}, $self->{install_types});
+        return Menlo::Dependency->from_prereqs($prereqs, $dist->{want_phases}, $self->{install_types});
     }
 
     require CPAN::Meta;
 
+    my @meta = qw(MYMETA.json MYMETA.yml);
+    if ($self->no_dynamic_config($dist->{meta})) {
+        push @meta, qw(META.json META.yml);
+    }
+
     my @deps;
-    my($meta_file) = grep -f, qw(MYMETA.json MYMETA.yml);
+    my($meta_file) = grep -f, @meta;
     if ($meta_file) {
         $self->chat("Checking dependencies from $meta_file ...\n");
         my $mymeta = eval { CPAN::Meta->load_file($meta_file, { lazy_validation => 1 }) };
@@ -2524,34 +2444,8 @@ sub extract_meta_prereqs {
         }
     }
 
-    if (-e '_build/prereqs') {
-        $self->chat("Checking dependencies from _build/prereqs ...\n");
-        my $prereqs = do { open my $in, "_build/prereqs"; $self->safe_eval(join "", <$in>) };
-        my $meta = CPAN::Meta->new(
-            { name => $dist->{meta}{name}, version => $dist->{meta}{version}, %$prereqs },
-            { lazy_validation => 1 },
-        );
-        @deps = $self->extract_prereqs($meta, $dist);
-    } elsif (-e 'Makefile') {
-        $self->chat("Finding PREREQ from Makefile ...\n");
-        open my $mf, "Makefile";
-        while (<$mf>) {
-            if (/^\#\s+PREREQ_PM => \{\s*(.*?)\s*\}/) {
-                my @all;
-                my @pairs = split ', ', $1;
-                for (@pairs) {
-                    my ($pkg, $v) = split '=>', $_;
-                    push @all, [ $pkg, $v ];
-                }
-                my $list = join ", ", map { "'$_->[0]' => $_->[1]" } @all;
-                my $prereq = $self->safe_eval("no strict; +{ $list }");
-                push @deps, App::cpanminus::Dependency->from_versions($prereq) if $prereq;
-                last;
-            }
-        }
-    }
-
-    return @deps;
+    $self->diag_fail("No MYMETA file is found after configure. Your toolchain is too old?");
+    return;
 }
 
 sub bundle_deps {
@@ -2587,7 +2481,7 @@ sub bundle_deps {
                 $in_contents = 0;
             } elsif ($in_contents) {
                 /^(\S+)\s*(\S+)?/
-                    and push @deps, App::cpanminus::Dependency->new($1, $self->maybe_version($2));
+                    and push @deps, Menlo::Dependency->new($1, $self->maybe_version($2));
             }
         }
     }
@@ -2606,7 +2500,7 @@ sub extract_prereqs {
     my @features = $self->configure_features($dist, $meta->features);
     my $prereqs  = $self->soften_makemaker_prereqs($meta->effective_prereqs(\@features)->clone);
 
-    return App::cpanminus::Dependency->from_prereqs($prereqs, $dist->{want_phases}, $self->{install_types});
+    return Menlo::Dependency->from_prereqs($prereqs, $dist->{want_phases}, $self->{install_types});
 }
 
 # Workaround for Module::Install 1.04 creating a bogus (higher) MakeMaker requirement that it needs in build_requires
@@ -2688,8 +2582,8 @@ sub dump_scandeps {
         require JSON::PP;
         print JSON::PP::encode_json($self->{scandeps_tree});
     } elsif ($self->{format} eq 'yaml') {
-        require YAML; # no fatpack
-        print YAML::Dump($self->{scandeps_tree});
+        require CPAN::Meta::YAML;
+        print CPAN::Meta::YAML::Dump($self->{scandeps_tree});
     } else {
         $self->diag("Unknown format: $self->{format}\n");
     }
@@ -2718,50 +2612,12 @@ sub DESTROY {
 
 # Utils
 
-sub shell_quote {
-    my($self, @stuff) = @_;
-    if (WIN32) {
-        join ' ', map { /^${quote}.+${quote}$/ ? $_ : ($quote . $_ . $quote) } @stuff;
-    } else {
-        String::ShellQuote::shell_quote_best_effort(@stuff);
-    }
-}
-
-sub which {
-    my($self, $name) = @_;
-    if (File::Spec->file_name_is_absolute($name)) {
-        if (-x $name && !-d _) {
-            return $name;
-        }
-    }
-    my $exe_ext = $Config{_exe};
-    for my $dir (File::Spec->path) {
-        my $fullpath = File::Spec->catfile($dir, $name);
-        if ((-x $fullpath || -x ($fullpath .= $exe_ext)) && !-d _) {
-            if ($fullpath =~ /\s/) {
-                $fullpath = $self->shell_quote($fullpath);
-            }
-            return $fullpath;
-        }
-    }
-    return;
-}
-
-sub get {
-    my($self, $uri) = @_;
-    if ($uri =~ /^file:/) {
-        $self->file_get($uri);
-    } else {
-        $self->{_backends}{get}->(@_);
-    }
-}
-
 sub mirror {
     my($self, $uri, $local) = @_;
     if ($uri =~ /^file:/) {
         $self->file_mirror($uri, $local);
     } else {
-        $self->{_backends}{mirror}->(@_);
+        $self->{http}->mirror($uri, $local);
     }
 }
 
@@ -2801,15 +2657,35 @@ sub file_mirror {
     utime $source_mtime, $source_mtime, $path;
 }
 
-sub has_working_lwp {
-    my($self, $mirrors) = @_;
-    my $https = grep /^https:/, @$mirrors;
-    eval {
-        require LWP::UserAgent; # no fatpack
-        LWP::UserAgent->VERSION(5.802);
-        require LWP::Protocol::https if $https; # no fatpack
-        1;
-    };
+sub configure_http {
+    my $self = shift;
+
+    require HTTP::Tinyish;
+
+    my @try = qw(HTTPTiny);
+    unshift @try, 'Wget' if $self->{try_wget};
+    unshift @try, 'Curl' if $self->{try_curl};
+    unshift @try, 'LWP'  if $self->{try_lwp};
+
+    my @protocol = ('http');
+    push @protocol, 'https'
+      if grep /^https:/, @{$self->{mirrors}};
+
+    my $backend;
+    for my $try (map "HTTP::Tinyish::$_", @try) {
+        if (my $meta = HTTP::Tinyish->configure_backend($try)) {
+            if ((grep $try->supports($_), @protocol) == @protocol) {
+                for my $tool (sort keys %$meta){
+                    (my $desc = $meta->{$tool}) =~ s/^(.*?)\n.*/$1/s;
+                    $self->chat("You have $tool: $desc\n");
+                }
+                $backend = $try;
+                last;
+            }
+        }
+    }
+
+    $backend->new(agent => "Menlo/$Menlo::VERSION", verify_SSL => 1);
 }
 
 sub init_tools {
@@ -2817,92 +2693,13 @@ sub init_tools {
 
     return if $self->{initialized}++;
 
-    if ($self->{make} = $self->which($Config{make})) {
+    if ($self->{make} = which($Config{make})) {
         $self->chat("You have make $self->{make}\n");
     }
 
-    # use --no-lwp if they have a broken LWP, to upgrade LWP
-    if ($self->{try_lwp} && $self->has_working_lwp($self->{mirrors})) {
-        $self->chat("You have LWP $LWP::VERSION\n");
-        my $ua = sub {
-            LWP::UserAgent->new(
-                parse_head => 0,
-                env_proxy => 1,
-                agent => $self->agent,
-                timeout => 30,
-                @_,
-            );
-        };
-        $self->{_backends}{get} = sub {
-            my $self = shift;
-            my $res = $ua->()->request(HTTP::Request->new(GET => $_[0]));
-            return unless $res->is_success;
-            return $res->decoded_content;
-        };
-        $self->{_backends}{mirror} = sub {
-            my $self = shift;
-            my $res = $ua->()->mirror(@_);
-            die $res->content if $res->code == 501;
-            $res->code;
-        };
-    } elsif ($self->{try_wget} and my $wget = $self->which('wget')) {
-        $self->chat("You have $wget\n");
-        my @common = (
-            '--user-agent', $self->agent,
-            '--retry-connrefused',
-            ($self->{verbose} ? () : ('-q')),
-        );
-        $self->{_backends}{get} = sub {
-            my($self, $uri) = @_;
-            $self->safeexec( my $fh, $wget, $uri, @common, '-O', '-' ) or die "wget $uri: $!";
-            local $/;
-            <$fh>;
-        };
-        $self->{_backends}{mirror} = sub {
-            my($self, $uri, $path) = @_;
-            $self->safeexec( my $fh, $wget, $uri, @common, '-O', $path ) or die "wget $uri: $!";
-            local $/;
-            <$fh>;
-        };
-    } elsif ($self->{try_curl} and my $curl = $self->which('curl')) {
-        $self->chat("You have $curl\n");
-        my @common = (
-            '--location',
-            '--user-agent', $self->agent,
-            ($self->{verbose} ? () : '-s'),
-        );
-        $self->{_backends}{get} = sub {
-            my($self, $uri) = @_;
-            $self->safeexec( my $fh, $curl, @common, $uri ) or die "curl $uri: $!";
-            local $/;
-            <$fh>;
-        };
-        $self->{_backends}{mirror} = sub {
-            my($self, $uri, $path) = @_;
-            $self->safeexec( my $fh, $curl, @common, $uri, '-#', '-o', $path ) or die "curl $uri: $!";
-            local $/;
-            <$fh>;
-        };
-    } else {
-        require HTTP::Tiny;
-        $self->chat("Falling back to HTTP::Tiny $HTTP::Tiny::VERSION\n");
-        my %common = (
-            agent => $self->agent,
-        );
-        $self->{_backends}{get} = sub {
-            my $self = shift;
-            my $res = HTTP::Tiny->new(%common)->get($_[0]);
-            return unless $res->{success};
-            return $res->{content};
-        };
-        $self->{_backends}{mirror} = sub {
-            my $self = shift;
-            my $res = HTTP::Tiny->new(%common)->mirror(@_);
-            return $res->{status};
-        };
-    }
+    $self->{http} = $self->configure_http;
 
-    my $tar = $self->which('tar');
+    my $tar = which('tar');
     my $tar_ver;
     my $maybe_bad_tar = sub { WIN32 || BAD_TAR || (($tar_ver = `$tar --version 2>/dev/null`) =~ /GNU.*1\.13/i) };
 
@@ -2937,8 +2734,8 @@ sub init_tools {
             return undef;
         }
     } elsif (    $tar
-             and my $gzip = $self->which('gzip')
-             and my $bzip2 = $self->which('bzip2')) {
+             and my $gzip = which('gzip')
+             and my $bzip2 = which('bzip2')) {
         $self->chat("You have $tar, $gzip and $bzip2\n");
         $self->{_backends}{untar} = sub {
             my($self, $tarfile) = @_;
@@ -2992,7 +2789,7 @@ sub init_tools {
         };
     }
 
-    if (my $unzip = $self->which('unzip')) {
+    if (my $unzip = which('unzip')) {
         $self->chat("You have $unzip\n");
         $self->{_backends}{unzip} = sub {
             my($self, $zipfile) = @_;
@@ -3011,7 +2808,7 @@ sub init_tools {
             system "$unzip $opt $zipfile";
             return $root if -d $root;
 
-            $self->diag_fail("Bad archive: [$root] $zipfile");
+            $self->diag_fail("Bad archive: '$root' $zipfile");
             return undef;
         }
     } else {
@@ -3022,14 +2819,14 @@ sub init_tools {
             my $zip = Archive::Zip->new();
             my $status;
             $status = $zip->read($file);
-            $self->diag_fail("Read of file[$file] failed")
+            $self->diag_fail("Read of file '$file' failed")
                 if $status != Archive::Zip::AZ_OK();
             my @members = $zip->members();
             for my $member ( @members ) {
                 my $af = $member->fileName();
                 next if ($af =~ m!^(/|\.\./)!);
                 $status = $member->extractToFileNamed( $af );
-                $self->diag_fail("Extracting of file[$af] from zipfile[$file failed")
+                $self->diag_fail("Extracting of file 'af' from zipfile '$file' failed")
                     if $status != Archive::Zip::AZ_OK();
             }
 
@@ -3037,27 +2834,6 @@ sub init_tools {
             $root &&= $root->fileName;
             return -d $root ? $root : undef;
         };
-    }
-}
-
-sub safeexec {
-    my $self = shift;
-    my $rdr = $_[0] ||= Symbol::gensym();
-
-    if (WIN32) {
-        my $cmd = $self->shell_quote(@_[1..$#_]);
-        return open( $rdr, "$cmd |" );
-    }
-
-    if ( my $pid = open( $rdr, '-|' ) ) {
-        return $pid;
-    }
-    elsif ( defined $pid ) {
-        exec( @_[ 1 .. $#_ ] );
-        exit 1;
-    }
-    else {
-        return;
     }
 }
 

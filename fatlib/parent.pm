@@ -1,7 +1,7 @@
 package parent;
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.228';
+$VERSION = '0.236';
 
 sub import {
     my $class = shift;
@@ -12,10 +12,6 @@ sub import {
         shift @_;
     } else {
         for ( my @filename = @_ ) {
-            if ( $_ eq $inheritor ) {
-                warn "Class '$inheritor' tried to inherit from itself\n";
-            };
-
             s{::|'}{/}g;
             require "$_.pm"; # dies if the file is not found
         }
@@ -23,11 +19,11 @@ sub import {
 
     {
         no strict 'refs';
-        push @{"$inheritor\::ISA"}, @_;
+        push @{"$inheritor\::ISA"}, @_; # dies if a loop is detected
     };
 };
 
-"All your base are belong to us"
+1;
 
 __END__
 
@@ -93,19 +89,6 @@ either C<.pm> or C<.pmc>), use the following code:
   package MySecondPlugin;
   require './plugins/custom.plugin'; # contains Plugin::Custom
   use parent -norequire, 'Plugin::Custom';
-
-=head1 DIAGNOSTICS
-
-=over 4
-
-=item Class 'Foo' tried to inherit from itself
-
-Attempting to inherit from yourself generates a warning.
-
-    package Foo;
-    use parent 'Foo';
-
-=back
 
 =head1 HISTORY
 

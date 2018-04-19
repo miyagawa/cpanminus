@@ -10,7 +10,7 @@ use Dumpvalue;
 use version ();
 use File::Spec ();
 
-our $VERSION = '0.36';
+our $VERSION = '0.41';
 our $VERBOSE = 0;
 our $ALLOW_DEV_VERSION = 0;
 our $FORK = 0;
@@ -144,10 +144,23 @@ sub parse {
                 next;            # don't screw up 02packages
             }
         }
+        unless ($self->_version_ok($pp)) {
+            $errors{$package} = {
+                long_version => qq{Version string exceeds maximum allowed length of 16b: "$pp->{version}"},
+                infile => $pp->{infile},
+            };
+            next;
+        }
         $checked_in{$package} = $ppp->{$package};
     }                       # end foreach package
 
     return (wantarray && %errors) ? (\%checked_in, \%errors) : \%checked_in;
+}
+
+sub _version_ok {
+    my ($self, $pp) = @_;
+    return if length($pp->{version} || 0) > 16;
+    return 1
 }
 
 sub _perm_check {
@@ -241,6 +254,7 @@ sub _parse_version {
                 }
             }
             if (defined $v) {
+                no warnings;
                 $v = $v->numify if ref($v) =~ /^version(::vpp)?$/;
             } else {
                 $v = "";
@@ -363,7 +377,8 @@ sub _packages_per_pmfile {
         if (
             $pline =~ m{
                       # (.*) # takes too much time if $pline is long
-                      (?<![*\$\\@%&]) # no sigils
+                      #(?<![*\$\\@%&]) # no sigils
+                      ^[\s\{;]*
                       \bpackage\s+
                       ([\w\:\']+)
                       \s*
@@ -383,7 +398,7 @@ sub _packages_per_pmfile {
             # Found something
 
             # from package
-            $pkg =~ s/\'/::/;
+            $pkg =~ s/\'/::/g;
             next PLINE unless $pkg =~ /^[A-Za-z]/;
             next PLINE unless $pkg =~ /\w$/;
             next PLINE if $pkg eq "main";
@@ -505,6 +520,7 @@ sub _packages_per_pmfile {
 
         $result = "undef" unless defined $result;
         if ((ref $result) =~ /^version(?:::vpp)?\b/) {
+            no warnings;
             $result = $result->numify;
         }
         return $result;
@@ -615,6 +631,7 @@ sub _normalize_version {
         if ($forced eq $vv) {
         } elsif ($forced =~ /^v(.+)/) {
             # rare case where a v1.0.23 slipped in (JANL/w3mir-1.0.10.tar.gz)
+            no warnings;
             $vv = version->new($1)->numify;
         } else {
             # warn "Unequal forced[$forced] and vv[$vv]";

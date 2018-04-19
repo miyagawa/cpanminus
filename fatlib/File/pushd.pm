@@ -3,7 +3,8 @@ use warnings;
 
 package File::pushd;
 # ABSTRACT: change directory temporarily for a limited scope
-our $VERSION = '1.009'; # VERSION
+
+our $VERSION = '1.014';
 
 our @EXPORT = qw( pushd tempd );
 our @ISA    = qw( Exporter );
@@ -24,6 +25,12 @@ use overload
 #--------------------------------------------------------------------------#
 
 sub pushd {
+    # Called in void context?
+    unless (defined wantarray) {
+        warnings::warnif(void => 'Useless use of File::pushd::pushd in void context');
+        return
+    }
+
     my ( $target_dir, $options ) = @_;
     $options->{untaint_pattern} ||= qr{^([-+@\w./]+)$};
 
@@ -69,6 +76,12 @@ sub pushd {
 #--------------------------------------------------------------------------#
 
 sub tempd {
+    # Called in void context?
+    unless (defined wantarray) {
+        warnings::warnif(void => 'Useless use of File::pushd::tempd in void context');
+        return
+    }
+
     my ($options) = @_;
     my $dir;
     eval { $dir = pushd( File::Temp::tempdir( CLEANUP => 0 ), $options ) };
@@ -127,7 +140,7 @@ File::pushd - change directory temporarily for a limited scope
 
 =head1 VERSION
 
-version 1.009
+version 1.014
 
 =head1 SYNOPSIS
 
@@ -238,6 +251,18 @@ marked for cleanup.  (Target directories to C<pushd> are always preserved.)
 C<preserve> returns true if the directory will be preserved, and false
 otherwise.
 
+=head1 DIAGNOSTICS
+
+C<pushd> and C<tempd> warn with message
+C<"Useless use of File::pushd::I<%s> in void context"> if called in
+void context and the warnings category C<void> is enabled.
+
+  {
+    use warnings 'void';
+
+    pushd();
+  }
+
 =head1 SEE ALSO
 
 =over 4
@@ -273,6 +298,8 @@ David Golden <dagolden@cpan.org>
 
 =head1 CONTRIBUTORS
 
+=for stopwords Diab Jerius Graham Ollis Olivier Mengué
+
 =over 4
 
 =item *
@@ -283,11 +310,15 @@ Diab Jerius <djerius@cfa.harvard.edu>
 
 Graham Ollis <plicease@cpan.org>
 
+=item *
+
+Olivier Mengué <dolmen@cpan.org>
+
 =back
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is Copyright (c) 2014 by David A Golden.
+This software is Copyright (c) 2016 by David A Golden.
 
 This is free software, licensed under:
 
