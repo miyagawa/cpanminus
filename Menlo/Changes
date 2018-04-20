@@ -1,0 +1,1489 @@
+See http://github.com/miyagawa/cpanminus/ for the latest development.
+
+{{$NEXT}}
+
+1.9010  2018-04-20 11:57:17 CEST
+   [Bug Fixes]
+      - Stop passing command-line supplied arguments to Menlo::CLI::Compat object directly
+
+1.9009  2018-04-20 10:19:24 CEST
+   [Improvements]
+      - Make IO::Uncompress::Gunzip a soft depedency for 5.8 fatpack
+
+1.9008  2018-04-19 20:17:59 CEST
+   [Bug Fix]
+      - Revert API change in Compat so that Carmel and cpm keeps working
+
+1.9007  2018-04-19 17:23:21 CEST
+   [Release Engineering]
+      - Fix some optional dependencies
+
+1.9006  2018-04-19 16:22:18 CEST
+   [Improvements]
+      - Use cpan.metacpan.org for all MetaCPAN-resolved tarballs
+      - Sync with cpanminus 1.7044
+
+1.9005  2017-05-12 14:18:49 JST
+   [Improvements]
+      - Migrate to MetaCPAN V1 API #520 (skaji)
+
+   [Releng]
+      - Merge with cpanminus 1.7043
+
+1.9004  2017-04-02 20:57:03 PDT
+   [Improvements]
+      - Set PERL_USE_UNSAFE_INC for 5.26+ (haarg)
+
+1.9003  2016-05-24 10:30:41 PDT
+   [Bug Fix]
+      - Return true when file mirror skips copying files
+
+1.9002  2016-05-24 01:44:47 PDT
+   [Releng]
+      - Merge with cpanminus 1.7042
+
+1.9001  2015-09-02 08:07:28 CEST
+   [Release Engineering]
+      - Make this a non-dev release so it can be installed with the standard install tools
+      - Note that Menlo::CLI::Compat API is considered UNSTABLE
+
+   [Incompatible Changes]
+      - Require MYMETA generation in configure tools
+
+
+1.9000  2015-08-13 13:47:13 PDT
+      - This is the first developer release for Menlo (cpanm 2.0)
+
+1.7044  2018-04-19 13:54:29 CEST
+   [Improvements]
+      - Support zip files with comments (skaji) #560
+      - Use metacpan download_url API (haarg) #522
+
+1.7043  2017-04-02 20:56:06 PDT
+   [Improvements]
+      - Set PERL_USE_UNSAFE_INC for 5.26+ (haarg) #521
+      - Strictly match module NAME in Bundle
+
+1.7042  2016-05-24 00:48:13 PDT
+   [Improvements]
+         - Merge configure dependencies with cpanfile requirements too
+
+1.7041  2016-05-08 11:28:31 PDT
+   [Improvements]
+         - Add environment variables to man pages (Doug Bell) #481
+         - Support --with-configure and --without-condfigure (zebardy) #482
+         - Make file mirror faster (Matthew Horsfall) #499
+
+1.7040  2016-01-07 11:28:07 PST
+   [Improvements]
+         - Removed a workaround to skip tests for config dependencies such as Module::Build #462
+         - Various doc improvements
+
+1.7039  2015-06-28 18:05:10 PDT
+   [Improvements]
+      - Only enable softening of MakeMaker dependency when Module::Install is present (reported by haarg)
+      - Support .git URL with http protocol (shoichikaji) #468
+
+1.7038  2015-06-22 18:04:44 PDT
+   [Releng]
+      - bump minimum perl requirement to 5.8.1 in META files
+
+1.7037  2015-06-18 14:37:32 PDT
+   [Improvements]
+      - Bump CPAN-Meta-Check to 0.012 #465
+      - Bump HTTP-Tiny to 0.056
+      - Bump CPAN-Meta to 2.150005
+      - Bump CPAN-Meta-YAML to 0.016
+
+1.7036  2015-06-05 22:07:50 PDT
+   [Improvements]
+      - Also soften MakeMaker depenency in runtime prereq, which is just a weird bug in an old
+        Module::Install pre 1.0
+
+1.7035  2015-06-05 10:51:17 PDT
+   [Improvements]
+      - Add a workaround for distributions with an old (buggy) Module::Install, now that the problems
+        occur more frequently with 5.22.0 shipping with a dev version of ExtUtils::MakeMaker #463
+
+1.7034  2015-05-07 14:20:57 PDT
+   [Improvements]
+      - Improved an error message when dependency requirement in cpanfile get conflict with prereqs
+        in sub dependencies.
+
+1.7033  2015-05-01 17:17:42 PDT
+   [Improvements]
+      - Remove MakeMaker and Module::Build from cpanm's runtime dependencies. Rather it will upgrade
+        the minimum version requirement as it finds distributions that uses them in configure
+        requirements. Also, they will be installed with 'notest' option for now, since Module::Build
+        test suite takes a bit too long time.
+
+1.7032  2015-04-29 18:51:36 PDT
+   [Improvements]
+      - Prefer to use cpanmetadb's package history API for pinning versions. Note that it only
+        works against versions since April 2012. You can set `--metacpan` to still prefer MetaCPAN
+        API search, and can use `--cascade-search` to fallback to MetaCPAN after CPAN MetaDB as well.
+
+1.7031  2015-04-22 14:13:37 PDT
+   [Bug Fixes]
+      - Fixed a rare case where circular dependencies in cpanfile prevents satisfying modules from
+        being installed. (#452)
+
+   [Improvements]
+      - Stop reporting perl versions by default if running under certain CI related env vars.
+
+1.7030  2015-04-19 14:15:34 CEST
+      - Same as 1.7029
+
+1.7029  2015-04-19 00:15:32 CEST
+   [New Features]
+      - Consider root cpanfile's requirement when following dependencies with --installdeps (#363)
+      - Added back --metacpan option
+
+   [Improvements]
+      - Bump Module::Metadata to 1.000027
+      - Bump CPAN::Meta::Check to 0.011
+      - Bump CPAN::Meta::YAML to 0.014
+      - Bump Parse::PMFile to 0.36
+
+1.7028  2015-04-17 19:22:59 CEST
+   [Improvements]
+      - Keep the mirror index file as absolute (skaji) #438
+      - Updated the documentation about HTTPS cert warnings #441
+
+1.7027  2015-02-14 12:14:13 PST
+   [Improvements]
+      - Use provides as provided in META.json and do not scan packages as PAUSE does. #435
+
+1.7026  2015-02-13 17:11:38 PST
+   [Improvements]
+      - Respect provides in META file before loading from Parse::PMFile
+
+1.7025  2015-02-07 07:58:21 CET
+   [Improvements]
+      - Bump Parse::PMFile to 0.35
+      - Bump CPAN::Meta::Check to 0.020
+      - Bump CPAN::Meta::Requirements to 2.132
+      - Bump HTTP::Tiny to 0.054
+      - Bump Module::Metadata to 1.000026
+      - Bump version.pm to 0.9912
+
+1.7024  2015-01-12 13:31:19 PST
+   [New Features]
+      - Includes vendor lib and arch path to search for core modules, when installing self-contained
+        lib by default. This behavior can be turned off with --exclude-vendor (tartansandal) #426
+
+1.7023  2015-01-05 07:59:52 JST
+   [Improvements]
+      - Bump Parse::PMFile to 0.34
+      - Bump CPAN::Meta::Requirements to 2.131
+      - Bump HTTP::Tiny to 0.53
+      - Bump Module::Metadata to 1.000025
+      - Bump local::lib to 2.000015
+
+1.7022  2014-12-12 16:41:47 PST
+   [Improvements]
+      - Enabled unsafe option to parse version with PMFile to avoid segfaults and weird errors
+
+1.7021  2014-12-11 21:42:36 PST
+   [Improvements]
+      - Bump Parse::PMFile to 0.32
+      - Bump HTTP::Tiny to 0.052
+
+1.7020  2014-12-08 17:53:18 PST
+   [Improvements]
+      - Bump Parse::PMFile to 0.31
+
+1.7019  2014-12-04 12:51:41 PST
+   [Improvements]
+      - Bump Parse::PMFile to 0.30
+
+1.7018  2014-11-25 14:08:41 PST
+   [Maintenance]
+      - bump $VERSION correctly in cpanm executable
+
+1.7017  2014-11-25 14:00:40 PST
+   [Improvements]
+      - Bump fatpacked CPAN::Meta and HTTP::Tiny
+      - Added documentation for -M and --from in man page
+
+1.7016  2014-11-16 11:46:32 PST
+   [New Features]
+      - Added -M and --from to set --mirror and --mirror-only at the same time while
+        overriding previously set mirrors (sri) #175, #417
+
+   [Improvements]
+      - cpanmin.us is now available under HTTPS (marcus)
+
+1.7015  2014-11-14 13:14:07 PST
+   [Improvements]
+      - Bump Parse::PMFile to 0.29
+      - Bump CPAN::Meta::Requirements to 2.129
+
+1.7014  2014-10-07 20:52:58 PDT
+   [Improvements]
+      - Bump Parse::PMFile to 0.28
+
+1.7013  2014-10-06 23:52:14 PDT
+   [Improvements]
+      - Update bundled JSON::PP to fix issues with JSON parsing on older perl 5.8
+
+1.7012  2014-09-26 19:28:25 PDT
+   [Improvements]
+      - Upgrade CPAN::Meta and HTTP::Tiny in fatpack
+      - Skip @INC on dev directory when running from git checkout when to search
+        for an installed module
+
+1.7011  2014-09-22 15:08:22 JST
+      - Same as 1.7010. Make it a non-trial release.
+
+1.7010  2014-09-17 18:27:53 JST
+   [Improvements]
+      - Use Parse::PMFile rather than our own fork (charsbar) #409
+
+1.7009  2014-09-10 01:43:45 PDT
+   [Bug Fixes]
+      - Fix fatpacked executable to include Parse::CPAN::Meta
+
+1.7008  2014-09-10 01:19:04 PDT
+   [Improvements]
+      - Show **** instead of *password* when masking passwords
+      - Internal code refactoring
+
+1.7007  2014-09-09 09:25:46 PDT
+   [Improvements]
+      - Make sure MetaCPAN search looks up the dist by right author #405
+      - Ignore Module::Build artifacts in _build when indexing modules metadata
+
+1.7006  2014-09-05 15:44:15 PDT
+   [Bug Fixes]
+      - Work around MetaCPAN bugs in numifying dev release versions (#367, #377)
+      - Bump bootstrapping MakeMaker version recent enough to support MYMETA
+
+   [Incompatible Changes]
+      - Removed undocumented --metacpan option that was only for testing purposes
+
+1.7005  2014-09-05 05:04:06 PDT
+   [Bug Fixes]
+      - Do not index common directories such as t, xt or inc in install.json
+      - Support tarball extraction on HP-UX 11 (Brian Wightman)
+
+   [Improvements]
+      - Update Parse::PMFile to 0.19 equivalent (charsbar)
+      - Fixed various documentation (syohex, Graham Ollis)
+      - Mask passwords when failing to download a module (andyjones)
+      - Don't find directories when searching for executables (haarg)
+      - Only assume Module::Build configure prereq when there's no config prereq (haarg)
+      - Upgrade fatpacked modules to the latest
+
+1.7004  2014-04-27 18:22:11 CEST
+   [Bug Fixes]
+      - Downgrade Parse::CPAN::Meta as well #373
+
+1.7003  2014-04-27 17:11:14 CEST
+   [Bug Fixes]
+      - Downgrade CPAN::Meta (moznion) #372
+
+1.7002  2014-04-27 07:45:53 CEST
+   [Bug Fixes]
+      - Bump fatpacked local::lib #364
+      - Fix a bug where build.log files are not properly renamed on the first run on Win32 (haarg) #368
+
+1.7001  2013-09-08 13:11:16 PDT
+   [Bug Fixes]
+      - Fix bootstrap with perl 5.8 and MakeMaker/Module::Build (haarg) #311
+
+1.7000  2013-09-04 15:01:34 PDT
+      - Same as 1.6943. Some of the major changes between 1.61 are:
+      - Add --uninstall/-U command
+      - Support installing recommends/suggests/develop dependencies
+      - Support features selection with --with-feature, --without-feature etc.
+      - Support passing arguments to configure, build, test and install with --configure-args etc.
+      - Add experimental --cpanfile option
+      - Add experimental --pp option
+      - Now much safer to run multiple instances of cpanm
+      - Improved local::lib support
+      - Improved MetaCPAN query
+      - Improved version extraction for install metadata (for Carton)
+      - Completely eliminated dependency on search.cpan.org
+
+1.6943  2013-09-03 16:39:27 PDT
+   [Bug Fixes]
+      - Localize PERL_MB_OPT for --pureperl-only since it leaks out in build/test/install process
+        (Thanks to doyster and leont)
+
+1.6942  2013-08-27 11:10:40 PDT
+   [Bug Fixes]
+      - Fixed the date sort for developer releases with MetaCPAN #308
+
+1.6941  2013-08-20 11:32:09 PDT
+   [Incompatible Changes]
+      - -v/--verbose doesn't imply --interactive anymore. It was added as a backward compatibility
+        when --interactive was added, but i think it now does more harm than good. [RT#70041]
+
+1.6940  2013-08-08 12:35:36 PDT
+   [Bug Fixes]
+      - Support extracting packages from dists without MANIFEST
+        https://github.com/miyagawa/carton/issues/126
+
+1.6939  2013-08-06 02:55:08 PDT
+   [Bug Fixes]
+      - Fix extracting version from Parse::RecDescent (lestrrat)
+
+1.6938  2013-08-05 23:11:16 PDT
+   [Bug Fixes]
+      - Fix extracting version from modules with qv(). #299 (lestrrat)
+
+1.6937  2013-08-05 18:54:31 PDT
+   [Bug Fixes]
+      - Fix a bug where version is not correctly scanned for VERSIONs using version.pm (lestrrat)
+
+   [Improvements]
+      - Gives a warning when local::lib directory contains spaces in its name, since it will
+        likely cause issues with local::lib and MakeMaker #298
+      - Upgrade bundled CPAN::Meta, CPAN::Meta::Check, local::lib and Module::CPANfile
+
+1.6936  2013-08-04 21:37:32 PDT
+   [Bug Fixes]
+      - Create correct install info for dists with ancient META.yml (tokuhirom)
+      - Extract packages based on the sorted filenames order to eliminate randomness
+
+1.6935  2013-07-31 11:36:03 PDT
+   [Bug Fixes]
+      - Fix install meta information where it populates empty key for the dist name
+      - Collect packages from .pm.PL like PAUSE (using Parse::PMFile)
+      - Don't display () in error messages when version is not specified
+
+   [Improvements]
+      - Display git cloning errors even under -q
+
+1.6934  2013-07-26 16:16:57 PDT
+   [Bug Fixes]
+      - Fix install failure when non-array version of no_index is used in META.yml #294
+
+1.6933  2013-07-25 09:57:38 PDT
+   [Bug Fixes]
+      - inline CPAN::Version since it wasn't core on older perls #293
+
+   [Improvements]
+      - Use MANIFEST to find files to scan packages for rather than finding them
+
+1.6932  2013-07-24 15:28:05 PDT
+   [Bug Fixes]
+      - Stop scanning .pm files for root installdeps target (e.g. carton apps)
+
+1.6931  2013-07-24 14:50:59 PDT
+   [Bug Fixes]
+      - Use (patched) Parse::PMFile to parse packages and versions from current directory
+        rather than Module::Metadata from blib.
+      - Fixes a bug where install.json has bogus file path in provides
+      - Honor no_index metadata when scanning provides from .pm files
+      - no_index fatscript.pm since fatpacks bunch of external modules
+
+1.6930  2013-07-24 13:46:10 PDT
+   [Bug Fixes]
+      - Fixed fatscript.pm being stripped, causing issues with Metadata inspection
+      - Bumped Module::CPANfile
+
+1.6929  2013-07-24 11:45:48 PDT
+   [New Features]
+      - Include App/cpanminus/fatscript.pm which is exactly the same content as cpanm.
+        This allows both calling .pm as a script or reading the content to call with Scriptlet,
+        which would also make fatpacking cpanm (in another program!) easier.
+      - Removed the Share dir feature added in 1.6928 in favor of fatscript
+
+1.6928  2013-07-23 14:10:20 PDT
+   [New Features]
+      - Installs cpanm executable to share dir for App-cpanminus, so that other applications
+        can run the specific version of cpanm without relying on user's $PATH or shebang
+
+1.6927  2013-07-23 00:44:53 PDT
+   [New Features]
+      - Add experimental --cpanfile option to specify alternate cpanfile location
+
+1.6926  2013-07-20 09:02:39 PDT
+   [Incompatible Changes]
+      - Log messages are printed to STDOUT rather than STDERR, except errors.
+      - --scandeps are now deprecated. Only in the documentation for now.
+
+   [Bug Fixes]
+      - Fixes a bug in printing "Expiring directories"
+
+1.6925  2013-07-19 22:07:21 PDT
+   [Bug Fixes]
+      - Ignore leading/trailing spaces in PERL_CPANM_OPT #288 (ribasushi)
+      - Stop checking dependencies with --scandeps mode #286 (tazle)
+
+   [Improvements]
+      - Mask passwords in URI when printing them in terminal and log files #281 (xdg, thaljef)
+      - Added link to App::cpanminus::reporter #284 (garu)
+
+   [New Features]
+      - Added experimental --cpanmetadb option #279 (xdg)
+
+1.6924  2013-07-16 11:36:56 PDT
+   [Bug Fixes]
+      - Sort MetaCPAN API results based on date (older one wins) to work around the issue
+        with Crixa-0.01 (https://github.com/CPAN-API/cpan-api/issues/274)
+
+   [Improvements]
+      - Document --with-develop
+      - Document fixes (oalders, garu)
+      - Added Perl::Strip for develop deps if you'd like to build fatpacked binary
+
+1.6923  2013-07-03 22:16:04 PDT
+   [Bug Fixes]
+      - Reverted the --skipdeps in PERL_AUTOINSTALL since it breaks default
+        dependencies in Module::Install-based distributions
+
+1.6922  2013-06-19 13:55:54 PDT
+   [Improvements]
+      - No changes in the code, packaging update so the fatpacked executable on cpanm has
+        the right version. #274
+
+1.6921  2013-06-18 03:18:55 PDT
+   [Bug Fixes]
+      - Fixes install with Module::Build < 0.35, i.e. vanilla perl 5.10.1
+        (Thanks to joshk for the report)
+      - Fixes install on 5.8 with Module::Build dists without configure_requires #273
+        (Thanks to gildegoma for the report)
+
+1.6920  2013-06-14 14:08:44 PDT
+   [Improvements]
+      - Handle PERL_LOCAL_LIB_ROOT in case multiple paths are stacked (mst)
+      - Remove the search.cpan.org fallback where no META files exist. Generate stub using CPAN::Meta
+
+1.6919  2013-06-12 08:32:06 PDT
+   [Incompatible Changes]
+      - Automatically detect local::lib mode when environment variables are already configured
+        on the shell. This is to fix the first time run when local::lib is configure but arch
+        library path doesn't exist. #263
+
+1.6918  2013-06-10 13:02:06 PDT
+   [Improvements]
+      - Fix documentation about --quiet
+      - Find the best (non-backpan) match out of MetaCPAN results when there are multiple
+        results https://github.com/CPAN-API/cpan-api/issues/274
+
+1.6917  2013-06-05 10:07:12 JST
+   [Incompatible Changes]
+      - build.log is now created inside a work directory, then a symlink to the file is
+        made in ~/.cpanm. On platforms where symlink is not available (Win32), the build.log
+        file is copied from the build directory once the installation has finished. (ilmari)
+
+1.6916  2013-06-04 19:54:36 JST
+   [Improvements]
+      - Do not complain upgrading cpanm in local::lib
+      - Accept 0-9_ in PAUSE ID (#265)
+
+1.6915  2013-05-15 19:00:56 PDT
+   [Improvements]
+      - Skip LWP when HTTPS mirror is specified and SSL driver is not installed (thaljef) #258
+      - Fatpack Exporter to fix bootstrapping problems with perl 5.8.1/5.8.2 (tokuhirom)
+
+1.6914  2013-05-12 16:02:28 PDT
+   [Incompatible Changes]
+      - When you have a 1.01 of module X and CPAN mirror has 1.00, `cpanm X` would not
+        overwrite with 1.00, unless you specify `--reinstall`. `cpanm X@1.00` will
+        continue installing the version (and ranges) you specify. #257
+
+1.6913  2013-05-09 17:02:43 PDT
+   [Improvements]
+      - Fix download URL for 2-letter PAUSE-ID #255
+      - Documentation fixes
+
+1.6912  2013-05-06 13:58:33 PDT
+   [Bug Fixes]
+      - `curl -L cpanmin.us | perl - --self-upgrade` should not complain about '-' not in the
+        install path (Thanks to jdb)
+
+1.6911  2013-05-04 13:26:17 PDT
+   [Incompatible Changes]
+      - Turn off automatic installation of recommendations by default, for now
+
+1.6910  2013-05-03 00:29:22 PDT
+   [Bug Fixes]
+      - Do not output the "up to date" message when the requested version is higher than
+        what's on mirror index #246
+
+1.6909  2013-04-29 01:49:04 PDT
+   [Improvements]
+      - Fixed error messages and tests for #237
+
+1.6908  2013-04-26 18:11:38 PDT
+   [Improvements]
+      - Stop counting failures upon installing dependencies, rather check if dependencies
+        are satisfied once it's done. #237
+
+1.6907  2013-04-26 11:39:00 PDT
+   [Maintenance]
+      - Make this a non-dev release
+
+1.6906  2013-04-24 23:18:54 PDT
+   [Improvements]
+      - Fixed messaging so that downgrading says downgrades (@tsibley) #240
+      - Prepend space in pure-perl options so that other args can stay (@gfx) #242
+      - Add --skipdeps to PERL_AUTOINSTALL env for old versions of AutoInstall bundled in inc/
+
+1.6905  2013-04-23 20:03:36 PDT
+   [Improvements]
+      - Added NONINTERACTIVE_TESTING environment variables when it is not interactive
+        per Lancaster Consensus
+      - Added --pp, --pureperl command line option to prefer Pure perl build of the distribution
+        which supports Lancaster Consensus
+
+1.6904  2013-04-23 19:23:31 PDT
+   [Bug Fixes]
+      - Fixes installation failure when perl is in 'recommends' (sjn) #238
+
+1.6903  2013-04-22 09:05:50 CST
+   [New Features]
+      - EXPERIMENTAL --uninstall/-U command to uninstall modules
+
+1.6902  2013-04-21 09:16:46 CST
+      - No changes, maintenance release
+
+1.6901  2013-04-21 08:50:10 CST
+   [Improvements]
+      - --self-upgrade dies rather than warns when it's installed via perlbrew etc.
+      - Fixed --version output
+
+1.6900  2013-04-15 16:41:31 JST
+   [Maintenance]
+      - Remove 'cpanm' executable in the root directory from the distribution
+
+1.6193  2013-04-15 16:36:53 JST
+   [Maintenance]
+      - Changed how to make a release by switching to Milla and dzil
+
+1.6192  Sun Apr 14 17:12:52 JST 2013
+   [New Features]
+      - Support features with --with-feature
+
+   [Improvements]
+      - Fixed an inconsistency when `cpanm Module@ver` always tries to reinstall
+        the module even when you have it already, when --skip-installed is on
+      - Display useful info about %ENV, %Config and @INC in cpanm --version
+
+1.6191  Sun Apr 14 12:05:57 JST 2013
+   [New Features]
+      - Support --configure-args
+
+   [Improvements]
+      - Use String::ShellQuote on non-Win32 systems
+      - Strip lib files for cpanm executable as well
+      - Support version requirements for 'perl', not just modules
+
+1.6190  Sat Apr 13 20:44:52 JST 2013
+   [New Features]
+      - Support --with-develop to install develop dependencies
+      - Installs 'recommends' dependencies by default, but ignore failures
+      - Add --with-suggests to also install 'suggests' dependencies
+
+   [Improvements]
+      - Overhauled Metadata handling using CPAN::Meta's validation
+      - Stopped monkey-patching Module::Build to skip man-page generation #130
+
+1.6108  Sat Apr 13 15:29:32 JST 2013
+   [Improvements]
+      - Fix the way local::lib options are expanded
+      - Support --configure-timeout, --build-timeout and --test-timeout
+      - Enable PERL_MM_USE_DEFAULT in building as well
+      - Fixed the way fatpacked modules are perl-stripped
+
+1.6107  Sat Apr  6 21:17:57 PDT 2013
+   [Improvements]
+      - strip perl files in fatlib. Reduces cpanm executable size about 100KB
+
+1.6106  Sat Apr  6 14:18:25 PDT 2013
+   [Improvements]
+      - Support git-ssh with @commit (ikasam_a)
+
+1.6105  Thu Apr  4 22:15:44 PDT 2013
+   [Improvements]
+      - Better error message when https is not supported with LWP #117
+
+1.6104  Tue Apr  2 18:02:53 PDT 2013
+   [New Features]
+      - Added --self-contained, it's like --local-lib-contained but without --local-lib (schwern)
+
+1.6103  Sat Mar 30 14:33:07 PDT 2013
+   [Bug Fixes]
+      - Fixed rare crash with version.pm loading order in perl 5.8 (tokuhirom)
+
+1.6102  Wed Mar 27 17:14:18 PDT 2013
+   [Improvements]
+      - Added a safe guard check if Module::CoreList loaded is broken/outdated (jdb)
+      - Removed the check to see if make executable begins with quotes (jdb, charsbar)
+      - Added to load Module::Metadata in post-installation #226
+
+1.6101  Mon Mar 25 13:39:56 PDT 2013
+   [Improvements]
+      - Always install direct test dependencies with --installdeps even when
+        --notest option is used. This should make Travis CI users happy #222 (hide_o_55)
+
+1.6100  Sun Mar 24 21:09:30 PDT 2013
+   [Improvements]
+      - Support 'perl' key in requires (aka The Oslo Consensus) #221 (tokuhirom)
+      - Gives warnings when pruning lots of work directories (xdg)
+
+1.6008  Tue Mar 19 09:07:43 PDT 2013
+   [Improvements]
+      - Document the link to privacy policy for perl version collection, as well as
+        added option --no-report-perl-version to opt out
+
+1.6007  Sun Mar 17 14:26:07 PDT 2013
+   [Improvements]
+      - Fixed a warning where temp directory created with git install doesn't actually
+        cleanup the temporary directory. (Tim Heaney) #219
+
+1.6006  Wed Mar 13 22:53:44 PDT 2013
+   [Improvements]
+      - Fixed --save-dists option when used with non-CPAN distros. They're now
+        saved into $dir/vendor. (Dave Rolsky) #216
+      - Fixed PAUSE dist path where author ID is only 2 chars (Brian Cassidy) #218
+
+1.6005  Fri Mar  8 11:46:11 PST 2013
+   [Improvements]
+      - Fatpack CPAN::Meta to fix bootstrap failure with --installdeps + cpanfile
+
+1.6004  Fri Mar  8 11:30:37 PST 2013
+   [Improvements]
+      - Add perl version to User-Agent strings
+
+1.6003  Fri Mar  8 10:57:13 PST 2013
+   [Improvements]
+      - Display cpanfile syntax error if any (robario)
+      - Fixed failure to install oddly laid out dists without blib (winfinit)
+
+1.6002  Wed Feb 27 12:12:09 PST 2013
+   [Improvements]
+      - Support parsing configure dependencies from META.json in spec 2 (kazeburo)
+
+1.6001  Tue Feb 26 16:57:04 PST 2013
+   [Improvements]
+      - Enable developer release if a specific version is requested with == or @. #203
+
+1.6000  Tue Feb 26 09:50:57 PST 2013
+   [Major Changes since 1.5]
+      - Support fixed version search with @version and ~"version range"
+      - MetaCPAN and BackPAN search using MetaCPAN API
+      - --dev to install developer releases
+      - Install via git:// URL (with @branch, tag or commit)
+      - Better MYMETA version range and cpanfile support
+      - No fallback to search.cpan.org, which means you can't install from command names
+
+1.59_13 Mon Feb 25 12:06:44 PST 2013
+   [New Features]
+      - Support @branch (or commit or tag) in Git URLs so that you can specify a
+        commitish to check out before installing from Git repo
+      - Search for BackPAN by default when specific version (or range) is requested
+
+   [Improvements]
+      - Detect .zip root directory more reliably (frioux)
+      - Fixed pathname of the CPAN distribution given as a URL (xaicron)
+
+1.59_12 Wed Feb 13 18:13:49 PST 2013
+   [Internals]
+      - Switch to metacpan_script for the new MetaCPAN query
+
+1.59_11 Mon Feb 11 14:10:26 PST 2013
+   [Improvements]
+      - Support META.json in addition to META.yml for pre-configure requirements
+      - Fatpack JSON::PP and CPAN::Meta::YAML properly 
+
+1.59_10 Thu Feb  7 16:27:03 PST 2013
+   [New Features]
+      - EXPERIMENTAL: added an ability to install from git URL (ikasam_a)
+
+   [Improvements]
+      - Exclude backpan distribution from MetaCPAN query (mo)
+      - Add back Module::CPANfile to fatpack, accidentally deleted in a previous release
+      - Remove CPAN::Meta from fatpack, because it's unsued yet. This reduces the file
+        size of cpanm executable about 30%.
+
+1.59_09 Thu Feb  7 01:55:48 PST 2013
+   [Improvements]
+      - Re-enable --metacpan option to prefer MetaCPAN over CPANMetaDB for all queries,
+        mostly for testing purpose.
+      - Improved MetaCPAN queries in case a release have multiple modules with different
+        versions. Also fixed a bug where it tried to extract distribution version as a
+        module version in some cases
+
+1.59_08 Wed Feb  6 11:25:45 PST 2013
+   [Bug Fixes]
+      - Prioritize MetaCPAN when --dev option is enabled, for real
+
+1.59_07 Wed Feb  6 11:08:05 PST 2013
+   [Incompatible Changes]
+      - Disable implicit --skip-satisfied auto conversion with version specification
+      - Do not fallback to search.cpan.org scraping anymore. This means some of the bogus
+        search that doesn't match package name on PAUSE but returns a hit on search.cpan.org
+        can't be installed anymore. You have to use the right package name for it.
+      - Enable MetaCPAN search by default. --metacpan option is deprecated
+
+   [New Features]
+      - EXPERIMENTAL: --dev option to enable including developer release for searching
+        against MetaCPAN
+
+   [Improvements]
+      - Improve MetaCPAN query to search stable releases, unless developer release is requested
+
+1.59_06 Tue Feb  5 12:36:00 PST 2013
+   [Incompatible Changes]
+      - --mirror-index option doesn't automatically assume --mirror-only
+
+   [Improvements]
+      - Use versioned MetaCPAN API endpoint (oalders)
+
+1.59_05 Mon Feb  4 11:49:40 PST 2013
+   [New Features]
+      - Support version ranges in command args and cpanfile queried agsinst MetaCPAN
+        with the proper version range query to get the best version that satisfies
+        the requirements. Huge thanks to #metacpan guys
+
+1.59_04 Sun Feb  3 09:04:12 PST 2013
+   [Improvements]
+      - Make file copy more reliable on Win32 (A.J. Lucas) #180
+      - Always send cpanminus User-Agent to the servers no matter which backend is used (curl, wget etc.)
+
+1.59_03 Fri Feb  1 10:42:57 PST 2013
+   [Improvements]
+      - Fix issues working with file:// URLs with drive letters on Win32 (A.J. Lucas) #180
+      - Fix home directory detection without HOME env on win32 (kmx, Christian Walde) #132
+      - Allow comment fields in 02packages file (Jeffrey Thalhammer) #187
+
+1.59_02 Thu Jan 31 19:09:43 PST 2013
+   [New Features]
+      - Added experimental @ shortcut to mean exact version e.g. cpanm DBI@1.20
+      - Support version range with "~", such as cpanm DBI~">= 1.0, < 2.0"
+      - Enable metacpan release search when exact version is given (and when mirror-only is not specified)
+        i.e. cpanm DBI@1.100 will fetch the exact release based on metacpan
+
+1.59_01 Thu Jan 31 09:54:50 PST 2013
+   [New Features]
+      - Added a proper support for version range in MYMETA files using CPAN::Meta::Requirements
+      - Skip installing modules when found versions from CPAN doesn't satisfy the requirement, rather
+        than proceeding as if it is ok. For instance, if a ditribution X requires Y >= 1.1 and Y on
+        CPAN (or your CPAN mirror) has 1.0, cpanm will just complain and stop installing it.
+      - Better cpanfile end-to-end support
+      - Upgraded fatpacked modules to the latest
+
+1.5021 Thu Jan 31 00:42:28 PST 2013
+   [Improvements]
+      - Added new --verify option that enables verifying CHECKSUM and SIGNATURE for distributions
+        from CPAN/PAUSE
+
+1.5020 Tue Jan 29 10:29:08 PST 2013
+   [Bug Fixes]
+      - Fixed a bug in --cascade-search that was checking a wrong version from 02packages file (Bryce Baril)
+      - Added a workaround for older version of File::Temp bug (kentnl)
+
+1.5019 Sun Dec 23 02:19:45 JST 2012
+   [Bug Fixes]
+      - Fixes a bug where --installdeps fail to configure dependencies with cpanfile (hoelzro)
+
+   [Improvements]
+      - Cleaned up unused code
+      - Added documentation about --mirror option and local file path
+
+1.5018 Wed Sep 19 14:40:28 JST 2012
+   [Improvements]
+      - Check cpanm path upon --self-upgrade to give warnings for perlbrew users
+
+1.5017 Wed Jul 18 08:28:49 PDT 2012
+   [Improvements]
+      - Ignore tarballs whose first entry is "./" (doy) #184
+
+1.5016 Tue Jul 17 12:00:57 PDT 2012
+   [Improvements]
+      - Added Module/CPANfile.pm to the fatlib. This allows bootstrapping dependencies
+        with cpanm --installdeps on Heroku etc.
+
+1.5015 Sun Jun 24 15:34:57 PDT 2012
+   [Improvements]
+      - Improved Makefile.PL to include bugtracker info (Ben Bullock)
+      - Fixed some merge mess with devel
+
+1.5014 Tue Jun 12 18:27:02 PDT 2012
+   [Improvements]
+      - Make sure 'f' flag becomes the last for some tar versions (mst, aaronsw)
+      - Fixed warnings on perl 5.17+ (rjbs)
+      - Fix local::lib error message (berekuk)
+
+1.5013 Sat May 12 06:15:44 EEST 2012
+   [Bug Fixes]
+      - Fixed --cascade-search to seach for missing modules, which was broken by #150
+
+1.5012 Fri May 11 05:47:56 CEST 2012
+   [Improvements]
+      - Change the behavior of --mirror-index so that it won't fallback to CPAN mirrors #150 (thaljef)
+      - Support v-strings in versions specified install [https://github.com/miyagawa/carton/issues/48]
+
+1.5011 Thu Apr 12 18:57:06 JST 2012
+   [Improvements]
+      - Point default mirror to www.cpan.org #148
+
+1.5010 Sat Mar 31 12:59:52 CEST 2012
+   [New Feature]
+      - Implemented --test-only option #40
+
+1.5009 Fri Mar 30 18:44:12 CEST 2012
+   [Bug Fixes]
+      - Fixed a bug where URL containing ~ (childe) fails to install #134
+      - Fixed a bug where install.json contains bogus data when you specify dist paths
+
+1.5008 Sat Mar 17 18:19:57 PDT 2012
+   [Bug Fixes]
+      - Fied a bug where `cpanm Foo` doesn't properly activate local::lib during installs
+        when you don't have write permissions #143 (goodel, ash)
+      - Improved the warning message when you don't have write permisisons #145 (ash)
+
+1.5007 Tue Dec 20 10:15:48 PST 2011
+   [Bug Fixes]
+      - Fixed to change directory when installing from multiple local directories (motemen)
+
+   [Improvements]
+      - Stop setting AUTOMATED_TESTING (again!) and set PERL_MM_USE_DEFAULT in testing (#138)
+      - Offer opening the build.log with PAGER when --prompt is enabled (doy)
+      - Documentation added for --skip-installed option (AlexBio)
+
+1.5006 Tue Nov 29 11:47:15 PST 2011
+   [Improvements]
+      - Updated cpanmetadb URL to point to cpanmetadb.plackperl.org
+
+1.5005 Tue Nov 22 13:29:27 PST 2011
+   [Bug Fixes]
+      - Fixed a bug where copying meta JSON files fail on Win32 (#133, #135)
+
+1.5004 Tue Nov  8 14:28:20 PST 2011
+   [Bug Fixes]
+      - Include version of the main module instead of distribution version in install.json (pfig)
+
+1.5003 Wed Oct 19 16:29:29 JST 2011
+   [Bug Fixes]
+      - Use ExtUtils::Install to install meta files and let --sudo run it with sudo #124
+
+1.5002 Tue Oct 18 09:06:17 JST 2011
+   [Bug Fixes]
+      - Make sure to include non-core perl modules in -L that are installed in 'perl' by mistake
+      - Ensure all module names use :: instead of dashes because of EUMM NAME errors (Christian Walde)
+
+1.5001 Fri Oct 14 00:18:33 JST 2011
+   [New Features]
+      - Added EXPERIMENTAL --metacpan support (tokuhirom)
+
+   [Improvements]
+      - Do not scan Makefile if MYMETA.yml is found
+      - Support MYMETA.json with spec 2.0
+
+1.5000 Thu Oct 13 15:31:13 JST 2011
+   [New Features]
+      - Added EXPERIMENTAL --mirror-index, --skip-satisfied and --cascade-search options
+      - Installs MYMETA.json and install.json into $ARCH/.meta library path
+
+   [Bug Fixes]
+      - Use Cwd::chdir to update CWD environment variable
+      - Fix ExtUtils::ParseXS issue with -L
+      - Fix CoreList bootstrap issue with perl < 5.8.9 when using -L
+      - Dump more descriptive error message when configure failed with --installdeps #111
+
+   [Improvements]
+      - Upgraded many fatlib embedded modules
+      - Support --no-quiet
+      - Removed ugly @INC dumping hack for -L. This causes modules that has conditional
+        deps such as Any::Moose not to pull down necessary requirements. This is a known
+        issue and will be addressed later.
+      - Support special _ for -l and -L argument to respect local::lib defaults #115
+
+
+1.49_02 Wed Oct 12 18:53:35 JST 2011
+   [Improvements]
+      - Use Cwd::chdir to change PWD (yannk)
+
+   [Bug Fixes]
+      - Unbreak -L with newer ExtUtils::ParseXS installed
+
+   [Developers]
+      - Changed the path to save metadata information
+      - removed Dist::Metadata use, but instead use Module::Metadata to get provides
+      - removed the ugly DumpedINC hack for -L
+
+1.49_01 Sun Jun 26 10:56:51 PDT 2011
+      - A couple of experimental new features (documented in 1.5)
+
+1.4008 Wed Jun 15 17:58:28 PDT 2011
+   [Improvements]
+      - Added experimental --skip-configure
+      - Delay load Module::Build bootstrap so that -L won't auto-intall the latest M::B
+
+1.4007 Tue May 17 10:51:18 PDT 2011
+   [Incompatible Changes]
+      - Remove LWP from Makefile.PL dependencies, since due to the split it brings in many
+        dependencies such as HTTP::Daemon and HTTP::Parser (which requires a C compiler).
+        HTTP::Tiny is embedded as a last resort anyway, and if Makefile.PL is executed via
+        some CPAN client (CPAN.pm, CPANPLUS or cpanminus) it means your client is already
+        configured to be able to fetch files over HTTP.
+
+1.4006 Mon May 16 10:02:45 PDT 2011
+   [Bug Fixes]
+      - Proper fix for the -l option installing the same modules
+
+1.4005 Wed May 11 12:05:49 PDT 2011
+   [Bug Fixes]
+      - -l should now correctly locate installed modules to skip reinstalling. Regression in 1.4004
+      - Ignore Module::CoreList loading errors with -L on perl < 5.8.9
+      - Fixed --prompt in combination with --quiet RT:66602
+      - Fixed a broken Bundle:: module installation
+
+1.4004 Thu Mar 10 10:04:28 PST 2011
+   [Incompatible Changes]
+      - Fixed the issue where `ssh host cpanm Module` waits on input forever. As a side
+        effect of fixing this bug, cpanm reads modules from STDIN only if there's no
+        module arguments given. Options such as -L or --scandeps continu to work. #86
+        (Reported by dku, Getty and many people)
+
+   [Bug Fixes]
+      - Fixed a long standing bug where newer versions of bundled modules such as LWP
+        could be loaded when combined with -L or -l, which causes API incompatiblities.
+      - Fixed the use of gunzip (cho45)
+
+1.4003  Wed Mar  9 18:13:21 PST 2011
+      - Fixed a weird bug that -L fails to bootstrap Module::Build when an old version
+        such as 0.28 is installed 
+      - Do not show help if it reads args from STDIN and nothing is supplied
+      - Stripped down the `cpanm` executable size for 20% by stripping POD for fatpacked
+        dependencies :)
+
+1.4002  Tue Mar  8 17:47:51 PST 2011
+      - Display configure errors in --scandeps so that configure_requires can be
+        manually satisfied (suggested by marcus)
+
+1.4001  Tue Mar  8 10:10:28 PST 2011
+      - Fixed a workaround code for META.yml being JSON (reported by leedo)
+
+1.4000  Tue Mar  8 01:00:49 PST 2011
+   [New Features]
+      - Changed the verbosity level of -q to be actually *so* useful and recommended now
+      - Added a new option --no-man-pages to skip man page generation and installation
+      - Added new --scandeps and --format option that scans module dependency tree before
+        actually installing a module
+      - Support Bundle:: modules
+      - Added new --save-dists option
+
+   See below changes between 1.30_02 and 1.30_13 for more improvements and bug fixes.
+
+1.30_13  Mon Mar  7 10:42:01 PST 2011
+   - Fix for the use of Module::CoreList for perl with versions ending in 0, such as 5.13.10.
+   - Do not attempt to upgrade Module::Build if you have the version that comes with perl
+
+1.30_12  Sun Mar  6 18:54:41 PST 2011
+   - Support Bundle:: modules #81
+   - Fixed a bug where META.yml is being fetched for no reason. This reduces the HTTP
+     GET calls a lot and should speed up the build process
+   - Falls back to search.cpan.org/meta service when (and only when) META.yml is not
+     included or unparsable. Now it can handle distributions like AnyEvent::HTTP or
+     ancient packages better.
+   - Fixed a bug where nmake is doubly quoted on Win32 (charsbar) #76
+   - Makes the wget/curl execution safer (J. Nick Koston)
+   - Support archives where tar list begins with ./ like Image::Magick (Reported by doy) #80
+
+1.30_11  Sun Mar  6 01:34:59 PST 2011
+   - Fix SIGNATURE testing for Module::Build 0.38 or later
+   - Implemented EXPERIMENTAL --scandeps command and --format option
+   - Implemented EXPERIMENTAL --save-tarballs option
+   - Show (undef) in the version output instead of ()
+
+1.30_10  Sat Mar  5 14:55:16 PST 2011
+   - Changed how it special cases Module::Build load path in -L mode. It's much more
+     reliable and support 0.38 with the new CPAN::Meta dependencies
+
+1.30_09  Fri Mar  4 18:15:40 PST 2011
+   - Changed the verbosity level of -q|--quiet so that it prints only necessary
+     information (instead of nothing, which is not really useful)
+   - Shows the number of distribution in the end of the session
+
+1.30_08  Fri Mar  4 16:04:29 PST 2011
+   - Renamed the option to --man-pages and --no-man-pages
+
+1.30_07  Fri Mar  4 15:19:44 PST 2011
+   - Disable the man page generation by default only if -L is in use. (suggested by rjbs)
+
+1.30_06  Fri Mar  4 14:55:35 PST 2011
+   - Skip the man page generation by default. You can enable it with --pod2man
+
+1.30_05  Fri Mar  4 01:36:28 PST 2011
+   - Fixed the way it reduces @INC in the tests when -L is in use, so the tests
+     that call $^X with -I can keep those library paths. i.e. Test::More
+
+1.30_04  Fri Mar  4 00:46:24 PST 2011
+   - Support minor case where blib/* is manually added via -I (e.g. FCGI.pm)
+
+1.30_03  Fri Mar  4 00:30:39 PST 2011
+   - Fixed a bug the modules are not loaded from blib in test_harness with -L
+
+1.30_02  Thu Mar  3 19:53:30 PST 2011
+   - Fixed a bug where tests are loading modules from your site_perl even when -L is used
+
+1.3001   Thu Mar  3 18:33:56 PST 2011
+   - Documentation overhaul
+   - Fixed a bug -L will install non-core modules again and again for each run
+
+1.3000   Wed Mar  2 14:39:44 PST 2011
+   - No changes since the last beta
+
+1.29_02  Tue Mar  1 16:06:20 PST 2011
+   - Improved the dependencies detection when -L is in use so the core modules that have been upgraded
+     inside can be correctly be detected, using Module::CoreList.
+   - Added a crazy hack to support Build.PL configure dependencies > 0.36 when -L is in effect
+
+1.29_01  Mon Feb 28 18:57:27 PST 2011
+   - Disable --uninstall-shadows by default for perl >= 5.12
+
+1.2001  Wed Feb 16 10:54:21 PST 2011
+   - This be official 1.2
+   - Skips tests during the bootstrap, making a much better first time experience
+
+1.19_02 Tue Jan 18 14:11:23 PST 2011
+   - Module::Metadata now requires version.pm 0.87. This makes cpanm unable to boostrap when version.pm is
+     older than that. For now, include the pure perl version/vpp.pm and version.pm in the fatlib and then
+     fatpacked in cpanm executable #78
+
+1.19_01 Tue Jan 18 12:48:47 PST 2011
+   - Upgraded bundled modules, notably Module::Metadata and local::lib
+   - Switched the pure perl fallback to HTTP::Tiny
+
+1.1007  Tue Jan 18 09:39:05 PST 2011
+   - Fixed installation documents
+   - Added PERL_CPANM_NO_AUTOMATED_TESTING to unset AUTOMATED_TESTING to find which modules break (mst)
+
+1.1006  Thu Dec 16 11:27:29 PST 2010
+   - Fixed docs to use curl instead of wget because of its cert bug
+   - Fixed the usage of local() where PERL5_CPANPLUS_IS_RUNING was leaking (dg) #75
+
+1.1005  Tue Dec 14 15:07:31 PST 2010
+   - Accept Foo/Bar/Baz.pm style invocation in args (requested by larryl and many others)
+
+1.1004  Tue Nov 30 10:03:01 PST 2010
+   - Fixed a bug where uncompressed and compressed index timestamps are out of sync which causes
+     issues when the local and mirror server's clocks are out of sync (reported by sukria)
+
+1.1003  Thu Nov 25 01:17:28 PST 2010
+   - Fixed a bug where --mirror-only doesn't detect module version updates (reported by sukria)
+
+1.1002  Tue Nov 16 18:27:19 PST 2010
+   - Implemented --auto-cleanup and set that to 7 (days) by default
+
+1.1001  Fri Nov 12 12:37:31 PST 2010
+   - Fixed the mirror index scanning code to uncompress on-disk and scan line-by-line
+     to be less RAM hoggy (hobbs)
+   - Fixed docs
+
+1.1000  Thu Nov 11 23:56:46 PST 2010
+   - Added --mirror-only to support minicpan and DarkPAN (jonallen, xdg, tokuhirom)
+
+1.0015  Fri Sep 24 16:51:49 PDT 2010
+   - Fixed the output introcuced in the previous release
+
+1.0014  Tue Sep 21 12:42:28 PDT 2010
+   - Added "--> Working on ..." output for a better understanding of overall build process
+
+1.0013  Sun Sep 12 12:46:36 PDT 2010
+   - Added --no-wget and --no-curl to bootstrap LWP in an environment with old
+     versions of wget/curl (rsp)
+
+1.0012  Fri Aug 20 12:46:34 PDT 2010
+   - version check with -L and -l was failing with --skip-installed default. Now fixed (reported by leedo) #55
+   - Fixed the code to find root of tarballs (perlpilot)
+
+1.0011  Wed Aug 18 16:38:24 PDT 2010
+   - -f now implies --reinstall (perigrin)
+
+1.0010  Fri Jul 30 12:54:03 PDT 2010
+   - Make --skip-installed as default
+   - Revised documentations
+
+1.0006  Fri Jul  2 16:52:06 PDT 2010
+   - Use module's version number instead of distribution when to display whether
+     this is an upgrade or reinstall (doy) #43
+
+1.0005  Fri Jul  2 16:36:55 PDT 2010
+   - Clarified that the minimal perl version supported is 5.8 (chocolateboy)
+   - Now being able to look when configure and build fails
+   - Automatically disable uninstall_shadows when local::lib is used. This bug was causing
+     cpanm to remove modules in @INC with perl 5.10 or older (kazeburo, sugyan)
+
+1.0004  Fri May 14 16:08:23 PDT 2010
+   - Do not use Cwd::abs_path if the -l path begins with / (rafl)
+   - Skipping perl should now be considered as success, not failure (rafl)
+   - Fixed PREREQ_PM scanner for dists that conflict with core functions such as UNIVERSAL::isa (yannk)
+   - --look should now imply --no-skip-installed (doy) #45
+
+1.0003  Tue May  4 16:12:53 PDT 2010
+   - Worked around win32 fork and stdout dup issue (xaicron, charsbar)
+
+1.0002  Sat May  1 20:49:39 PDT 2010
+   - Fixed docs
+   - Fallback to the version of the distribution filename when META.yml is not parsable
+
+1.0001  Sat Apr 24 16:20:56 CST 2010
+   - Make this 1.0!
+
+0.999_05 Wed Apr 21 20:37:25 JST 2010
+   [Bug Fixes]
+      - Fixed the timing to make -l and -L an abstract path (ash)
+
+0.999_04 Mon Apr 19 15:21:01 JST 2010
+   [Bug Fixes]
+      - Fixed installationg from arbitrary URLs or file paths
+
+0.999_03 Wed Apr 14 02:26:28 PDT 2010
+   [Improvements]
+      - Fixed a problem when uninstalling shadows fail with an old ExtUtils::Install
+        by bootstrapping it to require 1.46
+
+0.999_02 Tue Apr 13 09:08:00 CEST 2010
+   [Improvements]
+      - Improved --skip-installed so sub packages version in a distribution can be
+        compared correctly
+      - --look command is now back, per popular demands
+
+   [Bug Fixes]
+      - Fixed broken configure_requires in 0.999_01
+
+0.999_01 Mon Apr 12 12:24:57 CEST 2010
+   This is the first release candidate for 1.00
+
+   [INCOMPATIBLE CHANGES]
+      - Do not support (undocumented) CPANMINUS_* environment variable anymore. Use PERL_CPANM_* instead
+      - Plugins are not supported anymore. They will be available as part of a new client!
+      - Deleted --look command
+      - Deleted --recent command
+
+   [Improvements]
+      - Get metadata from search.cpan.org before fetching tarballs, which makes commands like
+        --info or --skip-installed much faster. #3, #8, #9
+      - Added --mirror option where you can specify the mirror base URL
+      - Added --prompt option that asks users to skip, force install, retry or look when test fails #23
+      - When one of the dependencies fail to install, cpanm bails out the installation of source dist
+        by default. --prompt will ask if you want to install anyway
+      - Added a man page for cpanm
+
+   [Developer Fixes]
+      - Do not display 'Already tried...' message by default
+      - Set non-zero exit code if one or more modules failed to build
+
+0.9934 Sun Apr 11 13:53:07 CEST 2010
+   [Developer Fixes]
+      - Unlink MYMETA.yml after the configuration to avoid failing Module::Signature tests
+      - Always run make install UNINST=1. You can disable it with --no-uninst-shadows #26
+
+0.99_33 Sun Apr 11 09:44:16 CEST 2010
+   [Improvements]
+      - Delay load Archive::Zip #38 (Tim Bunce)
+      - Made wget download more fault torelant #15
+
+   [Bug Fixes]
+      - Work around the situation where installsitelib doesn't exist yet #2
+
+   [Developer Fixes]
+      - Upgrade local::lib #33
+      - Delay local::lib configuration as late as possible #35 (doy) 
+      - Redirect tar's stderr (stoned)
+      - Shows an error message when CPANM home is not writable #37 (avar)
+      - Fixed how to handle duplicated dependencies #6, #32
+      - Indicate test failures with --force #22 (rafl)
+
+0.9932 Mon Apr  5 16:27:12 PDT 2010
+   [Developer Fixes]
+      - Special case deprecated modules so they can be upgraded into site lib #34
+
+0.9931 Sun Apr  4 18:16:46 PDT 2010
+   [Developer Fixes]
+      - Doesn't close STDIN anymore when building modules. Instead set AUTOMATED_TESTING #36
+
+0.9930 Tue Mar 30 14:27:49 PDT 2010
+   [Improvements]
+      - untar now works with Solaris' stock bad tar (nnunley)
+
+0.9929 Fri Mar 26 21:35:23 PDT 2010
+   [Improvements]
+      - Make cpanm work with perl 5.10.0 with old version.pm
+
+   [Developer Fixes]
+      - Stopped using Safe.pm reval() to parse Makefile or _build/prereqs
+
+0.9928 Thu Mar 25 22:03:36 PDT 2010
+   [Bug Fixes]
+      - Make PERL_CPANM_OPT=~/perl work again (clkao)
+
+   [Developer Fixes]
+      - Document --skip-installed
+
+0.9927 Tue Mar 23 11:23:18 PDT 2010
+   [Improvements]
+      - Suppress warnings when initializing local::lib directory
+
+   [Developer Fixes]
+      - Fixes -L with local::lib enabled shell
+
+0.99_26 Mon Mar 22 20:22:10 PDT 2010
+   [Developer Fixes]
+      - Fixed the broken delay loaded LWP runtime in -L
+      - Actually changed how -L sets up @INC so that it won't affect the current
+        cpanm process at all which is more correct way to deal with this.
+
+0.99_25 Mon Mar 22 19:52:12 PDT 2010
+   [Improvements]
+      - Log version information of build tools in build.log
+   
+   [Developer Fixes]
+      - Fixed the way it passes DumpedINC
+      - Fixes tools initialization like LWP with -L
+      - Set PID in PERL5_CPAN*_IS_RUNNING rather than just 1
+
+0.99_24 Sun Mar 21 21:57:59 PDT 2010
+   [Improvements]
+      - Improve the error message on bootstrapping
+      - Implemented experimental -L|--local-lib-contained option to install module
+        and its non-core dependencies into local::lib directory
+
+   [Developer Fixes]
+      - Use Module::Metadata and avoid calling another perl interpreter
+        to check the installed versions of the modules
+      - Also dump @INC into a file DumpedINC.pm when self-contained is enabled
+      - Set PERL5_CPANM_IS_RUNNING in configure
+      - Changed the way to pack modules into a file, now using App::FatPacker
+
+0.9923 Mon Mar 15 17:03:14 PDT 2010
+   [Improvements]
+      - Improved docs (chromatic)
+
+   [Developer Fixes]
+      - Added a dummy test to make CPAN testers happy (gfx)
+
+0.9922 Thu Mar 11 10:56:10 JST 2010
+   [Improvements]
+      - Possibly support bad tar (GNU tar 1.13 or 1.22 on Win32) (mattn)
+
+   [Developer Fixes]
+      - Support building with Module::Build < 0.36
+      - Use Safe to eval some code when scanning prereqs
+
+0.9921 Wed Mar 10 23:59:49 JST 2010
+   [Bug Fixes]
+      - Fixed an occasional STDIN related errors in tests (lestrrat)
+      - Fixed a bug where cpanm /path/to/dir doesn't work
+
+   [Developer Fixes]
+      - Once bootstrap is done, return to the original current dir rather than work dir
+        so that `cpanm .` still looks at the (right) current directory
+
+0.99_20 Wed Mar 10 18:46:45 JST 2010
+   [Developer Fixes]
+      - Prefer Build.PL except some exceptions such as Module::Build dependencies
+
+0.9919 Wed Mar 10 11:39:35 JST 2010
+   [Bug Fixes]
+      - Fixed Module::Build distribution, broken in 0.9917 (rafl)
+
+0.9918 Wed Mar 10 11:19:35 JST 2010
+   [Bug Fixes]
+      - Fix --sudo broken in 0.9917 (omega)
+
+0.9917 Tue Mar  9 22:51:21 JST 2010
+   [Improvements]
+      - Do not wait on input on bad tests waiting on STDIN (except on some Win32 environments)
+
+   [Developer Fixes]
+      - Do not uses system() when running Makefile.PL or make etc. but uses fork & exec (tokuhirom)
+      - Depend on newer LWP that has decoded_content
+      - Do not overwrite verbose internal flag (mst)
+
+0.9916 Thu Mar  4 11:33:16 PST 2010
+   [Developer Fixes]
+      - Use 'distfile' as cpanmetadb key rather than 'dist' (rjbs, xdg)
+
+0.9915 Thu Mar  4 01:56:06 PST 2010
+   [Developer Fixes]
+      - Fixed circular references (hopefully)
+
+0.9914 Thu Mar  4 00:39:49 PST 2010
+   [Improvements]
+      - Use cpanmetadb for the faster and more reliable lookup
+
+   [Developer Fixes]
+      - Fixed ->get on LWP to return undef when the request errored out
+
+0.9913 Tue Mar  2 19:20:34 PST 2010
+   [Bug fixes]
+      - Fixes --recent and --list-plugins to work again
+
+0.9912 Tue Mar  2 18:50:23 PST 2010
+   [Improvements]
+      - Some boolean options can now be set to PERL_CPANM_OPT but can be negated
+        using the --no- prefix such as --no-sudo
+      - Directory mode now only works if it begins with / or .
+
+   [Developer fixes]
+      - --self-upgrade skips if it's already the latest
+      - Improved perl Makefile.PL --author 
+      - --help and --version won't bother ~/perl5 initialization (rjbs, ingy)
+      - LWP dependency is injected only if you run from CPAN clients (ingy, marcus)
+
+0.9911 Mon Mar  1 16:27:52 PST 2010
+   [Developer fixes]
+      - Removed build_timeout and test_timeout by default (rafl)
+   
+   [Bug fixes]
+      - Fixed broken --self-upgrade (chocolateboy)
+
+0.9910 Sun Feb 28 21:56:30 PST 2010
+   [Improvements]
+      - wget cpanm | perl - should now work better (hachi, dormando)
+
+   [Developer fixes]
+      - Always use forward slashes even if it's on win32 (charsbar, xaicron)
+      - Check installsitebin (charsbar)
+      - Stop setting AUTOMATED_TESTING
+
+0.99_07 Sat Feb 27 21:05:08 PST 2010
+   [Improvements]
+      - Bootstrap local::lib directory in ~/perl5 for the first run
+      - Bootstrap ExtUtils::MakeMaker, ExtUtils::Install and Module::Build in the first run
+      - Support --local-lib|-l option to specify which path to set local::lib dir
+      - Added PERL_CPANM_OPT command line option to add global command line options
+      - Support curl fallback (squeeky, gfx)
+      - Improved the installation success message to indicate it is a new, upgrade
+        or reinstall of the distribution
+      - Improved the error message in configure failure
+      - Fall back to embedded HTTP::Lite when any of LWP/wget/curl is unavailable
+      - Support piping module/dist for cpanm command, like `cat module_list | cpanm`
+      - Added --skip-installed option which makes cpanm behave like cpan
+      - Documented how to upgrade cpanm itself
+
+   [Developer fixes]
+      - Remove LWP::Simple and switch to LWP::UserAgent
+      - Create a temp file first when to generate standalone executable (gfx)
+      - cpanm (without argument) will output a shorten help
+      - Changed the NO_LWP env var to --no-lwp option
+      - Improved the permission check to also check sitebin directory
+      - Added --author option to Makefile.PL to generate cpanm from git repo (gfx)
+      - Introduced $depth parameter when installing dependencies. Unused in any places yet
+
+0.99_06 Thu Feb 25 14:50:51 PST 2010
+      - Fixed packaging and VERSION
+
+0.99_05 Thu Feb 25 14:39:07 PST 2010
+   [Developer fixes]
+      - Changed the way 'cpanm' standalone script is generated
+      - Developers checking out from git should use script/cpanm.PL for test drive
+
+0.99_04 Thu Feb 25 09:11:44 PST 2010
+   [Improvements]
+      - Supported modules and packages without POD on search.cpan.org
+      - --look command now works on Win32 (charsbar, xaicron)
+      - Improved the error message when configure fails (tokuhirom)
+      - Supported modules with .tgz format archive (frew)
+      - Supported older LWP < 5.828 (chocolateboy)
+
+   [Developer fixes]
+      - Improved the way it checks configuration results (mst, confound, rjbs, LeoNerd)
+      - Killed the automatic Build.PL stub generation because it doesn't work.
+      - Support PERL_MB_OPT in the sanity check
+      - Adds PERL5_CPANPLUS_IS_RUNNING to work with older Module::AutoInstall < 0.73 (Alias)
+      - Changed the way plugins check api_version
+      - Rewrote internals for the at_exit hook and removed Util:: functions (vincent, mst, ewhilhelm)
+
+0.99_03 Tue Feb 23 23:03:20 PST 2010
+   [Bug fixes]
+      - .zip support didn't go through the proper merge process. Now merged
+
+0.99_02 Tue Feb 23 22:13:46 PST 2010
+   [Improvements]
+      - Limit the number of --recent to 50
+
+   [Bug fixes]
+      - Work around with broken LWP installations (yannk)
+
+   [Developer fixes]
+      - Updated cpandb URI (BinGOs)
+      - Standardize env var keys to PERL_CPANM_* so `env | grep PERL` can be used (miyagawa, mst)
+      - Added ->env method
+      - Added PERL_CPANM_NO_LWP=1 so it can upgrade LWP without LWP
+      - Move documents to lib/App/cpanminus.pm
+
+0.99_01 Tue Feb 23 12:31:56 PST 2010
+   [Improvements]
+      - Improved the duplicated or circular dependent package detections (gfx, Yappo)
+      - Improved the progressive message format
+      - Support .zip files (sekimura)
+      - Added --look command, like CPAN shell's look
+      - Added --recent command that shows you the recent updated modules
+      - Added --interactive option, good middleground when installing Task:: modules
+      - Added --self-upgrade (NOTE: it will downgrade to the stable if you run from the dev release!)
+      - Fixed the installation doc to prefer git over CPAN shell
+      - Documented that you need GNU tar >= 1.22
+      - Wraps configure and test with alarm timeout to not choke on bad dists (hirose31, yappo, tokuhirom)
+
+   [Bug fixes]
+      - Fixed a bug where log appending fails on Win32 (xaicron)
+      - Various fixes on win32 (charsbar)
+      - Fixed a bug failing on dists with dual Build.PL/Makefile.PL (mst, aperion)
+      - Fixed a bug where build/ directory is treated as Module::Build's Build file on HFS
+
+   [Developer fixes]
+      - Rewrote the internal using a sane and simple object oriented programming
+      - Changed the ~/.cpanm directroy layout - much easier to dig through
+      - Rewrote the documentation to be less defensive
+      - set AUTOMATED_TESTING when testing a distribution
+      - Mentions pip in the doc (chocolateboy, adamk)
+      - Support cpan:// URI
+      - Added --perl option to specify which perl path to use (mst)
+      - Specify minimum versions for ExtUtils::MakeMaker, Module::Build and ExtUtils::Install
+
+   [Beta features]
+      - Implemented plugin architectures - this is unstable and turned off by default
+
+0.09  Sat Feb 20 23:47:16 PST 2010
+      - Fixed the way archives are untared
+      - Log file is now always ~/.cpanm/build.log
+      - Improve the diag message
+      - Made quiet mode the default. Use -v|--verbose to make it chatty like CPAN(PLUS)
+      - Added retry for HTTP downloads
+      - Fixed the way it generates a stub Build.PL when make is not available
+
+0.08  Sat Feb 20 15:36:53 PST 2010
+      - Implemented --installdeps
+      - Implemented -q|--quiet that makes you a peaceful install experience
+      - Relaxed the defensive docs a little bit since many people love the idea
+
+0.07  Sat Feb 20 12:17:56 PST 2010
+      - Fixed packaging -- standalone cpanm file now has '/usr/bin/env perl'
+        in shebang but CPAN dist has #!perl (so EUMM can fix it)
+      - Added -i for cpan compatibility
+      - Fixed the way to get VERSION from modules
+
+0.06  Fri Feb 19 21:48:09 PST 2010
+      - Fixed the command detection in win32
+      - Make C-c work when downloading tar balls
+      - perl 5.6 compat (i think)
+      - Fixed packaging again
+
+0.05  Fri Feb 19 21:15:20 PST 2010
+      - Fixed no warranty copy
+
+0.04  Fri Feb 19 21:01:10 PST 2010
+      - Added -v
+      - Changed how to get dependencies to be more sensible and #toolchain friendly
+        by supporting MYMETA.yml etc.
+      - Added NO WARRANTY
+
+0.03  Fri Feb 19 19:38:30 PST 2010
+      - Fixed packaging
+      - Make local file install work without LWP (hopefully)
+
+0.02  Fri Feb 19 19:13:03 PST 2010
+      - arguments to cpanm can now be a directory, file, URI or CPAN tarball name
+
+0.01  Fri Feb 19 18:24:04 PST 2010
+      - Initial version to CPAN

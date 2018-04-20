@@ -10,10 +10,17 @@ perl:
   - 5.12
   - "5.10"
   - 5.8
+env:
+  global:
+    - PERL_USE_UNSAFE_INC=1
+matrix:
+  allow_failures:
+    - perl: 5.8
+    - perl: 5.12
 before_install:
   - perlbrew install-cpanm -f
 install:
-  - cpanm -nq --installdeps --with-develop --with-recommends --with-suggests .
+  - cd App-cpanminus && cpanm -nq --installdeps --with-develop --with-recommends --with-suggests .
 script:
-  - PERL_USE_UNSAFE_INC=1 prove -lr xt -j9
+  - prove -lr xt -j9
 sudo: false

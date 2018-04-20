@@ -1,0 +1,2 @@
+requires 'Menlo', '';
+requires 'Exporter', '5.59'; # only need 5.57, but force it in Carton for 5.8.5

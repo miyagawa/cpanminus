@@ -1,0 +1,15 @@
+META.yml
+MYMETA.*
+Makefile
+pm_to_blib
+blib
+*~
+!.gitignore
+!.gitkeep
+!/inc/
+bin/cpanm
+fatpack-artifacts/App/cpanminus/*.pm
+/App-cpanminus-*
+/Menlo-*
+/.build
+/fatpack-build/local
