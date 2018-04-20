@@ -30,6 +30,9 @@
       "configure" : {
          "requires" : {
             "ExtUtils::MakeMaker" : "0"
+         },
+         "suggests" : {
+            "JSON::PP" : "2.27300"
          }
       },
       "develop" : {
@@ -45,7 +48,7 @@
             "App::FatPacker" : "0",
             "Dist::Milla" : "v1.0.18",
             "JSON" : "0",
-            "Menlo" : "1.9006",
+            "Menlo" : "1.9010",
             "Module::Install" : "0",
             "Perl::Strip" : "0",
             "Test::Pod" : "1.41",
@@ -90,7 +93,7 @@
       "cho45 <cho45@lowreal.net>",
       "Christian Walde <walde.christian@googlemail.com>",
       "chromatic <chromatic@wgz.org>",
-      "Dagfinn Ilmari Mannsaker <ilmari@ilmari.org>",
+      "Dagfinn Ilmari Manns\u00e5ker <ilmari@ilmari.org>",
       "Dana M. Diederich <diederich@gmail.com>",
       "Dave Goodell <davidjgoodell@gmail.com>",
       "Dave Rolsky <autarch@urth.org>",
@@ -129,7 +132,7 @@
       "Nicolas R <atoomic@cpan.org>",
       "Norman Nunley <nnunley@gmail.com>",
       "Olaf Alders <olaf@wundersolutions.com>",
-      "Olivier Mengue <dolmen@cpan.org>",
+      "Olivier Mengu\u00e9 <dolmen@cpan.org>",
       "Pedro Melo <melo@simplicidade.org>",
       "Rafal Pocztarski <r.pocztarski@gmail.com>",
       "reezer <kind@gmx.at>",
