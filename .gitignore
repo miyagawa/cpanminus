@@ -8,8 +8,8 @@ blib
 !.gitkeep
 !/inc/
 bin/cpanm
-fatpacked/App/cpanminus/*.pm
+fatpack-artifacts/App/cpanminus/*.pm
 /App-cpanminus-*
 /Menlo-*
 /.build
-/.fatpack-build
+/fatpack-build/local

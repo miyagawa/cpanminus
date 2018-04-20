@@ -56,10 +56,10 @@ my $fatpack_compact = do {
 };
 
 generate_file('script/cpanm.PL', "cpanm", $fatpack_compact);
-generate_file('script/cpanm.PL', "fatpacked/App/cpanminus/fatscript.pm", $fatpack, 'package App::cpanminus::fatscript;');
+generate_file('script/cpanm.PL', "fatpack-artifacts/App/cpanminus/fatscript.pm", $fatpack, 'package App::cpanminus::fatscript;');
 chmod 0755, "cpanm";
 
 END {
-    unlink $_ for "cpanm.tmp", "fatpacked/App/cpanminus/fatscript.pm.tmp";
+    unlink $_ for "cpanm.tmp", "fatpack-artifacts/App/cpanminus/fatscript.pm.tmp";
     system "rm", "-r", ".build";
 }

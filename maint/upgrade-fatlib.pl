@@ -111,7 +111,7 @@ sub pack_modules {
 sub run {
     my($fresh) = @_;
 
-    my $dir = ".fatpack-build";
+    my $dir = "fatpack-build";
     mkdir $dir, 0777;
     
     if ($fresh) {
