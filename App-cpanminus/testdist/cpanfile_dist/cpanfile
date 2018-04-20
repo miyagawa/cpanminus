@@ -1,0 +1,2 @@
+requires 'Hash::MultiValue', dist => "MIYAGAWA/Hash-MultiValue-0.15.tar.gz";
+requires 'Path::Class', 0.26, dist => "KWILLIAMS/Path-Class-0.26.tar.gz";

@@ -1168,7 +1168,7 @@ sub self_upgrade {
 }
 
 sub install_module {
-    my($self, $module, $depth, $version) = @_;
+    my($self, $module, $depth, $version, $override_dist) = @_;
 
     $self->check_libs;
 
@@ -1186,7 +1186,7 @@ sub install_module {
         }
     }
 
-    my $dist = $self->resolve_name($module, $version);
+    my $dist = $self->resolve_name($module, $version, $override_dist);
     unless ($dist) {
         my $what = $module . ($version ? " ($version)" : "");
         $self->diag_fail("Couldn't find module or a distribution $what", 1);
@@ -1578,7 +1578,13 @@ sub verify_signature {
 }
 
 sub resolve_name {
-    my($self, $module, $version) = @_;
+    my($self, $module, $version, $dist) = @_;
+
+    # specified from cpanfile dist
+    if ($dist) {
+        # TODO support http URLs etc?
+        return $self->cpan_dist($dist);
+    }
 
     # Git
     if ($module =~ /(?:^git:|\.git(?:@.+)?$)/) {
@@ -1863,7 +1869,7 @@ sub install_deps {
     }
 
     for my $dep (@install) {
-        $self->install_module($dep->module, $depth + 1, $dep->version);
+        $self->install_module($dep->module, $depth + 1, $dep->version, $dep->dist);
     }
 
     $self->chdir($self->{base});
@@ -2133,6 +2139,9 @@ sub configure_this {
         require Module::CPANfile;
         $dist->{cpanfile} = eval { Module::CPANfile->load($self->{cpanfile_path}) };
         $self->diag_fail($@, 1) if $@;
+
+        $self->{cpanfile_global} ||= $dist->{cpanfile};
+
         return {
             configured       => 1,
             configured_ok    => !!$dist->{cpanfile},
@@ -2408,6 +2417,14 @@ sub merge_with_cpanfile {
     if ($self->{cpanfile_requirements} && !$dist->{cpanfile}) {
         for my $dep (@$deps) {
             $dep->merge_with($self->{cpanfile_requirements});
+        }
+    }
+
+    if ($self->{cpanfile_global}) {
+        for my $dep (@$deps) {
+            my $opts = $self->{cpanfile_global}->options_for_module($dep->module)
+              or next;
+            $dep->dist($opts->{dist}) if $opts->{dist};
         }
     }
 }
