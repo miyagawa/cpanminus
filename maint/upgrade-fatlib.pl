@@ -10,8 +10,14 @@ use File::pushd;
 use Carton::Snapshot;
 use Tie::File;
 
+# use 5.8.1 to see core version numbers
+my $core_version = "5.008001";
+
+# use 5.8.9 to run Carton since 5.8.1 is not supported there
+my $plenv_version = "5.8.9";
+
 sub run_command {
-    local $ENV{PLENV_VERSION} = "5.8.9";
+    local $ENV{PLENV_VERSION} = $plenv_version;
     system "plenv", "exec", @_;
 }
 
@@ -68,7 +74,7 @@ sub required_modules {
             for my $module ( $reqs->required_modules ) {
                 next if $module eq 'perl';
 
-                my $core = $Module::CoreList::version{"5.008009"}{$module};
+                my $core = $Module::CoreList::version{$core_version}{$module};
                 unless ($core && $reqs->accepts_module($module, $core)) {
                     $requires->add_string_requirement( $module => $reqs->requirements_for_module($module) );
                     $finder->($module);
