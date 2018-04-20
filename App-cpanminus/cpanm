@@ -25,7 +25,7 @@ $fatpacked{"Algorithm/C3.pm"} = '#line '.(1+__LINE__).' "'.__FILE__."\"\n".<<'AL
 ALGORITHM_C3
 
 $fatpacked{"App/cpanminus.pm"} = '#line '.(1+__LINE__).' "'.__FILE__."\"\n".<<'APP_CPANMINUS';
-  package App::cpanminus;our$VERSION="1.7902";1;
+  package App::cpanminus;our$VERSION="1.7903";1;
 APP_CPANMINUS
 
 $fatpacked{"CPAN/Common/Index.pm"} = '#line '.(1+__LINE__).' "'.__FILE__."\"\n".<<'CPAN_COMMON_INDEX';
@@ -400,7 +400,7 @@ $fatpacked{"MRO/Compat.pm"} = '#line '.(1+__LINE__).' "'.__FILE__."\"\n".<<'MRO_
 MRO_COMPAT
 
 $fatpacked{"Menlo.pm"} = '#line '.(1+__LINE__).' "'.__FILE__."\"\n".<<'MENLO';
-  package Menlo;our$VERSION="1.9011";1;
+  package Menlo;our$VERSION="1.9012";1;
 MENLO
 
 $fatpacked{"Menlo/Builder/Static.pm"} = '#line '.(1+__LINE__).' "'.__FILE__."\"\n".<<'MENLO_BUILDER_STATIC';
