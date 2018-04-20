@@ -20,7 +20,8 @@ matrix:
 before_install:
   - perlbrew install-cpanm -f
 install:
-  - cd App-cpanminus && cpanm -nq --installdeps --with-develop --with-recommends --with-suggests .
+  - (cd App-cpanminus && cpanm -nq --installdeps --with-develop --with-recommends --with-suggests .)
+  - (cd Menlo && cpanm -nq --installdeps --with-develop --with-recommends --with-suggests .)
 script:
-  - prove -lr xt -j9
+  - (cd App-cpanminus && prove -lr xt -j9)
 sudo: false
