@@ -400,7 +400,7 @@ $fatpacked{"MRO/Compat.pm"} = '#line '.(1+__LINE__).' "'.__FILE__."\"\n".<<'MRO_
 MRO_COMPAT
 
 $fatpacked{"Menlo.pm"} = '#line '.(1+__LINE__).' "'.__FILE__."\"\n".<<'MENLO';
-  package Menlo;our$VERSION="1.9008";1;
+  package Menlo;our$VERSION="1.9009";1;
 MENLO
 
 $fatpacked{"Menlo/Builder/Static.pm"} = '#line '.(1+__LINE__).' "'.__FILE__."\"\n".<<'MENLO_BUILDER_STATIC';
@@ -514,7 +514,7 @@ $fatpacked{"Menlo/Index/MetaDB.pm"} = '#line '.(1+__LINE__).' "'.__FILE__."\"\n"
 MENLO_INDEX_METADB
 
 $fatpacked{"Menlo/Index/Mirror.pm"} = '#line '.(1+__LINE__).' "'.__FILE__."\"\n".<<'MENLO_INDEX_MIRROR';
-  package Menlo::Index::Mirror;use strict;use parent qw(CPAN::Common::Index::Mirror);use Class::Tiny qw(fetcher);use File::Basename ();use File::Spec ();use URI ();use IO::Uncompress::Gunzip ();my%INDICES=(packages=>'modules/02packages.details.txt.gz',);sub refresh_index {my$self=shift;for my$file (values%INDICES){my$remote=URI->new_abs($file,$self->mirror);my$local=File::Spec->catfile($self->cache,File::Basename::basename($file));$self->fetcher->($remote,$local)or Carp::croak("Cannot fetch $remote to $local");(my$uncompressed=$local)=~ s/\.gz$//;IO::Uncompress::Gunzip::gunzip($local,$uncompressed)or Carp::croak "gunzip failed: $IO::Uncompress::Gunzip::GunzipError\n"}}1;
+  package Menlo::Index::Mirror;use strict;use parent qw(CPAN::Common::Index::Mirror);use Class::Tiny qw(fetcher);use File::Basename ();use File::Spec ();use URI ();our$HAS_IO_UNCOMPRESS_GUNZIP=eval {require IO::Uncompress::Gunzip};my%INDICES=(packages=>'modules/02packages.details.txt.gz',);sub refresh_index {my$self=shift;for my$file (values%INDICES){my$remote=URI->new_abs($file,$self->mirror);$remote =~ s/\.gz$// unless$HAS_IO_UNCOMPRESS_GUNZIP;my$local=File::Spec->catfile($self->cache,File::Basename::basename($file));$self->fetcher->($remote,$local)or Carp::croak("Cannot fetch $remote to $local");if ($HAS_IO_UNCOMPRESS_GUNZIP){(my$uncompressed=$local)=~ s/\.gz$//;IO::Uncompress::Gunzip::gunzip($local,$uncompressed)or Carp::croak "gunzip failed: $IO::Uncompress::Gunzip::GunzipError\n"}}}1;
 MENLO_INDEX_MIRROR
 
 $fatpacked{"Menlo/Util.pm"} = '#line '.(1+__LINE__).' "'.__FILE__."\"\n".<<'MENLO_UTIL';
