@@ -15,18 +15,6 @@ use HTTP::Tinyish;
 use JSON::PP ();
 use Time::Local ();
 
-=attr uri
-
-A URI for the endpoint of MetaCPAN. The default is L<https://fastapi.metacpan.org/v1/download_url/>.
-
-=cut
-
-=attr include_dev
-
-Whether an index should include dev releases on PAUSE. Defaults to false.
-
-=cut
-
 sub BUILD {
     my $self = shift;
     my $uri  = $self->uri;

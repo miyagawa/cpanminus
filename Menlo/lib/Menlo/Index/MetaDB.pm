@@ -16,13 +16,6 @@ use CPAN::Meta::YAML;
 use CPAN::Meta::Requirements;
 use HTTP::Tiny;
 
-=attr uri
-
-A URI for the endpoint of a CPAN MetaDB server. The
-default is L<http://cpanmetadb.plackperl.org/v1.0/>.
-
-=cut
-
 sub BUILD {
     my $self = shift;
     my $uri  = $self->uri;
