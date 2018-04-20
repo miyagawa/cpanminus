@@ -2,6 +2,10 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7904  2018-04-20 23:20:15 CEST
+   [New Feaures]
+      - Support dist, mirror and url options in cpanfile (#568)
+
 1.7903  2018-04-20 16:53:53 CEST
    [Releng]
       - Update git tag format to identify Menlo and App-cpanminus releases
