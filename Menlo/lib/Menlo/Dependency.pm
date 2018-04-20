@@ -1,7 +1,7 @@
 package Menlo::Dependency;
 use strict;
 use CPAN::Meta::Requirements;
-use Class::Tiny qw( module version type original_version );
+use Class::Tiny qw( module version type original_version dist mirror url );
 
 sub BUILDARGS {
     my($class, $module, $version, $type) = @_;
