@@ -2,6 +2,10 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7902  2018-04-20 14:42:09 CEST
+   [Bug Fixes]
+      - Fix the usage of Menlo::CLI::Compat
+
 1.7901  2018-04-20 14:19:30 CEST
    [Releng]
       - Same as 1.7900. Fixing dzil configuration

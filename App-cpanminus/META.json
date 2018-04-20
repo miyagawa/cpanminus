@@ -48,7 +48,6 @@
             "App::FatPacker" : "0",
             "Dist::Milla" : "v1.0.18",
             "JSON" : "0",
-            "Menlo" : "1.9010",
             "Module::Install" : "0",
             "Perl::Strip" : "0",
             "Test::Pod" : "1.41",
@@ -79,7 +78,7 @@
          "web" : "https://github.com/miyagawa/cpanminus"
       }
    },
-   "version" : "1.7901",
+   "version" : "1.7902",
    "x_contributors" : [
       "Aaron Moses <mosesa02@localhost.localdomain>",
       "Alessandro Ghedini <al3xbio@gmail.com>",
