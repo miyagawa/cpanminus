@@ -63,8 +63,10 @@
             "Parse::CPAN::Meta" : "0",
             "Parse::PMFile" : "0.26",
             "String::ShellQuote" : "0",
+            "URI" : "0",
             "Win32::ShellQuote" : "0",
             "local::lib" : "0",
+            "parent" : "0",
             "perl" : "5.008001",
             "version" : "0"
          },
@@ -95,7 +97,7 @@
          "web" : "https://github.com/miyagawa/Menlo"
       }
    },
-   "version" : "1.9009",
+   "version" : "1.9010",
    "x_contributors" : [
       "Aaron Moses <mosesa02@localhost.localdomain>",
       "Alessandro Ghedini <al3xbio@gmail.com>",

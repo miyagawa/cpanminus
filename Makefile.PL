@@ -42,14 +42,16 @@ my %WriteMakefileArgs = (
     "Parse::CPAN::Meta" => 0,
     "Parse::PMFile" => "0.26",
     "String::ShellQuote" => 0,
+    "URI" => 0,
     "Win32::ShellQuote" => 0,
     "local::lib" => 0,
+    "parent" => 0,
     "version" => 0
   },
   "TEST_REQUIRES" => {
     "Test::More" => "0.96"
   },
-  "VERSION" => "1.9009",
+  "VERSION" => "1.9010",
   "test" => {
     "TESTS" => "t/*.t"
   }
@@ -80,8 +82,10 @@ my %FallbackPrereqs = (
   "Parse::PMFile" => "0.26",
   "String::ShellQuote" => 0,
   "Test::More" => "0.96",
+  "URI" => 0,
   "Win32::ShellQuote" => 0,
   "local::lib" => 0,
+  "parent" => 0,
   "version" => 0
 );
 
