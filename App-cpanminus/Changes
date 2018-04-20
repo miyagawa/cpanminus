@@ -2,6 +2,18 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7901  2018-04-20 14:19:30 CEST
+   [Releng]
+      - Same as 1.7900. Fixing dzil configuration
+
+1.7900  2018-04-20 14:16:31 CEST
+   [Releng]
+      - Moved cpanminus core to Menlo
+
+   [Internal]
+      - Use CPAN::Common::Index to handle various CPAN index formats
+      - Use HTTP::Tinyish to handle various HTTP clients
+
 1.7044  2018-04-19 13:54:29 CEST
    [Improvements]
       - Support zip files with comments (skaji) #560

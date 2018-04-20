@@ -1,5 +1,5 @@
 package App::cpanminus;
-our $VERSION = "1.7900";
+our $VERSION = "1.7901";
 
 =encoding utf8
 

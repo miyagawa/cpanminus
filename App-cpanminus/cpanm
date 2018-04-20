@@ -25,7 +25,7 @@ $fatpacked{"Algorithm/C3.pm"} = '#line '.(1+__LINE__).' "'.__FILE__."\"\n".<<'AL
 ALGORITHM_C3
 
 $fatpacked{"App/cpanminus.pm"} = '#line '.(1+__LINE__).' "'.__FILE__."\"\n".<<'APP_CPANMINUS';
-  package App::cpanminus;our$VERSION="1.7044";1;
+  package App::cpanminus;our$VERSION="1.7901";1;
 APP_CPANMINUS
 
 $fatpacked{"CPAN/Common/Index.pm"} = '#line '.(1+__LINE__).' "'.__FILE__."\"\n".<<'CPAN_COMMON_INDEX';
