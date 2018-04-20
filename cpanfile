@@ -5,7 +5,7 @@ on test => sub {
 };
 
 on develop => sub {
-    requires 'Menlo', '1.9009';
+    requires 'Menlo', '1.9010';
 
     requires 'JSON';
     requires 'Module::Install';
