@@ -61,7 +61,6 @@ sub required_modules {
     my($snapshot, $dir) = @_;
     
     my $requires = CPAN::Meta::Requirements->new;
-    $requires->add_minimum(Menlo => $Menlo::VERSION);
 
     my $finder;
     $finder = sub {

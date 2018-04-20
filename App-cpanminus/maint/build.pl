@@ -8,7 +8,6 @@ use File::Find;
   NAME                          DESCRIPTION                                     repo     CPAN | wget  source  CPAN
   --------------------------------------------------------------------------------------------+--------------------
   script/cpanm.PL               frontend source                                  YES       NO |
-  lib/App/cpanminus/script.pm   "the gut".                                       YES       NO |            x     
   cpanm                         standalone, packed. #!/usr/bin/env (for cp)      YES       NO |    x
   bin/cpanm                     standalone, packed. #!perl (for EUMM)             NO      YES |            x     x
 
@@ -36,13 +35,16 @@ sub generate_file {
     rename "$target.tmp", $target;
 }
 
-my $fatpack = `fatpack file`;
-
 mkdir ".build", 0777;
-system qw(cp -r fatlib lib .build/);
+system qw(cp -r ../Menlo/lib fatlib lib .build/);
 
-my $fatpack_compact = do {
+my $fatpack;
+my $fatpack_compact;
+
+{
     my $dir = pushd '.build';
+
+    $fatpack = `fatpack file`;
 
     my @files;
     my $want = sub {
@@ -52,8 +54,8 @@ my $fatpack_compact = do {
     find({ wanted => $want, no_chdir => 1 }, "fatlib", "lib");
     system 'perlstrip', '--cache', '-v', @files;
 
-    `fatpack file`;
-};
+    $fatpack_compact = `fatpack file`;
+}
 
 generate_file('script/cpanm.PL', "cpanm", $fatpack_compact);
 generate_file('script/cpanm.PL', "fatpack-artifacts/App/cpanminus/fatscript.pm", $fatpack, 'package App::cpanminus::fatscript;');
