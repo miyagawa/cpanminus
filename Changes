@@ -2,6 +2,10 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.9009  2018-04-20 10:19:24 CEST
+   [Improvements]
+      - Make IO::Uncompress::Gunzip a soft depedency for 5.8 fatpack
+
 1.9008  2018-04-19 20:17:59 CEST
    [Bug Fix]
       - Revert API change in Compat so that Carmel and cpm keeps working
