@@ -22,5 +22,5 @@ before_install:
 install:
   - cd App-cpanminus && cpanm -nq --installdeps --with-develop --with-recommends --with-suggests .
 script:
-  - cd App-cpanminus && prove -lr xt -j9
+  - prove -lr xt -j9
 sudo: false
