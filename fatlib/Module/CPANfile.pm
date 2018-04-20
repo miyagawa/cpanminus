@@ -6,7 +6,19 @@ use Carp ();
 use Module::CPANfile::Environment;
 use Module::CPANfile::Requirement;
 
-our $VERSION = '1.1000';
+our $VERSION = '1.1002';
+
+BEGIN {
+    if (${^TAINT}) {
+        *untaint = sub {
+            my $str = shift;
+            ($str) = $str =~ /^(.+)$/s;
+            $str;
+        };
+    } else {
+        *untaint = sub { $_[0] };
+    }
+}
 
 sub new {
     my($class, $file) = @_;
@@ -17,7 +29,7 @@ sub load {
     my($proto, $file) = @_;
 
     my $self = ref $proto ? $proto : $proto->new;
-    $self->parse($file || Cwd::abs_path('cpanfile'));
+    $self->parse($file || _default_cpanfile());
     $self;
 }
 
@@ -35,6 +47,8 @@ sub parse {
         open my $fh, "<", $file or die "$file: $!";
         join '', <$fh>;
     };
+
+    $code = untaint $code;
 
     my $env = Module::CPANfile::Environment->new($file);
     $env->parse($code) or die $@;
@@ -130,6 +144,11 @@ sub _dump {
     require Data::Dumper;
     chomp(my $value = Data::Dumper->new([$str])->Terse(1)->Dump);
     $value;
+}
+
+sub _default_cpanfile {
+    my $file = Cwd::abs_path('cpanfile');
+    untaint $file;
 }
 
 sub to_string {

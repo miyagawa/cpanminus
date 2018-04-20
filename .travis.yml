@@ -10,6 +10,9 @@ perl:
   - 5.12
   - "5.10"
   - 5.8
+matrix:
+  allow_failures:
+    - perl: 5.8
 before_install:
   - perlbrew install-cpanm -f
 install:

@@ -1,5 +1,5 @@
 package CPAN::Meta::Check;
-$CPAN::Meta::Check::VERSION = '0.012';
+$CPAN::Meta::Check::VERSION = '0.014';
 use strict;
 use warnings;
 
@@ -19,9 +19,11 @@ sub _check_dep {
 
 	my $metadata = Module::Metadata->new_from_module($module, inc => $dirs);
 	return "Module '$module' is not installed" if not defined $metadata;
+
 	my $version = eval { $metadata->version };
-	return "Missing version info for module '$module'" if $reqs->requirements_for_module($module) and not $version;
-	return sprintf 'Installed version (%s) of %s is not in range \'%s\'', $version, $module, $reqs->requirements_for_module($module) if not $reqs->accepts_module($module, $version || 0);
+	return sprintf 'Installed version (%s) of %s is not in range \'%s\'',
+			(defined $version ? $version : 'undef'), $module, $reqs->requirements_for_module($module)
+		if not $reqs->accepts_module($module, $version || 0);
 	return;
 }
 
@@ -29,9 +31,11 @@ sub _check_conflict {
 	my ($reqs, $module, $dirs) = @_;
 	my $metadata = Module::Metadata->new_from_module($module, inc => $dirs);
 	return if not defined $metadata;
+
 	my $version = eval { $metadata->version };
-	return "Missing version info for module '$module'" if not $version;
-	return sprintf 'Installed version (%s) of %s is in range \'%s\'', $version, $module, $reqs->requirements_for_module($module) if $reqs->accepts_module($module, $version);
+	return sprintf 'Installed version (%s) of %s is in range \'%s\'',
+			(defined $version ? $version : 'undef'), $module, $reqs->requirements_for_module($module)
+		if $reqs->accepts_module($module, $version);
 	return;
 }
 
@@ -76,7 +80,7 @@ CPAN::Meta::Check - Verify requirements in a CPAN::Meta object
 
 =head1 VERSION
 
-version 0.012
+version 0.014
 
 =head1 SYNOPSIS
 

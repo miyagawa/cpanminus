@@ -12,3 +12,4 @@ fatpacked/App/cpanminus/*.pm
 /App-cpanminus-*
 /Menlo-*
 /.build
+/.fatpack-build

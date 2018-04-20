@@ -1,78 +1,31 @@
-#!/usr/bin/env PLENV_VERSION=5.8.9 perl
+#!/usr/bin/env perl
 use strict;
-use App::FatPacker ();
+use Capture::Tiny qw(capture_stdout);
+use Config;
+use Cwd;
+use CPAN::Meta;
 use File::Path;
 use File::Find;
-use Module::CoreList;
-use Cwd;
+use File::pushd;
+use Carton::Snapshot;
 use Tie::File;
 
-$] == 5.008009 or die "Run this script as ./upgrade-fatlib.pl, rather than 'perl upgrade-fatlib.pl'\n";
+# use 5.8.1 to see core version numbers
+my $core_version = "5.008001";
 
-# IO::Socket::IP requires newer Socket, which is C-based
-$ENV{PERL_HTTP_TINY_IPV4_ONLY} = 1;
+# use 5.8.5 to run Carton since 5.8.1 is not supported there
+my $plenv_version = "5.8.5";
 
-sub find_requires {
-    my $file = shift;
-
-    my %requires;
-    open my $in, "<", $file or die $!;
-    while (<$in>) {
-        /^\s*(?:use|require) (\S+)[^;]*;\s*$/
-          and $requires{$1} = 1;
-    }
-
-    keys %requires;
-}
-
-sub mod_to_pm {
-    local $_ = shift;
-    s!::!/!g;
-    "$_.pm";
-}
-
-sub pm_to_mod {
-    local $_ = shift;
-    s!/!::!g;
-    s/\.pm$//;
-    $_;
-}
-
-sub in_lib {
-    my $file = shift;
-    -e "lib/$file";
-}
-
-sub is_core {
-    my $module = shift;
-    exists $Module::CoreList::version{5.008001}{$module};
-}
-
-sub exclude_modules {
-    my($modules, $except) = @_;
-    my %exclude = map { $_ => 1 } @$except;
-    [ grep !$exclude{$_}, @$modules ];
-}
-
-sub pack_modules {
-    my($path, $modules, $no_trace) = @_;
-
-    $modules = exclude_modules($modules, $no_trace);
-
-    my $packer = App::FatPacker->new;
-    my @requires = grep !is_core(pm_to_mod($_)), grep /\.pm$/, split /\n/,
-      $packer->trace(use => $modules, args => ['-e', 1]);
-    push @requires, map mod_to_pm($_), @$no_trace;
-
-    my @packlists = $packer->packlists_containing(\@requires);
-    for my $packlist (@packlists) {
-        print "Packing $packlist\n";
-    }
-    $packer->packlists_to_tree($path, \@packlists);
+sub run_command {
+    local $ENV{PLENV_VERSION} = $plenv_version;
+    system "plenv", "exec", @_;
 }
 
 sub rewrite_version_pm {
     my $file = shift;
+
+    die "$file: $!" unless -e $file;
+    
     tie my @file, 'Tie::File', $file or die $!;
     for (0..$#file) {
         if ($file[$_] =~ /^\s*eval "use version::vxs.*/) {
@@ -82,19 +35,108 @@ sub rewrite_version_pm {
     }
 }
 
-sub run {
-    my($upgrade) = @_;
+sub build_snapshot {
+    my $dir = shift;
 
-    my @modules = grep !in_lib(mod_to_pm($_)), find_requires('lib/App/cpanminus/script.pm');
+    {
+        my $pushd = pushd $dir;
 
-    if ($upgrade) {
-        system 'cpanm', @modules;
+        open my $fh, ">cpanfile";
+        print $fh <<EOF;
+requires 'Menlo', '$Menlo::VERSION';
+requires 'Exporter', '5.59'; # only need 5.57, but force it in Carton for 5.8.5
+EOF
+        close $fh;
+    
+        run_command "carton", "install";
     }
 
-    pack_modules(cwd . "/fatlib", \@modules, [ 'local::lib', 'Exporter' ]);
+    my $snapshot = Carton::Snapshot->new(path => "$dir/cpanfile.snapshot");
+    $snapshot->load;
+
+    return $snapshot;
+}
+
+sub required_modules {
+    my($snapshot, $dir) = @_;
+    
+    my $requires = CPAN::Meta::Requirements->new;
+    $requires->add_minimum(Menlo => $Menlo::VERSION);
+
+    my $finder;
+    $finder = sub {
+        my $module = shift;
+
+        my $dist = $snapshot->find($module);
+        if ($dist) {
+            my $name = $dist->name;
+            my $path = "$dir/local/lib/perl5/$Config{archname}/.meta/$name/MYMETA.json";
+            my $meta = CPAN::Meta->load_file($path);
+
+            my $reqs = $meta->effective_prereqs->requirements_for('runtime' => 'requires');
+            for my $module ( $reqs->required_modules ) {
+                next if $module eq 'perl';
+
+                my $core = $Module::CoreList::version{$core_version}{$module};
+                unless ($core && $reqs->accepts_module($module, $core)) {
+                    $requires->add_string_requirement( $module => $reqs->requirements_for_module($module) );
+                    $finder->($module);
+                }
+            }
+        }
+    };
+
+    $finder->("Menlo");
+    $requires->clear_requirement($_) for qw( Module::CoreList ExtUtils::MakeMaker Carp );
+
+    return map { s!::!/!g; "$_.pm" } $requires->required_modules;
+}
+
+sub pack_modules {
+    my($dir, @modules) = @_;
+
+    my $stdout = capture_stdout {
+        local $ENV{PERL5LIB} = cwd . "/$dir/local/lib/perl5";
+        run_command "fatpack", "packlists-for", @modules;
+    };
+
+    my @packlists = split /\n/, $stdout;
+    for my $packlist (@packlists) {
+        warn "Packing $packlist\n";
+    }
+
+    run_command "fatpack", "tree", @packlists;
+}
+
+sub run {
+    my($fresh) = @_;
+
+    my $dir = ".fatpack-build";
+    mkdir $dir, 0777;
+    
+    if ($fresh) {
+        rmtree $dir;
+        mkpath $dir;
+    }
+
+    my $snapshot = build_snapshot($dir);
+    my @modules  = required_modules($snapshot, $dir);
+
+    pack_modules($dir, @modules);
+
+    mkpath "fatlib/version";
+
+    for my $file (
+        glob("fatlib/$Config{archname}/version.pm*"),
+        glob("fatlib/$Config{archname}/version/*.pm"),
+    ) {
+        next if $file =~ /\bvxs\.pm$/;
+        (my $target = $file) =~ s!^fatlib/$Config{archname}/!fatlib/!;
+        rename $file => $target or die "$file => $target: $!";
+    }
+
     rewrite_version_pm("fatlib/version.pm");
 
-    use Config;
     rmtree("fatlib/$Config{archname}");
     rmtree("fatlib/POD2");
 
