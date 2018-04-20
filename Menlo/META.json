@@ -27,6 +27,9 @@
       "configure" : {
          "requires" : {
             "ExtUtils::MakeMaker" : "0"
+         },
+         "suggests" : {
+            "JSON::PP" : "2.27300"
          }
       },
       "develop" : {
@@ -97,7 +100,7 @@
          "web" : "https://github.com/miyagawa/cpanminus"
       }
    },
-   "version" : "1.9010",
+   "version" : "1.9011",
    "x_contributors" : [
       "Aaron Moses <mosesa02@localhost.localdomain>",
       "Alessandro Ghedini <al3xbio@gmail.com>",
@@ -111,7 +114,7 @@
       "cho45 <cho45@lowreal.net>",
       "Christian Walde <walde.christian@googlemail.com>",
       "chromatic <chromatic@wgz.org>",
-      "Dagfinn Ilmari Mannsaker <ilmari@ilmari.org>",
+      "Dagfinn Ilmari Manns\u00e5ker <ilmari@ilmari.org>",
       "Dana M. Diederich <diederich@gmail.com>",
       "Dave Goodell <davidjgoodell@gmail.com>",
       "Dave Rolsky <autarch@urth.org>",
@@ -150,7 +153,7 @@
       "Nicolas R <atoomic@cpan.org>",
       "Norman Nunley <nnunley@gmail.com>",
       "Olaf Alders <olaf@wundersolutions.com>",
-      "Olivier Mengue <dolmen@cpan.org>",
+      "Olivier Mengu\u00e9 <dolmen@cpan.org>",
       "Pedro Melo <melo@simplicidade.org>",
       "Rafal Pocztarski <r.pocztarski@gmail.com>",
       "reezer <kind@gmx.at>",
