@@ -2,6 +2,10 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.9012  2018-04-20 16:53:04 CEST
+   [Releng]
+      - Change git tag format to identify Menlo and App-cpanminus
+
 1.9011  2018-04-20 14:38:47 CEST
    [Bug Fixes]
       - Restore arguments to Menlo::CLI::Compat->new for cpm (skaji)
