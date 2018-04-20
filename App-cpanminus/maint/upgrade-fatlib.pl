@@ -4,10 +4,12 @@ use Capture::Tiny qw(capture_stdout);
 use Config;
 use Cwd;
 use CPAN::Meta;
+use File::Copy qw(copy);
 use File::Path;
 use File::Find;
 use File::pushd;
 use Carton::Snapshot;
+use Module::CPANfile;
 use Tie::File;
 
 # use 5.8.1 to see core version numbers
@@ -41,9 +43,11 @@ sub build_snapshot {
     {
         my $pushd = pushd $dir;
 
-        open my $fh, ">cpanfile";
+        copy "../../Menlo/cpanfile" => "cpanfile"
+            or die $!;
+
+        open my $fh, ">>cpanfile" or die $!;
         print $fh <<EOF;
-requires 'Menlo', '$Menlo::VERSION';
 requires 'Exporter', '5.59'; # only need 5.57, but force it in Carton for 5.8.5
 EOF
         close $fh;
@@ -64,28 +68,30 @@ sub required_modules {
 
     my $finder;
     $finder = sub {
-        my $module = shift;
+        my $prereqs = shift;
 
-        my $dist = $snapshot->find($module);
-        if ($dist) {
-            my $name = $dist->name;
-            my $path = "$dir/local/lib/perl5/$Config{archname}/.meta/$name/MYMETA.json";
-            my $meta = CPAN::Meta->load_file($path);
+        my $reqs = $prereqs->requirements_for('runtime' => 'requires');
+        for my $module ( $reqs->required_modules ) {
+            next if $module eq 'perl';
 
-            my $reqs = $meta->effective_prereqs->requirements_for('runtime' => 'requires');
-            for my $module ( $reqs->required_modules ) {
-                next if $module eq 'perl';
+            my $core = $Module::CoreList::version{$core_version}{$module};
+            next if $core && $reqs->accepts_module($module, $core);
 
-                my $core = $Module::CoreList::version{$core_version}{$module};
-                unless ($core && $reqs->accepts_module($module, $core)) {
-                    $requires->add_string_requirement( $module => $reqs->requirements_for_module($module) );
-                    $finder->($module);
-                }
+            $requires->add_string_requirement( $module => $reqs->requirements_for_module($module) );
+
+            my $dist = $snapshot->find($module);
+            if ($dist) {
+                my $name = $dist->name;
+                my $path = "$dir/local/lib/perl5/$Config{archname}/.meta/$name/MYMETA.json";
+                my $meta = CPAN::Meta->load_file($path);
+                $finder->($meta->effective_prereqs);
             }
         }
     };
 
-    $finder->("Menlo");
+    my $cpanfile = Module::CPANfile->load("../Menlo/cpanfile");
+    $finder->( $cpanfile->prereqs );
+
     $requires->clear_requirement($_) for qw( Module::CoreList ExtUtils::MakeMaker Carp );
 
     return map { s!::!/!g; "$_.pm" } $requires->required_modules;
