@@ -102,7 +102,6 @@ sub new {
         features => {},
         pure_perl => 0,
         cpanfile_path => 'cpanfile',
-        @_,
     }, $class;
 
     $self->parse_options(@_);
