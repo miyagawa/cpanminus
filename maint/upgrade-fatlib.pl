@@ -13,8 +13,8 @@ use Tie::File;
 # use 5.8.1 to see core version numbers
 my $core_version = "5.008001";
 
-# use 5.8.9 to run Carton since 5.8.1 is not supported there
-my $plenv_version = "5.8.9";
+# use 5.8.5 to run Carton since 5.8.1 is not supported there
+my $plenv_version = "5.8.5";
 
 sub run_command {
     local $ENV{PLENV_VERSION} = $plenv_version;
@@ -42,7 +42,10 @@ sub build_snapshot {
         my $pushd = pushd $dir;
 
         open my $fh, ">cpanfile";
-        print $fh "requires 'Menlo', '$Menlo::VERSION';\n";
+        print $fh <<EOF;
+requires 'Menlo', '$Menlo::VERSION';
+requires 'Exporter', '5.59'; # only need 5.57, but force it in Carton for 5.8.5
+EOF
         close $fh;
     
         run_command "carton", "install";
@@ -84,7 +87,7 @@ sub required_modules {
     };
 
     $finder->("Menlo");
-    $requires->clear_requirement($_) for qw( Module::CoreList );
+    $requires->clear_requirement($_) for qw( Module::CoreList ExtUtils::MakeMaker Carp );
 
     return map { s!::!/!g; "$_.pm" } $requires->required_modules;
 }
