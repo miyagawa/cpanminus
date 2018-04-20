@@ -24,8 +24,10 @@ requires 'Module::Metadata';
 requires 'Parse::CPAN::Meta';
 requires 'Parse::PMFile', '0.26';
 requires 'String::ShellQuote';
+requires 'URI';
 requires 'Win32::ShellQuote';
 requires 'local::lib';
+requires 'parent';
 requires 'version';
 
 # soft dependencies for optional features
