@@ -1168,7 +1168,7 @@ sub self_upgrade {
 }
 
 sub install_module {
-    my($self, $module, $depth, $version, $override_dist) = @_;
+    my($self, $module, $depth, $version, $dep) = @_;
 
     $self->check_libs;
 
@@ -1186,7 +1186,7 @@ sub install_module {
         }
     }
 
-    my $dist = $self->resolve_name($module, $version, $override_dist);
+    my $dist = $self->resolve_name($module, $version, $dep);
     unless ($dist) {
         my $what = $module . ($version ? " ($version)" : "");
         $self->diag_fail("Couldn't find module or a distribution $what", 1);
@@ -1578,12 +1578,18 @@ sub verify_signature {
 }
 
 sub resolve_name {
-    my($self, $module, $version, $dist) = @_;
+    my($self, $module, $version, $dep) = @_;
 
-    # specified from cpanfile dist
-    if ($dist) {
-        # TODO support http URLs etc?
-        return $self->cpan_dist($dist);
+    if ($dep && $dep->url) {
+        if ($dep->url =~ m!authors/id/(.*)!) {
+            return $self->cpan_dist($1, $dep->url);
+        } else {
+            return { uris => [ $dep->url ] };
+        }
+    }
+
+    if ($dep && $dep->dist) {
+        return $self->cpan_dist($dep->dist, undef, $dep->mirror);
     }
 
     # Git
@@ -1657,7 +1663,10 @@ sub cpan_module {
 }
 
 sub cpan_dist {
-    my($self, $dist, $url) = @_;
+    my($self, $dist, $url, $mirror) = @_;
+
+    # strip trailing slash
+    $mirror =~ s!/$!! if $mirror;
 
     $dist =~ s!^([A-Z]{2})!substr($1,0,1)."/".substr($1,0,2)."/".$1!e;
 
@@ -1670,7 +1679,7 @@ sub cpan_dist {
         my $id = $d->cpanid;
         my $fn = substr($id, 0, 1) . "/" . substr($id, 0, 2) . "/" . $id . "/" . $d->filename;
 
-        my @mirrors = @{$self->{mirrors}};
+        my @mirrors = $mirror ? ($mirror) : @{$self->{mirrors}};
         my @urls    = map "$_/authors/id/$fn", @mirrors;
 
         $url = \@urls,
@@ -1869,7 +1878,7 @@ sub install_deps {
     }
 
     for my $dep (@install) {
-        $self->install_module($dep->module, $depth + 1, $dep->version, $dep->dist);
+        $self->install_module($dep->module, $depth + 1, $dep->version, $dep);
     }
 
     $self->chdir($self->{base});
@@ -2424,7 +2433,10 @@ sub merge_with_cpanfile {
         for my $dep (@$deps) {
             my $opts = $self->{cpanfile_global}->options_for_module($dep->module)
               or next;
-            $dep->dist($opts->{dist}) if $opts->{dist};
+
+            $dep->dist($opts->{dist})     if $opts->{dist};
+            $dep->mirror($opts->{mirror}) if $opts->{mirror};
+            $dep->url($opts->{url})       if $opts->{url};
         }
     }
 }
