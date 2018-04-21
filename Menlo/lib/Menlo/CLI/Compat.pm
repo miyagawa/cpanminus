@@ -2106,6 +2106,7 @@ sub opts_in_static_install {
 
     # Menlo::Builder::Static could be a separate module in the future
     my $has_static_module = eval { require Menlo::Builder::Static; 1 };
+    warn $@ if $@;
 
     # --sudo requires running a separate shell to prevent persistent configuration
     # uninstall-shadows (default on < 5.12) is not supported in BuildPL spec, yet.
