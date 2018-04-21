@@ -21,9 +21,6 @@
          "share",
          "t",
          "xt"
-      ],
-      "file" : [
-         "lib/App/cpanminus/fatscript.pm"
       ]
    },
    "prereqs" : {
@@ -67,7 +64,7 @@
          }
       }
    },
-   "release_status" : "testing",
+   "release_status" : "stable",
    "resources" : {
       "bugtracker" : {
          "web" : "https://github.com/miyagawa/cpanminus/issues"
