@@ -29,13 +29,6 @@ sub qs($) {
     Menlo::Util::shell_quote($_[0]);
 }
 
-sub agent {
-    my $self = shift;
-    my $agent = "cpanminus/$VERSION";
-    $agent .= " perl/$]" if $self->{report_perl_version};
-    $agent;
-}
-
 sub determine_home {
     my $class = shift;
 
