@@ -2,6 +2,11 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7905  2018-04-21 11:39:58 CEST
+   [Bug Fixes]
+      - Fix quoting in commands in Win32 #545
+      - Disable static_install when required modules are not installed
+
 1.7904  2018-04-20 23:20:15 CEST
    [New Feaures]
       - Support dist, mirror and url options in cpanfile (#568)
