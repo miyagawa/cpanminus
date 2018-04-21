@@ -48,6 +48,7 @@ sub new {
     my $class = shift;
 
     my $self = bless {
+        name => "Menlo",
         home => $class->determine_home,
         cmd  => 'install',
         seen => {},
@@ -411,7 +412,7 @@ sub setup_home {
         }
     }
 
-    $self->chat("cpanm (Menlo) $VERSION on perl $] built for $Config{archname}\n" .
+    $self->chat("cpanm ($self->{name}) $VERSION on perl $] built for $Config{archname}\n" .
                 "Work directory is $self->{base}\n");
 }
 
@@ -571,7 +572,7 @@ sub load_argv_from_fh {
 sub show_version {
     my $self = shift;
 
-    print "cpanm (Menlo) version $VERSION ($0)\n";
+    print "cpanm ($self->{name}) version $VERSION ($0)\n";
     print "perl version $] ($^X)\n\n";
 
     print "  \%Config:\n";

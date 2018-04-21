@@ -22,7 +22,7 @@ use lib "$Bin/../lib", "$Bin/../../Menlo/lib", "$Bin/../fatlib"; # For dev -- Au
 use Menlo::CLI::Compat;
 
 unless (caller) {
-    my $app = Menlo::CLI::Compat->new;
+    my $app = Menlo::CLI::Compat->new(name => "App::cpanminus");
     $app->parse_options(@ARGV);
     $app->run;
     exit $app->status;
