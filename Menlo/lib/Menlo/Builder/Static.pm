@@ -9,7 +9,7 @@ use ExtUtils::Install qw/pm_to_blib install/;
 use ExtUtils::InstallPaths 0.002;
 use File::Basename qw/dirname/;
 use File::Find ();
-use File::Path qw/mkpath rmtree/;
+use File::Path qw/mkpath/;
 use File::Spec::Functions qw/catfile catdir rel2abs abs2rel splitdir curdir/;
 use Getopt::Long 2.36 qw/GetOptionsFromArray/;
 
@@ -80,14 +80,6 @@ my %actions = (
 		die "Must run `./Build build` first\n" if not -d 'blib';
 		install($opt{install_paths}->install_map, @opt{qw/verbose dry_run uninst/});
                 1;
-	},
-	clean => sub {
-		my %opt = @_;
-		rmtree($_, $opt{verbose}) for qw/blib temp/;
-	},
-	realclean => sub {
-		my %opt = @_;
-		rmtree($_, $opt{verbose}) for qw/blib temp Build _build_params MYMETA.yml MYMETA.json/;
 	},
 );
 
