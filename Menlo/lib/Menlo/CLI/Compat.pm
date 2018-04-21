@@ -1141,7 +1141,7 @@ sub show_build_log {
 
     if ($pager) {
         if (WIN32) {
-            system "@{[ qs $pager ]} < @{[ qs $self->{log}]";
+            system "@{[ qs $pager ]} < @{[ qs $self->{log}]}";
         } else {
             system $pager, $self->{log};
         }
