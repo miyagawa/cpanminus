@@ -2,6 +2,11 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.9017  2018-04-21 19:30:21 CEST
+   [Bug Fixes]
+      - Change the log output to say App::cpanminus for downstream consumers such as
+        App::cpanminus::reporter
+
 1.9016  2018-04-21 13:17:14 CEST
    [Improvements]
       - Support version in x_static_install (leont)
