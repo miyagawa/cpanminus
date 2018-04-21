@@ -2112,6 +2112,7 @@ sub opts_in_static_install {
     # uninstall-shadows (default on < 5.12) is not supported in BuildPL spec, yet.
 
     return $meta->{x_static_install} &&
+      $meta->{x_static_install} == 1 &&
       !($self->{sudo} or $self->{uninstall_shadows});
 }
 
