@@ -2240,7 +2240,7 @@ sub static_install_configure {
     my $args = $depth == 0 ? $self->{build_args}{configure} : [];
 
     require Menlo::Builder::Static;
-    my $builder = Menlo::Builder::Static->new;
+    my $builder = Menlo::Builder::Static->new(meta => $dist->{cpanmeta});
     $self->configure(sub { $builder->configure($args || []) }, $depth);
 
     $state->{configured_ok} = 1;
