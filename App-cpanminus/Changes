@@ -2,6 +2,14 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.9015  2018-04-21 12:56:30 CEST
+   [Improvements]
+      - Make static install work out of the box, and require TAP::Harness::Env only
+        when tesing is enabled
+
+   [Releng]
+      - Synchronize version number with Menlo
+
 1.7905  2018-04-21 11:39:58 CEST
    [Bug Fixes]
       - Fix quoting in commands in Win32 #545
