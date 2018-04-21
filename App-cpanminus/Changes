@@ -2,6 +2,10 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.9016  2018-04-21 13:17:44 CEST
+   [Improvements]
+      - Support version in x_static_install (leont)
+
 1.9015  2018-04-21 12:56:30 CEST
    [Improvements]
       - Make static install work out of the box, and require TAP::Harness::Env only
