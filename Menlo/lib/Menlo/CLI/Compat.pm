@@ -1952,6 +1952,10 @@ sub build_stuff {
 
     $dist->{meta} = $dist->{cpanmeta} ? $dist->{cpanmeta}->as_struct : {};
 
+    if ($self->opts_in_static_install($dist->{cpanmeta})) {
+        $dist->{static_install} = 1;
+    }
+
     my @config_deps;
 
     if ($dist->{cpanmeta}) {
@@ -2104,23 +2108,18 @@ DIAG
 sub opts_in_static_install {
     my($self, $meta) = @_;
 
-    # Menlo::Builder::Static could be a separate module in the future
-    my $has_static_module = eval { require Menlo::Builder::Static; 1 };
-
     # --sudo requires running a separate shell to prevent persistent configuration
     # uninstall-shadows (default on < 5.12) is not supported in BuildPL spec, yet.
 
-    return $has_static_module &&
-      $meta->{x_static_install} &&
+    return $meta->{x_static_install} &&
       !($self->{sudo} or $self->{uninstall_shadows});
 }
-
 
 sub skip_configure {
     my($self, $dist, $depth) = @_;
 
     return 1 if $self->{skip_configure};
-    return 1 if $self->opts_in_static_install($dist->{meta});
+    return 1 if $dist->{static_install};
     return 1 if $self->no_dynamic_config($dist->{meta}) && $self->deps_only($depth);
 
     return;
@@ -2190,7 +2189,7 @@ sub configure_this {
     my $state = {};
 
     my $try_static = sub {
-        if ($self->opts_in_static_install($dist->{meta})) {
+        if ($dist->{static_install}) {
             $self->chat("Distribution opts in x_static_install: $dist->{meta}{x_static_install}\n");
             $self->static_install_configure($state, $dist, $depth);
         }
@@ -2536,28 +2535,34 @@ sub extract_prereqs {
     my($self, $meta, $dist) = @_;
 
     my @features = $self->configure_features($dist, $meta->features);
-    my $prereqs  = $self->soften_makemaker_prereqs($meta->effective_prereqs(\@features)->clone);
+
+    my $prereqs = $meta->effective_prereqs(\@features)->clone;
+    $self->adjust_prereqs($dist, $prereqs);
 
     return Menlo::Dependency->from_prereqs($prereqs, $dist->{want_phases}, $self->{install_types});
 }
 
-# Workaround for Module::Install 1.04 creating a bogus (higher) MakeMaker requirement that it needs in build_requires
-# Assuming MakeMaker requirement is already satisfied in configure_requires, there's no need to have higher version of
-# MakeMaker in build/test anyway. https://github.com/miyagawa/cpanminus/issues/463
-sub soften_makemaker_prereqs {
-    my($self, $prereqs) = @_;
+sub adjust_prereqs {
+    my($self, $dist, $prereqs) = @_;
 
-    return $prereqs unless -e "inc/Module/Install.pm";
-
-    for my $phase (qw( build test runtime )) {
-        my $reqs = $prereqs->requirements_for($phase, 'requires');
-        if ($reqs->requirements_for_module('ExtUtils::MakeMaker')) {
-            $reqs->clear_requirement('ExtUtils::MakeMaker');
-            $reqs->add_minimum('ExtUtils::MakeMaker' => 0);
+    # Workaround for Module::Install 1.04 creating a bogus (higher) MakeMaker requirement that it needs in build_requires
+    # Assuming MakeMaker requirement is already satisfied in configure_requires, there's no need to have higher version of
+    # MakeMaker in build/test anyway. https://github.com/miyagawa/cpanminus/issues/463
+    if (-e "inc/Module/Install.pm") {
+        for my $phase (qw( build test runtime )) {
+            my $reqs = $prereqs->requirements_for($phase, 'requires');
+            if ($reqs->requirements_for_module('ExtUtils::MakeMaker')) {
+                $reqs->clear_requirement('ExtUtils::MakeMaker');
+                $reqs->add_minimum('ExtUtils::MakeMaker' => 0);
+            }
         }
     }
 
-    $prereqs;
+    # Static installation is optional and we're adding runtime dependencies
+    if ($dist->{static_install}) {
+        my $reqs = $prereqs->requirements_for('test' => 'requires');
+        $reqs->add_minimum('TAP::Harness::Env' => 0);
+    }
 }
 
 sub cleanup_workdirs {
