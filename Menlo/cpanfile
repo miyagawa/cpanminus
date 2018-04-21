@@ -41,11 +41,3 @@ suggests 'Digest::SHA';
 on test => sub {
     requires 'Test::More', '0.96';
 };
-
-# build and xt/ test tools
-on develop => sub {
-    requires 'JSON';
-    requires 'Module::Build::Tiny';
-    requires 'Module::Install';
-    requires 'Test::Requires';
-};

@@ -6,6 +6,7 @@ on test => sub {
 
 on develop => sub {
     requires 'JSON';
+    requires 'Module::Build::Tiny';
     requires 'Module::Install';
     requires 'Test::Requires';
 
