@@ -149,7 +149,7 @@ sub run {
 }
 
 sub want {
-    if (/\.pod$/) {
+    if (/\.p(od|l)$/) {
         print "rm $_\n";
         unlink $_;
     }
