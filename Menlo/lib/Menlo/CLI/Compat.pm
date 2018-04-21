@@ -25,6 +25,10 @@ if ($INC{"App/FatPacker/Trace.pm"}) {
     require version::vpp;
 }
 
+sub qs($) {
+    Menlo::Util::shell_quote($_[0]);
+}
+
 sub agent {
     my $self = shift;
     my $agent = "cpanminus/$VERSION";
@@ -1136,8 +1140,11 @@ sub show_build_log {
     }
 
     if ($pager) {
-        # win32 'more' doesn't allow "more build.log", the < is required
-        system("$pager < $self->{log}");
+        if (WIN32) {
+            system "@{[ qs $pager ]} < @{[ qs $self->{log}]";
+        } else {
+            system $pager, $self->{log};
+        }
     }
     else {
         $self->diag_fail("You don't seem to have a PAGER :/");
@@ -1565,7 +1572,7 @@ sub verify_signature {
     my($self, $dist) = @_;
 
     $self->diag_progress("Verifying the SIGNATURE file");
-    my $out = `$self->{cpansign} -v --skip 2>&1`;
+    my $out = `@{[ qs $self->{cpansign} ]} -v --skip 2>&1`;
     $self->log($out);
 
     if ($out =~ /Signature verified OK/) {
@@ -2732,7 +2739,7 @@ sub init_tools {
 
     my $tar = which('tar');
     my $tar_ver;
-    my $maybe_bad_tar = sub { WIN32 || BAD_TAR || (($tar_ver = `$tar --version 2>/dev/null`) =~ /GNU.*1\.13/i) };
+    my $maybe_bad_tar = sub { WIN32 || BAD_TAR || (($tar_ver = `@{[ qs $tar ]} --version 2>/dev/null`) =~ /GNU.*1\.13/i) };
 
     if ($tar && !$maybe_bad_tar->()) {
         chomp $tar_ver;
@@ -2743,7 +2750,7 @@ sub init_tools {
             my $xf = ($self->{verbose} ? 'v' : '')."xf";
             my $ar = $tarfile =~ /bz2$/ ? 'j' : 'z';
 
-            my($root, @others) = `$tar ${ar}tf $tarfile`
+            my($root, @others) = `@{[ qs $tar ]} ${ar}tf @{[ qs $tarfile ]}`
                 or return undef;
 
             FILE: {
@@ -2758,7 +2765,7 @@ sub init_tools {
                 }
             }
 
-            system "$tar $ar$xf $tarfile";
+            $self->run_command([ $tar, $ar.$xf, $tarfile ]);
             return $root if -d $root;
 
             $self->diag_fail("Bad archive: $tarfile");
@@ -2774,7 +2781,7 @@ sub init_tools {
             my $x  = "x" . ($self->{verbose} ? 'v' : '') . "f -";
             my $ar = $tarfile =~ /bz2$/ ? $bzip2 : $gzip;
 
-            my($root, @others) = `$ar -dc $tarfile | $tar tf -`
+            my($root, @others) = `@{[ qs $ar ]} -dc @{[ qs $tarfile ]} | @{[ qs $tar ]} tf -`
                 or return undef;
 
             FILE: {
@@ -2789,7 +2796,7 @@ sub init_tools {
                 }
             }
 
-            system "$ar -dc $tarfile | $tar $x";
+            system "@{[ qs $ar ]} -dc @{[ qs $tarfile ]} | @{[ qs $tar ]} $x";
             return $root if -d $root;
 
             $self->diag_fail("Bad archive: $tarfile");
@@ -2825,8 +2832,8 @@ sub init_tools {
         $self->{_backends}{unzip} = sub {
             my($self, $zipfile) = @_;
 
-            my $opt = $self->{verbose} ? '' : '-q';
-            my(undef, $root, @others) = `$unzip -t $zipfile`
+            my @opt = $self->{verbose} ? () : ('-q');
+            my(undef, $root, @others) = `@{[ qs $unzip ]} -t @{[ qs $zipfile ]}`
                 or return undef;
             FILE: {
                 chomp $root;
@@ -2836,7 +2843,7 @@ sub init_tools {
                 }
             }
 
-            system "$unzip $opt $zipfile";
+            $self->run_command([ $unzip, @opt, $zipfile ]);
             return $root if -d $root;
 
             $self->diag_fail("Bad archive: '$root' $zipfile");
