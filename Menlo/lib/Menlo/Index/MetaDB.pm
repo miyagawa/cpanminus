@@ -5,7 +5,7 @@ use warnings;
 package Menlo::Index::MetaDB;
 # ABSTRACT: Search index via CPAN MetaDB
 
-our $VERSION = '0.007';
+our $VERSION = "1.9018";
 
 use parent 'CPAN::Common::Index';
 
