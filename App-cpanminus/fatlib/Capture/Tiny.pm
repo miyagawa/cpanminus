@@ -3,7 +3,7 @@ use strict;
 use warnings;
 package Capture::Tiny;
 # ABSTRACT: Capture STDOUT and STDERR from Perl, XS or external programs
-our $VERSION = '0.46';
+our $VERSION = '0.48';
 use Carp ();
 use Exporter ();
 use IO::Handle ();
@@ -214,7 +214,7 @@ sub _start_tee {
     stderr  => $stash->{capture}{$which},
   };
   # flag file is used to signal the child is ready
-  $stash->{flag_files}{$which} = scalar tmpnam();
+  $stash->{flag_files}{$which} = scalar( tmpnam() ) . $$;
   # execute @cmd as a separate process
   if ( $IS_WIN32 ) {
     my $old_eval_err=$@;
@@ -436,7 +436,7 @@ Capture::Tiny - Capture STDOUT and STDERR from Perl, XS or external programs
 
 =head1 VERSION
 
-version 0.46
+version 0.48
 
 =head1 SYNOPSIS
 

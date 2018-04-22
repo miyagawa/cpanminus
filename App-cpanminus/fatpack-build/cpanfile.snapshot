@@ -111,10 +111,10 @@ DISTRIBUTIONS
       perl 5.008001
       strict 0
       warnings 0
-  Capture-Tiny-0.46
-    pathname: D/DA/DAGOLDEN/Capture-Tiny-0.46.tar.gz
+  Capture-Tiny-0.48
+    pathname: D/DA/DAGOLDEN/Capture-Tiny-0.48.tar.gz
     provides:
-      Capture::Tiny 0.46
+      Capture::Tiny 0.48
     requirements:
       Carp 0
       Exporter 0
