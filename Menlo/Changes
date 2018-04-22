@@ -2,6 +2,13 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.9018  2018-04-22 15:53:26 CEST
+   [New Features]
+      - Support x_use_unsafe_inc CPAN Meta experiment (haarg, ether) #535, #536
+
+   [Releng]
+      - Remove App::cpanminus::fastscript, favoring Menlo::CLI::Compat
+
 1.9017  2018-04-21 19:30:21 CEST
    [Bug Fixes]
       - Change the log output to say App::cpanminus for downstream consumers such as
