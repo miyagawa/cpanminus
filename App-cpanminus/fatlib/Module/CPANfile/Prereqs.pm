@@ -12,7 +12,7 @@ sub from_cpan_meta {
     for my $phase (keys %$prereqs) {
         for my $type (keys %{ $prereqs->{$phase} }) {
             while (my($module, $requirement) = each %{ $prereqs->{$phase}{$type} }) {
-                $self->add_prereq(
+                $self->add(
                     phase => $phase,
                     type  => $type,
                     module => $module,
@@ -28,7 +28,7 @@ sub from_cpan_meta {
 sub new {
     my $class = shift;
     bless {
-        prereqs => [],
+        prereqs => {},
         features => {},
     }, $class;
 }
@@ -38,14 +38,12 @@ sub add_feature {
     $self->{features}{$identifier} = { description => $description };
 }
 
-sub add_prereq {
-    my($self, %args) = @_;
-    $self->add( Module::CPANfile::Prereq->new(%args) );
-}
-
 sub add {
-    my($self, $prereq) = @_;
-    push @{$self->{prereqs}}, $prereq;
+    my($self, %args) = @_;
+
+    my $feature = $args{feature} || '';
+    push @{$self->{prereqs}{$feature}},
+      Module::CPANfile::Prereq->new(%args);
 }
 
 sub as_cpan_meta {
@@ -54,24 +52,25 @@ sub as_cpan_meta {
 }
 
 sub build_cpan_meta {
-    my($self, $identifier) = @_;
-
-    my $prereq_spec = {};
-    $self->prereq_each($identifier, sub {
-        my $prereq = shift;
-        $prereq_spec->{$prereq->phase}{$prereq->type}{$prereq->module} = $prereq->requirement->version;
-    });
-
-    CPAN::Meta::Prereqs->new($prereq_spec);
+    my($self, $feature) = @_;
+    CPAN::Meta::Prereqs->new($self->specs($feature));
 }
 
-sub prereq_each {
-    my($self, $identifier, $code) = @_;
+sub specs {
+    my($self, $feature) = @_;
 
-    for my $prereq (@{$self->{prereqs}}) {
-        next unless $prereq->match_feature($identifier);
-        $code->($prereq);
+    $feature = ''
+      unless defined $feature;
+
+    my $prereqs = $self->{prereqs}{$feature} || [];
+    my $specs = {};
+
+    for my $prereq (@$prereqs) {
+         $specs->{$prereq->phase}{$prereq->type}{$prereq->module} =
+           $prereq->requirement->version;
     }
+
+    return $specs;
 }
 
 sub merged_requirements {
@@ -88,8 +87,10 @@ sub merged_requirements {
 sub find {
     my($self, $module) = @_;
 
-    for my $prereq (@{$self->{prereqs}}) {
-        return $prereq if $prereq->module eq $module;
+    for my $feature ('', keys %{$self->{features}}) {
+        for my $prereq (@{$self->{prereqs}{$feature}}) {
+            return $prereq if $prereq->module eq $module;
+        }
     }
 
     return;

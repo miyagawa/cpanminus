@@ -6,7 +6,7 @@ use Carp ();
 use Module::CPANfile::Environment;
 use Module::CPANfile::Requirement;
 
-our $VERSION = '1.1002';
+our $VERSION = '1.1003';
 
 BEGIN {
     if (${^TAINT}) {
@@ -101,10 +101,8 @@ sub effective_prereqs {
 sub prereqs_with {
     my($self, @feature_identifiers) = @_;
 
-    my $prereqs = $self->prereqs;
     my @others = map { $self->feature($_)->prereqs } @feature_identifiers;
-
-    $prereqs->with_merged_prereqs(\@others);
+    $self->prereqs->with_merged_prereqs(\@others);
 }
 
 sub prereq_specs {
@@ -139,10 +137,9 @@ sub merge_meta {
     CPAN::Meta->new($struct)->save($file, { version => $version });
 }
 
-sub _dump {
-    my $str = shift;
+sub _d($) {
     require Data::Dumper;
-    chomp(my $value = Data::Dumper->new([$str])->Terse(1)->Dump);
+    chomp(my $value = Data::Dumper->new([$_[0]])->Terse(1)->Dump);
     $value;
 }
 
@@ -162,9 +159,9 @@ sub to_string {
     $code .= $self->_dump_prereqs($prereqs, $include_empty);
 
     for my $feature ($self->features) {
-        $code .= sprintf "feature %s, %s => sub {\n", _dump($feature->{identifier}), _dump($feature->{description});
+        $code .= "feature @{[ _d $feature->{identifier} ]}, @{[ _d $feature->{description} ]} => sub {\n";
         $code .= $self->_dump_prereqs($feature->{spec}, $include_empty, 4);
-        $code .= "}\n\n";
+        $code .= "};\n\n";
     }
 
     $code =~ s/\n+$/\n/s;
@@ -177,7 +174,7 @@ sub _dump_mirrors {
     my $code = "";
 
     for my $url (@$mirrors) {
-        $code .= "mirror '$url';\n";
+        $code .= "mirror @{[ _d $url ]};\n";
     }
 
     $code =~ s/\n+$/\n/s;
@@ -190,7 +187,7 @@ sub _dump_prereqs {
     my $code = '';
     for my $phase (qw(runtime configure build test develop)) {
         my $indent = $phase eq 'runtime' ? '' : '    ';
-        $indent = (' ' x ($base_indent || 0)) . $indent;
+        $indent .= (' ' x ($base_indent || 0));
 
         my($phase_code, $requirements);
         $phase_code .= "on $phase => sub {\n" unless $phase eq 'runtime';
@@ -199,8 +196,21 @@ sub _dump_prereqs {
             for my $mod (sort keys %{$prereqs->{$phase}{$type}}) {
                 my $ver = $prereqs->{$phase}{$type}{$mod};
                 $phase_code .= $ver eq '0'
-                             ? "${indent}$type '$mod';\n"
-                             : "${indent}$type '$mod', '$ver';\n";
+                             ? "${indent}$type @{[ _d $mod ]}"
+                             : "${indent}$type @{[ _d $mod ]}, @{[ _d $ver ]}";
+
+                my $options = $self->options_for_module($mod) || {};
+                if (%$options) {
+                    my @opts;
+                    for my $key (keys %$options) {
+                        my $k = $key =~ /^[a-zA-Z0-9_]+$/ ? $key : _d $key;
+                        push @opts, "$k => @{[ _d $options->{$k} ]}";
+                    }
+
+                    $phase_code .= ",\n" . join(",\n", map "  $indent$_", @opts);
+                }
+
+                $phase_code .= ";\n";
                 $requirements++;
             }
         }
@@ -328,6 +338,25 @@ Merge the effective prereqs with Meta specification loaded from the
 given META file, using CPAN::Meta. You can specify the META spec
 version in the second argument, which defaults to 1.4 in case the
 given file is YAML, and 2 if it is JSON.
+
+=item options_for_module
+
+  my $options = $file->options_for_module($module);
+
+Returns the extra options specified for a given module as a hash
+reference. Returns C<undef> when the given module is not specified in
+the C<cpanfile>.
+
+For example,
+
+  # cpanfile
+  requires 'Plack', '1.000',
+    dist => "MIYAGAWA/Plack-1.000.tar.gz";
+
+  # ...
+  my $file = Module::CPANfile->load;
+  my $options = $file->options_for_module('Plack');
+  # => { dist => "MIYAGAWA/Plack-1.000.tar.gz" }
 
 =back
 

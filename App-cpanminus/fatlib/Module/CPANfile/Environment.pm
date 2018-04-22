@@ -138,7 +138,7 @@ sub conflicts {
 sub add_prereq {
     my($self, $type, $module, @args) = @_;
 
-    $self->prereqs->add_prereq(
+    $self->prereqs->add(
         feature => $self->{feature},
         phase   => $self->{phase},
         type    => $type,

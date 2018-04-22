@@ -448,10 +448,10 @@ DISTRIBUTIONS
       Class::C3 0.24
       ExtUtils::MakeMaker 0
       perl 5.006
-  Module-CPANfile-1.1002
-    pathname: M/MI/MIYAGAWA/Module-CPANfile-1.1002.tar.gz
+  Module-CPANfile-1.1003
+    pathname: M/MI/MIYAGAWA/Module-CPANfile-1.1003.tar.gz
     provides:
-      Module::CPANfile 1.1002
+      Module::CPANfile 1.1003
       Module::CPANfile::Environment undef
       Module::CPANfile::Prereq undef
       Module::CPANfile::Prereqs undef
@@ -460,7 +460,6 @@ DISTRIBUTIONS
       CPAN::Meta 2.12091
       CPAN::Meta::Prereqs 2.12091
       ExtUtils::MakeMaker 0
-      JSON::PP 2.27300
       parent 0
   Module-CoreList-5.20180420
     pathname: B/BI/BINGOS/Module-CoreList-5.20180420.tar.gz
