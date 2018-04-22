@@ -989,6 +989,24 @@ sub append_args {
     $cmd;
 }
 
+sub _use_unsafe_inc {
+    my($self, $dist) = @_;
+
+    # if it's set in the env (i.e. user's shell), just use that
+    if (exists $ENV{PERL_USE_UNSAFE_INC}) {
+        return $ENV{PERL_USE_UNSAFE_INC};
+    }
+
+    # it's set in CPAN Meta, prefer what the author says
+    if (exists $dist->{meta}{x_use_unsafe_inc}) {
+        $self->chat("Distribution opts in x_use_unsafe_inc: $dist->{meta}{x_use_unsafe_inc}\n");
+        return $dist->{meta}{x_use_unsafe_inc};
+    }
+
+    # otherwise set to 1 as a default to allow for old modules
+    return 1;
+}
+
 sub configure {
     my($self, $cmd, $dist, $depth) = @_;
 
@@ -1016,8 +1034,7 @@ sub configure {
         $ENV{PERL_MB_OPT} .= " --pureperl-only";
     }
 
-    local $ENV{PERL_USE_UNSAFE_INC} = 1
-        unless exists $ENV{PERL_USE_UNSAFE_INC};
+    local $ENV{PERL_USE_UNSAFE_INC} = $self->_use_unsafe_inc($dist);
 
     $cmd = $self->append_args($cmd, 'configure') if $depth == 0;
 
@@ -1030,8 +1047,7 @@ sub build {
 
     local $ENV{PERL_MM_USE_DEFAULT} = !$self->{interactive};
 
-    local $ENV{PERL_USE_UNSAFE_INC} = 1
-        unless exists $ENV{PERL_USE_UNSAFE_INC};
+    local $ENV{PERL_USE_UNSAFE_INC} = $self->_use_unsafe_inc($dist);
 
     $cmd = $self->append_args($cmd, 'build') if $depth == 0;
 
@@ -1055,8 +1071,7 @@ sub test {
     # https://github.com/Perl-Toolchain-Gang/toolchain-site/blob/master/lancaster-consensus.md
     local $ENV{NONINTERACTIVE_TESTING} = !$self->{interactive};
 
-    local $ENV{PERL_USE_UNSAFE_INC} = 1
-        unless exists $ENV{PERL_USE_UNSAFE_INC};
+    local $ENV{PERL_USE_UNSAFE_INC} = $self->_use_unsafe_inc($dist);
 
     $cmd = $self->append_args($cmd, 'test') if $depth == 0;
 
@@ -1086,8 +1101,7 @@ sub install {
 
     return $self->run_command($cmd) if ref $cmd eq 'CODE';
 
-    local $ENV{PERL_USE_UNSAFE_INC} = 1
-        unless exists $ENV{PERL_USE_UNSAFE_INC};
+    local $ENV{PERL_USE_UNSAFE_INC} = $self->_use_unsafe_inc($dist);
 
     if ($self->{sudo}) {
         unshift @$cmd, "sudo";
