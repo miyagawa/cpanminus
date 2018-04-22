@@ -19,8 +19,8 @@ flexible, extensible and easier to use.
 
 =head1 COMPATIBILITY
 
-Menlo is developed within L<cpanm> git repository at C<Menlo>
-subdirectory.
+Menlo is developed within L<cpanminus> git repository at C<Menlo>
+subdirectory at L<https://github.com/miyagawa/cpanminus>
 
 Menlo::CLI::Compat started off as a copy of App::cpanminus::script,
 but will go under a big refactoring to extract all the bits out of
