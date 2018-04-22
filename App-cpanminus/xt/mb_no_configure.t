@@ -1,4 +1,5 @@
 use strict;
+use lib ".";
 use xt::Run;
 use Module::CoreList;
 use Test::More;

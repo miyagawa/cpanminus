@@ -1,5 +1,6 @@
 use strict;
 use Test::More;
+use lib ".";
 use xt::Run;
 
 run_L "--mirror-index", "xt/mirror.txt", "Hash::MultiValue";

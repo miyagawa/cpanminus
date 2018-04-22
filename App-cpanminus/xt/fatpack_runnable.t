@@ -1,5 +1,6 @@
 use strict;
 BEGIN { $ENV{FATPACKED_TEST} = 1 };
+use lib ".";
 use xt::Run;
 use Test::More;
 

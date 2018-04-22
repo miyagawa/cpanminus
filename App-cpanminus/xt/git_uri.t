@@ -1,5 +1,6 @@
 use strict;
 use Test::More;
+use lib ".";
 use xt::Run;
 
 run "git://github.com/miyagawa/___.git";

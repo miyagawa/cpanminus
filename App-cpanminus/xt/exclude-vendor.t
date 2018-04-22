@@ -1,3 +1,4 @@
+use lib ".";
 use xt::Run;
 use Test::More;
 

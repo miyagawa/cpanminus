@@ -1,5 +1,6 @@
 use strict;
 use Test::More;
+use lib ".";
 use xt::Run;
 
 unlink "./testdist/Foo/META.yml"; # make sure

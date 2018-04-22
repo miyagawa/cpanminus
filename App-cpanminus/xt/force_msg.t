@@ -1,5 +1,6 @@
 use strict;
 use Test::More;
+use lib ".";
 use xt::Run;
 
 $ENV{TEST} = 1;

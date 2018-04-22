@@ -1,5 +1,6 @@
 use strict;
 use Test::More;
+use lib ".";
 use xt::Run;
 
 run "http://monster.bulknews.net/~miyagawa/Hash-MultiValue-0.13.tar.gz";

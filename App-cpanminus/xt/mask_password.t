@@ -1,5 +1,6 @@
 use strict;
 use Test::More;
+use lib ".";
 use xt::Run;
 
 # Miyagawa: these tests are vague: they only assert that the password

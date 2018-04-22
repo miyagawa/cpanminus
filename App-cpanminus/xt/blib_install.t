@@ -2,6 +2,7 @@ use strict;
 use Test::More;
 use JSON;
 use Config;
+use lib ".";
 use xt::Run;
 
 my $local_lib = "$ENV{PERL_CPANM_HOME}/perl5";

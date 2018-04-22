@@ -1,5 +1,6 @@
 use strict;
 use Test::More;
+use lib ".";
 use xt::Run;
 
 run_L "MIYAGAWA/Hash-MultiValue-0.03.tar.gz";

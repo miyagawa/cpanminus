@@ -1,5 +1,6 @@
 use strict;
 use Test::More;
+use lib ".";
 use xt::Run;
 
 run_L 'git://github.com/kazeburo/CPAN-Test-Dummy-ConfigDeps.git';

@@ -10,9 +10,6 @@ perl:
   - 5.12
   - "5.10"
   - 5.8
-env:
-  global:
-    - PERL_USE_UNSAFE_INC=1
 matrix:
   allow_failures:
     - perl: 5.8

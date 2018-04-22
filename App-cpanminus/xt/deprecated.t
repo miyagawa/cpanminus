@@ -1,5 +1,6 @@
 use strict;
 use Test::More;
+use lib ".";
 use xt::Run;
 
 plan skip_all => "needs 5.12" unless $] >= 5.012;

@@ -1,5 +1,6 @@
 use strict;
 use Test::More;
+use lib ".";
 use xt::Run;
 
 run 'J/JV/JV/Getopt-Long-2.47.tar.gz';

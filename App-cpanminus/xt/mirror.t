@@ -1,5 +1,6 @@
 use strict;
 use Test::More;
+use lib ".";
 use xt::Run;
 
 run_L "--mirror", "http://cpan.cpantesters.org", "--mirror-only", "--info", "Mojolicious";

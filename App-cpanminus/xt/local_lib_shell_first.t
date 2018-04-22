@@ -1,5 +1,6 @@
 # https://github.com/miyagawa/cpanminus/issues/263
 use strict;
+use lib ".";
 use xt::Run;
 use Test::More;
 use local::lib ();
