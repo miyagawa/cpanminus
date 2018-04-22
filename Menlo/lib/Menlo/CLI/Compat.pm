@@ -990,7 +990,7 @@ sub append_args {
 }
 
 sub configure {
-    my($self, $cmd, $depth) = @_;
+    my($self, $cmd, $dist, $depth) = @_;
 
     # trick AutoInstall
     local $ENV{PERL5_CPAN_IS_RUNNING} = local $ENV{PERL5_CPANPLUS_IS_RUNNING} = $$;
@@ -1026,7 +1026,7 @@ sub configure {
 }
 
 sub build {
-    my($self, $cmd, $distname, $depth) = @_;
+    my($self, $cmd, $distname, $dist, $depth) = @_;
 
     local $ENV{PERL_MM_USE_DEFAULT} = !$self->{interactive};
 
@@ -1038,15 +1038,15 @@ sub build {
     return 1 if $self->run_timeout($cmd, $self->{build_timeout});
     while (1) {
         my $ans = lc $self->prompt("Building $distname failed.\nYou can s)kip, r)etry, e)xamine build log, or l)ook ?", "s");
-        return                                       if $ans eq 's';
-        return $self->build($cmd, $distname, $depth) if $ans eq 'r';
-        $self->show_build_log                        if $ans eq 'e';
-        $self->look                                  if $ans eq 'l';
+        return                                              if $ans eq 's';
+        return $self->build($cmd, $distname, $dist, $depth) if $ans eq 'r';
+        $self->show_build_log                               if $ans eq 'e';
+        $self->look                                         if $ans eq 'l';
     }
 }
 
 sub test {
-    my($self, $cmd, $distname, $depth) = @_;
+    my($self, $cmd, $distname, $dist, $depth) = @_;
     return 1 if $self->{notest};
 
     # https://rt.cpan.org/Ticket/Display.html?id=48965#txn-1013385
@@ -1068,17 +1068,17 @@ sub test {
         $self->diag_fail;
         while (1) {
             my $ans = lc $self->prompt("Testing $distname failed.\nYou can s)kip, r)etry, f)orce install, e)xamine build log, or l)ook ?", "s");
-            return                                      if $ans eq 's';
-            return $self->test($cmd, $distname, $depth) if $ans eq 'r';
-            return 1                                    if $ans eq 'f';
-            $self->show_build_log                       if $ans eq 'e';
-            $self->look                                 if $ans eq 'l';
+            return                                             if $ans eq 's';
+            return $self->test($cmd, $distname, $dist, $depth) if $ans eq 'r';
+            return 1                                           if $ans eq 'f';
+            $self->show_build_log                              if $ans eq 'e';
+            $self->look                                        if $ans eq 'l';
         }
     }
 }
 
 sub install {
-    my($self, $cmd, $uninst_opts, $depth) = @_;
+    my($self, $cmd, $uninst_opts, $dist, $depth) = @_;
 
     if ($depth == 0 && $self->{test_only}) {
         return 1;
@@ -2043,21 +2043,21 @@ DIAG
     my $installed;
     if ($configure_state->{static_install}) {
         $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . $distname);
-        $self->build(sub { $configure_state->{static_install}->build }, $distname, $depth) &&
-        $self->test(sub { $configure_state->{static_install}->build("test") }, $distname, $depth) &&
-        $self->install(sub { $configure_state->{static_install}->build("install") }, [], $depth) &&
+        $self->build(sub { $configure_state->{static_install}->build }, $distname, $dist, $depth) &&
+        $self->test(sub { $configure_state->{static_install}->build("test") }, $distname, $dist, $depth) &&
+        $self->install(sub { $configure_state->{static_install}->build("install") }, [], $dist, $depth) &&
         $installed++;
     } elsif ($configure_state->{use_module_build} && -e 'Build' && -f _) {
         $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . $distname);
-        $self->build([ $self->{perl}, "./Build" ], $distname, $depth) &&
-        $self->test([ $self->{perl}, "./Build", "test" ], $distname, $depth) &&
-        $self->install([ $self->{perl}, "./Build", "install" ], [ "--uninst", 1 ], $depth) &&
+        $self->build([ $self->{perl}, "./Build" ], $distname, $dist, $depth) &&
+        $self->test([ $self->{perl}, "./Build", "test" ], $distname, $dist, $depth) &&
+        $self->install([ $self->{perl}, "./Build", "install" ], [ "--uninst", 1 ], $dist, $depth) &&
         $installed++;
     } elsif ($self->{make} && -e 'Makefile') {
         $self->diag_progress("Building " . ($self->{notest} ? "" : "and testing ") . $distname);
-        $self->build([ $self->{make} ], $distname, $depth) &&
-        $self->test([ $self->{make}, "test" ], $distname, $depth) &&
-        $self->install([ $self->{make}, "install" ], [ "UNINST=1" ], $depth) &&
+        $self->build([ $self->{make} ], $distname, $dist, $depth) &&
+        $self->test([ $self->{make}, "test" ], $distname, $dist, $depth) &&
+        $self->install([ $self->{make}, "install" ], [ "UNINST=1" ], $dist, $depth) &&
         $installed++;
     } else {
         my $why;
@@ -2198,7 +2198,7 @@ sub configure_this {
             # with 0 even if header files are missing, to avoid receiving
             # tons of FAIL reports in such cases. So exit code can't be
             # trusted if it went well.
-            if ($self->configure([ $self->{perl}, "Makefile.PL" ], $depth)) {
+            if ($self->configure([ $self->{perl}, "Makefile.PL" ], $dist, $depth)) {
                 $state->{configured_ok} = -e 'Makefile';
             }
             $state->{configured}++;
@@ -2208,7 +2208,7 @@ sub configure_this {
     my $try_mb = sub {
         if (-e 'Build.PL') {
             $self->chat("Running Build.PL\n");
-            if ($self->configure([ $self->{perl}, "Build.PL" ], $depth)) {
+            if ($self->configure([ $self->{perl}, "Build.PL" ], $dist, $depth)) {
                 $state->{configured_ok} = -e 'Build' && -f _;
             }
             $state->{use_module_build}++;
@@ -2241,7 +2241,7 @@ sub static_install_configure {
 
     require Menlo::Builder::Static;
     my $builder = Menlo::Builder::Static->new(meta => $dist->{cpanmeta});
-    $self->configure(sub { $builder->configure($args || []) }, $depth);
+    $self->configure(sub { $builder->configure($args || []) }, $dist, $depth);
 
     $state->{configured_ok} = 1;
     $state->{static_install} = $builder;
