@@ -19,7 +19,7 @@ use version ();
 use constant BAD_TAR => ($^O eq 'solaris' || $^O eq 'hpux');
 use constant CAN_SYMLINK => eval { symlink("", ""); 1 };
 
-our $VERSION = $Menlo::VERSION;
+our $VERSION = '1.9018';
 
 if ($INC{"App/FatPacker/Trace.pm"}) {
     require version::vpp;
@@ -412,7 +412,7 @@ sub setup_home {
         }
     }
 
-    $self->chat("cpanm ($self->{name}) $VERSION on perl $] built for $Config{archname}\n" .
+    $self->chat("cpanm ($self->{name}) $Menlo::VERSION on perl $] built for $Config{archname}\n" .
                 "Work directory is $self->{base}\n");
 }
 
@@ -2896,3 +2896,30 @@ sub mask_uri_passwords {
 }
 
 1;
+
+__END__
+
+=encoding utf-8
+
+=head1 NAME
+
+Menlo::CLI::Compat - cpanm compatible CPAN installer
+
+=head1 SYNOPSIS
+
+  use Menlo::CLI::Compat;
+
+  my $app = Menlo::CLI::Compat->new;
+  $app->parse_options(@ARGV);
+  $app->run;
+
+=head1 DESCRIPTION
+
+Menlo::CLI::Compat provides a compatibility for cpanm stable for downstream CPAN clients.
+
+=head1 SEE ALSO
+
+L<Menlo>, L<Menlo::Legacy>
+
+=cut
+

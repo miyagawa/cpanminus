@@ -36,7 +36,7 @@ sub generate_file {
 }
 
 mkdir ".build", 0777;
-system qw(cp -r ../Menlo/lib fatlib lib .build/);
+system qw(cp -r ../Menlo-Legacy/lib ../Menlo/lib fatlib lib .build/);
 
 my $fatpack;
 my $fatpack_compact;
