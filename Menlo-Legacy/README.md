@@ -2,23 +2,16 @@
 
 Menlo::Legacy - Legacy internal and client support for Menlo
 
-# SYNOPSIS
-
-    use Menlo::CLI::Compat;
-
-    my $app = Menlo::CLI::Compat->new;
-    $app->parse_options(@ARGV);
-    $app->run;
-
 # DESCRIPTION
 
 Menlo::Legacy is a package to install [Menlo::CLI::Compat](https://metacpan.org/pod/Menlo::CLI::Compat) which is a
-compatibility library that implements the classic versino of
-cpanminus, so that existing users of cpanm and API clients who depend
-on the internals of cpanm (e.g. [Carton](https://metacpan.org/pod/Carton), [Carmel](https://metacpan.org/pod/Carmel) and [App::cpm](https://metacpan.org/pod/App::cpm))
-can rely on the stable feature of cpanm. This way Menlo core can
-evolve and refactor without breaking the downstream clients, including
-`cpanm` itself.
+compatibility library that implements the classic version of cpanminus
+internals and behavios. This is so that existing users of cpanm and
+API clients such as [Carton](https://metacpan.org/pod/Carton), [Carmel](https://metacpan.org/pod/Carmel) and [App::cpm](https://metacpan.org/pod/App::cpm)) can rely on
+the stable features and specific behaviors of cpanm.
+
+This way Menlo can evolve and be refactored without the fear of
+breaking any downstream clients, including `cpanm` itself.
 
 # AUTHOR
 

@@ -2915,7 +2915,9 @@ Menlo::CLI::Compat - cpanm compatible CPAN installer
 
 =head1 DESCRIPTION
 
-Menlo::CLI::Compat provides a compatibility for cpanm stable for downstream CPAN clients.
+Menlo::CLI::Compat is a port of App::cpanminus to Menlo, and provides
+a compatibility layer for users and clients to depend on the specific
+cpanm behaviors.
 
 =head1 SEE ALSO
 
