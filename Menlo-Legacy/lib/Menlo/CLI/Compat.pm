@@ -19,7 +19,7 @@ use version ();
 use constant BAD_TAR => ($^O eq 'solaris' || $^O eq 'hpux');
 use constant CAN_SYMLINK => eval { symlink("", ""); 1 };
 
-our $VERSION = '1.9019';
+our $VERSION = '1.9020';
 
 if ($INC{"App/FatPacker/Trace.pm"}) {
     require version::vpp;
