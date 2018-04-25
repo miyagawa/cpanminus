@@ -2,6 +2,12 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7906  2018-04-25 02:26:16 PDT
+   [Releng]
+      - Add back App::cpanminus package to fatpack
+      - Fatpack from Menlo-Legacy package
+      - Put back version number scheme to pre 1.8
+
 1.9018  2018-04-22 15:54:19 CEST
    [New Features]
       - Support x_use_unsafe_inc CPAN Meta experiment (haarg, ether) #535, #536
