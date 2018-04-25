@@ -3,7 +3,8 @@ BEGIN{ if (not $] < 5.006) { require warnings; warnings->import } }
 
 package Tie::Handle::Offset;
 # ABSTRACT: Tied handle that hides the beginning of a file
-our $VERSION = '0.003'; # VERSION
+
+our $VERSION = '0.004';
 
 use Tie::Handle;
 our @ISA = qw/Tie::Handle/;
@@ -103,7 +104,10 @@ sub WRITE
 # vim: ts=2 sts=2 sw=2 et:
 
 __END__
+
 =pod
+
+=encoding UTF-8
 
 =head1 NAME
 
@@ -111,7 +115,7 @@ Tie::Handle::Offset - Tied handle that hides the beginning of a file
 
 =head1 VERSION
 
-version 0.003
+version 0.004
 
 =head1 SYNOPSIS
 
@@ -138,7 +142,7 @@ the offset instead of 80 bytes from the actual start of the file.
 =head2 Bugs / Feature Requests
 
 Please report any bugs or feature requests through the issue tracker
-at L<http://rt.cpan.org/Public/Dist/Display.html?Name=Tie-Handle-Offset>.
+at L<https://github.com/dagolden/tie-handle-offset/issues>.
 You will be notified automatically of any progress on your issue.
 
 =head2 Source Code
@@ -163,4 +167,3 @@ This is free software, licensed under:
   The Apache License, Version 2.0, January 2004
 
 =cut
-

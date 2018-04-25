@@ -3,7 +3,8 @@ BEGIN{ if (not $] < 5.006) { require warnings; warnings->import } }
 
 package Tie::Handle::SkipHeader;
 # ABSTRACT: Tied handle that hides an RFC822-style header
-our $VERSION = '0.003'; # VERSION
+
+our $VERSION = '0.004';
 
 use Tie::Handle::Offset;
 our @ISA = qw/Tie::Handle::Offset/;
@@ -33,7 +34,10 @@ sub OPEN
 # vim: ts=2 sts=2 sw=2 et:
 
 __END__
+
 =pod
+
+=encoding UTF-8
 
 =head1 NAME
 
@@ -41,7 +45,7 @@ Tie::Handle::SkipHeader - Tied handle that hides an RFC822-style header
 
 =head1 VERSION
 
-version 0.003
+version 0.004
 
 =head1 SYNOPSIS
 
@@ -70,4 +74,3 @@ This is free software, licensed under:
   The Apache License, Version 2.0, January 2004
 
 =cut
-

@@ -6,8 +6,7 @@ use warnings;
 use URI ();
 use URI::Escape qw(uri_unescape);
 
-our $VERSION = '1.73';
-$VERSION = eval $VERSION;
+our $VERSION = '1.74';
 
 sub query
 {
