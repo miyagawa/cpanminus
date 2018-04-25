@@ -2,6 +2,10 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.9019  2018-04-25 02:17:27 PDT
+   [Releng]
+      - Split Menlo::CLI::Compat into Menlo-Legacy distribution
+
 1.9018  2018-04-22 15:53:26 CEST
    [New Features]
       - Support x_use_unsafe_inc CPAN Meta experiment (haarg, ether) #535, #536
