@@ -17,15 +17,14 @@
 # __FATPACK__
 
 use strict;
-use FindBin qw($Bin);                                            # For dev -- Auto-removed
-use lib "$Bin/../lib", "$Bin/../../Menlo/lib", "$Bin/../fatlib"; # For dev -- Auto-removed
-use Menlo::CLI::Compat;
+use FindBin qw($Bin); # Auto-removed
+use lib "$Bin/../lib", "$Bin/../../Menlo-Legacy/lib", "$Bin/../../Menlo/lib", "$Bin/../fatlib"; # Auto-removed
+use App::cpanminus::script;
 
 unless (caller) {
-    my $app = Menlo::CLI::Compat->new(name => "App::cpanminus");
+    my $app = App::cpanminus::script->new(name => "App::cpanminus");
     $app->parse_options(@ARGV);
-    $app->run;
-    exit $app->status;
+    exit $app->doit;
 }
 
 __END__
