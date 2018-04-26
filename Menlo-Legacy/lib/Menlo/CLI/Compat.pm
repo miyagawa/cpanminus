@@ -82,6 +82,7 @@ sub new {
         uninstall_shadows => ($] < 5.012),
         skip_installed => 1,
         skip_satisfied => 0,
+        static_install => 1,
         auto_cleanup => 7, # days
         pod2man => 1,
         installed_dists => 0,
@@ -207,6 +208,7 @@ sub parse_options {
             $self->{save_dists} = $self->maybe_abs($_[1]);
         },
         'skip-configure!' => \$self->{skip_configure},
+        'static-install!' => \$self->{static_install},
         'dev!'       => \$self->{dev_release},
         'metacpan!'  => \$self->{metacpan},
         'report-perl-version!' => \$self->{report_perl_version},
@@ -2116,12 +2118,13 @@ DIAG
 sub opts_in_static_install {
     my($self, $meta) = @_;
 
+    return if !$self->{static_install};
+
     # --sudo requires running a separate shell to prevent persistent configuration
     # uninstall-shadows (default on < 5.12) is not supported in BuildPL spec, yet.
+    return if $self->{sudo} or $self->{uninstall_shadows};
 
-    return $meta->{x_static_install} &&
-      $meta->{x_static_install} == 1 &&
-      !($self->{sudo} or $self->{uninstall_shadows});
+    return $meta->{x_static_install} && $meta->{x_static_install} == 1;
 }
 
 sub skip_configure {
