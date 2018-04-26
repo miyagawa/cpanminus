@@ -2,6 +2,13 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7907  2018-04-26 04:36:02 PDT
+   [New Features]
+      - Support --no-static-install command line option to disable static install
+
+   [Releng]
+      - update URI and Module::CPANfile in fatpack
+
 1.7906  2018-04-25 02:26:16 PDT
    [Releng]
       - Add back App::cpanminus package to fatpack
