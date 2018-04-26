@@ -6,7 +6,7 @@ use Carp ();
 use Module::CPANfile::Environment;
 use Module::CPANfile::Requirement;
 
-our $VERSION = '1.1003';
+our $VERSION = '1.1004';
 
 BEGIN {
     if (${^TAINT}) {
@@ -160,7 +160,7 @@ sub to_string {
 
     for my $feature ($self->features) {
         $code .= "feature @{[ _d $feature->{identifier} ]}, @{[ _d $feature->{description} ]} => sub {\n";
-        $code .= $self->_dump_prereqs($feature->{spec}, $include_empty, 4);
+        $code .= $self->_dump_prereqs($feature->{prereqs}->as_string_hash, $include_empty, 4);
         $code .= "};\n\n";
     }
 

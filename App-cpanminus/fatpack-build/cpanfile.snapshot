@@ -448,10 +448,10 @@ DISTRIBUTIONS
       Class::C3 0.24
       ExtUtils::MakeMaker 0
       perl 5.006
-  Module-CPANfile-1.1003
-    pathname: M/MI/MIYAGAWA/Module-CPANfile-1.1003.tar.gz
+  Module-CPANfile-1.1004
+    pathname: M/MI/MIYAGAWA/Module-CPANfile-1.1004.tar.gz
     provides:
-      Module::CPANfile 1.1003
+      Module::CPANfile 1.1004
       Module::CPANfile::Environment undef
       Module::CPANfile::Prereq undef
       Module::CPANfile::Prereqs undef
