@@ -5,7 +5,7 @@ use xt::Run;
 
 {
     run_L '--no-uninst-shadows', 'Acme::Pi';
-    unlike last_build_log, qr/iRunning (Makefile|Build)\.PL/;
+    unlike last_build_log, qr/Running (Makefile|Build)\.PL/;
     like last_build_log, qr/Distribution opts in x_static_install/;
 }
 
