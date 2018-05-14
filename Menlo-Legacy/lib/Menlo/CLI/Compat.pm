@@ -1427,8 +1427,11 @@ sub fetch_module {
             my $file;
             eval {
                 local $SIG{INT} = sub { $cancelled = 1; die "SIGINT\n" };
-                $self->mirror($uri, $name);
-                $file = $name if -e $name;
+                if ($self->mirror($uri, $name)->{success} && -e $name) {
+                    $file = $name;
+                } else {
+                    unlink $name;
+                }
             };
             $self->diag("ERROR: " . trim("$@") . "\n", 1) if $@ && $@ ne "SIGINT\n";
             return $file;
