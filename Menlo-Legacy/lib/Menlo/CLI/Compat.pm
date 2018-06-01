@@ -462,12 +462,6 @@ sub with_version_range {
     defined($version) && $version =~ /(?:<|!=|==)/;
 }
 
-# version->new("1.00_00")->numify => "1.00_00" :/
-sub numify_ver {
-    my($self, $ver) = @_;
-    eval version->new($ver)->numify;
-}
-
 sub search_metacpan {
     my($self, $module, $version, $dev_release) = @_;
 
@@ -2094,7 +2088,7 @@ DIAG
         my $version = $dist->{module_version} || $dist->{meta}{version} || $dist->{version};
         my $reinstall = $local && ($local eq $version);
         my $action  = $local && !$reinstall
-                    ? $self->numify_ver($version) < $self->numify_ver($local)
+                    ? $self->is_downgrade($version, $local)
                         ? "downgraded"
                         : "upgraded"
                     : undef;
@@ -2113,6 +2107,11 @@ DIAG
         $self->diag_fail("$what $stuff failed. See $self->{log} for details. Retry with --force to force install it.", 1);
         return;
     }
+}
+
+sub is_downgrade {
+    my($self, $va, $vb) = @_;
+    eval { version::->new($va) < $vb };
 }
 
 sub opts_in_static_install {
