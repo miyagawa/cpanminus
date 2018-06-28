@@ -8,7 +8,7 @@ requires 'Hash::MultiValue',
 # use dist + mirror
 requires 'Cookie::Baker',
   dist => "KAZEBURO/Cookie-Baker-0.08.tar.gz",
-  mirror => "http://cpan.cpantesters.org/";
+  mirror => "http://cpan.metacpan.org/";
 
 # use the full URL
 requires 'Try::Tiny', 0.28,
