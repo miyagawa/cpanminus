@@ -2,6 +2,9 @@ Revision history for Menlo-Legacy
 
 {{$NEXT}}
 
+1.9022  2018-06-28 09:36:00 PDT
+        - Add version.pm for explicit fatpacking for Carton
+
 1.9021  2018-04-26 04:39:28 PDT
         - Support --no-static-install to disable static install
 

@@ -1,7 +1,7 @@
 package Menlo::Legacy;
 
 use strict;
-our $VERSION = '1.9021';
+our $VERSION = '1.9022';
 
 1;
 __END__

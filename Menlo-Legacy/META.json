@@ -4,7 +4,7 @@
       "Tatsuhiko Miyagawa <miyagawa@bulknews.net>"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Dist::Milla version v1.0.20, Dist::Zilla version 6.009, CPAN::Meta::Converter version 2.150010",
+   "generated_by" : "Dist::Milla version v1.0.20, Dist::Zilla version 6.012, CPAN::Meta::Converter version 2.150010",
    "license" : [
       "perl_5"
    ],
@@ -41,7 +41,8 @@
       "runtime" : {
          "requires" : {
             "Menlo" : "1.9018",
-            "perl" : "5.008001"
+            "perl" : "5.008001",
+            "version" : "0.9905"
          }
       },
       "test" : {
@@ -62,7 +63,7 @@
          "web" : "https://github.com/miyagawa/cpanminus"
       }
    },
-   "version" : "1.9021",
+   "version" : "1.9022",
    "x_contributors" : [
       "Aaron Moses <mosesa02@localhost.localdomain>",
       "Alessandro Ghedini <al3xbio@gmail.com>",
@@ -110,6 +111,7 @@
       "Matt S Trout <>",
       "Matt S Trout <mst@shadowcat.co.uk>",
       "Michael G. Schwern <schwern@pobox.com>",
+      "Michael Schout <mschout@gkg.net>",
       "motemen <motemen@gmail.com>",
       "moznion <moznion@gmail.com>",
       "Nicolas R <atoomic@cpan.org>",
@@ -141,7 +143,8 @@
       "yappo <yappo@shibuya.pl>",
       "zebardy <zebardy@gmail.com>"
    ],
-   "x_serialization_backend" : "Cpanel::JSON::XS version 3.0233",
+   "x_generated_by_perl" : "v5.20.1",
+   "x_serialization_backend" : "Cpanel::JSON::XS version 4.02",
    "x_static_install" : 1
 }
 
