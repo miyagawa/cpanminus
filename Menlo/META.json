@@ -76,7 +76,6 @@
             "Archive::Tar" : "0",
             "Archive::Zip" : "0",
             "Digest::SHA" : "0",
-            "File::HomeDir" : "0",
             "LWP::UserAgent" : "5.802",
             "Module::Signature" : "0"
          }
