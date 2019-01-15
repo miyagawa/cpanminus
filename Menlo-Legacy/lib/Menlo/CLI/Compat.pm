@@ -1399,7 +1399,7 @@ sub format_dist {
 
 sub trim {
     local $_ = shift;
-    tr/\n/ /d;
+    tr/\n/ /;
     s/^\s*|\s*$//g;
     $_;
 }
