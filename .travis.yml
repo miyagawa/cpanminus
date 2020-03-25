@@ -1,5 +1,9 @@
 language: perl
+os: linux
+dist: xenial
 perl:
+  - "5.30"
+  - 5.28
   - 5.26 
   - 5.24
   - 5.22
@@ -7,10 +11,14 @@ perl:
   - 5.18
   - 5.16
   - 5.14
-  - 5.12
-  - "5.10"
-  - 5.8
-matrix:
+jobs:
+  include:
+    - perl: 5.12
+      dist: trusty
+    - perl: "5.10"
+      dist: trusty
+    - perl: 5.8
+      dist: trusty
   allow_failures:
     - perl: 5.8
     - perl: 5.12
@@ -21,4 +29,3 @@ install:
   - (cd Menlo && cpanm -nq --installdeps --with-develop --with-recommends --with-suggests .)
 script:
   - (cd App-cpanminus && prove -lr xt -j9)
-sudo: false
