@@ -743,6 +743,7 @@ Options:
   -f,--force                force install
   -n,--notest               Do not run unit tests
   --test-only               Run tests only, do not install
+  --verify                  Check module signature
   -S,--sudo                 sudo to run install commands
   --installdeps             Only install dependencies
   --showdeps                Only display direct dependencies
