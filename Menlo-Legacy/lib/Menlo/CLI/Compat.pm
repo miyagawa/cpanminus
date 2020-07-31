@@ -1529,7 +1529,7 @@ sub verify_archive {
 sub verify_checksum {
     my($self, $file, $chk_file) = @_;
 
-    $self->chat("Verifying the SHA1 for $file\n");
+    $self->chat("Verifying the SHA256 for $file\n");
 
     open my $fh, "<$chk_file" or die "$chk_file: $!";
     my $data = join '', <$fh>;
