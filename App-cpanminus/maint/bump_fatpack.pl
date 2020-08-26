@@ -3,6 +3,8 @@
 use strict;
 use warnings;
 
+use Perl::Version (); # provides perl-reversion
+
 sub find_version {
     my $file = shift;
 
