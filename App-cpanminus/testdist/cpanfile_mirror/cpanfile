@@ -1,0 +1,6 @@
+# -*- mode: perl; -*-
+# use mirror
+requires 'Hash::MultiValue' => '== 0.08', 
+  mirror => "https://kiwiroy.github.io/PPAN/mock";
+
+requires 'Try::Tiny' => '== 0.30';

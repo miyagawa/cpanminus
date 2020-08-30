@@ -1603,6 +1603,15 @@ sub resolve_name {
         return $self->cpan_dist($dep->dist, undef, $dep->mirror);
     }
 
+    if ($dep && $dep->mirror) {
+        local $self->{mirrors} = [
+            $dep->mirror,
+            !$self->{mirror_only} ? @{$self->{mirrors}} : ()
+            ];
+        local $self->{mirror_only} = 1;
+        return $self->search_module($module, $version);
+    }
+
     # Git
     if ($module =~ /(?:^git:|\.git(?:@.+)?$)/) {
         return $self->git_uri($module);
