@@ -107,6 +107,28 @@ controlled repository such as git.
 
   cpanm --installdeps .
 
+When installing from a L<cpanfile>, cpanm recognizes the
+L<options|Module::CPANfile/options_for_module> C<dist>, C<mirror>,
+and C<url> passed as key-value pairs after the optional version
+specification, specifying the exact distribution or location to
+install from.
+
+  requires 'Path::Class', '0.26',
+    dist => 'KWILLIAMS/Path-Class-0.26.tar.gz';
+
+  # omit version specifier
+  requires 'Hash::MultiValue',
+    dist => 'MIYAGAWA/Hash-MultiValue-0.15.tar.gz';
+
+  # use dist + mirror
+  requires 'Cookie::Baker',
+    dist => 'KAZEBURO/Cookie-Baker-0.08.tar.gz',
+    mirror => 'http://cpan.cpantesters.org/';
+
+  # use the full URL
+  requires 'Try::Tiny', '0.28',
+    url => 'http://backpan.perl.org/authors/id/E/ET/ETHER/Try-Tiny-0.28.tar.gz';
+
 =item --look
 
 Download and unpack the distribution and then open the directory with
