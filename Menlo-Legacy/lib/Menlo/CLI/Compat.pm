@@ -453,7 +453,7 @@ sub search_common {
             $self->chat("Found $found->{module} $found->{module_version} which doesn't satisfy $want_version.\n");
         }
     }
-    
+
     return;
 }
 
@@ -977,7 +977,7 @@ sub append_args {
     my($self, $cmd, $phase) = @_;
 
     return $cmd if ref $cmd ne 'ARRAY';
-    
+
     if (my $args = $self->{build_args}{$phase}) {
         $cmd = join ' ', Menlo::Util::shell_quote(@$cmd), $args;
     }
@@ -2343,8 +2343,9 @@ sub save_meta {
 
     return unless $dist->{distvname} && $dist->{source} eq 'cpan';
 
-    my $base = ($ENV{PERL_MM_OPT} || '') =~ /INSTALL_BASE=/
-        ? ($self->install_base($ENV{PERL_MM_OPT}) . "/lib/perl5") : $Config{sitelibexp};
+    my $base = ($ENV{PERL_MM_OPT} || '') =~ /INSTALL_BASE=/ ? ($self->install_base($ENV{PERL_MM_OPT}) . "/lib/perl5")
+             : ($ENV{PERL_MM_OPT} || '') =~ /DESTDIR=(\S+)/ ? $1 . $Config{sitelibexp}
+             : $Config{sitelibexp};
 
     my $provides = $dist->{provides};
 
