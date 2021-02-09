@@ -70,6 +70,7 @@ sub new {
         argv => [],
         local_lib => undef,
         self_contained => undef,
+        for_packaging => undef,
         exclude_vendor => undef,
         prompt_timeout => 0,
         prompt => undef,
@@ -174,6 +175,7 @@ sub parse_options {
             $self->{pod2man} = undef;
         },
         'self-contained!' => \$self->{self_contained},
+        'for-packaging!' => \$self->{for_packaging},
         'exclude-vendor!' => \$self->{exclude_vendor},
         'mirror=s@' => $self->{mirrors},
         'mirror-only!' => \$self->{mirror_only},
@@ -350,7 +352,8 @@ sub _doit {
             $self->uninstall_module($module)
               or push @fail, $module;
         } else {
-            $self->install_module($module, 0, $version)
+            my $dep = Menlo::Dependency->new($module, $version, 'requires', 'runtime');
+            $self->install_module($module, 0, $version, $dep)
                 or push @fail, $module;
         }
     }
@@ -780,6 +783,9 @@ sub setup_local_lib {
         if ($self->{self_contained}) {
             my @inc = $self->_core_only_inc($base);
             $self->{search_inc} = [ @inc ];
+            if ($self->{for_packaging}) {
+                $self->{build_search_inc} = [@INC, @inc];
+            }
         } else {
             $self->{search_inc} = [
                 local::lib->install_base_arch_path($base),
@@ -1182,6 +1188,13 @@ sub install_module {
     my($self, $module, $depth, $version, $dep) = @_;
 
     $self->check_libs;
+    local $ENV{PERL_MB_OPT} = $ENV{PERL_MB_OPT};
+    local $ENV{PERL_MM_OPT} = $ENV{PERL_MM_OPT};
+    local $ENV{PERL_LOCAL_LIB_ROOT} = $ENV{PERL_LOCAL_LIB_ROOT};
+    if ($self->{self_contained} && $self->{for_packaging} && $dep->phase ne 'runtime') {
+        print "Deleting env to install $module\n";
+        $ENV{PERL_MB_OPT} = $ENV{PERL_MM_OPT} = $ENV{PERL_LOCAL_LIB_ROOT} = undef;
+    }
 
     if ($self->{seen}{$module}++) {
         # TODO: circular dependencies
@@ -1190,7 +1203,7 @@ sub install_module {
     }
 
     if ($self->{skip_satisfied}) {
-        my($ok, $local) = $self->check_module($module, $version || 0);
+        my($ok, $local) = $self->check_module($module, $version || 0, $dep->phase);
         if ($ok) {
             $self->diag("You have $module ($local)\n", 1);
             return 1;
@@ -1226,7 +1239,7 @@ sub install_module {
         # it is the minimum version you need.
         my $cmp = $version ? "==" : "";
         my $requirement = $dist->{module_version} ? "$cmp$dist->{module_version}" : 0;
-        my($ok, $local) = $self->check_module($dist->{module}, $requirement);
+        my($ok, $local) = $self->check_module($dist->{module}, $requirement, $dep->phase);
         if ($self->{skip_installed} && $ok) {
             $self->diag("$dist->{module} is up to date. ($local)\n", 1);
             return 1;
@@ -1256,7 +1269,7 @@ sub install_module {
         return 1;
     }
 
-    return $self->build_stuff($module, $dist, $depth);
+    return $self->build_stuff($module, $dist, $depth, $dep);
 }
 
 sub uninstall_search_path {
@@ -1768,12 +1781,20 @@ sub search_inc {
     };
 }
 
-sub check_module {
-    my($self, $mod, $want_ver) = @_;
+sub build_search_inc {
+    my $self = shift;
+    return $self->{build_search_inc} || $self->search_inc;
+}
 
+sub check_module {
+    my($self, $mod, $want_ver, $phase) = @_;
     require Module::Metadata;
-    my $meta = Module::Metadata->new_from_module($mod, inc => $self->search_inc)
-        or return 0, undef;
+    my $meta = Module::Metadata->new_from_module(
+        $mod,
+        inc => $self->{for_packaging} && $phase eq 'runtime'
+             ? $self->search_inc
+             : $self->build_search_inc
+    ) or return 0, undef;
 
     my $version = $meta->version;
 
@@ -1847,10 +1868,10 @@ sub loaded_from_perl_lib {
 }
 
 sub should_install {
-    my($self, $mod, $ver) = @_;
+    my($self, $mod, $ver, $phase) = @_;
 
-    $self->chat("Checking if you have $mod $ver ... ");
-    my($ok, $local) = $self->check_module($mod, $ver);
+    $self->chat("Checking if you have $phase $mod $ver ... ");
+    my($ok, $local) = $self->check_module($mod, $ver, $phase);
 
     if ($ok)       { $self->chat("Yes ($local)\n") }
     elsif ($local) { $self->chat("No (" . $self->unsatisfy_how($local, $ver) . ")\n") }
@@ -1878,7 +1899,7 @@ sub install_deps {
                 $self->diag("Needs perl @{[$dep->version]}, you have $]\n");
                 push @fail, 'perl';
             }
-        } elsif ($self->should_install($dep->module, $dep->version)) {
+        } elsif ($self->should_install($dep->module, $dep->version, $dep->phase)) {
             push @install, $dep;
             $seen{$dep->module} = 1;
         }
@@ -1917,7 +1938,7 @@ sub unsatisfied_deps {
         $reqs->add_string_requirement($dep->module => $dep->requires_version || '0');
     }
 
-    my $ret = CPAN::Meta::Check::check_requirements($reqs, 'requires', $self->{search_inc});
+    my $ret = CPAN::Meta::Check::check_requirements($reqs, 'requires', $self->build_search_inc);
     grep defined, values %$ret;
 }
 
@@ -1937,7 +1958,7 @@ sub install_deps_bailout {
 }
 
 sub build_stuff {
-    my($self, $stuff, $dist, $depth) = @_;
+    my($self, $stuff, $dist, $depth, $dep) = @_;
 
     if ($self->{verify} && -e 'SIGNATURE') {
         $self->verify_signature($dist) or return;
@@ -2401,18 +2422,14 @@ sub effective_feature {
 
         $self->diag("[@{[ $feature->description ]}]\n", 1);
 
-        my $req = CPAN::Meta::Requirements->new;
+        my (%seen, @missing);
         for my $phase (@{$dist->{want_phases}}) {
             for my $type (@{$self->{install_types}}) {
-                $req->add_requirements($feature->prereqs->requirements_for($phase, $type));
-            }
-        }
-
-        my $reqs = $req->as_string_hash;
-        my @missing;
-        for my $module (keys %$reqs) {
-            if ($self->should_install($module, $req->{$module})) {
-                push @missing, $module;
+                my $reqs = $feature->prereqs->requirements_for($phase, $type)->as_string_hash;
+                while (my ($mod, $ver) = each %$reqs) {
+                    next if $seen{$mod}++;
+                    push @missing, $mod if $self->should_install($mod, $ver, $phase);
+                }
             }
         }
 
