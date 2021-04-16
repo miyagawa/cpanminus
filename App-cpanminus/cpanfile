@@ -19,7 +19,6 @@ on develop => sub {
     recommends 'Archive::Tar';
     recommends 'Archive::Zip';
     recommends 'Compress::Zlib';
-    recommends 'File::HomeDir';
     recommends 'LWP::UserAgent', '5.802';
     recommends 'Module::Signature';
 };

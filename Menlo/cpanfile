@@ -37,7 +37,6 @@ requires 'version';
 suggests 'LWP::UserAgent', '5.802';
 suggests 'Archive::Tar';
 suggests 'Archive::Zip';
-suggests 'File::HomeDir';
 suggests 'Module::Signature';
 suggests 'Digest::SHA';
 

@@ -32,11 +32,11 @@ sub qs($) {
 sub determine_home {
     my $class = shift;
 
-    my $homedir = $ENV{HOME}
-      || eval { require File::HomeDir; File::HomeDir->my_home }
-      || join('', @ENV{qw(HOMEDRIVE HOMEPATH)}); # Win32
+    my $homedir = $^O eq 'MSWin32' && "$]" < 5.016
+        ? $ENV{HOME} || $ENV{USERPROFILE}
+        : (<~>)[0];
 
-    if (WIN32) {
+    if (WIN32 and not $homedir) {
         require Win32; # no fatpack
         $homedir = Win32::GetShortPathName($homedir);
     }
