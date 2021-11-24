@@ -1351,7 +1351,7 @@ sub should_unlink {
     if ($self->{local_lib}) {
         $file =~ /^\Q$self->{local_lib}\E/;
     } else {
-        !(grep $file =~ /^\Q$_\E/, @Config{qw(installbin installscript installman1dir installman3dir)});
+        !(grep $_ && $file =~ /^\Q$_\E/, @Config{qw(installbin installscript installman1dir installman3dir)});
     }
 }
 
