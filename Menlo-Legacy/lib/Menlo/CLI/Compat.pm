@@ -1488,12 +1488,12 @@ sub verify_checksums_signature {
 
     my $rv = eval {
         local $SIG{__WARN__} = sub {}; # suppress warnings
-        my $v = Module::Signature::_verify($chk_file);
-        $v == Module::Signature::SIGNATURE_OK();
+        Module::Signature::_verify($chk_file);
     };
-    if ($rv) {
+    if (defined $rv && $rv eq Module::Signature::SIGNATURE_OK()) {
         $self->chat("Verified OK!\n");
     } else {
+        $rv = "(undef)" unless defined $rv;
         $self->diag_fail("Verifying CHECKSUMS signature failed: $rv\n");
         return;
     }
