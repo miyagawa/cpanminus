@@ -1523,11 +1523,11 @@ sub verify_archive {
 
     $self->diag_ok;
     $self->verify_checksums_signature($chk_file) or return;
-    $self->verify_checksum($file, $chk_file);
+    $self->verify_checksum($file, $uri, $chk_file);
 }
 
 sub verify_checksum {
-    my($self, $file, $chk_file) = @_;
+    my($self, $file, $uri, $chk_file) = @_;
 
     $self->chat("Verifying the SHA256 for $file\n");
 
@@ -1543,14 +1543,19 @@ sub verify_checksum {
         return;
     }
 
-    if (my $sha = $chksum->{$file}{sha256}) {
-        my $hex = $self->sha_for(256, $file);
-        if ($hex eq $sha) {
-            $self->chat("Checksum for $file: Verified!\n");
-        } else {
+    if (my $found = $chksum->{$file}) {
+        my ($cpan_path) = $uri =~ m{\A.*/authors/id/(.+)/[^/]+\z};
+        if ($cpan_path ne $found->{cpan_path}) {
+            $self->diag_fail("cpan_path mismatch for $file\n");
+            return;
+        }
+        my $sha256 = $self->sha_for(256, $file);
+        if ($sha256 ne $found->{sha256}) {
             $self->diag_fail("Checksum mismatch for $file\n");
             return;
         }
+        $self->chat("Checksum for $file: Verified!\n");
+        return 1;
     } else {
         $self->chat("Checksum for $file not found in CHECKSUMS.\n");
         return;
