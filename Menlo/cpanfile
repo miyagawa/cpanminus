@@ -38,7 +38,7 @@ suggests 'LWP::UserAgent', '5.802';
 suggests 'Archive::Tar';
 suggests 'Archive::Zip';
 suggests 'File::HomeDir';
-suggests 'Module::Signature';
+suggests 'Module::Signature', '0.88';
 suggests 'Digest::SHA';
 
 on test => sub {
