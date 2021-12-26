@@ -23,5 +23,6 @@ jobs:
       - name: Install Dependencies
         run: |
           ./cpanm -nq --installdeps --with-develop --with-recommends --with-suggests .
+          ./cpanm -nq LWP::Protocol::https
       - name: Run Tests
         run: PERL_USE_UNSAFE_INC=1 prove -lr xt -j9
