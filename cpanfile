@@ -20,6 +20,7 @@ on develop => sub {
     requires 'HTTP::Tiny';
     requires 'JSON';
     requires 'JSON::PP';
+    requires 'LWP::Protocol::https';
     requires 'LWP::Simple';
     requires 'LWP::UserAgent', '5.802';
     requires 'Module::Install';
