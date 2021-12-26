@@ -13,7 +13,7 @@ meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
   version: 1.4
 requires:
-  perl: 5.030000
+  perl: 5.098000
 name: Requires-Perl
 no_index:
   directory:
