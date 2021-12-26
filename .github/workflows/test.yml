@@ -1,0 +1,27 @@
+name: test
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: 'script -q -e -c "bash {0}"' # create TTY so that -t STDIN works
+    strategy:
+      matrix:
+        perl-version:
+          - '5.8-buster'
+          - '5.10-buster'
+          - 'latest'
+    container:
+      image: perl:${{ matrix.perl-version }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Dependencies
+        run: |
+          ./cpanm -nq --installdeps --with-develop --with-recommends --with-suggests .
+      - name: Run Tests
+        run: PERL_USE_UNSAFE_INC=1 prove -lr xt -j9
