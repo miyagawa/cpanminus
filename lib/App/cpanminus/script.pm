@@ -1587,28 +1587,6 @@ sub unpack {
     return $dir;
 }
 
-sub verify_checksums_signature {
-    my($self, $chk_file) = @_;
-
-    require Module::Signature; # no fatpack
-
-    $self->chat("Verifying the signature of CHECKSUMS\n");
-
-    my $rv = eval {
-        local $SIG{__WARN__} = sub {}; # suppress warnings
-        my $v = Module::Signature::_verify($chk_file);
-        $v == Module::Signature::SIGNATURE_OK();
-    };
-    if ($rv) {
-        $self->chat("Verified OK!\n");
-    } else {
-        $self->diag_fail("Verifying CHECKSUMS signature failed: $rv\n");
-        return;
-    }
-
-    return 1;
-}
-
 sub verify_archive {
     my($self, $file, $uri, $dist) = @_;
 
@@ -1630,7 +1608,6 @@ sub verify_archive {
     }
 
     $self->diag_ok;
-    $self->verify_checksums_signature($chk_file) or return;
     $self->verify_checksum($file, $chk_file);
 }
 
