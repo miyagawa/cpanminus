@@ -515,8 +515,12 @@ Defaults to false.
 
 =item --verify
 
-Verify the integrity of distribution files retrieved from PAUSE using
-CHECKSUMS and SIGNATURES (if found). Defaults to false.
+Verify the integrity of distribution files retrieved from CPAN using CHECKSUMS
+file, and SIGNATURES (if found in the distribution). Defaults to false.
+
+Using this option does not verify the integrity of the CHECKSUMS file, and it's
+unsafe to rely on this option if you're using a CPAN mirror that you do not
+trust.
 
 =item --report-perl-version
 
