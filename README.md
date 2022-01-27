@@ -37,7 +37,7 @@ You can also use the latest cpanminus to install cpanminus itself:
 
 This will install `cpanm` to your bin directory like
 `/usr/local/bin` and you'll need the `--sudo` option to write to
-the directory, unless you configured `INSTALL_BASE` with [local::lib](https://metacpan.org/pod/local::lib).
+the directory, unless you configured `INSTALL_BASE` with [local::lib](https://metacpan.org/pod/local%3A%3Alib).
 
 ## Installing to local perl (perlbrew, plenv etc.)
 
@@ -147,9 +147,9 @@ itself.
 If you need these features, use [CPAN](https://metacpan.org/pod/CPAN), [CPANPLUS](https://metacpan.org/pod/CPANPLUS) or the standalone
 tools that are mentioned.
 
-- CPAN testers reporting. See [App::cpanminus::reporter](https://metacpan.org/pod/App::cpanminus::reporter)
+- CPAN testers reporting. See [App::cpanminus::reporter](https://metacpan.org/pod/App%3A%3Acpanminus%3A%3Areporter)
 - Building RPM packages from CPAN modules
-- Listing the outdated modules that needs upgrading. See [App::cpanoutdated](https://metacpan.org/pod/App::cpanoutdated)
+- Listing the outdated modules that needs upgrading. See [App::cpanoutdated](https://metacpan.org/pod/App%3A%3Acpanoutdated)
 - Showing the changes of the modules you're about to upgrade. See [cpan-listchanges](https://metacpan.org/pod/cpan-listchanges)
 - Patching CPAN modules with distroprefs.
 
@@ -161,19 +161,19 @@ Copyright 2010- Tatsuhiko Miyagawa
 
 The standalone executable contains the following modules embedded.
 
-- [CPAN::DistnameInfo](https://metacpan.org/pod/CPAN::DistnameInfo) Copyright 2003 Graham Barr
-- [local::lib](https://metacpan.org/pod/local::lib) Copyright 2007-2009 Matt S Trout
-- [HTTP::Tiny](https://metacpan.org/pod/HTTP::Tiny) Copyright 2011 Christian Hansen
-- [Module::Metadata](https://metacpan.org/pod/Module::Metadata) Copyright 2001-2006 Ken Williams. 2010 Matt S Trout
+- [CPAN::DistnameInfo](https://metacpan.org/pod/CPAN%3A%3ADistnameInfo) Copyright 2003 Graham Barr
+- [local::lib](https://metacpan.org/pod/local%3A%3Alib) Copyright 2007-2009 Matt S Trout
+- [HTTP::Tiny](https://metacpan.org/pod/HTTP%3A%3ATiny) Copyright 2011 Christian Hansen
+- [Module::Metadata](https://metacpan.org/pod/Module%3A%3AMetadata) Copyright 2001-2006 Ken Williams. 2010 Matt S Trout
 - [version](https://metacpan.org/pod/version) Copyright 2004-2010 John Peacock
-- [JSON::PP](https://metacpan.org/pod/JSON::PP) Copyright 2007-2011 by Makamaka Hannyaharamitu
-- [CPAN::Meta](https://metacpan.org/pod/CPAN::Meta), [CPAN::Meta::Requirements](https://metacpan.org/pod/CPAN::Meta::Requirements) Copyright (c) 2010 by David Golden and Ricardo Signes
-- [CPAN::Meta::YAML](https://metacpan.org/pod/CPAN::Meta::YAML) Copyright 2010 Adam Kennedy
-- [CPAN::Meta::Check](https://metacpan.org/pod/CPAN::Meta::Check) Copyright (c) 2012 by Leon Timmermans
-- [File::pushd](https://metacpan.org/pod/File::pushd) Copyright 2012 David Golden
+- [JSON::PP](https://metacpan.org/pod/JSON%3A%3APP) Copyright 2007-2011 by Makamaka Hannyaharamitu
+- [CPAN::Meta](https://metacpan.org/pod/CPAN%3A%3AMeta), [CPAN::Meta::Requirements](https://metacpan.org/pod/CPAN%3A%3AMeta%3A%3ARequirements) Copyright (c) 2010 by David Golden and Ricardo Signes
+- [CPAN::Meta::YAML](https://metacpan.org/pod/CPAN%3A%3AMeta%3A%3AYAML) Copyright 2010 Adam Kennedy
+- [CPAN::Meta::Check](https://metacpan.org/pod/CPAN%3A%3AMeta%3A%3ACheck) Copyright (c) 2012 by Leon Timmermans
+- [File::pushd](https://metacpan.org/pod/File%3A%3Apushd) Copyright 2012 David Golden
 - [parent](https://metacpan.org/pod/parent) Copyright (c) 2007-10 Max Maischein
-- [Parse::PMFile](https://metacpan.org/pod/Parse::PMFile) Copyright 1995 - 2013 by Andreas Koenig, Copyright 2013 by Kenichi Ishigaki
-- [String::ShellQuote](https://metacpan.org/pod/String::ShellQuote) by Roderick Schertler
+- [Parse::PMFile](https://metacpan.org/pod/Parse%3A%3APMFile) Copyright 1995 - 2013 by Andreas Koenig, Copyright 2013 by Kenichi Ishigaki
+- [String::ShellQuote](https://metacpan.org/pod/String%3A%3AShellQuote) by Roderick Schertler
 
 # LICENSE
 

@@ -2,6 +2,10 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7045  2022-01-26 19:03:44 PST
+   [Security]
+      - [CVE-2020-16154] remove the functionality to verify CHECKSUMS signature
+
 1.7044  2018-04-19 13:54:29 CEST
    [Improvements]
       - Support zip files with comments (skaji) #560
