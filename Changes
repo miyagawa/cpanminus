@@ -2,6 +2,10 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7046  2022-04-26 23:00:56 PDT
+   [Documentation]
+      - Remove git.io URL that's going to be deprecated.
+
 1.7045  2022-01-26 19:03:44 PST
    [Security]
       - [CVE-2020-16154] remove the functionality to verify CHECKSUMS signature
