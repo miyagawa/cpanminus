@@ -435,13 +435,17 @@ to replay installations on other machines.
 
 =item --save-dists
 
-Specifies the optional directory path to copy downloaded tarballs in
+Specifies the directory path to copy downloaded tarballs in
 the CPAN mirror compatible directory structure
-i.e. I<authors/id/A/AU/AUTHORS/Foo-Bar-version.tar.gz>
+i.e. C<authors/id/A/AU/AUTHORS/Foo-Bar-version.tar.gz>
 
-If the distro tarball did not come from CPAN, for example from a local
-file or from GitHub, then it will be saved under
-I<vendor/Foo-Bar-version.tar.gz>.
+  cpanm --save-dists cache --installdeps .
+
+will save the tarballs under the directory C<cache/authors>.
+
+If the distro tarball did not come from CPAN, for example from a local file or
+from GitHub, then it will be saved under C<vendor> under the specified
+directory.
 
 =item --uninst-shadows
 
