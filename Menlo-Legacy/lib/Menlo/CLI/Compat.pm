@@ -242,7 +242,7 @@ sub check_upgrade {
     if ($0 eq '-') {
         # run from curl, that's fine
         return;
-    } elsif ($0 !~ /^$install_base/) {
+    } elsif ($0 !~ /^\Q$install_base\E/) {
         if ($0 =~ m!perlbrew/bin!) {
             die <<DIE;
 It appears your cpanm executable was installed via `perlbrew install-cpanm`.
