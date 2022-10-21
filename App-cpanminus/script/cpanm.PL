@@ -330,7 +330,7 @@ Enabling this could potentially make a circular dependency for a few
 modules on CPAN, when C<recommends> adds a module that C<recommends>
 back the module in return.
 
-There's also C<--without-recommend> and C<--without-suggests> to
+There's also C<--without-recommends> and C<--without-suggests> to
 override the default decision made earlier in C<PERL_CPANM_OPT>.
 
 Defaults to false for both.
