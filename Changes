@@ -2,6 +2,10 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7047  2023-07-29 22:59:16 PDT
+   [Bug Fix]
+      - Upgrade fatpacked CPAN::Meta::Check to 0.018 (#662)
+
 1.7046  2022-04-26 23:00:56 PDT
    [Documentation]
       - Remove git.io URL that's going to be deprecated.

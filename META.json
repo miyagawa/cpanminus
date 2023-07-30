@@ -4,7 +4,7 @@
       "- Tatsuhiko Miyagawa"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Dist::Milla version v1.0.20, Dist::Zilla version 6.024, CPAN::Meta::Converter version 2.150010",
+   "generated_by" : "Dist::Milla version v1.0.22, Dist::Zilla version 6.025, CPAN::Meta::Converter version 2.150010",
    "license" : [
       "perl_5"
    ],
@@ -50,7 +50,7 @@
             "CPAN::Meta::YAML" : "0",
             "Capture::Tiny" : "0",
             "Digest::SHA" : "0",
-            "Dist::Milla" : "v1.0.20",
+            "Dist::Milla" : "v1.0.22",
             "Exporter" : "5.63",
             "File::Temp" : "0",
             "File::pushd" : "0",
@@ -101,7 +101,7 @@
          "web" : "https://github.com/miyagawa/cpanminus"
       }
    },
-   "version" : "1.7046",
+   "version" : "1.7047",
    "x_contributors" : [
       "Aaron Moses <mosesa02@localhost.localdomain>",
       "Alessandro Ghedini <al3xbio@gmail.com>",
@@ -181,8 +181,8 @@
       "yappo <yappo@shibuya.pl>",
       "zebardy <zebardy@gmail.com>"
    ],
-   "x_generated_by_perl" : "v5.32.1",
-   "x_serialization_backend" : "Cpanel::JSON::XS version 4.26",
+   "x_generated_by_perl" : "v5.34.1",
+   "x_serialization_backend" : "Cpanel::JSON::XS version 4.27",
    "x_spdx_expression" : "Artistic-1.0-Perl OR GPL-1.0-or-later",
    "x_static_install" : 0
 }
