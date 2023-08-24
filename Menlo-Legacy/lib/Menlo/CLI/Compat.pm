@@ -1978,7 +1978,6 @@ sub build_stuff {
 
     # install direct 'test' dependencies for --installdeps, even with --notest
     # TODO: remove build dependencies for static install
-    my $deps_only = $self->deps_only($depth);
     $dist->{want_phases} = $self->{notest} && !$self->deps_only($depth)
                          ? [qw( build runtime )] : [qw( build test runtime )];
 
