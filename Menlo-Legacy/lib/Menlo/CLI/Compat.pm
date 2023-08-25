@@ -219,6 +219,8 @@ sub parse_options {
         'without-develop' => sub { $self->{with_develop} = 0 },
         'with-configure' => \$self->{with_configure},
         'without-configure' => sub { $self->{with_configure} = 0 },
+        'with-test' => \$self->{with_test},
+        'without-test' => sub { $self->{with_test} = 0 },
         'with-feature=s' => sub { $self->{features}{$_[1]} = 1 },
         'without-feature=s' => sub { $self->{features}{$_[1]} = 0 },
         'with-all-features' => sub { $self->{features}{__all} = 1 },
@@ -1977,10 +1979,18 @@ sub build_stuff {
     }
 
     # install direct 'test' dependencies for --installdeps, even with --notest
+    #   except --without-test is given
     # TODO: remove build dependencies for static install
     {
         my @want_phases = qw( build runtime );
-        push @want_phases, 'test' if !$self->{notest} || $self->deps_only($depth);
+
+        if( defined $self->{with_test} ) {
+            push @want_phases, 'test' if $self->{with_test};
+        }
+        else {
+            push @want_phases, 'test' if !$self->{notest} || $self->deps_only($depth);
+        }
+
         push @want_phases, 'develop' if $self->{with_develop} && $depth == 0;
         push @want_phases, 'configure' if $self->{with_configure} && $depth == 0;
         $dist->{want_phases} = \@want_phases;
