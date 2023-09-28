@@ -13,6 +13,12 @@ use File::Path qw/mkpath/;
 use File::Spec::Functions qw/catfile catdir rel2abs abs2rel splitdir curdir/;
 use Getopt::Long 2.36 qw/GetOptionsFromArray/;
 
+sub read_file {
+	my ($filename) = @_;
+	open my $fh, '<', $filename or die "Could not open $filename: $!\n";
+	return do { local $/; <$fh> };
+}
+
 sub new {
     my($class, %args) = @_;
     bless {
@@ -43,21 +49,40 @@ sub find {
 	return @ret;
 }
 
+sub contains_pod {
+	my ($file) = @_;
+	return unless -T $file;
+	return read_file($file) =~ /^\=(?:head|pod|item)/m;
+}
+
 my %actions = (
 	build => sub {
 		my %opt = @_;
-		my %modules = map { $_ => catfile('blib', $_) } find(qr/\.p(?:m|od)$/, 'lib');
-		my %scripts = map { $_ => catfile('blib', $_) } find(qr//, 'script');
-		my %shared  = map { $_ => catfile(qw/blib lib auto share dist/, $opt{meta}->name, abs2rel($_, 'share')) } find(qr//, 'share');
-		pm_to_blib({ %modules, %scripts, %shared }, catdir(qw/blib lib auto/));
+		my %modules = map { $_ => catfile('blib', $_) } find(qr/\.pm$/, 'lib');
+		my %docs    = map { $_ => catfile('blib', $_) } find(qr/\.pod$/, 'lib');
+		my %scripts = map { $_ => catfile('blib', $_) } find(qr/(?:)/, 'script');
+		my %sdocs   = map { $_ => delete $scripts{$_} } grep { /.pod$/ } keys %scripts;
+		my %dist_shared    = map { $_ => catfile(qw/blib lib auto share dist/, $opt{meta}->name, abs2rel($_, 'share')) } find(qr/(?:)/, 'share');
+		my %module_shared  = map { $_ => catfile(qw/blib lib auto share module/, abs2rel($_, 'module-share')) } find(qr/(?:)/, 'module-share');
+		pm_to_blib({ %modules, %docs, %scripts, %dist_shared, %module_shared }, catdir(qw/blib lib auto/));
 		make_executable($_) for values %scripts;
 		mkpath(catdir(qw/blib arch/), $opt{verbose});
 
 		if ($opt{install_paths}->install_destination('bindoc') && $opt{install_paths}->is_default_installable('bindoc')) {
-			manify($_, catfile('blib', 'bindoc', man1_pagename($_)), $opt{config}->get('man1ext'), \%opt) for keys %scripts;
+			my $section = $opt{config}->get('man1ext');
+			for my $input (keys %scripts, keys %sdocs) {
+				next unless contains_pod($input);
+				my $output = catfile('blib', 'bindoc', man1_pagename($input));
+				manify($input, $output, $section, \%opt);
+			}
 		}
 		if ($opt{install_paths}->install_destination('libdoc') && $opt{install_paths}->is_default_installable('libdoc')) {
-			manify($_, catfile('blib', 'libdoc', man3_pagename($_)), $opt{config}->get('man3ext'), \%opt) for keys %modules;
+			my $section = $opt{config}->get('man3ext');
+			for my $input (keys %modules, keys %docs) {
+				next unless contains_pod($input);
+				my $output = catfile('blib', 'libdoc', man3_pagename($input));
+				manify($input, $output, $section, \%opt);
+			}
 		}
                 1;
 	},
