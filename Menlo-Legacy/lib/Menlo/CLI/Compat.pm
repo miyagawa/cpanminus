@@ -1449,7 +1449,11 @@ sub fetch_module {
         $dist->{local_path} = File::Spec->rel2abs($name);
 
         my $dir = $self->unpack($file, $uri, $dist);
-        next unless $dir; # unpack failed
+        # unpack failed
+        unless ($dir) {
+            unlink $file; # make sure it's not fooling any following local file copy
+            next;
+        }
 
         if (my $save = $self->{save_dists}) {
             # Only distros retrieved from CPAN have a pathname set
