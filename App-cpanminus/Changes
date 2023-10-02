@@ -1,6 +1,8 @@
 See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
+   [New Features]
+      - Support --with-test and --without-test (dboehmer) #651
 
 1.7907  2018-04-26 04:36:02 PDT
    [New Features]

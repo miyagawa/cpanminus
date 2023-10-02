@@ -142,6 +142,8 @@ architecture you've already tested to make sure it builds fine.
 Defaults to false, and you can say C<--no-notest> to override when it
 is set in the default options in C<PERL_CPANM_OPT>.
 
+Not to be confused with C<--without-test>!
+
 =item --test-only
 
 Run the tests only, and do not install the specified module or
@@ -344,6 +346,20 @@ C<cpanfile> when used with C<--installdeps>. Defaults to false.
 
 B<EXPERIMENTAL>: Installs configure phase dependencies in C<cpanfile>
 when used with C<--installdeps>. Defaults to false.
+
+=item --with-test, --without-test
+
+B<EXPERIMENTAL>: Installs C<test> phase dependencies in C<cpanfile>.
+Not to be confused with C<--notest>!
+Defaults to the value of C<--notest> if no other flags are given.
+C<--scandeps> and C<--showdeps> override this value to C<--with-test>.
+With C<--notest> and C<--installdeps> dependencies are installed
+without test but for the C<cpanfile> or given distribution their
+test dependencies are installed as well. You can override this by
+setting C<--without-test> to skip their test dependencies as well.
+
+There's C<--with-test> to override a C<--without-test> in
+C<PERL_CPANM_OPT>.
 
 =item --with-feature, --without-feature, --with-all-features
 
