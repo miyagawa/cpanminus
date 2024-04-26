@@ -14,7 +14,6 @@ jobs:
       fail-fast: false
       matrix:
         perl-version:
-          - '5.8-buster'
           - '5.10-buster'
           - '5.12-buster'
           - '5.14-buster'
