@@ -1,5 +1,6 @@
 package CPAN::Meta::Check;
-$CPAN::Meta::Check::VERSION = '0.014';
+# vi:noet:sts=2:sw=2:ts=2
+$CPAN::Meta::Check::VERSION = '0.018';
 use strict;
 use warnings;
 
@@ -8,14 +9,14 @@ our @EXPORT = qw//;
 our @EXPORT_OK = qw/check_requirements requirements_for verify_dependencies/;
 our %EXPORT_TAGS = (all => [ @EXPORT, @EXPORT_OK ] );
 
-use CPAN::Meta::Prereqs '2.132830';
+use CPAN::Meta::Prereqs 2.132830;
 use CPAN::Meta::Requirements 2.121;
 use Module::Metadata 1.000023;
 
 sub _check_dep {
 	my ($reqs, $module, $dirs) = @_;
 
-	$module eq 'perl' and return ($reqs->accepts_module($module, $]) ? () : sprintf "Your Perl (%s) is not in the range '%s'", $], $reqs->requirements_for_module($module));
+	return $reqs->accepts_module($module, $]) ? () : sprintf "Your Perl (%s) is not in the range '%s'", $], $reqs->requirements_for_module($module) if $module eq 'perl';
 
 	my $metadata = Module::Metadata->new_from_module($module, inc => $dirs);
 	return "Module '$module' is not installed" if not defined $metadata;
@@ -80,7 +81,7 @@ CPAN::Meta::Check - Verify requirements in a CPAN::Meta object
 
 =head1 VERSION
 
-version 0.014
+version 0.018
 
 =head1 SYNOPSIS
 
@@ -113,8 +114,6 @@ This function returns a unified L<CPAN::Meta::Requirements|CPAN::Meta::Requireme
 =item * L<Test::CheckDeps|Test::CheckDeps>
 
 =item * L<CPAN::Meta|CPAN::Meta>
-
-=for comment # vi:noet:sts=2:sw=2:ts=2
 
 =back
 
