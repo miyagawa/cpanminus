@@ -65,7 +65,7 @@ sub new {
         mirrors => [],
         mirror_only => undef,
         mirror_index => undef,
-        cpanmetadb => "http://cpanmetadb.plackperl.org/v1.0/",
+        cpanmetadb => "https://cpanmetadb.plackperl.org/v1.0/",
         perl => $^X,
         argv => [],
         local_lib => undef,
@@ -616,7 +616,7 @@ Options:
   --installdeps             Only install dependencies
   --showdeps                Only display direct dependencies
   --reinstall               Reinstall the distribution even if you already have the latest version installed
-  --mirror                  Specify the base URL for the mirror (e.g. http://cpan.cpantesters.org/)
+  --mirror                  Specify the base URL for the mirror (e.g. https://cpan.cpantesters.org/)
   --mirror-only             Use the mirror's index file instead of the CPAN Meta DB
   -M,--from                 Use only this mirror base URL and its index file
   --prompt                  Prompt when configure/build/test fails
@@ -636,18 +636,18 @@ Examples:
 
   cpanm Test::More                                          # install Test::More
   cpanm MIYAGAWA/Plack-0.99_05.tar.gz                       # full distribution path
-  cpanm http://example.org/LDS/CGI.pm-3.20.tar.gz           # install from URL
+  cpanm https://example.org/LDS/CGI.pm-3.20.tar.gz          # install from URL
   cpanm ~/dists/MyCompany-Enterprise-1.00.tar.gz            # install from a local file
   cpanm --interactive Task::Kensho                          # Configure interactively
   cpanm .                                                   # install from local directory
   cpanm --installdeps .                                     # install all the deps for the current directory
   cpanm -L extlib Plack                                     # install Plack and all non-core deps into extlib
-  cpanm --mirror http://cpan.cpantesters.org/ DBI           # use the fast-syncing mirror
+  cpanm --mirror https://cpan.cpantesters.org/ DBI           # use the fast-syncing mirror
   cpanm -M https://cpan.metacpan.org App::perlbrew          # use only this secure mirror and its index
 
 You can also specify the default options in PERL_CPANM_OPT environment variable in the shell rc:
 
-  export PERL_CPANM_OPT="--prompt --reinstall -l ~/perl --mirror http://cpan.cpantesters.org"
+  export PERL_CPANM_OPT="--prompt --reinstall -l ~/perl --mirror https://cpan.cpantesters.org"
 
 Type `man cpanm` or `perldoc cpanm` for the more detailed explanation of the options.
 
@@ -1163,7 +1163,7 @@ sub chdir {
 sub configure_mirrors {
     my $self = shift;
     unless (@{$self->{mirrors}}) {
-        $self->{mirrors} = [ 'http://www.cpan.org' ];
+        $self->{mirrors} = [ 'https://www.cpan.org' ];
     }
     for (@{$self->{mirrors}}) {
         s!^/!file:///!;
@@ -1688,7 +1688,7 @@ sub cpan_dist {
 sub git_uri {
     my ($self, $uri) = @_;
 
-    # similar to http://www.pip-installer.org/en/latest/logic.html#vcs-support
+    # similar to https://www.pip-installer.org/en/latest/logic.html#vcs-support
     # git URL has to end with .git when you need to use pin @ commit/tag/branch
 
     ($uri, my $commitish) = split /(?<=\.git)@/i, $uri, 2;
@@ -2703,9 +2703,9 @@ sub configure_http {
     unshift @try, 'Curl' if $self->{try_curl};
     unshift @try, 'LWP'  if $self->{try_lwp};
 
-    my @protocol = ('http');
-    push @protocol, 'https'
-      if grep /^https:/, @{$self->{mirrors}};
+    my @protocol = ('https');
+    push @protocol, 'http'
+      if grep /^http:/, @{$self->{mirrors}};
 
     my $backend;
     for my $try (map "HTTP::Tinyish::$_", @try) {

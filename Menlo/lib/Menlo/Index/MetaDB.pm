@@ -19,7 +19,7 @@ use HTTP::Tiny;
 sub BUILD {
     my $self = shift;
     my $uri  = $self->uri;
-    $uri = "http://cpanmetadb.plackperl.org/v1.0/"
+    $uri = "https://cpanmetadb.plackperl.org/v1.0/"
       unless defined $uri;
     # ensure URI ends in '/'
     $uri =~ s{/?$}{/};
@@ -73,7 +73,7 @@ sub search_packages {
                 version => $match->{version},
                 uri     => "cpan:///distfile/$file",
                 ($match->{latest} ? () :
-                   (download_uri => "http://backpan.perl.org/authors/id/$match->{distfile}")),
+                   (download_uri => "https://backpan.perl.org/authors/id/$match->{distfile}")),
             };
         }
     } else {

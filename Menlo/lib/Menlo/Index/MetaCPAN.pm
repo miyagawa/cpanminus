@@ -55,7 +55,7 @@ sub search_packages {
             package => $args->{package},
             version => $dist_meta->{version},
             uri => "cpan:///distfile/$distfile",
-            download_uri => $self->_download_uri("http://cpan.metacpan.org", $distfile),
+            download_uri => $self->_download_uri("https://cpan.metacpan.org", $distfile),
         };
     }
 
