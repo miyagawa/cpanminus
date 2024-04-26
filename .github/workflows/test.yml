@@ -11,15 +11,29 @@ jobs:
       run:
         shell: 'script -q -e -c "bash {0}"' # create TTY so that -t STDIN works
     strategy:
+      fail-fast: false
       matrix:
         perl-version:
-          - '5.8-buster'
           - '5.10-buster'
-          - 'latest'
+          - '5.12-buster'
+          - '5.14-buster'
+          - '5.16-buster'
+          - '5.18-buster'
+          - '5.20-buster'
+          - '5.22-buster'
+          - '5.24-buster'
+          - '5.26-buster'
+          - '5.28-buster'
+          - '5.30-buster'
+          - '5.32-buster'
+          - '5.34-buster'
+          - '5.36-buster'
+          - '5.38-buster'
+          - 'devel'
     container:
       image: perl:${{ matrix.perl-version }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Install Dependencies
         run: |
           perl App-cpanminus/cpanm -nq App::cpanminus
