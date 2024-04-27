@@ -45,7 +45,7 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
       - Disable static_install when required modules are not installed
 
 1.7904  2018-04-20 23:20:15 CEST
-   [New Feaures]
+   [New Features]
       - Support dist, mirror and url options in cpanfile (#568)
 
 1.7903  2018-04-20 16:53:53 CEST
