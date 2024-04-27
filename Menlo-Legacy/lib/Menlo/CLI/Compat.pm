@@ -2650,11 +2650,35 @@ sub DESTROY {
 
 sub mirror {
     my($self, $uri, $local) = @_;
-    if ($uri =~ /^file:/) {
-        $self->file_mirror($uri, $local);
-    } else {
-        $self->{http}->mirror($uri, $local);
+
+    die( "mirror: Undefined URI\n" ) unless defined $uri && length $uri;
+
+    if ( $uri =~ /^file:/) {
+        return $self->file_mirror($uri, $local);
     }
+
+    my $reply = $self->{http}->mirror($uri, $local);
+
+    if ( $uri =~ /^https:/ && ref $reply
+        && $reply->{status} && $reply->{status} == 599
+        && $reply->{content}
+    ) {
+        my $invalid_cert;
+        if ( ref($self->{http}) =~ m{(?:Curl|HTTPTiny|Wget)} ) {
+            $invalid_cert = 1 if $reply->{content} =~ m{certificate}mi;
+        } elsif ( ref($self->{http}) =~ m{LWP} ) {
+            $invalid_cert = 1 if $reply->{content} =~ m{Can't connect.+?:443}mi;
+        }
+        if ( $invalid_cert ) {
+            die <<"DIE";
+TLS issue found while fetching $uri:\n
+$reply->{content}\n
+Please verify your certificates or force an HTTP-only request/mirror at your own risk.
+DIE
+        }
+    }
+
+    return $reply;
 }
 
 sub untar    { $_[0]->{_backends}{untar}->(@_) };
@@ -2719,6 +2743,10 @@ sub configure_http {
                 last;
             }
         }
+    }
+
+    if ( !$backend ) {
+        $self->diag_fail( join( ', ', @protocol )." not supported by available HTTP Clients." );
     }
 
     $backend->new(agent => "Menlo/$Menlo::VERSION", verify_SSL => 1);
