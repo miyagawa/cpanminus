@@ -79,6 +79,7 @@ sub new {
         try_lwp => 1,
         try_wget => 1,
         try_curl => 1,
+        use_http => 0,
         uninstall_shadows => ($] < 5.012),
         skip_installed => 1,
         skip_satisfied => 0,
@@ -199,6 +200,7 @@ sub parse_options {
         'lwp!'    => \$self->{try_lwp},
         'wget!'   => \$self->{try_wget},
         'curl!'   => \$self->{try_curl},
+        'insecure!' => \$self->{use_http},
         'auto-cleanup=s' => \$self->{auto_cleanup},
         'man-pages!' => \$self->{pod2man},
         'scandeps'   => \$self->{scandeps},
@@ -453,7 +455,7 @@ sub search_common {
             $self->chat("Found $found->{module} $found->{module_version} which doesn't satisfy $want_version.\n");
         }
     }
-    
+
     return;
 }
 
@@ -977,7 +979,7 @@ sub append_args {
     my($self, $cmd, $phase) = @_;
 
     return $cmd if ref $cmd ne 'ARRAY';
-    
+
     if (my $args = $self->{build_args}{$phase}) {
         $cmd = join ' ', Menlo::Util::shell_quote(@$cmd), $args;
     }
@@ -2657,6 +2659,10 @@ sub mirror {
         return $self->file_mirror($uri, $local);
     }
 
+    # HTTPTinyish does not provide an option to disable
+    # certificates check, let's switch to http on demand.
+    $uri =~ s/^https:/http:/ if $self->{use_http};
+
     my $reply = $self->{http}->mirror($uri, $local);
 
     if ( $uri =~ /^https:/ && ref $reply
@@ -2673,7 +2679,8 @@ sub mirror {
             die <<"DIE";
 TLS issue found while fetching $uri:\n
 $reply->{content}\n
-Please verify your certificates or force an HTTP-only request/mirror at your own risk.
+Please verify your certificates or force an HTTP-only request/mirror
+using --insecure option at your own risk.
 DIE
         }
     }
@@ -2722,14 +2729,16 @@ sub configure_http {
 
     require HTTP::Tinyish;
 
+    my $use_http = $self->{use_http};
+
     my @try = qw(HTTPTiny);
     unshift @try, 'Wget' if $self->{try_wget};
     unshift @try, 'Curl' if $self->{try_curl};
     unshift @try, 'LWP'  if $self->{try_lwp};
 
-    my @protocol = ('https');
+    my @protocol = ( $use_http ? 'http' : 'https' );
     push @protocol, 'http'
-      if grep /^http:/, @{$self->{mirrors}};
+      if !$use_http && grep /^http:/, @{$self->{mirrors}};
 
     my $backend;
     for my $try (map "HTTP::Tinyish::$_", @try) {
@@ -2745,11 +2754,14 @@ sub configure_http {
         }
     }
 
-    if ( !$backend ) {
-        $self->diag_fail( join( ', ', @protocol )." not supported by available HTTP Clients." );
-    }
+    # In case we use https protocol by default
+    #   and then later we try to perform non https requests
+    #   we still want these requests to succeed
+    # Note: this is disabling the client cache optimization above
+    #       and will fail later for SSL requests as no clients support TLS
+    $backend ||= 'HTTP::Tinyish';
 
-    $backend->new(agent => "Menlo/$Menlo::VERSION", verify_SSL => 1);
+    $backend->new(agent => "Menlo/$Menlo::VERSION", $use_http ? () : ( verify_SSL => 1 ) );
 }
 
 sub init_tools {

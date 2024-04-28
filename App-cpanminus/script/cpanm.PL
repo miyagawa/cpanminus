@@ -555,9 +555,16 @@ Defaults to true (man pages generated) unless C<-L|--local-lib-contained>
 option is supplied in which case it's set to false. You can disable
 it with C<--no-man-pages>.
 
+=item --insecure
+
+By default, cpanm only uses HTTPS. If your environment lacks TLS
+support, you can consider at your own risk to use HTTP instead by
+using the C<--insecure> flag.
+Be aware that when using that argument all requests will use HTTP.
+
 =item --lwp
 
-Uses L<LWP> module to download stuff over HTTP. Defaults to true, and
+Uses L<LWP> module to download stuff over HTTPS. Defaults to true, and
 you can say C<--no-lwp> to disable using LWP, when you want to upgrade
 LWP from CPAN on some broken perl systems.
 
