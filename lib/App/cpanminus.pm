@@ -105,16 +105,16 @@ Module::Build (core in 5.10)
 
 =head2 How does cpanm get/parse/update the CPAN index?
 
-It queries the CPAN Meta DB site at L<http://cpanmetadb.plackperl.org/>.
+It queries the CPAN Meta DB site at L<https://cpanmetadb.plackperl.org/>.
 The site is updated at least every hour to reflect the latest changes
 from fast syncing mirrors. The script then also falls back to query the
-module at L<http://metacpan.org/> using its search API.
+module at L<https://metacpan.org/> using its search API.
 
 Upon calling these API hosts, cpanm (1.6004 or later) will send the
 local perl versions to the server in User-Agent string by default. You
 can turn it off with C<--no-report-perl-version> option. Read more
 about the option with L<cpanm>, and read more about the privacy policy
-about this data collection at L<http://cpanmetadb.plackperl.org/#privacy>
+about this data collection at L<https://cpanmetadb.plackperl.org/#privacy>
 
 Fetched files are unpacked in C<~/.cpanm> and automatically cleaned up
 periodically.  You can configure the location of this with the
@@ -270,7 +270,7 @@ Arnfjord Bjarmason, Eric Wilhelm, Florian Ragwitz and xaicron.
 
 =over 4
 
-=item L<http://github.com/miyagawa/cpanminus> - source code repository, issue tracker
+=item L<https://github.com/miyagawa/cpanminus> - source code repository, issue tracker
 
 =item L<irc://irc.perl.org/#cpanm> - discussions about cpanm and its related tools
 

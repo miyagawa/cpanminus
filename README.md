@@ -85,16 +85,16 @@ perl 5.8.1 or later.
 
 ## How does cpanm get/parse/update the CPAN index?
 
-It queries the CPAN Meta DB site at [http://cpanmetadb.plackperl.org/](http://cpanmetadb.plackperl.org/).
+It queries the CPAN Meta DB site at [https://cpanmetadb.plackperl.org/](https://cpanmetadb.plackperl.org/).
 The site is updated at least every hour to reflect the latest changes
 from fast syncing mirrors. The script then also falls back to query the
-module at [http://metacpan.org/](http://metacpan.org/) using its search API.
+module at [https://metacpan.org/](https://metacpan.org/) using its search API.
 
 Upon calling these API hosts, cpanm (1.6004 or later) will send the
 local perl versions to the server in User-Agent string by default. You
 can turn it off with `--no-report-perl-version` option. Read more
 about the option with [cpanm](https://metacpan.org/pod/cpanm), and read more about the privacy policy
-about this data collection at [http://cpanmetadb.plackperl.org/#privacy](http://cpanmetadb.plackperl.org/#privacy)
+about this data collection at [https://cpanmetadb.plackperl.org/#privacy](https://cpanmetadb.plackperl.org/#privacy)
 
 Fetched files are unpacked in `~/.cpanm` and automatically cleaned up
 periodically.  You can configure the location of this with the
@@ -201,7 +201,7 @@ Arnfjord Bjarmason, Eric Wilhelm, Florian Ragwitz and xaicron.
 
 # COMMUNITY
 
-- [http://github.com/miyagawa/cpanminus](http://github.com/miyagawa/cpanminus) - source code repository, issue tracker
+- [https://github.com/miyagawa/cpanminus](https://github.com/miyagawa/cpanminus) - source code repository, issue tracker
 - [irc://irc.perl.org/#cpanm](irc://irc.perl.org/#cpanm) - discussions about cpanm and its related tools
 
 # NO WARRANTY
