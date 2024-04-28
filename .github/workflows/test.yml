@@ -5,33 +5,37 @@ on:
   - pull_request
 
 jobs:
+
+  perl-versions:
+    runs-on: ubuntu-latest
+    name: List Perl versions
+    outputs:
+      perl-versions: ${{ steps.massage.outputs.perl-versions }}
+    steps:
+      - id: action
+        uses: perl-actions/perl-versions@v1
+        with:
+          since-perl: v5.10
+          with-devel: true
+      - id: massage
+        name: add buster
+        run: |
+          echo '${{ steps.action.outputs.perl-versions }}' > perl.versions
+          perl -pi -e 's/"(\d\.\d+)"/"$1-buster"/g' perl.versions
+          cat perl.versions
+          echo "perl-versions=$(cat perl.versions)" >> $GITHUB_OUTPUT
+
   linux:
     runs-on: ubuntu-latest
+    needs: [perl-versions]
     defaults:
       run:
         shell: 'script -q -e -c "bash {0}"' # create TTY so that -t STDIN works
     strategy:
       fail-fast: false
       matrix:
-        perl-version:
-          - '5.10-buster'
-          - '5.12-buster'
-          - '5.14-buster'
-          - '5.16-buster'
-          - '5.18-buster'
-          - '5.20-buster'
-          - '5.22-buster'
-          - '5.24-buster'
-          - '5.26-buster'
-          - '5.28-buster'
-          - '5.30-buster'
-          - '5.32-buster'
-          - '5.34-buster'
-          - '5.36-buster'
-          - '5.38-buster'
-          - 'devel'
-    container:
-      image: perl:${{ matrix.perl-version }}
+        perl-version: ${{ fromJson(needs.perl-versions.outputs.perl-versions) }}
+    container: perl:${{ matrix.perl-version }}
     steps:
       - uses: actions/checkout@v4
       - name: Install Dependencies
