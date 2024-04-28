@@ -1985,9 +1985,29 @@ sub build_stuff {
     push @{$dist->{want_phases}}, 'develop' if $self->{with_develop} && $depth == 0;
     push @{$dist->{want_phases}}, 'configure' if $self->{with_configure} && $depth == 0;
 
-    my @deps = $self->find_prereqs($dist);
     my $module_name = $self->find_module_name($configure_state) || $dist->{meta}{name};
     $module_name =~ s/-/::/g;
+
+    # All packages provided by this distribution, falling back to just the
+    # "main" package.
+    my $package_versions;
+    eval {
+        $package_versions = Module::Metadata->package_versions_from_directory(Cwd::cwd);
+        1;
+    } or $package_versions = { $module_name => {} };
+
+    my (@deps, @self_deps);
+    for my $dep ($self->find_prereqs($dist)) {
+        push @{exists $package_versions->{$dep->module} ? \@self_deps : \@deps}, $dep;
+    }
+
+    if (@self_deps) {
+        my $self_deps_desc = join ', ', sort { $a cmp $b } map { $_->module } @self_deps;
+        $self->chat(<<DIAG, 1);
+! $module_name specifies its own modules as dependencies.
+! Omitting the following module(s) from the list of dependencies to be installed: ${self_deps_desc}.
+DIAG
+    }
 
     if ($self->{showdeps}) {
         for my $dep (@config_deps, @deps) {
