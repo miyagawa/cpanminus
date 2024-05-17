@@ -153,6 +153,7 @@ sub parse_options {
     push @ARGV, grep length, split /\s+/, $self->env('OPT');
     push @ARGV, @_;
 
+    my $custom_cpanmetadb;
     Getopt::Long::Configure("bundling");
     Getopt::Long::GetOptions(
         'f|force'   => sub { $self->{skip_installed} = 0; $self->{force} = 1 },
@@ -183,7 +184,7 @@ sub parse_options {
             $self->{mirrors}     = [$_[1]];
             $self->{mirror_only} = 1;
         },
-        'cpanmetadb=s'    => \$self->{cpanmetadb},
+        'cpanmetadb=s'    => \$custom_cpanmetadb,
         'cascade-search!' => \$self->{cascade_search},
         'prompt!'   => \$self->{prompt},
         'installdeps' => \$self->{installdeps},
@@ -233,6 +234,14 @@ sub parse_options {
     if (!@ARGV && $0 ne '-' && !-t STDIN){ # e.g. # cpanm < author/requires.cpanm
         push @ARGV, $self->load_argv_from_fh(\*STDIN);
         $self->{load_from_stdin} = 1;
+    }
+
+    if ($custom_cpanmetadb) {
+        $self->{cpanmetadb} = $custom_cpanmetadb;
+	$self->{has_custom_cpanmetadb} = 1;
+    }
+    else {
+        $self->{cpanmetadb} =~ s!^https:!http:! if $self->{use_http};
     }
 
     $self->{argv} = \@ARGV;
@@ -611,7 +620,8 @@ Options:
   -v,--verbose              Turns on chatty output
   -q,--quiet                Turns off the most output
   --interactive             Turns on interactive configure (required for Task:: modules)
-  -f,--force                force install
+  --insecure                Use HTTP-only requests instead of HTTPS
+  -f,--force                Force install
   -n,--notest               Do not run unit tests
   --test-only               Run tests only, do not install
   -S,--sudo                 sudo to run install commands
@@ -628,7 +638,7 @@ Options:
   --auto-cleanup            Number of days that cpanm's work directories expire in. Defaults to 7
 
 Commands:
-  --self-upgrade            upgrades itself
+  --self-upgrade            Upgrades itself
   --info                    Displays distribution info on CPAN
   --look                    Opens the distribution with your SHELL
   -U,--uninstall            Uninstalls the modules (EXPERIMENTAL)
@@ -1165,12 +1175,22 @@ sub chdir {
 sub configure_mirrors {
     my $self = shift;
     unless (@{$self->{mirrors}}) {
-        $self->{mirrors} = [ 'https://www.cpan.org' ];
+        $self->{mirrors} = [
+            ($self->{use_http} ? 'http' : 'https') . '://www.cpan.org'
+        ];
     }
+
+    my $warned;
     for (@{$self->{mirrors}}) {
         s!^/!file:///!;
         s!/$!!;
+
+        if (m/^http:/ && !$self->{use_http} && !$warned) {
+            warn "WARNING: you are using a non-HTTPS mirror, which is considered insecure. To remove this message, please pass the --insecure flag.\n" if !$warned;
+            $warned = 1;
+        }
     }
+    return;
 }
 
 sub self_upgrade {
@@ -1639,6 +1659,7 @@ sub cpan_module_common {
 
     my $mirrors = $self->{mirrors};
     if ($match->{download_uri}) {
+        $match->{download_uri} =~ s!^https:!http:! if $self->{use_http};
         (my $mirror = $match->{download_uri}) =~ s!/authors/id/.*$!!;
         $mirrors = [$mirror];
     }
@@ -2679,8 +2700,7 @@ sub mirror {
             die <<"DIE";
 TLS issue found while fetching $uri:\n
 $reply->{content}\n
-Please verify your certificates or force an HTTP-only request/mirror
-using --insecure option at your own risk.
+Please verify/update your certificates. You may also force an HTTP-only mirror or use the --insecure flag.
 DIE
         }
     }
@@ -2727,23 +2747,41 @@ sub file_mirror {
 sub configure_http {
     my $self = shift;
 
-    require HTTP::Tinyish;
-
-    my $use_http = $self->{use_http};
-
     my @try = qw(HTTPTiny);
     unshift @try, 'Wget' if $self->{try_wget};
     unshift @try, 'Curl' if $self->{try_curl};
     unshift @try, 'LWP'  if $self->{try_lwp};
 
-    my @protocol = ( $use_http ? 'http' : 'https' );
-    push @protocol, 'http'
-      if !$use_http && grep /^http:/, @{$self->{mirrors}};
+    my @protocol = ('http');
+    if (!$self->{use_http} || $self->{cpanmetadb} =~ /^https:/ || (grep /^https:/, @{$self->{mirrors}})) {
+        push @protocol, 'https';
+    }
 
+    my $backend = $self->get_http_backend(\@try, \@protocol);
+
+    # fallback to http-only if we failed using https with default options:
+    if (!$backend && !$self->{use_http} && !@{$self->{mirrors}} && (!$self->{has_custom_cpanmetadb} || $self->{cpanmetadb} =~ /^http:/)) {
+        $self->diag('WARNING: TLS support not found. Falling back to insecure HTTP-only requests');
+        $self->{use_http} = 1;
+        @protocol = ('http');
+        $backend = $self->get_http_backend(\@try, \@protocol);
+    }
+
+    if ( !$backend ) {
+        $self->diag_fail( join( ', ', @protocol )." not supported by available HTTP Clients." );
+    }
+
+    $backend->new(agent => "Menlo/$Menlo::VERSION", verify_SSL => 1);
+}
+
+sub get_http_backend {
+    my ($self, $tries, $protocols) = @_;
+
+    require HTTP::Tinyish;
     my $backend;
-    for my $try (map "HTTP::Tinyish::$_", @try) {
+    for my $try (map "HTTP::Tinyish::$_", @$tries) {
         if (my $meta = HTTP::Tinyish->configure_backend($try)) {
-            if ((grep $try->supports($_), @protocol) == @protocol) {
+            if ((grep $try->supports($_), @$protocols) == @$protocols) {
                 for my $tool (sort keys %$meta){
                     (my $desc = $meta->{$tool}) =~ s/^(.*?)\n.*/$1/s;
                     $self->chat("You have $tool: $desc\n");
@@ -2753,15 +2791,7 @@ sub configure_http {
             }
         }
     }
-
-    # In case we use https protocol by default
-    #   and then later we try to perform non https requests
-    #   we still want these requests to succeed
-    # Note: this is disabling the client cache optimization above
-    #       and will fail later for SSL requests as no clients support TLS
-    $backend ||= 'HTTP::Tinyish';
-
-    $backend->new(agent => "Menlo/$Menlo::VERSION", $use_http ? () : ( verify_SSL => 1 ) );
+    return $backend;
 }
 
 sub init_tools {
