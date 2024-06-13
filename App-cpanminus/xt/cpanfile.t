@@ -23,6 +23,21 @@ use xt::Run;
     like last_build_log, qr/installed Module-Build-Tiny/;
 }
 
+{
+    run_L "--installdeps", "--notest", "./testdist/cpanfile_app";
+
+    like last_build_log, qr/Checking if you have Hash::MultiValue .* Yes \(0\.10\)/;
+    like last_build_log, qr/Checking if you have Try::Tiny .* Yes \(0\.11\)/;
+    like last_build_log, qr/Checking if you have Test::Warn/;
+}
+
+{
+    run_L "--installdeps", "--without-test", "./testdist/cpanfile_app";
+
+    like last_build_log, qr/Checking if you have Hash::MultiValue .* Yes \(0\.10\)/;
+    like last_build_log, qr/Checking if you have Try::Tiny .* Yes \(0\.11\)/;
+    unlike last_build_log, qr/Test::Warn/;
+}
 
 {
     run "--installdeps", "./testdist/cpanfile_bad_app";
