@@ -37,14 +37,14 @@ cpanm - get, unpack build and install modules from CPAN
 
   cpanm Test::More                                 # install Test::More
   cpanm MIYAGAWA/Plack-0.99_05.tar.gz              # full distribution path
-  cpanm http://example.org/LDS/CGI.pm-3.20.tar.gz  # install from URL
+  cpanm https://example.org/LDS/CGI.pm-3.20.tar.gz # install from URL
   cpanm ~/dists/MyCompany-Enterprise-1.00.tar.gz   # install from a local file
   cpanm --interactive Task::Kensho                 # Configure interactively
   cpanm .                                          # install from local directory
   cpanm --installdeps .                            # install all the deps for the current directory
   cpanm -L extlib Plack                            # install Plack and all non-core deps into extlib
-  cpanm --mirror http://cpan.cpantesters.org/ DBI  # use the fast-syncing mirror
-  cpanm --from https://cpan.metacpan.org/ Plack    # use only the HTTPS mirror
+  cpanm --mirror https://cpan.cpantesters.org/ DBI # use the fast-syncing mirror
+  cpanm --from https://cpan.metacpan.org/ Plack    # use a different mirror
 
 =head1 COMMANDS
 
@@ -60,7 +60,7 @@ will all work as you expect.
     cpanm Plack/Request.pm
     cpanm MIYAGAWA/Plack-1.0000.tar.gz
     cpanm /path/to/Plack-1.0000.tar.gz
-    cpanm http://cpan.metacpan.org/authors/id/M/MI/MIYAGAWA/Plack-0.9990.tar.gz
+    cpanm https://cpan.metacpan.org/authors/id/M/MI/MIYAGAWA/Plack-0.9990.tar.gz
     cpanm git://github.com/plack/Plack.git
 
 Additionally, you can use the notation using C<~> and C<@> to specify
@@ -213,7 +213,7 @@ the behaviour from before version 1.7023
 =item --mirror
 
 Specifies the base URL for the CPAN mirror to use, such as
-C<http://cpan.cpantesters.org/> (you can omit the trailing slash). You
+C<https://cpan.cpantesters.org/> (you can omit the trailing slash). You
 can specify multiple mirror URLs by repeating the command line option.
 
 You can use a local directory that has a CPAN mirror structure
@@ -224,7 +224,7 @@ scheme), it is considered as a file scheme as well.
   cpanm --mirror file:///path/to/mirror
   cpanm --mirror ~/minicpan      # Because shell expands ~ to /home/user
 
-Defaults to C<http://www.cpan.org/>.
+Defaults to C<https://www.cpan.org/>.
 
 =item --mirror-only
 
@@ -256,7 +256,7 @@ B<Tip:> It might be useful if you name these options with your shell
 aliases, like:
 
   alias minicpanm='cpanm --from ~/minicpan'
-  alias darkpan='cpanm --from http://mycompany.example.com/DPAN'
+  alias darkpan='cpanm --from https://mycompany.example.com/DPAN'
 
 =item --mirror-index
 
@@ -555,9 +555,16 @@ Defaults to true (man pages generated) unless C<-L|--local-lib-contained>
 option is supplied in which case it's set to false. You can disable
 it with C<--no-man-pages>.
 
+=item --insecure
+
+By default, cpanm only uses HTTPS. If your environment lacks TLS
+support, you can consider at your own risk to use HTTP instead by
+using the C<--insecure> flag.
+Be aware that when using that argument all requests will use HTTP.
+
 =item --lwp
 
-Uses L<LWP> module to download stuff over HTTP. Defaults to true, and
+Uses L<LWP> module to download stuff over HTTPS. Defaults to true, and
 you can say C<--no-lwp> to disable using LWP, when you want to upgrade
 LWP from CPAN on some broken perl systems.
 
