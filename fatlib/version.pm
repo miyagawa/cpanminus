@@ -8,10 +8,9 @@ if ($] >= 5.015) {
     warnings::register_categories(qw/version/);
 }
 
-use vars qw(@ISA $VERSION $CLASS $STRICT $LAX *declare *qv);
-
-$VERSION = 0.9912;
-$CLASS = 'version';
+our $VERSION = 0.9929;
+our $CLASS = 'version';
+our (@ISA, $STRICT, $LAX);
 
 # !!!!Delete this next block completely when adding to Perl core!!!!
 {
@@ -33,6 +32,7 @@ $CLASS = 'version';
 	    *version::stringify = \&version::vpp::stringify;
 	    *{'version::(""'} = \&version::vpp::stringify;
 	    *{'version::(<=>'} = \&version::vpp::vcmp;
+	    *{'version::(cmp'} = \&version::vpp::vcmp;
 	    *version::parse = \&version::vpp::parse;
 	}
     }
@@ -51,6 +51,7 @@ $CLASS = 'version';
 	    *version::stringify = \&version::vxs::stringify;
 	    *{'version::(""'} = \&version::vxs::stringify;
 	    *{'version::(<=>'} = \&version::vxs::VCMP;
+	    *{'version::(cmp'} = \&version::vxs::VCMP;
 	    *version::parse = \&version::vxs::parse;
 	}
     }
@@ -61,7 +62,11 @@ require version::regex;
 *version::is_lax = \&version::regex::is_lax;
 *version::is_strict = \&version::regex::is_strict;
 *LAX = \$version::regex::LAX;
+*LAX_DECIMAL_VERSION = \$version::regex::LAX_DECIMAL_VERSION;
+*LAX_DOTTED_DECIMAL_VERSION = \$version::regex::LAX_DOTTED_DECIMAL_VERSION;
 *STRICT = \$version::regex::STRICT;
+*STRICT_DECIMAL_VERSION = \$version::regex::STRICT_DECIMAL_VERSION;
+*STRICT_DOTTED_DECIMAL_VERSION = \$version::regex::STRICT_DOTTED_DECIMAL_VERSION;
 
 sub import {
     no strict 'refs';
