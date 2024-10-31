@@ -1,14 +1,15 @@
 package Menlo::Dependency;
 use strict;
 use CPAN::Meta::Requirements;
-use Class::Tiny qw( module version type original_version dist mirror url );
+use Class::Tiny qw( module version type phase original_version dist mirror url );
 
 sub BUILDARGS {
-    my($class, $module, $version, $type) = @_;
+    my($class, $module, $version, $type, $phase) = @_;
     return {
         module => $module,
         version => $version,
         type => $type || 'requires',
+        phase => $phase || 'runtime',
     };
 }
 
@@ -17,21 +18,24 @@ sub from_prereqs {
 
     my @deps;
     for my $type (@$types) {
-        push @deps, $class->from_versions(
-            $prereqs->merged_requirements($phases, [$type])->as_string_hash,
-            $type,
-        );
+        for my $phase (@$phases) {
+            push @deps, $class->from_versions(
+                $prereqs->requirements_for($phase, $type)->as_string_hash,
+                $type, $phase,
+            );
+        }
     }
 
     return @deps;
 }
 
 sub from_versions {
-    my($class, $versions, $type) = @_;
+    my($class, $versions, $type, $phase) = @_;
+    $phase ||= 'runtime';
 
     my @deps;
     while (my($module, $version) = each %$versions) {
-        push @deps, $class->new($module, $version, $type)
+        push @deps, $class->new($module, $version, $type, $phase)
     }
 
     @deps;
