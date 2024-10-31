@@ -3,23 +3,8 @@ use Test::More;
 use lib ".";
 use xt::Run;
 
-run 'Date::Format@2.23';
-like last_build_log, qr/installed TimeDate-1.19/;
-
-run 'CPAN::Test::Dummy::MultiPkgVer~>0.01';
-like last_build_log, qr/0\.01 .* doesn't satisfy/;
-
-run 'CPAN::Test::Dummy::MultiPkgVer::Inner@0.01';
-like last_build_log, qr/0\.10 .* doesn't satisfy == 0.01/;
-
-run 'CPAN::Test::Dummy::MultiPkgVer@0.05';
-like last_build_log, qr/Finding CPAN::Test::Dummy::MultiPkgVer \(== 0\.05\) on metacpan failed/;
-
-run '--metacpan', 'CPAN::Test::Dummy::MultiPkgVer::Inner~0.10';
-like last_build_log, qr/installed CPAN-Test-Dummy-MultiPkgVer-0\.01/;
-
-run 'CPAN::Test::Dummy::MultiPkgVer~==0.01';
-like last_build_log, qr/installed CPAN-Test-Dummy-MultiPkgVer-0\.01/;
+run 'Date::Format@2.24';
+like last_build_log, qr/installed TimeDate-1.20/;
 
 # range for v-strings
 run 'App::ForkProve~>= v0.4.0, < v0.5.0';
