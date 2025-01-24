@@ -173,7 +173,7 @@ successful/failed dependencies to the output.
 =item -l, --local-lib
 
 Sets the L<local::lib> compatible path to install modules to. You
-don't need to set this if you already configure the shell environment
+don't need to set this if you already configured the shell environment
 variables using L<local::lib>, but this can be used to override that
 as well.
 
