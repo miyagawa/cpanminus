@@ -65,7 +65,7 @@ sub new {
         mirrors => [],
         mirror_only => undef,
         mirror_index => undef,
-        cpanmetadb => "http://cpanmetadb.plackperl.org/v1.0/",
+        cpanmetadb => "https://cpanmetadb.plackperl.org/v1.0/",
         perl => $^X,
         argv => [],
         local_lib => undef,
@@ -79,6 +79,7 @@ sub new {
         try_lwp => 1,
         try_wget => 1,
         try_curl => 1,
+        use_http => 0,
         uninstall_shadows => ($] < 5.012),
         skip_installed => 1,
         skip_satisfied => 0,
@@ -152,6 +153,7 @@ sub parse_options {
     push @ARGV, grep length, split /\s+/, $self->env('OPT');
     push @ARGV, @_;
 
+    my $custom_cpanmetadb;
     Getopt::Long::Configure("bundling");
     Getopt::Long::GetOptions(
         'f|force'   => sub { $self->{skip_installed} = 0; $self->{force} = 1 },
@@ -182,7 +184,7 @@ sub parse_options {
             $self->{mirrors}     = [$_[1]];
             $self->{mirror_only} = 1;
         },
-        'cpanmetadb=s'    => \$self->{cpanmetadb},
+        'cpanmetadb=s'    => \$custom_cpanmetadb,
         'cascade-search!' => \$self->{cascade_search},
         'prompt!'   => \$self->{prompt},
         'installdeps' => \$self->{installdeps},
@@ -199,6 +201,7 @@ sub parse_options {
         'lwp!'    => \$self->{try_lwp},
         'wget!'   => \$self->{try_wget},
         'curl!'   => \$self->{try_curl},
+        'insecure!' => \$self->{use_http},
         'auto-cleanup=s' => \$self->{auto_cleanup},
         'man-pages!' => \$self->{pod2man},
         'scandeps'   => \$self->{scandeps},
@@ -231,6 +234,14 @@ sub parse_options {
     if (!@ARGV && $0 ne '-' && !-t STDIN){ # e.g. # cpanm < author/requires.cpanm
         push @ARGV, $self->load_argv_from_fh(\*STDIN);
         $self->{load_from_stdin} = 1;
+    }
+
+    if ($custom_cpanmetadb) {
+        $self->{cpanmetadb} = $custom_cpanmetadb;
+	$self->{has_custom_cpanmetadb} = 1;
+    }
+    else {
+        $self->{cpanmetadb} =~ s!^https:!http:! if $self->{use_http};
     }
 
     $self->{argv} = \@ARGV;
@@ -453,7 +464,7 @@ sub search_common {
             $self->chat("Found $found->{module} $found->{module_version} which doesn't satisfy $want_version.\n");
         }
     }
-    
+
     return;
 }
 
@@ -609,14 +620,15 @@ Options:
   -v,--verbose              Turns on chatty output
   -q,--quiet                Turns off the most output
   --interactive             Turns on interactive configure (required for Task:: modules)
-  -f,--force                force install
+  --insecure                Use HTTP-only requests instead of HTTPS
+  -f,--force                Force install
   -n,--notest               Do not run unit tests
   --test-only               Run tests only, do not install
   -S,--sudo                 sudo to run install commands
   --installdeps             Only install dependencies
   --showdeps                Only display direct dependencies
   --reinstall               Reinstall the distribution even if you already have the latest version installed
-  --mirror                  Specify the base URL for the mirror (e.g. http://cpan.cpantesters.org/)
+  --mirror                  Specify the base URL for the mirror (e.g. https://cpan.cpantesters.org/)
   --mirror-only             Use the mirror's index file instead of the CPAN Meta DB
   -M,--from                 Use only this mirror base URL and its index file
   --prompt                  Prompt when configure/build/test fails
@@ -626,7 +638,7 @@ Options:
   --auto-cleanup            Number of days that cpanm's work directories expire in. Defaults to 7
 
 Commands:
-  --self-upgrade            upgrades itself
+  --self-upgrade            Upgrades itself
   --info                    Displays distribution info on CPAN
   --look                    Opens the distribution with your SHELL
   -U,--uninstall            Uninstalls the modules (EXPERIMENTAL)
@@ -636,18 +648,18 @@ Examples:
 
   cpanm Test::More                                          # install Test::More
   cpanm MIYAGAWA/Plack-0.99_05.tar.gz                       # full distribution path
-  cpanm http://example.org/LDS/CGI.pm-3.20.tar.gz           # install from URL
+  cpanm https://example.org/LDS/CGI.pm-3.20.tar.gz          # install from URL
   cpanm ~/dists/MyCompany-Enterprise-1.00.tar.gz            # install from a local file
   cpanm --interactive Task::Kensho                          # Configure interactively
   cpanm .                                                   # install from local directory
   cpanm --installdeps .                                     # install all the deps for the current directory
   cpanm -L extlib Plack                                     # install Plack and all non-core deps into extlib
-  cpanm --mirror http://cpan.cpantesters.org/ DBI           # use the fast-syncing mirror
+  cpanm --mirror https://cpan.cpantesters.org/ DBI           # use the fast-syncing mirror
   cpanm -M https://cpan.metacpan.org App::perlbrew          # use only this secure mirror and its index
 
 You can also specify the default options in PERL_CPANM_OPT environment variable in the shell rc:
 
-  export PERL_CPANM_OPT="--prompt --reinstall -l ~/perl --mirror http://cpan.cpantesters.org"
+  export PERL_CPANM_OPT="--prompt --reinstall -l ~/perl --mirror https://cpan.cpantesters.org"
 
 Type `man cpanm` or `perldoc cpanm` for the more detailed explanation of the options.
 
@@ -977,7 +989,7 @@ sub append_args {
     my($self, $cmd, $phase) = @_;
 
     return $cmd if ref $cmd ne 'ARRAY';
-    
+
     if (my $args = $self->{build_args}{$phase}) {
         $cmd = join ' ', Menlo::Util::shell_quote(@$cmd), $args;
     }
@@ -1163,12 +1175,22 @@ sub chdir {
 sub configure_mirrors {
     my $self = shift;
     unless (@{$self->{mirrors}}) {
-        $self->{mirrors} = [ 'http://www.cpan.org' ];
+        $self->{mirrors} = [
+            ($self->{use_http} ? 'http' : 'https') . '://www.cpan.org'
+        ];
     }
+
+    my $warned;
     for (@{$self->{mirrors}}) {
         s!^/!file:///!;
         s!/$!!;
+
+        if (m/^http:/ && !$self->{use_http} && !$warned) {
+            warn "WARNING: you are using a non-HTTPS mirror, which is considered insecure. To remove this message, please pass the --insecure flag.\n" if !$warned;
+            $warned = 1;
+        }
     }
+    return;
 }
 
 sub self_upgrade {
@@ -1637,6 +1659,7 @@ sub cpan_module_common {
 
     my $mirrors = $self->{mirrors};
     if ($match->{download_uri}) {
+        $match->{download_uri} =~ s!^https:!http:! if $self->{use_http};
         (my $mirror = $match->{download_uri}) =~ s!/authors/id/.*$!!;
         $mirrors = [$mirror];
     }
@@ -1688,7 +1711,7 @@ sub cpan_dist {
 sub git_uri {
     my ($self, $uri) = @_;
 
-    # similar to http://www.pip-installer.org/en/latest/logic.html#vcs-support
+    # similar to https://www.pip-installer.org/en/latest/logic.html#vcs-support
     # git URL has to end with .git when you need to use pin @ commit/tag/branch
 
     ($uri, my $commitish) = split /(?<=\.git)@/i, $uri, 2;
@@ -2650,11 +2673,39 @@ sub DESTROY {
 
 sub mirror {
     my($self, $uri, $local) = @_;
-    if ($uri =~ /^file:/) {
-        $self->file_mirror($uri, $local);
-    } else {
-        $self->{http}->mirror($uri, $local);
+
+    die( "mirror: Undefined URI\n" ) unless defined $uri && length $uri;
+
+    if ( $uri =~ /^file:/) {
+        return $self->file_mirror($uri, $local);
     }
+
+    # HTTPTinyish does not provide an option to disable
+    # certificates check, let's switch to http on demand.
+    $uri =~ s/^https:/http:/ if $self->{use_http};
+
+    my $reply = $self->{http}->mirror($uri, $local);
+
+    if ( $uri =~ /^https:/ && ref $reply
+        && $reply->{status} && $reply->{status} == 599
+        && $reply->{content}
+    ) {
+        my $invalid_cert;
+        if ( ref($self->{http}) =~ m{(?:Curl|HTTPTiny|Wget)} ) {
+            $invalid_cert = 1 if $reply->{content} =~ m{certificate}mi;
+        } elsif ( ref($self->{http}) =~ m{LWP} ) {
+            $invalid_cert = 1 if $reply->{content} =~ m{Can't connect.+?:443}mi;
+        }
+        if ( $invalid_cert ) {
+            die <<"DIE";
+TLS issue found while fetching $uri:\n
+$reply->{content}\n
+Please verify/update your certificates. You may also force an HTTP-only mirror or use the --insecure flag.
+DIE
+        }
+    }
+
+    return $reply;
 }
 
 sub untar    { $_[0]->{_backends}{untar}->(@_) };
@@ -2696,21 +2747,41 @@ sub file_mirror {
 sub configure_http {
     my $self = shift;
 
-    require HTTP::Tinyish;
-
     my @try = qw(HTTPTiny);
     unshift @try, 'Wget' if $self->{try_wget};
     unshift @try, 'Curl' if $self->{try_curl};
     unshift @try, 'LWP'  if $self->{try_lwp};
 
     my @protocol = ('http');
-    push @protocol, 'https'
-      if grep /^https:/, @{$self->{mirrors}};
+    if (!$self->{use_http} || $self->{cpanmetadb} =~ /^https:/ || (grep /^https:/, @{$self->{mirrors}})) {
+        push @protocol, 'https';
+    }
 
+    my $backend = $self->get_http_backend(\@try, \@protocol);
+
+    # fallback to http-only if we failed using https with default options:
+    if (!$backend && !$self->{use_http} && !@{$self->{mirrors}} && (!$self->{has_custom_cpanmetadb} || $self->{cpanmetadb} =~ /^http:/)) {
+        $self->diag('WARNING: TLS support not found. Falling back to insecure HTTP-only requests');
+        $self->{use_http} = 1;
+        @protocol = ('http');
+        $backend = $self->get_http_backend(\@try, \@protocol);
+    }
+
+    if ( !$backend ) {
+        $self->diag_fail( join( ', ', @protocol )." not supported by available HTTP Clients." );
+    }
+
+    $backend->new(agent => "Menlo/$Menlo::VERSION", verify_SSL => 1);
+}
+
+sub get_http_backend {
+    my ($self, $tries, $protocols) = @_;
+
+    require HTTP::Tinyish;
     my $backend;
-    for my $try (map "HTTP::Tinyish::$_", @try) {
+    for my $try (map "HTTP::Tinyish::$_", @$tries) {
         if (my $meta = HTTP::Tinyish->configure_backend($try)) {
-            if ((grep $try->supports($_), @protocol) == @protocol) {
+            if ((grep $try->supports($_), @$protocols) == @$protocols) {
                 for my $tool (sort keys %$meta){
                     (my $desc = $meta->{$tool}) =~ s/^(.*?)\n.*/$1/s;
                     $self->chat("You have $tool: $desc\n");
@@ -2720,8 +2791,7 @@ sub configure_http {
             }
         }
     }
-
-    $backend->new(agent => "Menlo/$Menlo::VERSION", verify_SSL => 1);
+    return $backend;
 }
 
 sub init_tools {
