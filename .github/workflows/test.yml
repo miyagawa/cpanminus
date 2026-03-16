@@ -8,6 +8,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    container: perl:${{ matrix.perl }}
     strategy:
       fail-fast: false
       matrix:
@@ -27,15 +28,9 @@ jobs:
           - '5.18'
           - '5.16'
           - '5.14'
-          - '5.12'
-          - '5.10'
-          - '5.8'
     name: Perl ${{ matrix.perl }}
     steps:
       - uses: actions/checkout@v4
-      - uses: shogo82148/actions-setup-perl@v1
-        with:
-          perl-version: ${{ matrix.perl }}
       - run: cpanm -nq LWP::Protocol::https
       - run: cpanm -nq --installdeps --with-develop --with-recommends --with-suggests .
       - run: PERL_USE_UNSAFE_INC=1 prove -v -lr xt -j9
