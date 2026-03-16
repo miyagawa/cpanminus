@@ -36,5 +36,6 @@ jobs:
       - uses: shogo82148/actions-setup-perl@v1
         with:
           perl-version: ${{ matrix.perl }}
+      - run: cpanm -nq LWP::Protocol::https
       - run: cpanm -nq --installdeps --with-develop --with-recommends --with-suggests .
       - run: PERL_USE_UNSAFE_INC=1 prove -lr xt -j9
