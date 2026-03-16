@@ -8,26 +8,26 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    container: perl:${{ matrix.perl }}
+    container: ${{ matrix.image }}
     strategy:
       fail-fast: false
       matrix:
-        perl:
-          - '5.42'
-          - '5.40'
-          - '5.38'
-          - '5.36'
-          - '5.34'
-          - '5.32'
-          - '5.30'
-          - '5.28'
-          - '5.26'
-          - '5.24'
-          - '5.22'
-          - '5.20'
-          - '5.18'
-          - '5.16'
-          - '5.14'
+        include:
+          - { perl: '5.42', image: 'perl:5.42' }
+          - { perl: '5.40', image: 'perl:5.40' }
+          - { perl: '5.38', image: 'perl:5.38' }
+          - { perl: '5.36', image: 'perl:5.36' }
+          - { perl: '5.34', image: 'perl:5.34' }
+          - { perl: '5.32', image: 'perl:5.32' }
+          - { perl: '5.30', image: 'perl:5.30' }
+          - { perl: '5.28', image: 'perl:5.28' }
+          - { perl: '5.26', image: 'perl:5.26' }
+          - { perl: '5.24', image: 'perl:5.24-buster' }
+          - { perl: '5.22', image: 'perl:5.22-buster' }
+          - { perl: '5.20', image: 'perl:5.20-buster' }
+          - { perl: '5.18', image: 'perl:5.18-buster' }
+          - { perl: '5.16', image: 'perl:5.16-buster' }
+          - { perl: '5.14', image: 'perl:5.14-buster' }
     name: Perl ${{ matrix.perl }}
     steps:
       - uses: actions/checkout@v4
