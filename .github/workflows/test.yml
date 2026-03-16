@@ -38,4 +38,4 @@ jobs:
           perl-version: ${{ matrix.perl }}
       - run: cpanm -nq LWP::Protocol::https
       - run: cpanm -nq --installdeps --with-develop --with-recommends --with-suggests .
-      - run: PERL_USE_UNSAFE_INC=1 prove -lr xt -j9
+      - run: PERL_USE_UNSAFE_INC=1 prove -v -lr xt -j9
