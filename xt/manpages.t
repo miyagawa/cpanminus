@@ -14,8 +14,8 @@ ok !glob("$local_lib/man/man3/Sub::Uplevel.*");
 run("-L", $local_lib, "--man-pages", "Hash::MultiValue");
 run("-L", $local_lib, "--man-pages", "Sub::Uplevel");
 
-ok glob("$local_lib/man/man3/Hash::MultiValue.*");
-ok glob("$local_lib/man/man3/Sub::Uplevel.*");
+ok(glob("$local_lib/man/man3/Hash::MultiValue.*")) or diag last_build_log;
+ok(glob("$local_lib/man/man3/Sub::Uplevel.*")) or diag last_build_log;
 
 done_testing;
 

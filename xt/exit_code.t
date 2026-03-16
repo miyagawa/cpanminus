@@ -5,7 +5,10 @@ use Test::More;
 sub exit_code_is {
     my($command, $code) = @_;
     my($out, $err, $exit) = run @$command;
-    is $exit >> 8, $code, "@$command";
+    is($exit >> 8, $code, "@$command") or do {
+        diag "STDOUT: $out";
+        diag "STDERR: $err";
+    };
 };
 
 exit_code_is [], 1;

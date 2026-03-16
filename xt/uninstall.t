@@ -34,12 +34,12 @@ if ($] >= 5.012) {
     run 'Module::CoreList';
     run '-U', '-f', 'Module::CoreList';
     unlike last_build_log, qr!not found!, "Dual-life can be uninstalled";
-    like last_build_log, qr!Unlink.*/Module/CoreList\.pm!;
+    like(last_build_log, qr!Unlink.*/Module/CoreList\.pm!) or diag last_build_log;
     unlike last_build_log, qr!Unlink.*/bin/corelist!, "Do not uninstall bin/ when it is shared";
 
     my $mod = Module::Metadata->new_from_module("Module::CoreList");
     ok $mod;
-    unlike $mod->filename, qr/site_perl/;
+    unlike($mod->filename, qr/site_perl/) or diag $mod->filename;
 }
 
 run 'App::Ack';
