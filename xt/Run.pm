@@ -26,6 +26,8 @@ sub run {
 
     my @notest = $ENV{TEST} ? ("--no-notest") : ("--notest");
     my($stdout, $stderr, $exit) = capture {
+        local *STDIN;
+        open STDIN, '<', '/dev/null' or die "Can't redirect STDIN: $!";
         system($^X, $executable, @notest, "--quiet", "--reinstall", @mirrors, @args);
     };
     ::diag($stderr) if $stderr and !$ENV{NODIAG};  # Some tests actually want stderr
