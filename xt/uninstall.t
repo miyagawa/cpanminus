@@ -32,6 +32,8 @@ like last_build_log, qr!Unlink.*$ENV{PERL_CPANM_HOME}.*/bin/corelist!;
 
 # older perl installs dual-life modules to perl lib
 if ($] >= 5.012) {
+    use Config;
+    diag "installbin=$Config{installbin} installscript=$Config{installscript} installman1dir=$Config{installman1dir} installman3dir=$Config{installman3dir}";
     run 'Module::CoreList';
     diag last_build_log;
     run '-U', '-f', 'Module::CoreList';

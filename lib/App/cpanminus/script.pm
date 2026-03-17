@@ -1131,6 +1131,10 @@ sub configure {
     unless ($self->{pod2man}) {
         $ENV{PERL_MM_OPT} .= " INSTALLMAN1DIR=none INSTALLMAN3DIR=none";
         $ENV{PERL_MB_OPT} .= " --config installman1dir= --config installsiteman1dir= --config installman3dir= --config installsiteman3dir=";
+    } elsif ($self->{local_lib}) {
+        # Explicitly set man dirs since some perl builds have man3dir=none in Config
+        $ENV{PERL_MM_OPT} .= " INSTALLMAN1DIR=$self->{local_lib}/man/man1 INSTALLMAN3DIR=$self->{local_lib}/man/man3";
+        $ENV{PERL_MB_OPT} .= " --config installman1dir=$self->{local_lib}/man/man1 --config installman3dir=$self->{local_lib}/man/man3";
     }
 
     # Lancaster Consensus
