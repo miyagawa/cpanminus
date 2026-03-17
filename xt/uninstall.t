@@ -25,6 +25,7 @@ like last_build_log, qr!Unlink.*$ENV{PERL_CPANM_HOME}.*/Hash/MultiValue\.pm!;
 unlike last_build_log, qr!Unlink.*site_perl.*/Hash/MultiValue\.pm!;
 
 run_L 'Module::CoreList';
+diag last_build_log;
 run_L '--uninstall', '-f', 'Module::CoreList';
 like last_build_log, qr!Unlink.*$ENV{PERL_CPANM_HOME}.*/Module/CoreList\.pm!;
 like last_build_log, qr!Unlink.*$ENV{PERL_CPANM_HOME}.*/bin/corelist!;
@@ -32,9 +33,10 @@ like last_build_log, qr!Unlink.*$ENV{PERL_CPANM_HOME}.*/bin/corelist!;
 # older perl installs dual-life modules to perl lib
 if ($] >= 5.012) {
     run 'Module::CoreList';
+    diag last_build_log;
     run '-U', '-f', 'Module::CoreList';
     unlike last_build_log, qr!not found!, "Dual-life can be uninstalled";
-    like(last_build_log, qr!Unlink.*/Module/CoreList\.pm!) or diag last_build_log;
+    like(last_build_log, qr!Unlink.*/Module/CoreList\.pm!);
     unlike last_build_log, qr!Unlink.*/bin/corelist!, "Do not uninstall bin/ when it is shared";
 
     my $mod = Module::Metadata->new_from_module("Module::CoreList");
