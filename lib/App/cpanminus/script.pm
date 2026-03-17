@@ -69,7 +69,7 @@ sub new {
         mirrors => [],
         mirror_only => undef,
         mirror_index => undef,
-        cpanmetadb => "http://cpanmetadb.plackperl.org/v1.0/",
+        cpanmetadb => "https://cpanmetadb.plackperl.org/v1.0/",
         perl => $^X,
         argv => [],
         local_lib => undef,
@@ -83,6 +83,7 @@ sub new {
         try_lwp => 1,
         try_wget => 1,
         try_curl => 1,
+        use_http => 0,
         uninstall_shadows => ($] < 5.012),
         skip_installed => 1,
         skip_satisfied => 0,
@@ -200,6 +201,7 @@ sub parse_options {
         'lwp!'    => \$self->{try_lwp},
         'wget!'   => \$self->{try_wget},
         'curl!'   => \$self->{try_curl},
+        'insecure!' => \$self->{use_http},
         'auto-cleanup=s' => \$self->{auto_cleanup},
         'man-pages!' => \$self->{pod2man},
         'scandeps'   => \$self->{scandeps},
@@ -526,7 +528,7 @@ sub numify_ver {
 sub search_metacpan {
     my($self, $module, $version, $dev_release) = @_;
 
-    my $metacpan_uri = 'http://fastapi.metacpan.org/v1/download_url/';
+    my $metacpan_uri = 'https://fastapi.metacpan.org/v1/download_url/';
 
     my $url = $metacpan_uri . $module;
 
@@ -543,7 +545,7 @@ sub search_metacpan {
     if ($dist_meta && $dist_meta->{download_url}) {
         (my $distfile = $dist_meta->{download_url}) =~ s!.+/authors/id/!!;
         local $self->{mirrors} = $self->{mirrors};
-        $self->{mirrors} = [ 'http://cpan.metacpan.org' ];
+        $self->{mirrors} = [ 'https://cpan.metacpan.org' ];
         return $self->cpan_module($module, $distfile, $dist_meta->{version});
     }
 
@@ -619,7 +621,7 @@ sub search_cpanmetadb_history {
     for my $try (sort { $b->{version_obj} cmp $a->{version_obj} } @found) {
         if ($self->satisfy_version($module, $try->{version_obj}, $version)) {
             local $self->{mirrors} = $self->{mirrors};
-            unshift @{$self->{mirrors}}, 'http://backpan.perl.org'
+            unshift @{$self->{mirrors}}, 'https://backpan.perl.org'
               unless $try->{latest};
             return $self->cpan_module($module, $try->{distfile}, $try->{version});
         }
@@ -747,7 +749,7 @@ Options:
   --installdeps             Only install dependencies
   --showdeps                Only display direct dependencies
   --reinstall               Reinstall the distribution even if you already have the latest version installed
-  --mirror                  Specify the base URL for the mirror (e.g. http://cpan.cpantesters.org/)
+  --mirror                  Specify the base URL for the mirror (e.g. https://cpan.cpantesters.org/)
   --mirror-only             Use the mirror's index file instead of the CPAN Meta DB
   -M,--from                 Use only this mirror base URL and its index file
   --prompt                  Prompt when configure/build/test fails
@@ -767,18 +769,18 @@ Examples:
 
   cpanm Test::More                                          # install Test::More
   cpanm MIYAGAWA/Plack-0.99_05.tar.gz                       # full distribution path
-  cpanm http://example.org/LDS/CGI.pm-3.20.tar.gz           # install from URL
+  cpanm https://example.org/LDS/CGI.pm-3.20.tar.gz          # install from URL
   cpanm ~/dists/MyCompany-Enterprise-1.00.tar.gz            # install from a local file
   cpanm --interactive Task::Kensho                          # Configure interactively
   cpanm .                                                   # install from local directory
   cpanm --installdeps .                                     # install all the deps for the current directory
   cpanm -L extlib Plack                                     # install Plack and all non-core deps into extlib
-  cpanm --mirror http://cpan.cpantesters.org/ DBI           # use the fast-syncing mirror
+  cpanm --mirror https://cpan.cpantesters.org/ DBI           # use the fast-syncing mirror
   cpanm -M https://cpan.metacpan.org App::perlbrew          # use only this secure mirror and its index
 
 You can also specify the default options in PERL_CPANM_OPT environment variable in the shell rc:
 
-  export PERL_CPANM_OPT="--prompt --reinstall -l ~/perl --mirror http://cpan.cpantesters.org"
+  export PERL_CPANM_OPT="--prompt --reinstall -l ~/perl --mirror https://cpan.cpantesters.org"
 
 Type `man cpanm` or `perldoc cpanm` for the more detailed explanation of the options.
 
@@ -1271,12 +1273,19 @@ sub chdir {
 sub configure_mirrors {
     my $self = shift;
     unless (@{$self->{mirrors}}) {
-        $self->{mirrors} = [ 'http://www.cpan.org' ];
+        $self->{mirrors} = [ 'https://www.cpan.org' ];
     }
     for (@{$self->{mirrors}}) {
         s!^/!file:///!;
         s!/$!!;
     }
+
+    if ( grep { m/^http:/ } @{$self->{mirrors}} ) {
+         warn "WARNING: Detected a non TLS mirror, enforcing http requests.\n";
+         $self->{use_http} = 1;
+    }
+
+    return;
 }
 
 sub self_upgrade {
@@ -1761,7 +1770,7 @@ sub cpan_dist {
 sub git_uri {
     my ($self, $uri) = @_;
 
-    # similar to http://www.pip-installer.org/en/latest/logic.html#vcs-support
+    # similar to https://www.pip-installer.org/en/latest/logic.html#vcs-support
     # git URL has to end with .git when you need to use pin @ commit/tag/branch
 
     ($uri, my $commitish) = split /(?<=\.git)@/i, $uri, 2;
@@ -2740,6 +2749,7 @@ sub mirror {
     } else {
         $self->{_backends}{mirror}->(@_);
     }
+
 }
 
 sub untar    { $_[0]->{_backends}{untar}->(@_) };
@@ -2780,7 +2790,9 @@ sub file_mirror {
 
 sub has_working_lwp {
     my($self, $mirrors) = @_;
+
     my $https = grep /^https:/, @$mirrors;
+    $https = 0 if $self->{use_http};
     eval {
         require LWP::UserAgent; # no fatpack
         LWP::UserAgent->VERSION(5.802);
@@ -2798,6 +2810,8 @@ sub init_tools {
         $self->chat("You have make $self->{make}\n");
     }
 
+    my ( $http_get, $http_mirror );
+
     # use --no-lwp if they have a broken LWP, to upgrade LWP
     if ($self->{try_lwp} && $self->has_working_lwp($self->{mirrors})) {
         $self->chat("You have LWP $LWP::VERSION\n");
@@ -2810,13 +2824,13 @@ sub init_tools {
                 @_,
             );
         };
-        $self->{_backends}{get} = sub {
+        $http_get = sub {
             my $self = shift;
             my $res = $ua->()->request(HTTP::Request->new(GET => $_[0]));
             return unless $res->is_success;
             return $res->decoded_content;
         };
-        $self->{_backends}{mirror} = sub {
+        $http_mirror = sub {
             my $self = shift;
             my $res = $ua->()->mirror(@_);
             die $res->content if $res->code == 501;
@@ -2829,13 +2843,13 @@ sub init_tools {
             '--retry-connrefused',
             ($self->{verbose} ? () : ('-q')),
         );
-        $self->{_backends}{get} = sub {
+        $http_get = sub {
             my($self, $uri) = @_;
             $self->safeexec( my $fh, $wget, $uri, @common, '-O', '-' ) or die "wget $uri: $!";
             local $/;
             <$fh>;
         };
-        $self->{_backends}{mirror} = sub {
+        $http_mirror = sub {
             my($self, $uri, $path) = @_;
             $self->safeexec( my $fh, $wget, $uri, @common, '-O', $path ) or die "wget $uri: $!";
             local $/;
@@ -2848,13 +2862,13 @@ sub init_tools {
             '--user-agent', $self->agent,
             ($self->{verbose} ? () : '-s'),
         );
-        $self->{_backends}{get} = sub {
+        $http_get = sub {
             my($self, $uri) = @_;
             $self->safeexec( my $fh, $curl, @common, $uri ) or die "curl $uri: $!";
             local $/;
             <$fh>;
         };
-        $self->{_backends}{mirror} = sub {
+        $http_mirror = sub {
             my($self, $uri, $path) = @_;
             $self->safeexec( my $fh, $curl, @common, $uri, '-#', '-o', $path ) or die "curl $uri: $!";
             local $/;
@@ -2866,18 +2880,22 @@ sub init_tools {
         my %common = (
             agent => $self->agent,
         );
-        $self->{_backends}{get} = sub {
+        $http_get = sub {
             my $self = shift;
             my $res = HTTP::Tiny->new(%common)->get($_[0]);
             return unless $res->{success};
             return $res->{content};
         };
-        $self->{_backends}{mirror} = sub {
+        $http_mirror = sub {
             my $self = shift;
             my $res = HTTP::Tiny->new(%common)->mirror(@_);
             return $res->{status};
         };
     }
+
+    # handle the insecure mode to honor and force http requests
+    $self->{_backends}{get}    = $self->wrap_http_request( $http_get );
+    $self->{_backends}{mirror} = $self->wrap_http_request( $http_mirror );
 
     my $tar = $self->which('tar');
     my $tar_ver;
@@ -3015,6 +3033,40 @@ sub init_tools {
             return -d $root ? $root : undef;
         };
     }
+}
+
+sub wrap_http_request {
+    my ( $self, $code ) = @_;
+
+    die unless ref $code eq 'CODE';
+
+    my $wrapper = sub {
+        my ( $self, $uri, @extra ) = @_;
+
+        # certificates check, let's switch to http on demand.
+        $uri =~ s/^https:/http:/ if $self->{use_http};
+
+        # call the get or mirror
+        my $reply = $code->( $self, $uri, @extra );
+
+        if ( ! $self->{use_http} && $uri =~ m{^https:} && !$self->{has_displayed_insecure_advice} ) {
+            if ( !defined $reply || $reply eq 500 || $reply =~ m{certificate}mi ) {
+
+die <<"DIE";
+Failed to fetch $uri: $reply\n
+
+This could be a TLS issue with the HTTP client used.
+Please verify your certificates or force an HTTP-only request/mirror
+using --insecure option at your own risk.
+DIE
+            $self->{has_displayed_insecure_advice} = 1;
+            }
+        }
+
+        return $reply;
+    };
+
+    return $wrapper;
 }
 
 sub safeexec {
