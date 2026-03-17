@@ -12,23 +12,24 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - { perl: '5.42', image: 'perl:5.42' }
-          - { perl: '5.40', image: 'perl:5.40' }
-          - { perl: '5.38', image: 'perl:5.38' }
-          - { perl: '5.36', image: 'perl:5.36' }
-          - { perl: '5.34', image: 'perl:5.34' }
-          - { perl: '5.32', image: 'perl:5.32' }
-          - { perl: '5.30', image: 'perl:5.30' }
-          - { perl: '5.28', image: 'perl:5.28' }
-          - { perl: '5.26', image: 'perl:5.26' }
-          - { perl: '5.24', image: 'perl:5.24-buster' }
-          - { perl: '5.22', image: 'perl:5.22-buster' }
-          - { perl: '5.20', image: 'perl:5.20-buster' }
-          - { perl: '5.18', image: 'perl:5.18-buster' }
-          - { perl: '5.16', image: 'perl:5.16-buster' }
-          - { perl: '5.14', image: 'perl:5.14-buster' }
-    name: Perl ${{ matrix.perl }}
+        image:
+          - perl:5.42
+          - perl:5.40
+          - perl:5.38
+          - perl:5.36
+          - perl:5.34
+          - perl:5.32
+          - perl:5.30
+          - perl:5.28
+          - perl:5.26
+          - perl:5.24-buster
+          - perl:5.22-buster
+          - perl:5.20-buster
+          - perl:5.18-buster
+          - perl:5.16-buster
+          - perl:5.14-buster
+          - perl:5.12-buster
+    name: ${{ matrix.image }}
     steps:
       - uses: actions/checkout@v4
       - run: cpanm -nq LWP::Protocol::https
