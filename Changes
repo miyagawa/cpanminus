@@ -2,6 +2,10 @@ See http://github.com/miyagawa/cpanminus/ for the latest development.
 
 {{$NEXT}}
 
+1.7049  2026-03-16 17:36:56 PDT
+   [Improvements]
+      - Update fatpacked Module::Metadata to 1.000038 (#697)
+
 1.7048  2024-10-29 11:48:22 PDT
    [Bug Fix]
       - Upgrade fatpacked version to 0.9929 (#682)
