@@ -2349,8 +2349,7 @@ sub save_meta {
 
     return unless $dist->{distvname} && $dist->{source} eq 'cpan';
 
-    my $base = ($ENV{PERL_MM_OPT} || '') =~ /INSTALL_BASE=/
-        ? ($self->install_base($ENV{PERL_MM_OPT}) . "/lib/perl5") : $Config{sitelibexp};
+    my $base = $self->install_target_base();
 
     my $provides = $dist->{provides};
 
@@ -2396,10 +2395,13 @@ sub _merge_hashref {
     return \%hash;
 }
 
-sub install_base {
-    my($self, $mm_opt) = @_;
-    $mm_opt =~ /INSTALL_BASE=(\S+)/ and return $1;
-    die "Your PERL_MM_OPT doesn't contain INSTALL_BASE";
+sub install_target_base {
+    my($self) = @_;
+    my $mm_opt = $ENV{PERL_MM_OPT}  or  return $Config{sitelibexp};
+    $mm_opt =~ /INSTALL_BASE=(\S+)/ and return $1 . "/lib/perl5";
+    $mm_opt =~ /INSTALLDIRS=(perl|site|vendor)/
+        and return $Config{ ( { perl => 'priv' }->{$1} || $1 ) . 'libexp' };
+    return $Config{sitelibexp};
 }
 
 sub safe_eval {
