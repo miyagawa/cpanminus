@@ -1,6 +1,8 @@
 Revision history for Menlo-Legacy
 
 {{$NEXT}}
+        - Add --no-download-mirror-override to download from the configured
+          mirrors instead of the host suggested by the index lookup
 
 1.9022  2018-06-28 09:36:00 PDT
         - Add version.pm for explicit fatpacking for Carton

@@ -65,6 +65,7 @@ sub new {
         mirrors => [],
         mirror_only => undef,
         mirror_index => undef,
+        download_mirror_override => 1,
         cpanmetadb => "http://cpanmetadb.plackperl.org/v1.0/",
         perl => $^X,
         argv => [],
@@ -182,6 +183,7 @@ sub parse_options {
             $self->{mirrors}     = [$_[1]];
             $self->{mirror_only} = 1;
         },
+        'download-mirror-override!' => \$self->{download_mirror_override},
         'cpanmetadb=s'    => \$self->{cpanmetadb},
         'cascade-search!' => \$self->{cascade_search},
         'prompt!'   => \$self->{prompt},
@@ -1637,8 +1639,12 @@ sub cpan_module_common {
 
     my $mirrors = $self->{mirrors};
     if ($match->{download_uri}) {
-        (my $mirror = $match->{download_uri}) =~ s!/authors/id/.*$!!;
-        $mirrors = [$mirror];
+        if ($self->{download_mirror_override}) {
+            (my $mirror = $match->{download_uri}) =~ s!/authors/id/.*$!!;
+            $mirrors = [$mirror];
+        } else {
+            $self->mask_output( chat => "Ignoring $match->{download_uri} and using the configured mirrors.\n" );
+        }
     }
 
     local $self->{mirrors} = $mirrors;

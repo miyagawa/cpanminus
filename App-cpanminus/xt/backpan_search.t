@@ -19,5 +19,13 @@ use Test::More;
     like $out, qr/Moose-2.0402/;
 }
 
+{
+    # --no-download-mirror-override keeps the archived release on the configured mirror
+    my $out = run '--info', '--no-download-mirror-override',
+                  'Moose::Util::TypeConstraints~<=2.0402';
+    like $out, qr/Moose-2.0402/;
+    like last_build_log, qr/Ignoring \S*backpan\S* and using the configured mirrors/;
+}
+
 done_testing;
 

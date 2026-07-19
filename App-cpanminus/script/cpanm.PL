@@ -75,7 +75,9 @@ is a shortcut for C<~"== VERSION">.
 The version query including specific version or range will be sent to
 L<MetaCPAN> to search for previous releases. The query will search for
 BackPAN archives by default, unless you specify C<--dev> option, in
-which case, archived versions will be filtered out.
+which case, archived versions will be filtered out. Archived releases
+are then downloaded from BackPAN rather than from your mirrors, which
+C<--no-download-mirror-override> turns off.
 
 For a git repository, you can specify a branch, tag, or commit SHA to
 build. The default is C<master>
@@ -266,6 +268,22 @@ for module search index.
 =item --cpanmetadb
 
 B<EXPERIMENTAL>: Specifies an alternate URI for CPAN MetaDB index lookups.
+
+=item --no-download-mirror-override
+
+An index lookup may return the URL of a host to download the
+distribution from, and that host then overrides the mirror list for
+the download. The CPAN MetaDB does so for every release but the latest
+one, pointing at BackPAN, and MetaCPAN does so for every release,
+pointing at its own CDN. Pass this option to ignore that URL and fetch
+the distribution from the mirrors given with C<--mirror> instead.
+
+Select this option if you run your own CPAN index (a.k.a. darkpan) that
+serves every version you pin, and public archives must never be used as
+a substitute. It does not turn off the index lookup itself, so it can
+be combined with C<--cpanmetadb> pointing at your own MetaDB endpoint.
+Should the distribution be missing from your mirrors, the install fails
+rather than silently retrieving a public copy.
 
 =item --metacpan
 
