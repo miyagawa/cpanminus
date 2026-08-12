@@ -618,7 +618,7 @@ sub search_cpanmetadb_history {
     my $match;
     for my $try (sort { $b->{version_obj} cmp $a->{version_obj} } @found) {
         if ($self->satisfy_version($module, $try->{version_obj}, $version)) {
-            local $self->{mirrors} = $self->{mirrors};
+            local $self->{mirrors} = [ @{$self->{mirrors}} ];
             unshift @{$self->{mirrors}}, 'http://backpan.perl.org'
               unless $try->{latest};
             return $self->cpan_module($module, $try->{distfile}, $try->{version});
