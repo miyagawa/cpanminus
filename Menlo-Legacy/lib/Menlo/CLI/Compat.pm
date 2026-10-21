@@ -2655,7 +2655,7 @@ sub mirror {
         $self->file_mirror($uri, $local);
     } else {
         my $res = $self->{http}->mirror($uri, $local);
-        $self->chat("Fetching $uri failed: $res->{status} $res->{reason}\n")
+        $self->mask_output( chat => "Fetching $uri failed: $res->{status} $res->{reason}\n" )
           unless $res->{success};
         $res->{success};
     }
