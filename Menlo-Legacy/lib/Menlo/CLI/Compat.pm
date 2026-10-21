@@ -2648,12 +2648,16 @@ sub DESTROY {
 
 # Utils
 
+# Returns true on success (including 304 Not Modified), false on failure
 sub mirror {
     my($self, $uri, $local) = @_;
     if ($uri =~ /^file:/) {
         $self->file_mirror($uri, $local);
     } else {
-        $self->{http}->mirror($uri, $local);
+        my $res = $self->{http}->mirror($uri, $local);
+        $self->chat("Fetching $uri failed: $res->{status} $res->{reason}\n")
+          unless $res->{success};
+        $res->{success};
     }
 }
 
@@ -2684,13 +2688,21 @@ sub file_mirror {
     my $file = $self->uri_to_file($uri);
 
     my $source_mtime = (stat $file)[9];
+    unless (defined $source_mtime) {
+        $self->chat("Fetching $uri failed: $file does not exist\n");
+        return;
+    }
 
     # Don't mirror a file that's already there (like the index)
     return 1 if -e $path && (stat $path)[9] >= $source_mtime;
 
-    File::Copy::copy($file, $path);
+    unless (File::Copy::copy($file, $path)) {
+        $self->chat("Fetching $uri failed: $!\n");
+        return;
+    }
 
     utime $source_mtime, $source_mtime, $path;
+    return 1;
 }
 
 sub configure_http {
