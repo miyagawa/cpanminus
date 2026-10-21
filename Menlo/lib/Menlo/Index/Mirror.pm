@@ -21,8 +21,14 @@ sub refresh_index {
         $remote =~ s/\.gz$//
           unless $HAS_IO_UNCOMPRESS_GUNZIP;
         my $local = File::Spec->catfile( $self->cache, File::Basename::basename($file) );
-        $self->fetcher->($remote, $local)
-          or Carp::croak( "Cannot fetch $remote to $local");
+        # fetcher returns true on success. Menlo::CLI::Compat in Menlo-Legacy 1.9022
+        # and earlier returned an HTTP::Tinyish response hash, which is always true
+        my $res = $self->fetcher->($remote, $local);
+        my $ok  = ref $res eq 'HASH' ? $res->{success} : $res;
+        unless ($ok) {
+            my $why = ref $res eq 'HASH' ? ": $res->{status} $res->{reason}" : "";
+            Carp::croak( "Cannot fetch $remote to $local$why");
+        }
         if ($HAS_IO_UNCOMPRESS_GUNZIP) {
             ( my $uncompressed = $local ) =~ s/\.gz$//;
             IO::Uncompress::Gunzip::gunzip( $local, $uncompressed )
@@ -32,3 +38,26 @@ sub refresh_index {
 }
 
 1;
+
+__END__
+
+=head1 NAME
+
+Menlo::Index::Mirror - CPAN::Common::Index::Mirror with a custom fetcher
+
+=head1 SYNOPSIS
+
+  my $index = Menlo::Index::Mirror->new({
+      mirror  => "https://cpan.metacpan.org/",
+      cache   => $dir,
+      fetcher => sub { my($uri, $local) = @_; ... },
+  });
+
+=head1 DESCRIPTION
+
+C<fetcher> is called with the remote URI and the local path to save it to.
+It should return true on success (including when the local copy is already
+up to date) and false on failure. An HTTP::Tinyish response hash is also
+accepted, in which case its C<success> field is checked.
+
+=cut
